@@ -40,6 +40,6 @@ def gen():
                             if i=='digest_size': continue
                             vector[i] = kw[i].hex()
                         out.append(vector)
-    write_file('blake2-python', out)
+    write_file('blake2-python.json', out)
 
 gen()

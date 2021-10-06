@@ -358,7 +358,7 @@ function init() {
     }
   });
   // NodeJS blake2 doesn't support personalization and salt, so we generated vectors using python: see vectors/blake2-gen.py
-  const blake2_python = require('./vectors/blake2-python');
+  const blake2_python = require('./vectors/blake2-python.json');
   should('Blake2 python', () => {
     for (const v of blake2_python) {
       const hash = { blake2s: blake2s, blake2b: blake2b }[v.hash];
