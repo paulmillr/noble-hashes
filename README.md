@@ -267,7 +267,7 @@ The current performance is good enough when compared to other projects; SHA256 i
 1. Clone the repository.
 2. `npm install` to install build dependencies like TypeScript
 3. `npm run build` to compile TypeScript code
-4. `npm run test` will execute all main tests
+4. `npm run test` will execute all main tests. See [our approach to testing](./test/README.md)
 5. `npm run test-dos` will test against DoS; by measuring function complexity. **Takes ~20 minutes**
 6. `npm run test-big` will execute hashing on 4GB inputs,
   scrypt with 1024 different `N, r, p` combinations, etc. **Takes several hours**. Using 8-32+ core CPU helps.
