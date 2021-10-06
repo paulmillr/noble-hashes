@@ -35,32 +35,32 @@ You can select specific functions, SHA256-only would be ~400 LOC / 6.5KB minifie
 Use NPM in node.js / browser, or include single file from
 [GitHub's releases page](https://github.com/paulmillr/noble-hashes/releases):
 
-> npm install @noble/hashes
+> npm install noble-hashes
 
 The library does not have an entry point. It allows you to select specific primitives and drop everything else. If you only want to use sha256, just use the library with rollup or other bundlers. This is done to make your bundles tiny.
 
 ```js
-const { sha256 } = require('@noble/hashes/lib/sha256');
+const { sha256 } = require('noble-hashes/lib/sha256');
 console.log(sha256(new Uint8Array([1, 2, 3])));
 // Uint8Array(32) [3, 144,  88, 198, 242, 192, 203,  73, ...]
 console.log(sha256('abc'))); // you could also pass strings
 
-const { sha512 } = require('@noble/hashes/lib/sha512');
+const { sha512 } = require('noble-hashes/lib/sha512');
 // prettier-ignore
 const {
   sha3_224, sha3_256, sha3_384, sha3_512,
   keccak_224, keccak_256, keccak_384, keccak_512
-} = require('@noble/hashes/lib/sha3');
-const { ripemd160 } = require('@noble/hashes/lib/ripemd160');
-const { blake2b } = require('@noble/hashes/lib/blake2b');
-const { blake2s } = require('@noble/hashes/lib/blake2s');
-const { hmac } = require('@noble/hashes/lib/hmac');
-const { hkdf } = require('@noble/hashes/lib/hkdf');
-const { pbkdf2, pbkdf2Async } = require('@noble/hashes/lib/pbkdf2');
-const { scrypt, scryptAsync } = require('@noble/hashes/lib/scrypt');
+} = require('noble-hashes/lib/sha3');
+const { ripemd160 } = require('noble-hashes/lib/ripemd160');
+const { blake2b } = require('noble-hashes/lib/blake2b');
+const { blake2s } = require('noble-hashes/lib/blake2s');
+const { hmac } = require('noble-hashes/lib/hmac');
+const { hkdf } = require('noble-hashes/lib/hkdf');
+const { pbkdf2, pbkdf2Async } = require('noble-hashes/lib/pbkdf2');
+const { scrypt, scryptAsync } = require('noble-hashes/lib/scrypt');
 
 // small utility method that converts bytes to hex
-const { toHex } = require('@noble/hashes/lib/utils');
+const { toHex } = require('noble-hashes/lib/utils');
 console.log(toHex(sha256('abc')));
 // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
 ```
@@ -80,14 +80,14 @@ automatically converted to `Uint8Array` via `new TextEncoder().encode(string)`.
 ##### SHA2 (sha256, sha512)
 
 ```typescript
-import { sha256 } from '@noble/hashes/lib/sha256.js';
+import { sha256 } from 'noble-hashes/lib/sha256.js';
 // function sha256(data: Uint8Array): Uint8Array;
 const hash1 = sha256('abc');
 const hash2 = sha256.init().update(Uint8Array.from([1, 2, 3])).digest();
 ```
 
 ```typescript
-import { sha512 } from '@noble/hashes/lib/sha512.js';
+import { sha512 } from 'noble-hashes/lib/sha512.js';
 // function sha512(data: Uint8Array): Uint8Array;
 const hash3 = sha512('abc');
 const hash4 = sha512.init().update(Uint8Array.from([1, 2, 3])).digest();
@@ -99,7 +99,7 @@ const hash4 = sha512.init().update(Uint8Array.from([1, 2, 3])).digest();
 import {
   sha3_224, sha3_256, sha3_384, sha3_512,
   keccak_224, keccak_256, keccak_384, keccak_512
-} from '@noble/hashes/lib/sha3.js';
+} from 'noble-hashes/lib/sha3.js';
 const hash5 = sha3_256('abc');
 const hash6 = sha3_256.init().update(Uint8Array.from([1, 2, 3])).digest();
 const hash7 = keccak_256('abc');
@@ -108,7 +108,7 @@ const hash7 = keccak_256('abc');
 ##### RIPEMD-160
 
 ```typescript
-import { ripemd160 } from '@noble/hashes/lib/ripemd160.js';
+import { ripemd160 } from 'noble-hashes/lib/ripemd160.js';
 // function ripemd160(data: Uint8Array): Uint8Array;
 const hash8 = ripemd160('abc');
 const hash9 = ripemd160().init().update(Uint8Array.from([1, 2, 3])).digest();
@@ -117,8 +117,8 @@ const hash9 = ripemd160().init().update(Uint8Array.from([1, 2, 3])).digest();
 ##### BLAKE2b, BLAKE2s
 
 ```typescript
-import { blake2b } from '@noble/hashes/lib/blake2b.js';
-import { blake2s } from '@noble/hashes/lib/blake2s.js';
+import { blake2b } from 'noble-hashes/lib/blake2b.js';
+import { blake2s } from 'noble-hashes/lib/blake2s.js';
 const hash10 = blake2s('abc');
 const b2params = {key: new Uint8Array([1]), personalization: t, salt: t, dkLen: 32};
 const hash11 = blake2s('abc', b2params);
@@ -128,8 +128,8 @@ const hash12 = blake2s.init(b2params).update(Uint8Array.from([1, 2, 3])).digest(
 ##### HMAC
 
 ```typescript
-import { hmac } from '@noble/hashes/lib/mac.js';
-import { sha256 } from '@noble/hashes/lib/sha256.js';
+import { hmac } from 'noble-hashes/lib/mac.js';
+import { sha256 } from 'noble-hashes/lib/sha256.js';
 const mac1 = hmac(sha256, 'key', 'message');
 const mac2 = hmac.init(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.from([4, 5, 6]).digest();
 ```
@@ -137,9 +137,9 @@ const mac2 = hmac.init(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.fro
 ##### HKDF
 
 ```typescript
-import { hkdf } from '@noble/hashes/lib/kdf.js';
-import { sha256 } from '@noble/hashes/lib/sha256.js';
-import { randomBytes } from '@noble/hashes/utils.js';
+import { hkdf } from 'noble-hashes/lib/kdf.js';
+import { sha256 } from 'noble-hashes/lib/sha256.js';
+import { randomBytes } from 'noble-hashes/utils.js';
 const inputKey = randomBytes(32);
 const salt = randomBytes(32);
 const info = 'abc';
@@ -147,8 +147,8 @@ const dkLen = 32;
 const hk1 = hkdf(sha256, inputKey, salt, info, dkLen);
 
 // == same as
-import { hkdf_extract, hkdf_expand } from '@noble/hashes/lib/kdf.js';
-import { sha256 } from '@noble/hashes/lib/sha256.js';
+import { hkdf_extract, hkdf_expand } from 'noble-hashes/lib/kdf.js';
+import { sha256 } from 'noble-hashes/lib/sha256.js';
 const prk = hkdf_extract(sha256, inputKey, salt)
 const hk2 = hkdf_expand(sha256, prk, info, dkLen);
 ```
@@ -156,8 +156,8 @@ const hk2 = hkdf_expand(sha256, prk, info, dkLen);
 ##### PBKDF2
 
 ```typescript
-import { pbkdf2, pbkdf2Async } from '@noble/hashes/lib/kdf.js';
-import { sha256 } from '@noble/hashes/lib/sha256.js';
+import { pbkdf2, pbkdf2Async } from 'noble-hashes/lib/kdf.js';
+import { sha256 } from 'noble-hashes/lib/sha256.js';
 const pbkey1 = pbkdf2(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
 const pbkey2 = await pbkdf2Async(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
 const pbkey3 = await pbkdf2Async(
@@ -168,7 +168,7 @@ const pbkey3 = await pbkdf2Async(
 ##### Scrypt
 
 ```typescript
-import { scrypt, scryptAsync } from '@noble/hashes/lib/scrypt.js';
+import { scrypt, scryptAsync } from 'noble-hashes/lib/scrypt.js';
 const scr1 = scrypt('password', 'salt', { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
 const scr2 = await scryptAsync('password', 'salt', { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
 const scr3 = await scryptAsync(
@@ -200,7 +200,7 @@ arrays bigger than 4GB impossible, but we're looking into other possible solutio
 ##### utils
 
 ```typescript
-import { bytesToHex as toHex, randomBytes } from '@noble/hashes/lib/scrypt.js';
+import { bytesToHex as toHex, randomBytes } from 'noble-hashes/lib/scrypt.js';
 console.log(toHex(randomBytes(32)));
 ```
 
