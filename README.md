@@ -1,4 +1,4 @@
-# noble-hashes ![Node CI](https://github.com/paulmillr/noble-shashesecp256k1/workflows/Node%20CI/badge.svg) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+# noble-hashes ![Node CI](https://github.com/paulmillr/noble-hashes/workflows/Node%20CI/badge.svg) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
 Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2, HMAC, HKDF, PBKDF2 & Scrypt.
 
