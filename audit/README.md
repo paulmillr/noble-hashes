@@ -9,11 +9,14 @@ The library will be audited by an independent security firm in the next few mont
 This library re-uses some internal state for hash functions which is not freed after hashing:
 
 ```js
-const BUF = new Uint8Array(32); // not exposed externally; used atomically
+// not exposed externally; used atomically
+const BUF = new Uint8Array(32);
 class SHA256 {
   update() {
-    // start doing things to BUF
-    // stop doing things to BUF
+    // instead of
+    // tmp = new Uint8Array(4);
+    // we do
+    tmp = BUF.subarray(0, 4)
     // in order to not allocate new memory
   }
 }
