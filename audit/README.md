@@ -22,9 +22,11 @@ class SHA256 {
 How this impacts security? There can be sensitive parts of data which will stay in memory forever,
 however, JS is garbage-collected language and there is no guarantee when (and if it all)
 memory region will be freed.
-Only thing we can do is to overwrite memory regions with sensitive information with zeros.
+
+The only thing we can do is overwriting "sensitive information" memory regions with zeros.
 This library provides API for that if you feel extra paranoid, just make sure that you also
-clean input data manually, since any hash output can be restored from input.
+clean input data manually, since any hash output can be restored from input. Also, KDF invocations
+are always executed in cleanup mode.
 
 But this is actually a security theater, because if an attacker can read application memory,
 you are doomed anyway:
