@@ -33,7 +33,7 @@ type Sha3Opts = {
   outputLen: number;
 };
 
-// Temporary buffer
+// Temporary buffer. See sha256.ts
 const SHA3_B = new Uint32Array(5 * 2);
 class Sha3 extends Hash {
   private state: Uint8Array;

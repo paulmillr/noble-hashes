@@ -26,7 +26,7 @@ const [SHA512_Kh, SHA512_Kl] = u64.split([
   0x28db77f523047d84n, 0x32caab7b40c72493n, 0x3c9ebe0a15c9bebcn, 0x431d67c49c100d4cn,
   0x4cc5d4becb3e42b6n, 0x597f299cfc657e2an, 0x5fcb6fab3ad6faecn, 0x6c44198c4a475817n
 ]);
-// Temporary buffer, overwritten on processing
+// Temporary buffer, overwritten on processing. See sha256.ts
 const [SHA512_Wh, SHA512_Wl] = [new Uint32Array(80), new Uint32Array(80)];
 
 class _Sha512 extends Sha2 {
