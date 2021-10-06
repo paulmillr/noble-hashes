@@ -16,6 +16,8 @@ Matches following specs:
 Overall size of all primitives is ~1800 TypeScript LOC, or 35KB minified (12KB gzipped).
 You can select specific functions, SHA256-only would be ~400 LOC / 6.5KB minified (3KB gzipped).
 
+The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
+
 ### This library belongs to *noble* crypto
 
 > **noble-crypto** — high-security, easily auditable set of contained cryptographic libraries and tools.
@@ -43,7 +45,9 @@ The library does not have an entry point. It allows you to select specific primi
 const { sha256 } = require('noble-hashes/lib/sha256');
 console.log(sha256(new Uint8Array([1, 2, 3])));
 // Uint8Array(32) [3, 144,  88, 198, 242, 192, 203,  73, ...]
-console.log(sha256('abc'))); // you could also pass strings
+
+// you could also pass strings that will be UTF8-encoded to Uint8Array
+console.log(sha256('abc'))); // == sha256(new TextEncoder().encode('abc'))
 
 const { sha512 } = require('noble-hashes/lib/sha512');
 // prettier-ignore
