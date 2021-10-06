@@ -193,8 +193,8 @@ Memory usage of scrypt is calculated with the formula `N * r * p * 128 + (128 * 
 `{N: 2 ** 22, r: 8, p: 1}` will use 4GB + 1KB of memory. To prevent DoS, we limit scrypt to `1GB + 1KB` of RAM used,
 which corresponds to `{N: 2 ** 20, r: 8, p: 1}`. If you want to use higher values, increase `maxmem` using the formula above.
 
-*Note:* noble supports 2**22 (4GB RAM) which is the highest amount amongst JS libs. Many other implementations don't support it.
-We cannot support 2**23, because there is a limitation in JS engines that makes allocating
+*Note:* noble supports `2**22` (4GB RAM) which is the highest amount amongst JS libs. Many other implementations don't support it.
+We cannot support `2**23`, because there is a limitation in JS engines that makes allocating
 arrays bigger than 4GB impossible, but we're looking into other possible solutions.
 
 ##### utils
@@ -220,7 +220,7 @@ We consider infrastructure attacks like rogue NPM modules very important; that's
 ## Speed
 
 Benchmarks measured with Apple M1. Note that PBKDF2 and Scrypt are tested with extremely high
-work factor. To run benchmarks, execute `cd test/benchmark && npm i && cd ../../` and then `npm run bench`
+work factor. To run benchmarks, execute `npm run bench-install` and then `npm run bench`
 
 ```
 SHA256 32 B x 954,198 ops/sec @ 1μs/op
