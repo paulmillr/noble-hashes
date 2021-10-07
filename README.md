@@ -81,7 +81,7 @@ automatically converted to `Uint8Array` via `new TextEncoder().encode(string)`.
 3. Can receive an option object as a second argument: `sha256('abc', {cleanup: true})`;
   or `sha256.init({cleanup: true}).update('abc').digest()`
 
-##### SHA2 (sha256, sha512)
+##### SHA2 (sha256, sha512, sha512_256)
 
 ```typescript
 import { sha256 } from 'noble-hashes/lib/sha256.js';
@@ -91,11 +91,12 @@ const hash2 = sha256.init().update(Uint8Array.from([1, 2, 3])).digest();
 ```
 
 ```typescript
-import { sha512, sha512_256 } from 'noble-hashes/lib/sha512.js';
+import { sha512 } from 'noble-hashes/lib/sha512.js';
 const hash3 = sha512('abc');
 const hash4 = sha512.init().update(Uint8Array.from([1, 2, 3])).digest();
 
 // SHA512/256 variant
+import { sha512_256 } from 'noble-hashes/lib/sha512.js';
 const hash3_a = sha512_256('abc');
 const hash4_a = sha512_256.init().update(Uint8Array.from([1, 2, 3])).digest();
 ```
