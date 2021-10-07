@@ -101,7 +101,7 @@ const hash3_a = sha512_256('abc');
 const hash4_a = sha512_256.init().update(Uint8Array.from([1, 2, 3])).digest();
 ```
 
-To lean more about SHA512/256, check out [the paper](https://eprint.iacr.org/2010/548.pdf).
+To learn more about SHA512/256, check out [the paper](https://eprint.iacr.org/2010/548.pdf).
 
 ##### SHA3 (sha3_256, keccak_256, etc)
 
@@ -114,6 +114,8 @@ const hash5 = sha3_256('abc');
 const hash6 = sha3_256.init().update(Uint8Array.from([1, 2, 3])).digest();
 const hash7 = keccak_256('abc');
 ```
+
+See [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
 ##### RIPEMD-160
 
