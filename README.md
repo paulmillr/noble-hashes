@@ -49,7 +49,7 @@ console.log(sha256(new Uint8Array([1, 2, 3])));
 // you could also pass strings that will be UTF8-encoded to Uint8Array
 console.log(sha256('abc'))); // == sha256(new TextEncoder().encode('abc'))
 
-const { sha512 } = require('noble-hashes/lib/sha512');
+const { sha512, sha512_256 } = require('noble-hashes/lib/sha512');
 // prettier-ignore
 const {
   sha3_224, sha3_256, sha3_384, sha3_512,
@@ -91,11 +91,16 @@ const hash2 = sha256.init().update(Uint8Array.from([1, 2, 3])).digest();
 ```
 
 ```typescript
-import { sha512 } from 'noble-hashes/lib/sha512.js';
-// function sha512(data: Uint8Array): Uint8Array;
+import { sha512, sha512_256 } from 'noble-hashes/lib/sha512.js';
 const hash3 = sha512('abc');
 const hash4 = sha512.init().update(Uint8Array.from([1, 2, 3])).digest();
+
+// SHA512/256 variant
+const hash3_a = sha512_256('abc');
+const hash4_a = sha512_256.init().update(Uint8Array.from([1, 2, 3])).digest();
 ```
+
+To lean more about SHA512/256, check out [the paper](https://eprint.iacr.org/2010/548.pdf).
 
 ##### SHA3 (sha3_256, keccak_256, etc)
 
@@ -229,8 +234,9 @@ work factor. To run benchmarks, execute `npm run bench-install` and then `npm ru
 ```
 SHA256 32 B x 954,198 ops/sec @ 1μs/op
 SHA512 32 B x 440,722 ops/sec @ 2μs/op
+SHA512-256 32 B x 423,549 ops/sec @ 2μs/op
 SHA3 32 B x 184,331 ops/sec @ 5μs/op
-BLAKE2s 32 B x 464,468 ops/sec @ 2μs/op
+BLAKE2s 32 B x 487,567 ops/sec @ 2μs/op
 BLAKE2b 32 B x 282,965 ops/sec @ 3μs/op
 HMAC-SHA256 32 B x 270,343 ops/sec @ 3μs/op
 RIPEMD160 32 B x 962,463 ops/sec @ 1μs/op
@@ -245,6 +251,7 @@ Compare to native node.js implementation that uses C bindings instead of pure-js
 ```
 SHA256 32 B node x 569,151 ops/sec @ 1μs/op
 SHA512 32 B node x 551,267 ops/sec @ 1μs/op
+SHA512-256 32 B node x 534,473 ops/sec @ 1μs/op
 SHA3 32 B node x 545,553 ops/sec @ 1μs/op
 BLAKE2s 32 B node x 545,256 ops/sec @ 1μs/op
 BLAKE2b 32 B node x 583,090 ops/sec @ 1μs/op

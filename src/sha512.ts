@@ -29,27 +29,27 @@ const [SHA512_Kh, SHA512_Kl] = u64.split([
 // Temporary buffer, overwritten on processing. See sha256.ts
 const [SHA512_Wh, SHA512_Wl] = [new Uint32Array(80), new Uint32Array(80)];
 
-class _Sha512 extends Sha2 {
+export class _Sha512 extends Sha2 {
   // We cannot use array here since array allows indexing by variable which means optimizer/compiler cannot use registers.
   // Also looks cleaner and easier to verify with spec.
   // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
   // h -- high 32 bits, l -- low 32 bits
-  private Ah = 0x6a09e667 | 0;
-  private Al = 0xf3bcc908 | 0;
-  private Bh = 0xbb67ae85 | 0;
-  private Bl = 0x84caa73b | 0;
-  private Ch = 0x3c6ef372 | 0;
-  private Cl = 0xfe94f82b | 0;
-  private Dh = 0xa54ff53a | 0;
-  private Dl = 0x5f1d36f1 | 0;
-  private Eh = 0x510e527f | 0;
-  private El = 0xade682d1 | 0;
-  private Fh = 0x9b05688c | 0;
-  private Fl = 0x2b3e6c1f | 0;
-  private Gh = 0x1f83d9ab | 0;
-  private Gl = 0xfb41bd6b | 0;
-  private Hh = 0x5be0cd19 | 0;
-  private Hl = 0x137e2179 | 0;
+  Ah = 0x6a09e667 | 0;
+  Al = 0xf3bcc908 | 0;
+  Bh = 0xbb67ae85 | 0;
+  Bl = 0x84caa73b | 0;
+  Ch = 0x3c6ef372 | 0;
+  Cl = 0xfe94f82b | 0;
+  Dh = 0xa54ff53a | 0;
+  Dl = 0x5f1d36f1 | 0;
+  Eh = 0x510e527f | 0;
+  El = 0xade682d1 | 0;
+  Fh = 0x9b05688c | 0;
+  Fl = 0x2b3e6c1f | 0;
+  Gh = 0x1f83d9ab | 0;
+  Gl = 0xfb41bd6b | 0;
+  Hh = 0x5be0cd19 | 0;
+  Hl = 0x137e2179 | 0;
 
   constructor(opts: PartialOpts) {
     super(128, 64, 16, false, opts);
@@ -162,4 +162,31 @@ class _Sha512 extends Sha2 {
     this.cleaned = true;
   }
 }
+
+class _Sha512_256 extends _Sha512 {
+  // h -- high 32 bits, l -- low 32 bits
+  Ah = 0x22312194 | 0;
+  Al = 0xfc2bf72c | 0;
+  Bh = 0x9f555fa3 | 0;
+  Bl = 0xc84c64c2 | 0;
+  Ch = 0x2393b86b | 0;
+  Cl = 0x6f53b151 | 0;
+  Dh = 0x96387719 | 0;
+  Dl = 0x5940eabd | 0;
+  Eh = 0x96283ee2 | 0;
+  El = 0xa88effe3 | 0;
+  Fh = 0xbe5e1e25 | 0;
+  Fl = 0x53863992 | 0;
+  Gh = 0x2b0199fc | 0;
+  Gl = 0x2c85b8aa | 0;
+  Hh = 0x0eb72ddc | 0;
+  Hl = 0x81c52ca2 | 0;
+
+  constructor(opts: PartialOpts) {
+    super(opts);
+    this.outputLen = 32;
+  }
+}
+
 export const sha512 = wrapConstructor((opts) => new _Sha512(opts));
+export const sha512_256 = wrapConstructor((opts) => new _Sha512_256(opts));

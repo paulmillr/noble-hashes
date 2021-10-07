@@ -3,7 +3,7 @@ const { run, mark } = bench; // or bench.mark
 const crypto = require('crypto');
 // Noble
 const { sha256 } = require('../../lib/sha256');
-const { sha512 } = require('../../lib/sha512');
+const { sha512, sha512_256 } = require('../../lib/sha512');
 const { sha3_256 } = require('../../lib/sha3');
 const { blake2s } = require('../../lib/blake2s');
 const { blake2b } = require('../../lib/blake2b');
@@ -32,6 +32,10 @@ const HASHES = {
     node: (buf) => crypto.createHash('sha512').update(buf).digest(),
     stable: (buf) => stable512.hash(buf),
     noble: (buf) => sha512(buf),
+  },
+  'SHA512-256': {
+    node: (buf) => crypto.createHash('sha512-256').update(buf).digest(),
+    noble: (buf) => sha512_256(buf),
   },
   SHA3: {
     node: (buf) => crypto.createHash('sha3-256').update(buf).digest(),

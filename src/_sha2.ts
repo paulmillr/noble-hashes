@@ -14,7 +14,7 @@ export abstract class Sha2 extends Hash {
 
   constructor(
     readonly blockLen: number,
-    readonly outputLen: number,
+    public outputLen: number,
     readonly padOffset: number,
     readonly isLE: boolean,
     readonly opts: PartialOpts

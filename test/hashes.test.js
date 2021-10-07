@@ -2,7 +2,7 @@ const assert = require('assert');
 const { should } = require('micro-should');
 const crypto = require('crypto');
 const { sha256 } = require('../lib/sha256');
-const { sha512 } = require('../lib/sha512');
+const { sha512, sha512_256 } = require('../lib/sha512');
 const { sha3_224, sha3_256, sha3_384, sha3_512, keccak_256 } = require('../lib/sha3');
 const { blake2b } = require('../lib/blake2b');
 const { blake2s } = require('../lib/blake2s');
@@ -65,6 +65,21 @@ const HASHES = {
       '8e959b75dae313da 8cf4f72814fc143f 8f7779c6eb9f7fa1 7299aeadb6889018 501d289e4900f7e4 331b99dec4b5433a c7d329eeb6dd2654 5e96e55b874be909',
       'e718483d0ce76964 4e2e42c7bc15b463 8e1f98b13b204428 5632a803afa973eb de0ff244877ea60a 4cb0432ce577c31b eb009c5c2c49aa2e 4eadb217ad8cc09b',
       'b47c933421ea2db1 49ad6e10fce6c7f9 3d0752380180ffd7 f4629a712134831d 77be6091b819ed35 2c2967a2e2d4fa50 50723c9630691f1a 05a7281dbe6c1086',
+    ],
+  },
+  SHA512_256: {
+    fn: sha512_256,
+    obj: sha512_256.init,
+    node: (buf) => Uint8Array.from(crypto.createHash('sha512-256').update(buf).digest()),
+    node_obj: () => crypto.createHash('sha512-256'),
+    // There is no official vectors, so we created them via:
+    // > NIST_VECTORS.map((i) => crypto.createHash('sha512-256').update(i[2]).digest('hex'))
+    nist: [
+      '53048e2681941ef99b2e29b76b4c7dabe4c2d0c634fc6d46e0e2f13107e7af23',
+      'c672b8d1ef56ed28ab87c3622c5114069bdd3ad7b8f9737498d0c01ecef0967a',
+      'bde8e1f9f19bb9fd3406c90ec6bc47bd36d8ada9f11880dbc8a22a7078b6a461',
+      '3928e184fb8690f840da3988121d31be65cb9d3ef83ee6146feac861e19b563a',
+      '9a59a052930187a97038cae692f30708aa6491923ef5194394dc68d56c74fb21',
     ],
   },
   SHA3_224: {
@@ -411,7 +426,7 @@ function init() {
   });
 }
 
-module.exports = { init, HASHES };
+module.exports = { init, HASHES, NIST_VECTORS };
 
 if (require.main === module) {
   init();
