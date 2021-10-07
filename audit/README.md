@@ -4,6 +4,8 @@ Noble is production-ready.
 
 The library will be audited by an independent security firm in the next few months.
 
+The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz). You can run the fuzzer by yourself to check it.
+
 ## Security considerations
 
 This library re-uses some internal state for hash functions which is not freed after hashing:
