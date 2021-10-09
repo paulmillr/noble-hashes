@@ -51,30 +51,30 @@ const KDF_ITERS = [
 const KDF = {
   'PBKDF2-HMAC-SHA256': {
     node: (iters) => crypto.pbkdf2Sync(password, salt, iters, 32, 'sha256'),
-    stable: (iters) => stablePBKDF2(stable256.SHA256, password, salt, iters, 32),
+    stablelib: (iters) => stablePBKDF2(stable256.SHA256, password, salt, iters, 32),
     noble: (iters) => pbkdf2(sha256, password, salt, { c: iters, dkLen: 32 }),
-    nobleAsync: (iters) => pbkdf2Async(sha256, password, salt, { c: iters, dkLen: 32 }),
+    'noble (async)': (iters) => pbkdf2Async(sha256, password, salt, { c: iters, dkLen: 32 }),
   },
   'PBKDF2-HMAC-SHA512': {
     node: (iters) => crypto.pbkdf2Sync(password, salt, iters, 64, 'sha512'),
-    stable: (iters) => stablePBKDF2(stable512.SHA512, password, salt, iters, 64),
+    stablelib: (iters) => stablePBKDF2(stable512.SHA512, password, salt, iters, 64),
     noble: (iters) => pbkdf2(sha512, password, salt, { c: iters, dkLen: 64 }),
-    nobleAsync: (iters) => pbkdf2Async(sha512, password, salt, { c: iters, dkLen: 64 }),
+    'noble (async)': (iters) => pbkdf2Async(sha512, password, salt, { c: iters, dkLen: 64 }),
   },
   'Scrypt r: 8, p: 1, n:': {
     node: (iters) =>
       crypto.scryptSync(password, salt, 32, { N: iters, r: 8, p: 1, maxmem: 1024 ** 4 }),
-    scryptAsync: (iters) => scryptAsyncSync(iters),
-    scryptJs: (iters) => scryptJsSync(password, salt, iters, 8, 1, 32),
-    stable: (iters) => stableScrypt(password, salt, iters, 8, 1, 32),
+    'scrypt-async': (iters) => scryptAsyncSync(iters),
+    'scrypt-js': (iters) => scryptJsSync(password, salt, iters, 8, 1, 32),
+    stablelib: (iters) => stableScrypt(password, salt, iters, 8, 1, 32),
     noble: (iters) => scrypt(password, salt, { N: iters, r: 8, p: 1, dkLen: 32 }),
   },
-  ScryptAsync: {
+  'Scrypt Async r: 8, p: 1, n:': {
     node: (iters) =>
       new Promise((resolve) =>
         crypto.scrypt(password, salt, 32, { N: iters, r: 8, p: 1, maxmem: 1024 ** 4 }, resolve)
       ),
-    scryptAsync: (iters) =>
+    'scrypt-async': (iters) =>
       new Promise((resolve) =>
         _scryptAsync(
           password,
@@ -83,8 +83,8 @@ const KDF = {
           resolve
         )
       ),
-    scryptJs: (iters) => scryptJsAsync(password, salt, iters, 8, 1, 32),
-    stable: (iters) => stableScryptAsync(password, salt, iters, 8, 1, 32),
+    'scrypt-js': (iters) => scryptJsAsync(password, salt, iters, 8, 1, 32),
+    stablelib: (iters) => stableScryptAsync(password, salt, iters, 8, 1, 32),
     noble: (iters) => scryptAsync(password, salt, { N: iters, r: 8, p: 1, dkLen: 32 }),
   },
 };
