@@ -108,7 +108,7 @@ export function checkOpts<T1 extends PartialOpts, T2 extends PartialOpts>(
 ): T1 & T2 {
   if (_opts !== undefined && (typeof _opts !== 'object' || !isPlainObject(_opts)))
     throw new TypeError('Options should be object or undefined');
-  const opts = Object.assign({ cleanup: false }, def, _opts);
+  const opts = Object.assign({ cleanup: true }, def, _opts);
   assertBool(opts.cleanup);
   return opts as T1 & T2;
 }

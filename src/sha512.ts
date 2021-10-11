@@ -154,9 +154,13 @@ export class _Sha512 extends Sha2 {
     ({ h: Hh, l: Hl } = u64.add(this.Hh | 0, this.Hl | 0, Hh | 0, Hl | 0));
     this._set(Ah, Al, Bh, Bl, Ch, Cl, Dh, Dl, Eh, El, Fh, Fl, Gh, Gl, Hh, Hl);
   }
-  clean() {
+  _clean() {
     SHA512_Wh.fill(0);
     SHA512_Wl.fill(0);
+  }
+  clean() {
+    // SHA512_Wh.fill(0);
+    // SHA512_Wl.fill(0);
     this.buffer.fill(0);
     this._set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     this.cleaned = true;

@@ -129,6 +129,7 @@ export abstract class Blake2 extends Hash {
     if (this.opts.cleanup) this.clean();
     return res;
   }
+  _clean() {}
   _cloneOpts() {
     return Object.assign({}, this.opts, {
       key: undefined,

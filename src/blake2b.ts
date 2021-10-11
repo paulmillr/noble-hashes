@@ -187,8 +187,11 @@ class Blake2B extends blake2.Blake2 {
     this.v7l ^= BUF[14] ^ BUF[30];
     this.v7h ^= BUF[15] ^ BUF[31];
   }
-  clean() {
+  _clean() {
     BUF.fill(0);
+  }
+  clean() {
+    // BUF.fill(0);
     this.buffer.fill(0);
     this._set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     this.cleaned = true;

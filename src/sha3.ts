@@ -114,6 +114,7 @@ class Sha3 extends Hash {
       this.keccakf();
       pos = 0;
     }
+    SHA3_B.fill(0);
     this.pos = pos;
     return this;
   }
@@ -140,7 +141,7 @@ class Sha3 extends Hash {
   }
   clean() {
     this.state.fill(0);
-    SHA3_B.fill(0);
+    // SHA3_B.fill(0);
     this.cleaned = true;
   }
 }

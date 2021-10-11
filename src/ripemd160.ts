@@ -91,8 +91,11 @@ export class RIPEMD160 extends Sha2 {
       (this.h0 + bl + cr) | 0
     );
   }
-  clean() {
+  _clean() {
     RIPEMD160_W.fill(0);
+  }
+  clean() {
+    // RIPEMD160_W.fill(0);
     this.buffer.fill(0);
     this._set(0, 0, 0, 0, 0);
     this.cleaned = true;

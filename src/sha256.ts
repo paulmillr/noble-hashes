@@ -97,9 +97,12 @@ class _Sha256 extends Sha2 {
     H = (H + this.H) | 0;
     this._set(A, B, C, D, E, F, G, H);
   }
+  _clean() {
+    SHA256_W.fill(0);
+  }
   clean() {
     this._set(0, 0, 0, 0, 0, 0, 0, 0);
-    SHA256_W.fill(0);
+    // SHA256_W.fill(0);
     this.buffer.fill(0);
     this.cleaned = true;
   }

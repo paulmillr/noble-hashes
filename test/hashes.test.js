@@ -275,7 +275,7 @@ function init() {
       assert.throws(() => tmp.update('abc'));
     });
     should(`throw on second digest call in cleanup mode (${h})`, () => {
-      const tmp = hash.obj({ cleanup: true });
+      const tmp = hash.obj();
       tmp.update('abc').digest();
       assert.throws(() => tmp.digest());
     });
@@ -289,13 +289,13 @@ function init() {
       assert.throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
       for (const t of TYPE_TEST.opts) assert.throws(() => hash.fn(undefined, t), `opt(${t})`);
     });
-    should(`return same result on second digest in non-cleanup mode`, () => {
-      const tmp = hash.obj().update('abc');
+    should(`cleanup: false returns same result on second digest`, () => {
+      const tmp = hash.obj({ cleanup: false }).update('abc');
       for (let i = 0; i < 10; i++)
         assert.deepStrictEqual(tmp.digest(), hexToBytes(hash.nist[0].replace(/ /g, '')));
     });
-    should(`return different Uint8array`, () => {
-      const tmp = hash.obj().update('abc');
+    should(`cleanup: false returns different Uint8array`, () => {
+      const tmp = hash.obj({ cleanup: false }).update('abc');
       let arrA = tmp.digest();
       let arrB = tmp.digest();
       // Modify array A and check that array B is not modified

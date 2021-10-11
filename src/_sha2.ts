@@ -36,7 +36,10 @@ export abstract class Sha2 extends Hash {
       const tmp = data.subarray(0, left);
       this.buffer.set(tmp, offset);
       this.length += pos = tmp.length;
-      if (len < left) return this; // fast path, internal buffer still has incomplete block
+      if (len < left) {
+        this._clean();
+        return this; // fast path, internal buffer still has incomplete block
+      }
       this._process(view, 0);
       offset = 0;
     }
@@ -47,6 +50,7 @@ export abstract class Sha2 extends Hash {
     // If there is still some data (at this point it can be only incomplete block),
     // then copy it to internal buffer
     // Internal buffer is empty here, because all leftovers was processed in first step
+    this._clean();
     if (!(len - pos)) return this;
     this.buffer.set(data.subarray(pos), offset);
     this.length += len - pos;
@@ -81,6 +85,9 @@ export abstract class Sha2 extends Hash {
     this._finish();
     const view = createView(out);
     this._get().forEach((v, i) => view.setUint32(4 * i, v, this.isLE));
+  }
+  _clean() {
+    // return this
   }
   digest() {
     const { buffer, outputLen } = this;
