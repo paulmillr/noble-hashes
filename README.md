@@ -9,8 +9,8 @@ Benefits of noble-hashes over other libraries:
 - No unrolled loops. Makes it much easier to verify and reduces source code size 2-5x
 - Unique tests ensure correctness. That includes chained tests (`hash(hash(hash(....)))`), sliding window tests, DoS tests
 - Differential fuzzing ensures even more correctness. We do it with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
-- Hash functions support hashing 4GB of data on 64-bit systems
-- Scrypt supports `n: 2**22` with 4GB arrays (almost every other implementation crashes; some crash on `2**20`)
+- Hash functions support hashing 4GB of data per update on 64-bit systems (unlimited with streaming)
+- Scrypt supports `n: 2**22` with 4GB arrays (almost every other implementation crashes; some crash on `2**20`), `maxmem` security param, `onProgress` callback
 - Overall size of all primitives is ~1800 TypeScript LOC, or 35KB minified (12KB gzipped).
 You can select specific functions, SHA256-only would be ~400 LOC / 6.5KB minified (3KB gzipped)
 
