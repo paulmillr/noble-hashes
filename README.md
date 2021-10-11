@@ -2,6 +2,20 @@
 
 Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2, HMAC, HKDF, PBKDF2 & Scrypt.
 
+Benefits of noble-hashes over other libraries:
+
+- **noble** brand (see below) / zero dependencies
+- Helps JS bundlers with lack of entry point; ensures small size of your app
+- No unrolled loops. Makes it much easier to verify and reduces source code size 2-5x
+- Unique tests ensure correctness. That includes chained tests (`hash(hash(hash(....)))`), sliding window tests, DoS tests
+- Differential fuzzing ensures even more correctness. We do it with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
+- Hash functions support hashing 4GB of data on 64-bit systems
+- Scrypt supports `n: 2**22` with 4GB arrays (almost every other implementation crashes; some crash on `2**20`)
+- Overall size of all primitives is ~1800 TypeScript LOC, or 35KB minified (12KB gzipped).
+You can select specific functions, SHA256-only would be ~400 LOC / 6.5KB minified (3KB gzipped)
+
+The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
+
 Matches following specs:
 
 - SHA2 aka SHA256 / SHA512 [(RFC 4634)](https://datatracker.ietf.org/doc/html/rfc4634)
@@ -12,11 +26,6 @@ Matches following specs:
 - HKDF [(RFC 5869)](https://datatracker.ietf.org/doc/html/rfc5869)
 - PBKDF2 [(RFC 2898)](https://datatracker.ietf.org/doc/html/rfc2898)
 - Scrypt ([RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914), [Website](https://www.tarsnap.com/scrypt.html))
-
-Overall size of all primitives is ~1800 TypeScript LOC, or 35KB minified (12KB gzipped).
-You can select specific functions, SHA256-only would be ~400 LOC / 6.5KB minified (3KB gzipped).
-
-The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
 ### This library belongs to *noble* crypto
 
@@ -64,7 +73,7 @@ const { pbkdf2, pbkdf2Async } = require('noble-hashes/lib/pbkdf2');
 const { scrypt, scryptAsync } = require('noble-hashes/lib/scrypt');
 
 // small utility method that converts bytes to hex
-const { toHex } = require('noble-hashes/lib/utils');
+const { bytesToHex as toHex } = require('noble-hashes/lib/utils');
 console.log(toHex(sha256('abc')));
 // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
 ```
