@@ -246,32 +246,33 @@ Benchmarks measured with Apple M1. Note that PBKDF2 and Scrypt are tested with e
 work factor. To run benchmarks, execute `npm run bench-install` and then `npm run bench`
 
 ```
-SHA256 32 B x 954,198 ops/sec @ 1μs/op
-SHA512 32 B x 440,722 ops/sec @ 2μs/op
-SHA512-256 32 B x 423,549 ops/sec @ 2μs/op
-SHA3 32 B x 184,331 ops/sec @ 5μs/op
-BLAKE2s 32 B x 487,567 ops/sec @ 2μs/op
-BLAKE2b 32 B x 282,965 ops/sec @ 3μs/op
-HMAC-SHA256 32 B x 270,343 ops/sec @ 3μs/op
-RIPEMD160 32 B x 962,463 ops/sec @ 1μs/op
-HKDF-SHA256 32 x 112,688 ops/sec @ 8μs/op
-PBKDF2-HMAC-SHA256 262144 x 3 ops/sec @ 319ms/op
-PBKDF2-HMAC-SHA512 262144 x 1 ops/sec @ 986ms/op
-Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 646ms/op
+SHA256 32B x 931,966 ops/sec @ 1μs/op
+SHA512 32B x 423,370 ops/sec @ 2μs/op
+SHA512-256 32B x 417,885 ops/sec @ 2μs/op
+SHA3-256 32B x 181,356 ops/sec @ 5μs/op
+keccak-256 32B x 180,115 ops/sec @ 5μs/op
+BLAKE2s 32B x 499,251 ops/sec @ 2μs/op
+BLAKE2b 32B x 284,981 ops/sec @ 3μs/op
+HMAC-SHA256 32B x 270,124 ops/sec @ 3μs/op
+RIPEMD160 32B x 976,562 ops/sec @ 1μs/op
+HKDF-SHA256 32B noble x 115,500 ops/sec @ 8μs/op
+PBKDF2-HMAC-SHA256 262144 noble x 2 ops/sec @ 338ms/op
+PBKDF2-HMAC-SHA512 262144 noble x 0 ops/sec @ 1024ms/op
+Scrypt r: 8, p: 1, n: 262144 noble x 1 ops/sec @ 637ms/op
 ```
 
 Compare to native node.js implementation that uses C bindings instead of pure-js code:
 
 ```
-SHA256 32 B node x 569,151 ops/sec @ 1μs/op
-SHA512 32 B node x 551,267 ops/sec @ 1μs/op
-SHA512-256 32 B node x 534,473 ops/sec @ 1μs/op
-SHA3 32 B node x 545,553 ops/sec @ 1μs/op
-BLAKE2s 32 B node x 545,256 ops/sec @ 1μs/op
-BLAKE2b 32 B node x 583,090 ops/sec @ 1μs/op
-HMAC-SHA256 32 B node x 500,751 ops/sec @ 1μs/op
-RIPEMD160 32 B node x 509,424 ops/sec @ 1μs/op
-HKDF-SHA256 32 node x 207,856 ops/sec @ 4μs/op
+SHA256 32B node x 569,151 ops/sec @ 1μs/op
+SHA512 32B node x 551,267 ops/sec @ 1μs/op
+SHA512-256 32B node x 534,473 ops/sec @ 1μs/op
+SHA3 32B node x 545,553 ops/sec @ 1μs/op
+BLAKE2s 32B node x 545,256 ops/sec @ 1μs/op
+BLAKE2b 32B node x 583,090 ops/sec @ 1μs/op
+HMAC-SHA256 32B node x 500,751 ops/sec @ 1μs/op
+RIPEMD160 32B node x 509,424 ops/sec @ 1μs/op
+HKDF-SHA256 32B node x 207,856 ops/sec @ 4μs/op
 PBKDF2-256 262144 node x 23 ops/sec @ 42ms/op
 Scrypt 262144 node x 1 ops/sec @ 564ms/op
 // `scrypt.js` package
