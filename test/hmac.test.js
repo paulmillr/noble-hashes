@@ -170,10 +170,10 @@ should('HMAC types', () => {
   assert.throws(() => hmac(sha256, undefined, 'msg'), `hmac(key=undefined)`);
   assert.throws(() => hmac(sha256, 'key'), `hmac(msg=undefined)`);
   assert.throws(() => hmac.init(sha256, undefined), `hmac.init(key=undefined)`);
-  for (const t of TYPE_TEST.opts) {
-    assert.throws(() => hmac(sha256, 'key', 'salt', t), `hmac(opt=${t})`);
-    assert.throws(() => hmac.init(sha256, 'key', t), `hmac.init(opt=${t})`);
-  }
+  // for (const t of TYPE_TEST.opts) {
+  //   assert.throws(() => hmac(sha256, 'key', 'salt', t), `hmac(opt=${t})`);
+  //   assert.throws(() => hmac.init(sha256, 'key', t), `hmac.init(opt=${t})`);
+  // }
   for (const t of TYPE_TEST.hash) assert.throws(() => hmac(t, 'key', 'salt'), `hmac(hash=${t})`);
   assert.deepStrictEqual(
     hmac(sha512, SPACE.str, SPACE.str),

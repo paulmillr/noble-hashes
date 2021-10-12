@@ -1,32 +1,31 @@
-import { Hash, PartialOpts, createView, Input, toBytes } from './utils';
+import { Hash, createView, Input, toBytes } from './utils';
 
 // Base SHA2 class (RFC 6234)
 export abstract class Sha2 extends Hash {
   abstract _process(buf: DataView, offset: number): void;
   abstract _get(): number[];
-  abstract clean(): void;
+  abstract _clean(): void;
+  abstract _roundClean(): void;
   // For partial updates less than block size
   buffer: Uint8Array;
   view: DataView;
-  done = false;
-  cleaned = false;
+  finished = false;
   length = 0;
 
   constructor(
     readonly blockLen: number,
     public outputLen: number,
     readonly padOffset: number,
-    readonly isLE: boolean,
-    readonly opts: PartialOpts
+    readonly isLE: boolean
   ) {
     super();
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
   }
   update(_data: Input): this {
-    if (this.done) throw new Error('Hash already finalized');
+    const { view, blockLen, finished } = this;
+    if (finished) throw new Error('digest() was already called');
     const data = toBytes(_data);
-    const { view, blockLen } = this;
     // We have data in internal buffer, try to fill from data
     let offset = this.length % blockLen; // Offset position in internal buffer
     let pos = 0; // Position in data buffer
@@ -37,7 +36,7 @@ export abstract class Sha2 extends Hash {
       this.buffer.set(tmp, offset);
       this.length += pos = tmp.length;
       if (len < left) {
-        this._clean();
+        this._roundClean();
         return this; // fast path, internal buffer still has incomplete block
       }
       this._process(view, 0);
@@ -47,18 +46,18 @@ export abstract class Sha2 extends Hash {
     const dataView = createView(data);
     for (; blockLen <= len - pos; pos += blockLen, offset = 0, this.length += blockLen)
       this._process(dataView, pos);
+    this._roundClean();
     // If there is still some data (at this point it can be only incomplete block),
     // then copy it to internal buffer
     // Internal buffer is empty here, because all leftovers was processed in first step
-    this._clean();
     if (!(len - pos)) return this;
     this.buffer.set(data.subarray(pos), offset);
     this.length += len - pos;
     return this;
   }
-  _finish() {
-    if (this.done) return;
-    this.done = true;
+  _writeDigest(out: Uint8Array) {
+    if (this.finished) throw new Error('digest() was already called');
+    this.finished = true;
     // Padding
     // We can avoid allocation of buffer for padding completely if it
     // was previously not allocated here. But it won't change performance.
@@ -79,21 +78,14 @@ export abstract class Sha2 extends Hash {
     // So we just write lowest 64bit of that value.
     view.setBigUint64(blockLen - 8, BigInt(this.length * 8), isLE);
     this._process(view, 0);
-  }
-  _writeDigest(out: Uint8Array) {
-    if (this.cleaned) throw new Error('Hash instance cleaned');
-    this._finish();
-    const view = createView(out);
-    this._get().forEach((v, i) => view.setUint32(4 * i, v, this.isLE));
-  }
-  _clean() {
-    // return this
+    const oview = createView(out);
+    this._get().forEach((v, i) => oview.setUint32(4 * i, v, this.isLE));
   }
   digest() {
     const { buffer, outputLen } = this;
     this._writeDigest(buffer);
     const res = buffer.slice(0, outputLen);
-    if (this.opts.cleanup) this.clean();
+    this._clean();
     return res;
   }
 }

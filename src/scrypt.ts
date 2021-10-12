@@ -1,6 +1,6 @@
 import { sha256 } from './sha256';
 import { pbkdf2 } from './pbkdf2';
-import { assertNumber, asyncLoop, checkOpts, Input, PartialOpts, u32 } from './utils';
+import { assertNumber, asyncLoop, checkOpts, Input, u32 } from './utils';
 
 // Left rotate for uint32
 const rotl = (a: number, b: number) => (a << b) | (a >>> (32 - b));
@@ -66,13 +66,13 @@ function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, 
   for (let i = 0; i < r; i++, head += 16, ii += 16) {
     // We write odd & even Yi at same time. Even: 0bXXXXX0 Odd:  0bXXXXX1
     XorAndSalsa(out, tail, input, ii, out, head); // head[i] = Salsa(blockIn[2*i] ^ tail[i-1])
-    if (i) tail += 16; // First iteration overwrites tmp value in tail
+    if (i > 0) tail += 16; // First iteration overwrites tmp value in tail
     XorAndSalsa(out, head, input, (ii += 16), out, tail); // tail[i] = Salsa(blockIn[2*i+1] ^ head[i])
   }
 }
 
 // RFC 7914
-export type ScryptOpts = PartialOpts & {
+export type ScryptOpts = {
   N: number; // costFactor CPU/memory cost parameter - Must be a power of 2 (e.g. 1024)
   r: number; // blocksize parameter, which fine-tunes sequential memory read size and performance. (8 is commonly used)
   p: number; // Parallelization parameter. (1 .. 232-1 * hLen/MFlen)
@@ -84,18 +84,16 @@ export type ScryptOpts = PartialOpts & {
 
 // Common prologue and epilogue for sync/async functions
 function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
-  // Cleanup here provides absolute no guarantees, just wastes CPU cycles because of "security"
   // Maxmem - 1GB+1KB by default
   const opts = checkOpts(
     {
-      cleanup: true,
       dkLen: 32,
       asyncTick: 10,
       maxmem: 1024 ** 3 + 1024,
     },
     _opts
   );
-  const { N, r, p, dkLen, cleanup, asyncTick, maxmem, onProgress } = opts;
+  const { N, r, p, dkLen, asyncTick, maxmem, onProgress } = opts;
   assertNumber(N);
   assertNumber(r);
   assertNumber(p);
@@ -131,7 +129,7 @@ function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
   }
   // [B0...Bp−1] ← PBKDF2HMAC-SHA256(Passphrase, Salt, 1, blockSize*ParallelizationFactor)
   // Since it has only one iteration there is no reason to use async variant
-  const B = pbkdf2(sha256, password, salt, { cleanup, c: 1, dkLen: blockSize * p });
+  const B = pbkdf2(sha256, password, salt, { c: 1, dkLen: blockSize * p });
   const B32 = u32(B);
   // Re-used between parallel iterations. Array(iterations) of B
   const V = u32(new Uint8Array(blockSize * N));
@@ -149,28 +147,25 @@ function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
         onProgress(blockMixCnt / totalBlockMix);
     };
   }
-  return { N, r, p, dkLen, cleanup, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick };
+  return { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick };
 }
 
 function scryptOutput(
   password: Input,
   dkLen: number,
-  cleanup: boolean,
   B: Uint8Array,
   V: Uint32Array,
   tmp: Uint32Array
 ) {
-  const res = pbkdf2(sha256, password, B, { cleanup, c: 1, dkLen });
-  if (cleanup) {
-    B.fill(0);
-    V.fill(0);
-    tmp.fill(0);
-  }
+  const res = pbkdf2(sha256, password, B, { c: 1, dkLen });
+  B.fill(0);
+  V.fill(0);
+  tmp.fill(0);
   return res;
 }
 
 export function scrypt(password: Input, salt: Input, _opts: ScryptOpts) {
-  const { N, r, p, dkLen, cleanup, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
+  const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
     password,
     salt,
     _opts
@@ -192,12 +187,15 @@ export function scrypt(password: Input, salt: Input, _opts: ScryptOpts) {
       blockMixCb();
     }
   }
-  return scryptOutput(password, dkLen, cleanup, B, V, tmp);
+  return scryptOutput(password, dkLen, B, V, tmp);
 }
 
 export async function scryptAsync(password: Uint8Array, salt: Uint8Array, _opts: ScryptOpts) {
-  const { N, r, p, dkLen, cleanup, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } =
-    scryptInit(password, salt, _opts);
+  const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(
+    password,
+    salt,
+    _opts
+  );
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
     for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
@@ -216,5 +214,5 @@ export async function scryptAsync(password: Uint8Array, salt: Uint8Array, _opts:
       blockMixCb();
     });
   }
-  return scryptOutput(password, dkLen, cleanup, B, V, tmp);
+  return scryptOutput(password, dkLen, B, V, tmp);
 }

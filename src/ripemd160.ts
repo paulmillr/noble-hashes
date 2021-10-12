@@ -1,6 +1,6 @@
 import { Sha2 } from './_sha2';
 
-import { PartialOpts, wrapConstructor } from './utils';
+import { wrapConstructor } from './utils';
 
 // https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
 // https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
@@ -34,7 +34,7 @@ function f(group: number, x: number, y: number, z: number): number {
   else return x ^ (y | ~z);
 }
 // Temporary buffer, overwritten on processing. See sha256.ts.
-const RIPEMD160_W = new Uint32Array(16);
+const BUF = new Uint32Array(16);
 export class RIPEMD160 extends Sha2 {
   private h0 = 0x67452301 | 0;
   private h1 = 0xefcdab89 | 0;
@@ -42,8 +42,8 @@ export class RIPEMD160 extends Sha2 {
   private h3 = 0x10325476 | 0;
   private h4 = 0xc3d2e1f0 | 0;
 
-  constructor(opts: PartialOpts) {
-    super(64, 20, 8, true, opts);
+  constructor() {
+    super(64, 20, 8, true);
   }
   _get(): [number, number, number, number, number] {
     const { h0, h1, h2, h3, h4 } = this;
@@ -57,7 +57,7 @@ export class RIPEMD160 extends Sha2 {
     this.h4 = h4 | 0;
   }
   _process(view: DataView, offset: number): void {
-    for (let i = 0; i < 16; i++, offset += 4) RIPEMD160_W[i] = view.getUint32(offset, true);
+    for (let i = 0; i < 16; i++, offset += 4) BUF[i] = view.getUint32(offset, true);
     // prettier-ignore
     let al = this.h0 | 0, ar = al,
         bl = this.h1 | 0, br = bl,
@@ -73,12 +73,12 @@ export class RIPEMD160 extends Sha2 {
       const rl = idxL[group], rr = idxR[group]; // prettier-ignore
       const sl = shiftsL[group], sr = shiftsR[group]; // prettier-ignore
       for (let i = 0; i < 16; i++) {
-        const tl = (rotl(al + f(group, bl, cl, dl) + RIPEMD160_W[rl[i]] + hbl, sl[i]) + el) | 0;
+        const tl = (rotl(al + f(group, bl, cl, dl) + BUF[rl[i]] + hbl, sl[i]) + el) | 0;
         al = el, el = dl, dl = rotl(cl, 10) | 0, cl = bl, bl = tl; // prettier-ignore
       }
       // 2 loops are 10% faster
       for (let i = 0; i < 16; i++) {
-        const tr = (rotl(ar + f(rGroup, br, cr, dr) + RIPEMD160_W[rr[i]] + hbr, sr[i]) + er) | 0;
+        const tr = (rotl(ar + f(rGroup, br, cr, dr) + BUF[rr[i]] + hbr, sr[i]) + er) | 0;
         ar = er, er = dr, dr = rotl(cr, 10) | 0, cr = br, br = tr; // prettier-ignore
       }
     }
@@ -91,15 +91,13 @@ export class RIPEMD160 extends Sha2 {
       (this.h0 + bl + cr) | 0
     );
   }
-  _clean() {
-    RIPEMD160_W.fill(0);
+  _roundClean() {
+    BUF.fill(0);
   }
-  clean() {
-    // RIPEMD160_W.fill(0);
+  _clean() {
     this.buffer.fill(0);
     this._set(0, 0, 0, 0, 0);
-    this.cleaned = true;
   }
 }
 
-export const ripemd160 = wrapConstructor((opts) => new RIPEMD160(opts));
+export const ripemd160 = wrapConstructor(() => new RIPEMD160());

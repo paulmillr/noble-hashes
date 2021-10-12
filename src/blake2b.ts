@@ -1,6 +1,6 @@
 import * as blake2 from './_blake2';
 import * as u64 from './_u64';
-import { toBytes, wrapConstructor, u32 } from './utils';
+import { toBytes, u32, wrapConstructorWithOpts } from './utils';
 
 // Same as SHA-512 but LE
 // prettier-ignore
@@ -9,7 +9,7 @@ const IV = new Uint32Array([
   0xade682d1, 0x510e527f, 0x2b3e6c1f, 0x9b05688c, 0xfb41bd6b, 0x1f83d9ab, 0x137e2179, 0x5be0cd19
 ]);
 // Temporary buffer
-let BUF = new Uint32Array(32);
+const BUF = new Uint32Array(32);
 
 // Mixing function G splitted in two halfs
 function G1(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
@@ -81,7 +81,7 @@ class Blake2B extends blake2.Blake2 {
   private v7l = IV[14] | 0;
   private v7h = IV[15] | 0;
 
-  constructor(opts: blake2.BlakeOpts) {
+  constructor(opts: blake2.BlakeOpts = {}) {
     super(128, opts.dkLen === undefined ? 64 : opts.dkLen, opts, 64, 16, 16);
     const keyLength = opts.key ? opts.key.length : 0;
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
@@ -187,15 +187,13 @@ class Blake2B extends blake2.Blake2 {
     this.v7l ^= BUF[14] ^ BUF[30];
     this.v7h ^= BUF[15] ^ BUF[31];
   }
-  _clean() {
+  _roundClean() {
     BUF.fill(0);
   }
-  clean() {
-    // BUF.fill(0);
+  _clean() {
     this.buffer.fill(0);
     this._set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    this.cleaned = true;
   }
 }
 
-export const blake2b = wrapConstructor<blake2.BlakeOpts>((opts) => new Blake2B(opts));
+export const blake2b = wrapConstructorWithOpts<blake2.BlakeOpts>((opts) => new Blake2B(opts));

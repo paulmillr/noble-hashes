@@ -1,5 +1,5 @@
 import { Sha2 } from './_sha2';
-import { PartialOpts, rotr, wrapConstructor } from './utils';
+import { rotr, wrapConstructor } from './utils';
 
 // Choice: a ? b : c
 const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);
@@ -27,7 +27,7 @@ const IV = new Uint32Array([
 
 // Temporary buffer, overwritten on processing. Only used to store temporary data
 // of single function run. Not used to store anything between runs!
-const SHA256_W = new Uint32Array(64);
+const BUF = new Uint32Array(64);
 class _Sha256 extends Sha2 {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
@@ -40,8 +40,8 @@ class _Sha256 extends Sha2 {
   private G = IV[6] | 0;
   private H = IV[7] | 0;
 
-  constructor(opts: PartialOpts) {
-    super(64, 32, 8, false, opts);
+  constructor() {
+    super(64, 32, 8, false);
   }
   _get(): [number, number, number, number, number, number, number, number] {
     const { A, B, C, D, E, F, G, H } = this;
@@ -62,19 +62,19 @@ class _Sha256 extends Sha2 {
   }
   _process(view: DataView, offset: number): void {
     // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
-    for (let i = 0; i < 16; i++, offset += 4) SHA256_W[i] = view.getUint32(offset, false);
+    for (let i = 0; i < 16; i++, offset += 4) BUF[i] = view.getUint32(offset, false);
     for (let i = 16; i < 64; i++) {
-      const W15 = SHA256_W[i - 15];
-      const W2 = SHA256_W[i - 2];
+      const W15 = BUF[i - 15];
+      const W2 = BUF[i - 2];
       const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ (W15 >>> 3);
       const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ (W2 >>> 10);
-      SHA256_W[i] = (s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16]) | 0;
+      BUF[i] = (s1 + BUF[i - 7] + s0 + BUF[i - 16]) | 0;
     }
     // Compression function main loop, 64 rounds
     let { A, B, C, D, E, F, G, H } = this;
     for (let i = 0; i < 64; i++) {
       const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
-      const T1 = (H + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i]) | 0;
+      const T1 = (H + sigma1 + Chi(E, F, G) + SHA256_K[i] + BUF[i]) | 0;
       const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
       const T2 = (sigma0 + Maj(A, B, C)) | 0;
       H = G;
@@ -97,15 +97,13 @@ class _Sha256 extends Sha2 {
     H = (H + this.H) | 0;
     this._set(A, B, C, D, E, F, G, H);
   }
-  _clean() {
-    SHA256_W.fill(0);
+  _roundClean() {
+    BUF.fill(0);
   }
-  clean() {
+  _clean() {
     this._set(0, 0, 0, 0, 0, 0, 0, 0);
-    // SHA256_W.fill(0);
     this.buffer.fill(0);
-    this.cleaned = true;
   }
 }
 
-export const sha256 = wrapConstructor((opts) => new _Sha256(opts));
+export const sha256 = wrapConstructor(() => new _Sha256());

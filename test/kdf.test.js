@@ -317,8 +317,8 @@ should('HKDF types', () => {
     assert.throws(() => hkdf(sha256, '', t, '', 32), `hkdf.salt(${t})`);
     assert.throws(() => hkdf(sha256, '', '', t, 32), `hkdf.info(${t})`);
   }
-  for (const t of TYPE_TEST.opts)
-    assert.throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${t})`);
+  // for (const t of TYPE_TEST.opts)
+  //   assert.throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${t})`);
   assert.throws(() => hkdf(sha256, undefined, '', '', 32), 'hkdf.ikm===undefined');
   for (const t of TYPE_TEST.hash) assert.throws(() => hkdf(t, '', '', '', 32), `hkdf(hash=${t})`);
 

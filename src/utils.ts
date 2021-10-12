@@ -88,77 +88,99 @@ export abstract class Hash {
   abstract outputLen: number; // Bytes in output
   abstract update(buf: Input): this;
   abstract digest(): Uint8Array;
-  abstract clean(): void;
   // Internal methods (unsafe)
   abstract _writeDigest(buf: Uint8Array): void;
-  // abstract _cloneInto(obj?: this): this; // Obj is destination. If empty new one will be created. Overwrites buffer which used for digest
+  abstract _clean(): void;
 }
 
-export type HashOpts = {
-  cleanup: boolean; // Force hash to clean internal sturctures on finish
-};
-export type PartialOpts = Partial<HashOpts>;
 // Check if object doens't have custom constructor (like Uint8Array/Array)
 const isPlainObject = (obj: any) =>
   Object.prototype.toString.call(obj) === '[object Object]' && obj.constructor === Object;
 
-export function checkOpts<T1 extends PartialOpts, T2 extends PartialOpts>(
-  def: T1,
-  _opts?: T2
-): T1 & T2 {
+type EmptyObj = {};
+export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(def: T1, _opts?: T2): T1 & T2 {
   if (_opts !== undefined && (typeof _opts !== 'object' || !isPlainObject(_opts)))
     throw new TypeError('Options should be object or undefined');
-  const opts = Object.assign({ cleanup: true }, def, _opts);
-  assertBool(opts.cleanup);
+  const opts = Object.assign(def, _opts);
   return opts as T1 & T2;
 }
 
-export interface Cloneable extends Hash {
-  blockLen: number;
-  view?: DataView;
-  buffer?: Uint8Array;
-  state?: Uint8Array;
-  done: boolean;
+interface CloneableSHA2Like extends Hash {
   length: number;
-  opts: PartialOpts;
+  buffer: Uint8Array;
+  view?: DataView;
+  finished: boolean;
   _get(): number[];
   _set(...values: number[]): void;
   _cloneOpts?(): any;
-  pos?: any;
+}
+
+interface CloneableSponge extends Hash {
+  blockLen: number;
+  state: Uint8Array;
+  suffix: number;
+  pos: number;
+  finished: boolean;
+}
+
+export type Cloneable = CloneableSHA2Like | CloneableSponge;
+
+function isSHA2Like(item: Cloneable): item is CloneableSHA2Like {
+  return 'buffer' in item;
+}
+
+function isSponge(item: Cloneable): item is CloneableSponge {
+  return 'state' in item;
 }
 
 export function cloneHashInto(first: Cloneable, second?: Cloneable): Cloneable {
-  const opts = typeof first._cloneOpts === 'function' ? first._cloneOpts() : first.opts;
-  // TODO
-  // @ts-ignore
-  if (second == null) second = new first.constructor(opts) as Cloneable;
-  const { blockLen, buffer, view, done, length, state, pos } = first;
-  second.done = done;
-  if (buffer && second.buffer) {
-    // SHA2, Blake2
+  if (isSHA2Like(first)) {
+    // @ts-ignore
+    if (second == null) second = new first.constructor() as CloneableSHA2Like;
+    else second = second as CloneableSHA2Like;
     second._set(...first._get());
+    const { blockLen, buffer, view, length, finished } = first;
     second.length = length;
+    second.finished = finished;
     // Very ugly hack to optimize on sha2* (it has view)
     if (!view || length % blockLen) second.buffer.set(buffer);
-  } else if (state && second.state) {
-    // SHA3
+    return second;
+  } else if (isSponge(first)) {
+    const { blockLen, suffix, outputLen, state, pos, finished } = first;
+    if (second == null)
+      // @ts-ignore
+      second = new first.constructor({ blockLen, suffix, outputLen }) as CloneableSponge;
+    else {
+      second = second as CloneableSponge;
+    }
     second.state.set(state);
     second.pos = pos;
+    second.finished = finished;
+    return second;
+  } else {
+    throw new Error('Invalid hash interface');
   }
-  return second;
 }
 
 export type CHash = ReturnType<typeof wrapConstructor>;
 
-export function wrapConstructor<T extends Partial<HashOpts>>(_hashC: (opts: T) => Hash) {
-  const hashC = (msg: Input, opts?: T): Uint8Array =>
-    _hashC(checkOpts({}, opts as T))
-      .update(toBytes(msg))
-      .digest();
-  const tmp = _hashC({} as T);
+export function wrapConstructor(hashConstructor: () => Hash) {
+  const hashC = (message: Input): Uint8Array => hashConstructor().update(toBytes(message)).digest();
+  const tmp = hashConstructor();
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
-  hashC.init = (opts: T) => _hashC(checkOpts({}, opts as T));
+  hashC.create = () => hashConstructor();
+  hashC.init = hashC.create;
+  return hashC;
+}
+
+export function wrapConstructorWithOpts<T extends Object>(hashCons: (opts: T) => Hash) {
+  const hashC = (msg: Input, opts: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const tmp = hashCons({} as T);
+  hashC.outputLen = tmp.outputLen;
+  hashC.blockLen = tmp.blockLen;
+  hashC.create = (opts: T) => hashCons(opts);
+  hashC.init = hashC.create;
   return hashC;
 }
 

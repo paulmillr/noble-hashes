@@ -289,19 +289,6 @@ function init() {
       assert.throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
       for (const t of TYPE_TEST.opts) assert.throws(() => hash.fn(undefined, t), `opt(${t})`);
     });
-    should(`cleanup: false returns same result on second digest`, () => {
-      const tmp = hash.obj({ cleanup: false }).update('abc');
-      for (let i = 0; i < 10; i++)
-        assert.deepStrictEqual(tmp.digest(), hexToBytes(hash.nist[0].replace(/ /g, '')));
-    });
-    should(`cleanup: false returns different Uint8array`, () => {
-      const tmp = hash.obj({ cleanup: false }).update('abc');
-      let arrA = tmp.digest();
-      let arrB = tmp.digest();
-      // Modify array A and check that array B is not modified
-      for (let i = 0; i < arrA.length; i++) arrA[i] = 1;
-      assert.deepStrictEqual(arrB, hexToBytes(hash.nist[0].replace(/ /g, '')));
-    });
     should(`check types`, () => {
       assert.deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
       assert.deepStrictEqual(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));

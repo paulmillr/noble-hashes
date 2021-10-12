@@ -1,4 +1,4 @@
-import { assertNumber, Hash, Input, PartialOpts, toBytes, u32 } from './utils';
+import { assertNumber, Hash, Input, toBytes, u32 } from './utils';
 // prettier-ignore
 export const SIGMA = [
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
@@ -16,7 +16,7 @@ export const SIGMA = [
   [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
 ].map(arr => new Uint8Array(arr));
 
-export type BlakeOpts = PartialOpts & {
+export type BlakeOpts = {
   dkLen?: number;
   key?: Uint8Array;
   salt?: Uint8Array;
@@ -28,12 +28,11 @@ const isBytes = (arr: any) => arr instanceof Uint8Array;
 export abstract class Blake2 extends Hash {
   abstract _compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   abstract _get(): number[];
-  abstract clean(): void;
+  abstract _clean(): void;
   buffer: Uint8Array;
   buffer32: Uint32Array;
   length: number = 0;
-  done = false;
-  cleaned = false;
+  finished = false;
 
   constructor(
     readonly blockLen: number,
@@ -47,6 +46,7 @@ export abstract class Blake2 extends Hash {
     assertNumber(outputLen);
     if (outputLen < 1 || outputLen > keyLen)
       throw new Error('Blake2: outputLen bigger than keyLen');
+    if (!opts) opts = {};
     if (opts.key) {
       if (!isBytes(opts.key) || opts.key.length < 1 || opts.key.length > keyLen)
         throw new Error(`Key should be up 1..${keyLen} byte long or undefined`);
@@ -62,8 +62,8 @@ export abstract class Blake2 extends Hash {
     this.buffer32 = u32((this.buffer = new Uint8Array(blockLen)));
   }
   update(_data: Input) {
-    const { done, blockLen, buffer32 } = this;
-    if (done) throw new Error('Hash already finalized');
+    const { finished, blockLen, buffer32 } = this;
+    if (finished) throw new Error('digest() was already called');
     const data = toBytes(_data);
     if (!data.length) return this; // Empty data buffer, there is nothing to do
     // Main difference with other hashes: there is flag for last block,
@@ -73,7 +73,7 @@ export abstract class Blake2 extends Hash {
     let pos = 0; // Position in data buffer
     let len = data.length;
     let offset = this.length % blockLen; // Offset position in internal buffer
-    if (this.length) {
+    if (this.length > 0) {
       const left = blockLen - offset;
       // There is full block in buffer written by previous updates
       if (!offset) this._compress(buffer32, 0, false);
@@ -111,14 +111,12 @@ export abstract class Blake2 extends Hash {
     return this;
   }
   _writeDigest(out: Uint8Array) {
-    if (this.cleaned) throw new Error('Hash instance cleaned');
-    if (!this.done) {
-      this.done = true;
-      // Padding
-      const i = this.length % this.blockLen; // current buffer offset
-      if (i) this.buffer.subarray(i).fill(0);
-      this._compress(this.buffer32, 0, true);
-    }
+    if (this.finished) throw new Error('digest() was already called');
+    this.finished = true;
+    // Padding
+    const i = this.length % this.blockLen; // current buffer offset
+    if (i > 0) this.buffer.subarray(i).fill(0);
+    this._compress(this.buffer32, 0, true);
     const out32 = u32(out);
     this._get().forEach((v, i) => (out32[i] = v));
   }
@@ -126,10 +124,10 @@ export abstract class Blake2 extends Hash {
     const { buffer, outputLen } = this;
     this._writeDigest(buffer);
     const res = buffer.slice(0, outputLen);
-    if (this.opts.cleanup) this.clean();
+    this._clean();
     return res;
   }
-  _clean() {}
+  _roundClean() {}
   _cloneOpts() {
     return Object.assign({}, this.opts, {
       key: undefined,

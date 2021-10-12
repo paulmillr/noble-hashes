@@ -1,5 +1,5 @@
 import * as blake2 from './_blake2';
-import { rotr, toBytes, wrapConstructor, u32 } from './utils';
+import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils';
 
 // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19), same as SHA-256
 // prettier-ignore
@@ -35,7 +35,7 @@ class Blake2S extends blake2.Blake2 {
   private v6 = IV[6] | 0;
   private v7 = IV[7] | 0;
 
-  constructor(opts: blake2.BlakeOpts) {
+  constructor(opts: blake2.BlakeOpts = {}) {
     super(64, opts.dkLen === undefined ? 32 : opts.dkLen, opts, 32, 8, 8);
     const keyLength = opts.key ? opts.key.length : 0;
     this.v0 ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
@@ -117,11 +117,10 @@ class Blake2S extends blake2.Blake2 {
     this.v6 ^= v6 ^ v14;
     this.v7 ^= v7 ^ v15;
   }
-  clean() {
+  _clean() {
     this.buffer.fill(0);
     this._set(0, 0, 0, 0, 0, 0, 0, 0);
-    this.cleaned = true;
   }
 }
 
-export const blake2s = wrapConstructor<blake2.BlakeOpts>((opts) => new Blake2S(opts));
+export const blake2s = wrapConstructorWithOpts<blake2.BlakeOpts>((opts) => new Blake2S(opts));
