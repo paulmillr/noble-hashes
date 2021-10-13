@@ -1,3 +1,5 @@
+/*! noble-hashes - MIT License (c) 2021 Paul Miller (paulmillr.com) */
+
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;

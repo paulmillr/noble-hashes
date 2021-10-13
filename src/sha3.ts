@@ -61,19 +61,19 @@ class Sha3 extends Hash {
     this.state32 = u32(this.state);
   }
   private keccakf() {
-    const BUF = new Uint32Array(5 * 2);
+    const SHA3_W = new Uint32Array(5 * 2);
     const s = this.state32;
     // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
     for (let round = 0; round < 24; round++) {
       // Theta θ
-      for (let x = 0; x < 10; x++) BUF[x] = s[x] ^ s[x + 10] ^ s[x + 20] ^ s[x + 30] ^ s[x + 40];
+      for (let x = 0; x < 10; x++) SHA3_W[x] = s[x] ^ s[x + 10] ^ s[x + 20] ^ s[x + 30] ^ s[x + 40];
       for (let x = 0; x < 10; x += 2) {
         const idx1 = (x + 8) % 10;
         const idx0 = (x + 2) % 10;
-        const B0 = BUF[idx0];
-        const B1 = BUF[idx0 + 1];
-        const Th = rotlH(B0, B1, 1) ^ BUF[idx1];
-        const Tl = rotlL(B0, B1, 1) ^ BUF[idx1 + 1];
+        const B0 = SHA3_W[idx0];
+        const B1 = SHA3_W[idx0 + 1];
+        const Th = rotlH(B0, B1, 1) ^ SHA3_W[idx1];
+        const Tl = rotlL(B0, B1, 1) ^ SHA3_W[idx1 + 1];
         for (let y = 0; y < 50; y += 10) {
           s[x + y] ^= Th;
           s[x + y + 1] ^= Tl;
@@ -94,14 +94,14 @@ class Sha3 extends Hash {
       }
       // Chi (χ)
       for (let y = 0; y < 50; y += 10) {
-        for (let x = 0; x < 10; x++) BUF[x] = s[y + x];
-        for (let x = 0; x < 10; x++) s[y + x] ^= ~BUF[(x + 2) % 10] & BUF[(x + 4) % 10];
+        for (let x = 0; x < 10; x++) SHA3_W[x] = s[y + x];
+        for (let x = 0; x < 10; x++) s[y + x] ^= ~SHA3_W[(x + 2) % 10] & SHA3_W[(x + 4) % 10];
       }
       // Iota (ι)
       s[0] ^= SHA3_IOTA_H[round];
       s[1] ^= SHA3_IOTA_L[round];
     }
-    BUF.fill(0);
+    SHA3_W.fill(0);
   }
   update(_data: Input) {
     const { blockLen, state, finished } = this;
