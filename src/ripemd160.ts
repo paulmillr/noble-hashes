@@ -1,4 +1,4 @@
-import { Sha2 } from './_sha2';
+import { SHA2 } from './_sha2';
 
 import { wrapConstructor } from './utils';
 
@@ -35,7 +35,7 @@ function f(group: number, x: number, y: number, z: number): number {
 }
 // Temporary buffer, not used to store anything between runs
 const BUF = new Uint32Array(16);
-export class RIPEMD160 extends Sha2 {
+export class RIPEMD160 extends SHA2 {
   private h0 = 0x67452301 | 0;
   private h1 = 0xefcdab89 | 0;
   private h2 = 0x98badcfe | 0;

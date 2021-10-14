@@ -1,7 +1,7 @@
 import { Hash, createView, Input, toBytes } from './utils';
 
 // Base SHA2 class (RFC 6234)
-export abstract class Sha2 extends Hash {
+export abstract class SHA2 extends Hash {
   abstract _process(buf: DataView, offset: number): void;
   abstract _get(): number[];
   abstract _clean(): void;

@@ -1,4 +1,4 @@
-import { Sha2 } from './_sha2';
+import { SHA2 } from './_sha2';
 import * as u64 from './_u64';
 import { wrapConstructor } from './utils';
 
@@ -31,7 +31,7 @@ const [SHA512_Kh, SHA512_Kl] = u64.split([
 const SHA512_W_H = new Uint32Array(80);
 const SHA512_W_L = new Uint32Array(80);
 
-export class SHA512 extends Sha2 {
+export class SHA512 extends SHA2 {
   // We cannot use array here since array allows indexing by variable which means optimizer/compiler cannot use registers.
   // Also looks cleaner and easier to verify with spec.
   // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):

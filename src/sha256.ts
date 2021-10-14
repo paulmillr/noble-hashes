@@ -1,4 +1,4 @@
-import { Sha2 } from './_sha2';
+import { SHA2 } from './_sha2';
 import { rotr, wrapConstructor } from './utils';
 
 // Choice: a ? b : c
@@ -28,7 +28,7 @@ const IV = new Uint32Array([
 // Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
 const SHA256_W = new Uint32Array(64);
-class SHA256 extends Sha2 {
+class SHA256 extends SHA2 {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
   private A = IV[0] | 0;
