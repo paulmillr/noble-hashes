@@ -4,7 +4,7 @@ import {
 } from './utils';
 
 // HMAC (RFC 2104)
-class _Hmac extends Hash {
+class HMAC extends Hash {
   oHash: Hash;
   iHash: Hash;
   blockLen: number;
@@ -67,6 +67,6 @@ class _Hmac extends Hash {
 }
 
 export const hmac = (hash: CHash, key: Input, message: Input): Uint8Array =>
-  new _Hmac(hash, key).update(message).digest();
-hmac.create = (hash: CHash, key: Input) => new _Hmac(hash, key);
+  new HMAC(hash, key).update(message).digest();
+hmac.create = (hash: CHash, key: Input) => new HMAC(hash, key);
 hmac.init = hmac.create;

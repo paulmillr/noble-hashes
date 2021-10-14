@@ -24,7 +24,7 @@ function G2(a: number, b: number, c: number, d: number, x: number) {
   return { a, b, c, d };
 }
 
-class Blake2S extends blake2.Blake2 {
+class BLAKE2s extends blake2.BLAKE2 {
   // Internal state, same as SHA-256
   private v0 = IV[0] | 0;
   private v1 = IV[1] | 0;
@@ -123,4 +123,4 @@ class Blake2S extends blake2.Blake2 {
   }
 }
 
-export const blake2s = wrapConstructorWithOpts<blake2.BlakeOpts>((opts) => new Blake2S(opts));
+export const blake2s = wrapConstructorWithOpts<blake2.BlakeOpts>((opts) => new BLAKE2s(opts));

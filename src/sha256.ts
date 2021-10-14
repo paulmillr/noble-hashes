@@ -25,11 +25,10 @@ const IV = new Uint32Array([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 ]);
 
-// Temporary buffer, overwritten on processing. Only used to store temporary data
-// of single function run. Not used to store anything between runs!
+// Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
 const SHA256_W = new Uint32Array(64);
-class _Sha256 extends Sha2 {
+class SHA256 extends Sha2 {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
   private A = IV[0] | 0;
@@ -107,4 +106,4 @@ class _Sha256 extends Sha2 {
   }
 }
 
-export const sha256 = wrapConstructor(() => new _Sha256());
+export const sha256 = wrapConstructor(() => new SHA256());

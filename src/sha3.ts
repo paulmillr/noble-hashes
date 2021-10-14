@@ -27,14 +27,14 @@ const rotlH = (h: number, l: number, s: number) =>
 const rotlL = (h: number, l: number, s: number) =>
   s > 32 ? u64.rotlBL(h, l, s) : u64.rotlSL(h, l, s);
 
-type Sha3Opts = {
+type SHA3Opts = {
   blockLen: number;
   suffix: number;
   outputLen: number;
 };
 
 // Temporary buffer. See sha256.ts
-class Sha3 extends Hash {
+class SHA3 extends Hash {
   private state: Uint8Array;
   private pos = 0;
   private finished = false;
@@ -43,7 +43,7 @@ class Sha3 extends Hash {
   blockLen: number;
   outputLen: number;
   // NOTE: we accept arguments in bytes instead of bits here.
-  constructor(opts: Sha3Opts) {
+  constructor(opts: SHA3Opts) {
     super();
     if (!opts && typeof opts !== 'object') throw new Error('Invalid SHA3 invocation');
     const { blockLen, suffix, outputLen } = opts;
@@ -61,19 +61,19 @@ class Sha3 extends Hash {
     this.state32 = u32(this.state);
   }
   private keccakf() {
-    const SHA3_W = new Uint32Array(5 * 2);
+    const SHA3_B = new Uint32Array(5 * 2);
     const s = this.state32;
     // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
     for (let round = 0; round < 24; round++) {
       // Theta θ
-      for (let x = 0; x < 10; x++) SHA3_W[x] = s[x] ^ s[x + 10] ^ s[x + 20] ^ s[x + 30] ^ s[x + 40];
+      for (let x = 0; x < 10; x++) SHA3_B[x] = s[x] ^ s[x + 10] ^ s[x + 20] ^ s[x + 30] ^ s[x + 40];
       for (let x = 0; x < 10; x += 2) {
         const idx1 = (x + 8) % 10;
         const idx0 = (x + 2) % 10;
-        const B0 = SHA3_W[idx0];
-        const B1 = SHA3_W[idx0 + 1];
-        const Th = rotlH(B0, B1, 1) ^ SHA3_W[idx1];
-        const Tl = rotlL(B0, B1, 1) ^ SHA3_W[idx1 + 1];
+        const B0 = SHA3_B[idx0];
+        const B1 = SHA3_B[idx0 + 1];
+        const Th = rotlH(B0, B1, 1) ^ SHA3_B[idx1];
+        const Tl = rotlL(B0, B1, 1) ^ SHA3_B[idx1 + 1];
         for (let y = 0; y < 50; y += 10) {
           s[x + y] ^= Th;
           s[x + y + 1] ^= Tl;
@@ -94,14 +94,14 @@ class Sha3 extends Hash {
       }
       // Chi (χ)
       for (let y = 0; y < 50; y += 10) {
-        for (let x = 0; x < 10; x++) SHA3_W[x] = s[y + x];
-        for (let x = 0; x < 10; x++) s[y + x] ^= ~SHA3_W[(x + 2) % 10] & SHA3_W[(x + 4) % 10];
+        for (let x = 0; x < 10; x++) SHA3_B[x] = s[y + x];
+        for (let x = 0; x < 10; x++) s[y + x] ^= ~SHA3_B[(x + 2) % 10] & SHA3_B[(x + 4) % 10];
       }
       // Iota (ι)
       s[0] ^= SHA3_IOTA_H[round];
       s[1] ^= SHA3_IOTA_L[round];
     }
-    SHA3_W.fill(0);
+    SHA3_B.fill(0);
   }
   update(_data: Input) {
     const { blockLen, state, finished } = this;
@@ -145,7 +145,7 @@ const gen = (suffix: number, blockLen: number, outputLen: number) => {
   // Params specific to 256/384 etc versions; cannot be redefined
   const params = { blockLen, suffix, outputLen };
   // ...opts is 30% slower
-  return wrapConstructor(() => new Sha3(params));
+  return wrapConstructor(() => new SHA3(params));
 };
 
 export const sha3_224 = gen(0x06, 144, 224 / 8);

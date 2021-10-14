@@ -33,7 +33,7 @@ function f(group: number, x: number, y: number, z: number): number {
   else if (group === 3) return (x & z) | (y & ~z);
   else return x ^ (y | ~z);
 }
-// Temporary buffer, overwritten on processing. See sha256.ts.
+// Temporary buffer, not used to store anything between runs
 const BUF = new Uint32Array(16);
 export class RIPEMD160 extends Sha2 {
   private h0 = 0x67452301 | 0;

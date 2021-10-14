@@ -25,7 +25,7 @@ export type BlakeOpts = {
 
 const isBytes = (arr: any) => arr instanceof Uint8Array;
 
-export abstract class Blake2 extends Hash {
+export abstract class BLAKE2 extends Hash {
   abstract _compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   abstract _get(): number[];
   abstract _clean(): void;

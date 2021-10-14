@@ -62,7 +62,7 @@ function G2(a: number, b: number, c: number, d: number, msg: Uint32Array, x: num
   (BUF[2 * d] = Dl), (BUF[2 * d + 1] = Dh);
 }
 
-class Blake2B extends blake2.Blake2 {
+class BLAKE2b extends blake2.BLAKE2 {
   // Same as SHA-512, but LE
   private v0l = IV[0] | 0;
   private v0h = IV[1] | 0;
@@ -196,4 +196,4 @@ class Blake2B extends blake2.Blake2 {
   }
 }
 
-export const blake2b = wrapConstructorWithOpts<blake2.BlakeOpts>((opts) => new Blake2B(opts));
+export const blake2b = wrapConstructorWithOpts<blake2.BlakeOpts>((opts) => new BLAKE2b(opts));

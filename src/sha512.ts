@@ -27,11 +27,11 @@ const [SHA512_Kh, SHA512_Kl] = u64.split([
   0x4cc5d4becb3e42b6n, 0x597f299cfc657e2an, 0x5fcb6fab3ad6faecn, 0x6c44198c4a475817n
 ]);
 
-// Temporary buffer, overwritten on processing. See sha256.ts
+// Temporary buffer, not used to store anything between runs
 const SHA512_W_H = new Uint32Array(80);
 const SHA512_W_L = new Uint32Array(80);
 
-export class _Sha512 extends Sha2 {
+export class SHA512 extends Sha2 {
   // We cannot use array here since array allows indexing by variable which means optimizer/compiler cannot use registers.
   // Also looks cleaner and easier to verify with spec.
   // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
@@ -166,7 +166,7 @@ export class _Sha512 extends Sha2 {
   }
 }
 
-class _Sha512_256 extends _Sha512 {
+class _Sha512_256 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
   Ah = 0x22312194 | 0;
   Al = 0xfc2bf72c | 0;
@@ -191,5 +191,5 @@ class _Sha512_256 extends _Sha512 {
   }
 }
 
-export const sha512 = wrapConstructor(() => new _Sha512());
+export const sha512 = wrapConstructor(() => new SHA512());
 export const sha512_256 = wrapConstructor(() => new _Sha512_256());
