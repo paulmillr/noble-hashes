@@ -1,5 +1,15 @@
 import { Hash, createView, Input, toBytes } from './utils';
 
+// Polyfill for Safari 14
+function setBigUint64(view: DataView, byteOffset: number, value: bigint, LE: boolean): void {
+  if (typeof view.setBigUint64 === 'function') return view.setBigUint64(byteOffset, value, LE);
+  const wh = Number((value >> 32n) & 0xffffffffn);
+  const wl = Number(value & 0xffffffffn);
+  const [h, l] = LE ? [4, 0] : [0, 4];
+  view.setUint32(byteOffset + h, wh, LE);
+  view.setUint32(byteOffset + l, wl, LE);
+}
+
 // Base SHA2 class (RFC 6234)
 export abstract class SHA2 extends Hash {
   abstract _process(buf: DataView, offset: number): void;
@@ -76,7 +86,7 @@ export abstract class SHA2 extends Hash {
     // NOTE: sha512 requires length to be 128bit integer, but length in JS will overflow before that
     // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
     // So we just write lowest 64bit of that value.
-    view.setBigUint64(blockLen - 8, BigInt(this.length * 8), isLE);
+    setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
     this._process(view, 0);
     const oview = createView(out);
     this._get().forEach((v, i) => oview.setUint32(4 * i, v, this.isLE));
