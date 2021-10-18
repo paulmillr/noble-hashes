@@ -18,7 +18,7 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 
 Matches following specs:
 
-- SHA2 aka SHA256 / SHA512 [(RFC 4634)](https://datatracker.ietf.org/doc/html/rfc4634)
+- SHA2 aka SHA256 / SHA384 / SHA512 [(RFC 4634)](https://datatracker.ietf.org/doc/html/rfc4634)
 - SHA3 & Keccak ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [Website](https://keccak.team/keccak.html))
 - RIPEMD-160 ([RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286), [Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html))
 - BLAKE2b, BLAKE2s ([RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net))
@@ -58,7 +58,8 @@ console.log(sha256(new Uint8Array([1, 2, 3])));
 // you could also pass strings that will be UTF8-encoded to Uint8Array
 console.log(sha256('abc'))); // == sha256(new TextEncoder().encode('abc'))
 
-const { sha512, sha512_256 } = require('noble-hashes/lib/sha512');
+// sha384 is here, because it uses same internals as sha512
+const { sha512, sha512_256, sha384 } = require('noble-hashes/lib/sha512');
 // prettier-ignore
 const {
   sha3_224, sha3_256, sha3_384, sha3_512,
@@ -83,12 +84,12 @@ console.log(toHex(sha256('abc')));
 Any hash function:
 
 1. Can be called directly, like `sha256(new Uint8Array([1, 3]))`,
-or initialized as a class: `sha256.init().update(new Uint8Array([1, 3]).digest()`
+or initialized as a class: `sha256.create().update(new Uint8Array([1, 3]).digest()`
 2. Can receive either an `Uint8Array`, or a `string` that would be
 automatically converted to `Uint8Array` via `new TextEncoder().encode(string)`.
   The output is always `Uint8Array`.
 3. Can receive an option object as a second argument: `sha256('abc', {cleanup: true})`;
-  or `sha256.init({cleanup: true}).update('abc').digest()`
+  or `sha256.create({cleanup: true}).update('abc').digest()`
 
 ##### SHA2 (sha256, sha512, sha512_256)
 
@@ -96,18 +97,23 @@ automatically converted to `Uint8Array` via `new TextEncoder().encode(string)`.
 import { sha256 } from 'noble-hashes/lib/sha256.js';
 // function sha256(data: Uint8Array): Uint8Array;
 const hash1 = sha256('abc');
-const hash2 = sha256.init().update(Uint8Array.from([1, 2, 3])).digest();
+const hash2 = sha256.create().update(Uint8Array.from([1, 2, 3])).digest();
 ```
 
 ```typescript
 import { sha512 } from 'noble-hashes/lib/sha512.js';
 const hash3 = sha512('abc');
-const hash4 = sha512.init().update(Uint8Array.from([1, 2, 3])).digest();
+const hash4 = sha512.create().update(Uint8Array.from([1, 2, 3])).digest();
 
 // SHA512/256 variant
 import { sha512_256 } from 'noble-hashes/lib/sha512.js';
 const hash3_a = sha512_256('abc');
-const hash4_a = sha512_256.init().update(Uint8Array.from([1, 2, 3])).digest();
+const hash4_a = sha512_256.create().update(Uint8Array.from([1, 2, 3])).digest();
+
+import { sha384 } from 'noble-hashes/lib/sha512.js';
+const hash3_b = sha384('abc');
+const hash4_b = sha384.create().update(Uint8Array.from([1, 2, 3])).digest();
+
 ```
 
 To learn more about SHA512/256, check out [the paper](https://eprint.iacr.org/2010/548.pdf).
@@ -120,7 +126,7 @@ import {
   keccak_224, keccak_256, keccak_384, keccak_512
 } from 'noble-hashes/lib/sha3.js';
 const hash5 = sha3_256('abc');
-const hash6 = sha3_256.init().update(Uint8Array.from([1, 2, 3])).digest();
+const hash6 = sha3_256.create().update(Uint8Array.from([1, 2, 3])).digest();
 const hash7 = keccak_256('abc');
 ```
 
@@ -132,7 +138,7 @@ See [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/
 import { ripemd160 } from 'noble-hashes/lib/ripemd160.js';
 // function ripemd160(data: Uint8Array): Uint8Array;
 const hash8 = ripemd160('abc');
-const hash9 = ripemd160().init().update(Uint8Array.from([1, 2, 3])).digest();
+const hash9 = ripemd160().create().update(Uint8Array.from([1, 2, 3])).digest();
 ```
 
 ##### BLAKE2b, BLAKE2s
@@ -143,7 +149,7 @@ import { blake2s } from 'noble-hashes/lib/blake2s.js';
 const hash10 = blake2s('abc');
 const b2params = {key: new Uint8Array([1]), personalization: t, salt: t, dkLen: 32};
 const hash11 = blake2s('abc', b2params);
-const hash12 = blake2s.init(b2params).update(Uint8Array.from([1, 2, 3])).digest();
+const hash12 = blake2s.create(b2params).update(Uint8Array.from([1, 2, 3])).digest();
 ```
 
 ##### HMAC
@@ -152,7 +158,7 @@ const hash12 = blake2s.init(b2params).update(Uint8Array.from([1, 2, 3])).digest(
 import { hmac } from 'noble-hashes/lib/mac.js';
 import { sha256 } from 'noble-hashes/lib/sha256.js';
 const mac1 = hmac(sha256, 'key', 'message');
-const mac2 = hmac.init(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.from([4, 5, 6]).digest();
+const mac2 = hmac.create(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.from([4, 5, 6]).digest();
 ```
 
 ##### HKDF
