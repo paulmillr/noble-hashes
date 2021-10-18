@@ -39,8 +39,8 @@ class SHA3 extends Hash {
   private pos = 0;
   private finished = false;
   private state32: Uint32Array;
-  suffix: number;
   blockLen: number;
+  suffix: number;
   outputLen: number;
   // NOTE: we accept arguments in bytes instead of bits here.
   constructor(opts: SHA3Opts) {
@@ -103,15 +103,15 @@ class SHA3 extends Hash {
     }
     SHA3_B.fill(0);
   }
-  update(_data: Input) {
+  update(data: Input) {
     const { blockLen, state, finished } = this;
     if (finished) throw new Error('digest() was already called');
-    const data = toBytes(_data);
+    const _data = toBytes(data);
+    const len = _data.length;
     let pos = this.pos;
-    const len = data.length;
     for (let offset = 0; offset < len; ) {
       const block = Math.min(len - offset, blockLen - pos);
-      for (let i = 0; i < block; i++) state[pos++] ^= data[offset++];
+      for (let i = 0; i < block; i++) state[pos++] ^= _data[offset++];
       if (pos !== blockLen) continue;
       this.keccakf();
       pos = 0;
@@ -122,7 +122,7 @@ class SHA3 extends Hash {
   _writeDigest(out: Uint8Array) {
     if (this.finished) throw new Error('digest() was already called');
     this.finished = true;
-    const { state, suffix, pos, blockLen } = this;
+    const { blockLen, pos, state, suffix } = this;
     // Do the padding
     state[pos] ^= suffix;
     if ((suffix & 0x80) !== 0 && pos === blockLen - 1) this.keccakf();

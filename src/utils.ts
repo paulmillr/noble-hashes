@@ -108,8 +108,8 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(def: T1, _op
 }
 
 interface CloneableSHA2Like extends Hash {
-  length: number;
   buffer: Uint8Array;
+  length: number;
   view?: DataView;
   finished: boolean;
   _get(): number[];

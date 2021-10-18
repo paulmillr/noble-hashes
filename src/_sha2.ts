@@ -12,15 +12,15 @@ function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: b
 
 // Base SHA2 class (RFC 6234)
 export abstract class SHA2 extends Hash {
-  abstract _process(buf: DataView, offset: number): void;
-  abstract _get(): number[];
   abstract _clean(): void;
+  abstract _get(): number[];
+  abstract _process(buf: DataView, offset: number): void;
   abstract _roundClean(): void;
   // For partial updates less than block size
   buffer: Uint8Array;
-  view: DataView;
   finished = false;
   length = 0;
+  view: DataView;
 
   constructor(
     readonly blockLen: number,
