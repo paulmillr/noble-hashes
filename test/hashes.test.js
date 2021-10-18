@@ -2,7 +2,7 @@ const assert = require('assert');
 const { should } = require('micro-should');
 const crypto = require('crypto');
 const { sha256 } = require('../lib/sha256');
-const { sha512, sha512_256 } = require('../lib/sha512');
+const { sha512, sha512_256, sha384 } = require('../lib/sha512');
 const { sha3_224, sha3_256, sha3_384, sha3_512, keccak_256 } = require('../lib/sha3');
 const { blake2b } = require('../lib/blake2b');
 const { blake2s } = require('../lib/blake2s');
@@ -41,7 +41,7 @@ for (let i = 0; i < testBuf.length; i++) testBuf[i] = i;
 const HASHES = {
   SHA256: {
     fn: sha256,
-    obj: sha256.init,
+    obj: sha256.create,
     node: (buf) => Uint8Array.from(crypto.createHash('sha256').update(buf).digest()),
     node_obj: () => crypto.createHash('sha256'),
     nist: [
@@ -53,9 +53,23 @@ const HASHES = {
       '50e72a0e 26442fe2 552dc393 8ac58658 228c0cbf b1d2ca87 2ae43526 6fcd055e',
     ],
   },
+  SHA384: {
+    fn: sha384,
+    obj: sha384.create,
+    node: (buf) => Uint8Array.from(crypto.createHash('sha384').update(buf).digest()),
+    node_obj: () => crypto.createHash('sha384'),
+    nist: [
+      'cb00753f45a35e8b b5a03d699ac65007 272c32ab0eded163 1a8b605a43ff5bed 8086072ba1e7cc23 58baeca134c825a7',
+      '38b060a751ac9638 4cd9327eb1b1e36a 21fdb71114be0743 4c0cc7bf63f6e1da 274edebfe76f65fb d51ad2f14898b95b',
+      '3391fdddfc8dc739 3707a65b1b470939 7cf8b1d162af05ab fe8f450de5f36bc6 b0455a8520bc4e6f 5fe95b1fe3c8452b',
+      '09330c33f71147e8 3d192fc782cd1b47 53111b173b3b05d2 2fa08086e3b0f712 fcc7c71a557e2db9 66c3e9fa91746039',
+      '9d0e1809716474cb 086e834e310a4a1c ed149e9c00f24852 7972cec5704c2a5b 07b8b3dc38ecc4eb ae97ddd87f3d8985',
+      '5441235cc0235341 ed806a64fb354742 b5e5c02a3c5cb71b 5f63fb793458d8fd ae599c8cd8884943 c04f11b31b89f023',
+    ],
+  },
   SHA512: {
     fn: sha512,
-    obj: sha512.init,
+    obj: sha512.create,
     node: (buf) => Uint8Array.from(crypto.createHash('sha512').update(buf).digest()),
     node_obj: () => crypto.createHash('sha512'),
     nist: [
@@ -69,7 +83,7 @@ const HASHES = {
   },
   SHA512_256: {
     fn: sha512_256,
-    obj: sha512_256.init,
+    obj: sha512_256.create,
     node: (buf) => Uint8Array.from(crypto.createHash('sha512-256').update(buf).digest()),
     node_obj: () => crypto.createHash('sha512-256'),
     // There is no official vectors, so we created them via:
@@ -84,7 +98,7 @@ const HASHES = {
   },
   SHA3_224: {
     fn: sha3_224,
-    obj: sha3_224.init,
+    obj: sha3_224.create,
     node: (buf) => Uint8Array.from(crypto.createHash('sha3-224').update(buf).digest()),
     node_obj: () => crypto.createHash('sha3-224'),
     nist: [
@@ -98,7 +112,7 @@ const HASHES = {
   },
   SHA3_256: {
     fn: sha3_256,
-    obj: sha3_256.init,
+    obj: sha3_256.create,
     node: (buf) => Uint8Array.from(crypto.createHash('sha3-256').update(buf).digest()),
     node_obj: () => crypto.createHash('sha3-256'),
     nist: [
@@ -112,7 +126,7 @@ const HASHES = {
   },
   SHA3_384: {
     fn: sha3_384,
-    obj: sha3_384.init,
+    obj: sha3_384.create,
     node: (buf) => Uint8Array.from(crypto.createHash('sha3-384').update(buf).digest()),
     node_obj: () => crypto.createHash('sha3-384'),
     nist: [
@@ -126,7 +140,7 @@ const HASHES = {
   },
   SHA3_512: {
     fn: sha3_512,
-    obj: sha3_512.init,
+    obj: sha3_512.create,
     node: (buf) => Uint8Array.from(crypto.createHash('sha3-512').update(buf).digest()),
     node_obj: () => crypto.createHash('sha3-512'),
     nist: [
@@ -140,7 +154,7 @@ const HASHES = {
   },
   BLAKE2s: {
     fn: blake2s,
-    obj: blake2s.init,
+    obj: blake2s.create,
     node: (buf) => Uint8Array.from(crypto.createHash('blake2s256').update(buf).digest()),
     node_obj: () => crypto.createHash('blake2s256'),
     // There is no official vectors, so we created them via:
@@ -155,7 +169,7 @@ const HASHES = {
   },
   BLAKE2b: {
     fn: blake2b,
-    obj: blake2b.init,
+    obj: blake2b.create,
     node: (buf) => Uint8Array.from(crypto.createHash('blake2b512').update(buf).digest()),
     node_obj: () => crypto.createHash('blake2b512'),
     // There is no official vectors, so we created them via:
@@ -170,7 +184,7 @@ const HASHES = {
   },
   KECCAK256: {
     fn: keccak_256,
-    obj: keccak_256.init,
+    obj: keccak_256.create,
     // There is no official vectors, so we created them via:
     // > NIST_VECTORS.map((i) => Buffer.from(require('js-sha3').keccak256.update(i[2]).digest()).toString('hex'))
     nist: [
@@ -183,7 +197,7 @@ const HASHES = {
   },
   RIPEMD160: {
     fn: ripemd160,
-    obj: ripemd160.init,
+    obj: ripemd160.create,
     node: (buf) => Uint8Array.from(crypto.createHash('ripemd160').update(buf).digest()),
     node_obj: () => crypto.createHash('ripemd160'),
     // There is no official vectors, so we created them via:
@@ -200,7 +214,7 @@ const HASHES = {
   // Hmac as hash
   'HMAC-SHA256': {
     fn: hmac.bind(null, sha256, new Uint8Array()),
-    obj: hmac.init.bind(null, sha256, new Uint8Array()),
+    obj: hmac.create.bind(null, sha256, new Uint8Array()),
     node: (buf) =>
       Uint8Array.from(crypto.createHmac('sha256', new Uint8Array()).update(buf).digest()),
     node_obj: () => crypto.createHmac('sha256', new Uint8Array()),
@@ -216,7 +230,7 @@ const HASHES = {
   },
   'HMAC-SHA512': {
     fn: hmac.bind(null, sha512, new Uint8Array()),
-    obj: hmac.init.bind(null, sha512, new Uint8Array()),
+    obj: hmac.create.bind(null, sha512, new Uint8Array()),
     node: (buf) =>
       Uint8Array.from(crypto.createHmac('sha512', new Uint8Array()).update(buf).digest()),
     node_obj: () => crypto.createHmac('sha512', new Uint8Array()),

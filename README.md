@@ -246,15 +246,16 @@ Benchmarks measured with Apple M1. Note that PBKDF2 and Scrypt are tested with e
 work factor. To run benchmarks, execute `npm run bench-install` and then `npm run bench`
 
 ```
-SHA256 32B x 931,966 ops/sec @ 1μs/op
-SHA512 32B x 423,370 ops/sec @ 2μs/op
-SHA512-256 32B x 417,885 ops/sec @ 2μs/op
-SHA3-256 32B x 181,356 ops/sec @ 5μs/op
-keccak-256 32B x 180,115 ops/sec @ 5μs/op
-BLAKE2s 32B x 499,251 ops/sec @ 2μs/op
+SHA256 32B x 941,619 ops/sec @ 1μs/op
+SHA384 32B x 420,875 ops/sec @ 2μs/op
+SHA512 32B x 422,654 ops/sec @ 2μs/op
+SHA512-256 32B x 422,832 ops/sec @ 2μs/op
+SHA3-256 32B x 184,229 ops/sec @ 5μs/op
+keccak-256 32B x 186,046 ops/sec @ 5μs/op
+BLAKE2s 32B x 505,561 ops/sec @ 1μs/op
 BLAKE2b 32B x 284,981 ops/sec @ 3μs/op
-HMAC-SHA256 32B x 270,124 ops/sec @ 3μs/op
-RIPEMD160 32B x 976,562 ops/sec @ 1μs/op
+HMAC-SHA256 32B x 277,161 ops/sec @ 3μs/op
+RIPEMD160 32B x 984,251 ops/sec @ 1μs/op
 HKDF-SHA256 32B noble x 115,500 ops/sec @ 8μs/op
 PBKDF2-HMAC-SHA256 262144 noble x 2 ops/sec @ 338ms/op
 PBKDF2-HMAC-SHA512 262144 noble x 0 ops/sec @ 1024ms/op
@@ -265,6 +266,7 @@ Compare to native node.js implementation that uses C bindings instead of pure-js
 
 ```
 SHA256 32B node x 569,151 ops/sec @ 1μs/op
+SHA384 32B node x 548,245 ops/sec @ 1μs/op
 SHA512 32B node x 551,267 ops/sec @ 1μs/op
 SHA512-256 32B node x 534,473 ops/sec @ 1μs/op
 SHA3 32B node x 545,553 ops/sec @ 1μs/op

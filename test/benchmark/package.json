@@ -19,6 +19,7 @@
     "@stablelib/scrypt": "^1.0.1",
     "@stablelib/sha256": "^1.0.1",
     "@stablelib/sha3": "^1.0.1",
+    "@stablelib/sha384": "^1.0.1",
     "@stablelib/sha512": "^1.0.1",
     "@stablelib/sha512_256": "^1.0.1",
     "create-hash": "^1.2.0",

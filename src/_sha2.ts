@@ -1,13 +1,13 @@
 import { Hash, createView, Input, toBytes } from './utils';
 
 // Polyfill for Safari 14
-function setBigUint64(view: DataView, byteOffset: number, value: bigint, LE: boolean): void {
-  if (typeof view.setBigUint64 === 'function') return view.setBigUint64(byteOffset, value, LE);
+function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: boolean): void {
+  if (typeof view.setBigUint64 === 'function') return view.setBigUint64(byteOffset, value, isLE);
   const wh = Number((value >> 32n) & 0xffffffffn);
   const wl = Number(value & 0xffffffffn);
-  const [h, l] = LE ? [4, 0] : [0, 4];
-  view.setUint32(byteOffset + h, wh, LE);
-  view.setUint32(byteOffset + l, wl, LE);
+  const [h, l] = isLE ? [4, 0] : [0, 4];
+  view.setUint32(byteOffset + h, wh, isLE);
+  view.setUint32(byteOffset + l, wl, isLE);
 }
 
 // Base SHA2 class (RFC 6234)

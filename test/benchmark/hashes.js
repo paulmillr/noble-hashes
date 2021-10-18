@@ -3,7 +3,7 @@ const { run, mark } = bench; // or bench.mark
 const crypto = require('crypto');
 // Noble
 const { sha256 } = require('../../lib/sha256');
-const { sha512, sha512_256 } = require('../../lib/sha512');
+const { sha512, sha512_256, sha384 } = require('../../lib/sha512');
 const { sha3_256, keccak_256 } = require('../../lib/sha3');
 const { blake2s } = require('../../lib/blake2s');
 const { blake2b } = require('../../lib/blake2b');
@@ -16,6 +16,7 @@ const createHmac = require('create-hmac/browser');
 const stable256 = require('@stablelib/sha256');
 const stableHmac = require('@stablelib/hmac');
 const fastsha256 = require('fast-sha256').hash;
+const stable384 = require('@stablelib/sha384');
 const stable512 = require('@stablelib/sha512');
 const stable512_256 = require('@stablelib/sha512_256');
 const stable3 = require('@stablelib/sha3');
@@ -34,6 +35,12 @@ const HASHES = {
     stablelib: (buf) => stable256.hash(buf),
     'fast-sha256': (buf) => fastsha256.hash(buf),
     noble: (buf) => sha256(buf),
+  },
+  SHA384: {
+    node: (buf) => crypto.createHash('sha384').update(buf).digest(),
+    'crypto-browserify': (buf) => createHash('sha384').update(buf).digest(),
+    stablelib: (buf) => stable384.hash(buf),
+    noble: (buf) => sha384(buf),
   },
   SHA512: {
     node: (buf) => crypto.createHash('sha512').update(buf).digest(),
@@ -82,12 +89,12 @@ const HASHES = {
 
 // buffer title, sample count, data
 const buffers = {
-  '32 B': [200000, new Uint8Array(32).fill(1)],
-  // '64 B': [200000, new Uint8Array(64).fill(1)],
-  // '1 KB': [50000, new Uint8Array(1024).fill(2)],
-  // '8 KB': [6250, new Uint8Array(1024 * 8).fill(3)],
+  '32B': [200000, new Uint8Array(32).fill(1)],
+  // '64B': [200000, new Uint8Array(64).fill(1)],
+  // '1KB': [50000, new Uint8Array(1024).fill(2)],
+  // '8KB': [6250, new Uint8Array(1024 * 8).fill(3)],
   // // Slow, but 100 doesn't show difference, probably opt doesn't happen or something
-  // '1 MB': [250, new Uint8Array(1024 * 1024).fill(4)],
+  // '1MB': [250, new Uint8Array(1024 * 1024).fill(4)],
 };
 
 const main = () =>
