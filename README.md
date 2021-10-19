@@ -81,15 +81,40 @@ console.log(toHex(sha256('abc')));
 
 ## API
 
-Any hash function:
+All hash functions:
 
-1. Can be called directly, like `sha256(new Uint8Array([1, 3]))`,
-or initialized as a class: `sha256.create().update(new Uint8Array([1, 3]).digest()`
-2. Can receive either an `Uint8Array`, or a `string` that would be
-automatically converted to `Uint8Array` via `new TextEncoder().encode(string)`.
-  The output is always `Uint8Array`.
-3. Can receive an option object as a second argument: `sha256('abc', {cleanup: true})`;
-  or `sha256.create({cleanup: true}).update('abc').digest()`
+- can be called directly, with `Uint8Array`.
+- return `Uint8Array`s
+- can receive `string`, which is automatically converted to `Uint8Array`
+  via utf8 encoding (not with hex)
+
+```ts
+function hash(message: Uint8Array | string): Uint8Array;
+hash(new Uint8Array([1, 3]));
+hash('string') == hash(new TextEncoder().encode('string'))
+```
+
+All hash functions can be constructed via `hash.create()` method:
+
+- the result is `Hash` subclass instance, which has `update()` and `digest()` methods
+- `digest()` finalizes the hash and makes it no longer usable
+
+```ts
+hash.create().update(new Uint8Array([1, 3])).digest()
+```
+
+*Some* hash functions can also receive `options` object, which can be either passed as a:
+
+- second argument to hash function
+- first argument to class initializer
+
+```ts
+blake2s('abc');
+const options = {key: a, personalization: b, salt: c, dkLen: 32};
+blake2s('abc', options);
+blake2s.create(options).update('abc').digest();
+```
+
 
 ##### SHA2 (sha256, sha512, sha512_256)
 
