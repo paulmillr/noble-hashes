@@ -84,9 +84,9 @@ console.log(toHex(sha256('abc')));
 All hash functions:
 
 - can be called directly, with `Uint8Array`.
-- return `Uint8Array`s
+- return `Uint8Array`
 - can receive `string`, which is automatically converted to `Uint8Array`
-  via utf8 encoding (not with hex)
+  via utf8 encoding **(not hex)**
 
 ```ts
 function hash(message: Uint8Array | string): Uint8Array;
