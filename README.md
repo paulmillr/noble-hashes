@@ -50,9 +50,15 @@ const { sha512, sha512_256, sha384 } = require('noble-hashes/lib/sha512');
 // prettier-ignore
 const {
   sha3_224, sha3_256, sha3_384, sha3_512,
-  keccak_224, keccak_256, keccak_384, keccak_512
+  keccak_224, keccak_256, keccak_384, keccak_512,
+  shake128, shake256
 } = require('noble-hashes/lib/sha3');
+// prettier-ignore
+const {
+  cshake128, cshake256, kmac128, kmac256, k12, m14
+} = require('noble-hashes/lib/sha3-addons');
 const { ripemd160 } = require('noble-hashes/lib/ripemd160');
+const { blake3 } = require('noble-hashes/lib/blake3');
 const { blake2b } = require('noble-hashes/lib/blake2b');
 const { blake2s } = require('noble-hashes/lib/blake2s');
 const { hmac } = require('noble-hashes/lib/hmac');
