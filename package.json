@@ -47,6 +47,7 @@
     "keccak",
     "ripemd160",
     "blake2",
+    "blake3",
     "hmac",
     "hkdf",
     "pbkdf2",

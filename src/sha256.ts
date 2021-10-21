@@ -28,7 +28,7 @@ const IV = new Uint32Array([
 // Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
 const SHA256_W = new Uint32Array(64);
-class SHA256 extends SHA2 {
+class SHA256 extends SHA2<SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
   private A = IV[0] | 0;
@@ -43,12 +43,12 @@ class SHA256 extends SHA2 {
   constructor() {
     super(64, 32, 8, false);
   }
-  _get(): [number, number, number, number, number, number, number, number] {
+  protected get(): [number, number, number, number, number, number, number, number] {
     const { A, B, C, D, E, F, G, H } = this;
     return [A, B, C, D, E, F, G, H];
   }
   // prettier-ignore
-  private _set(
+  protected set(
     A: number, B: number, C: number, D: number, E: number, F: number, G: number, H: number
   ) {
     this.A = A | 0;
@@ -60,7 +60,7 @@ class SHA256 extends SHA2 {
     this.G = G | 0;
     this.H = H | 0;
   }
-  _process(view: DataView, offset: number): void {
+  protected process(view: DataView, offset: number): void {
     // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
     for (let i = 0; i < 16; i++, offset += 4) SHA256_W[i] = view.getUint32(offset, false);
     for (let i = 16; i < 64; i++) {
@@ -95,13 +95,13 @@ class SHA256 extends SHA2 {
     F = (F + this.F) | 0;
     G = (G + this.G) | 0;
     H = (H + this.H) | 0;
-    this._set(A, B, C, D, E, F, G, H);
+    this.set(A, B, C, D, E, F, G, H);
   }
-  _roundClean() {
+  protected roundClean() {
     SHA256_W.fill(0);
   }
   _clean() {
-    this._set(0, 0, 0, 0, 0, 0, 0, 0);
+    this.set(0, 0, 0, 0, 0, 0, 0, 0);
     this.buffer.fill(0);
   }
 }

@@ -85,14 +85,20 @@ export function assertHash(hash: CHash) {
 }
 
 // For runtime check if class implements interface
-export abstract class Hash {
+export abstract class Hash<T extends Hash<T>> {
   abstract blockLen: number; // Bytes per block
   abstract outputLen: number; // Bytes in output
   abstract update(buf: Input): this;
   abstract digest(): Uint8Array;
   // Internal methods (unsafe)
+  // Unsafe because expects buf to be length of outputLen. Behaviour when buf length is not equal to outputLen is undefined.
   abstract _writeDigest(buf: Uint8Array): void;
   abstract _clean(): void;
+  // Unsafe because doesn't check if "to" is correct. Can be used as clone() if no opts passed.
+  // Why cloneInto instead of clone? Mostly performance (same as _writeDigest), but also has nice property: it reuses instance
+  // which means all internal buffers is overwritten, which also causes overwrite buffer which used for digest (in some cases).
+  // We don't provide any guarantees about cleanup (it is impossible to!), so should be enough for now.
+  abstract _cloneInto(to?: T): T;
 }
 
 // Check if object doens't have custom constructor (like Uint8Array/Array)
@@ -107,66 +113,9 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(def: T1, _op
   return opts as T1 & T2;
 }
 
-interface CloneableSHA2Like extends Hash {
-  buffer: Uint8Array;
-  length: number;
-  view?: DataView;
-  finished: boolean;
-  _get(): number[];
-  _set(...values: number[]): void;
-  _cloneOpts?(): any;
-}
-
-interface CloneableSponge extends Hash {
-  blockLen: number;
-  state: Uint8Array;
-  suffix: number;
-  pos: number;
-  finished: boolean;
-}
-
-export type Cloneable = CloneableSHA2Like | CloneableSponge;
-
-function isSHA2Like(item: Cloneable): item is CloneableSHA2Like {
-  return 'buffer' in item;
-}
-
-function isSponge(item: Cloneable): item is CloneableSponge {
-  return 'state' in item;
-}
-
-export function cloneHashInto(first: Cloneable, second?: Cloneable): Cloneable {
-  if (isSHA2Like(first)) {
-    // @ts-ignore
-    if (second == null) second = new first.constructor() as CloneableSHA2Like;
-    else second = second as CloneableSHA2Like;
-    second._set(...first._get());
-    const { blockLen, buffer, view, length, finished } = first;
-    second.length = length;
-    second.finished = finished;
-    // Very ugly hack to optimize on sha2* (it has view)
-    if (!view || length % blockLen) second.buffer.set(buffer);
-    return second;
-  } else if (isSponge(first)) {
-    const { blockLen, suffix, outputLen, state, pos, finished } = first;
-    if (second == null)
-      // @ts-ignore
-      second = new first.constructor({ blockLen, suffix, outputLen }) as CloneableSponge;
-    else {
-      second = second as CloneableSponge;
-    }
-    second.state.set(state);
-    second.pos = pos;
-    second.finished = finished;
-    return second;
-  } else {
-    throw new Error('Invalid hash interface');
-  }
-}
-
 export type CHash = ReturnType<typeof wrapConstructor>;
 
-export function wrapConstructor(hashConstructor: () => Hash) {
+export function wrapConstructor<T extends Hash<T>>(hashConstructor: () => Hash<T>) {
   const hashC = (message: Input): Uint8Array => hashConstructor().update(toBytes(message)).digest();
   const tmp = hashConstructor();
   hashC.outputLen = tmp.outputLen;
@@ -176,8 +125,10 @@ export function wrapConstructor(hashConstructor: () => Hash) {
   return hashC;
 }
 
-export function wrapConstructorWithOpts<T extends Object>(hashCons: (opts: T) => Hash) {
-  const hashC = (msg: Input, opts: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
+  hashCons: (opts?: T) => Hash<H>
+) {
+  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;

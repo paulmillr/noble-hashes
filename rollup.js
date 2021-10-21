@@ -1,9 +1,9 @@
 'use strict';
+exports.sha256 = require('./lib/sha256').sha256;
 let utils = {};
 exports.utils = utils;
 utils.bytesToHex = require('./lib/utils').bytesToHex;
 utils.randomBytes = require('./lib/utils').randomBytes;
-exports.sha256 = require('./lib/sha256').sha256;
 exports.sha512 = require('./lib/sha512').sha512;
 exports.ripemd160 = require('./lib/ripemd160').ripemd160;
 exports.blake2b = require('./lib/blake2b').blake2b;
@@ -36,3 +36,14 @@ exports.keccak_224 = keccak_224;
 exports.keccak_256 = keccak_256;
 exports.keccak_384 = keccak_384;
 exports.keccak_512 = keccak_512;
+const {
+  cshake128, cshake256, kmac128, kmac256, k12, m14
+} = require('./lib/sha3');
+exports.cshake128 = cshake128;
+exports.cshake256 = cshake256;
+exports.kmac128 = kmac128;
+exports.kmac256 = kmac256;
+exports.k12 = k12;
+exports.m14 = m14;
+const {blake3} = require('./lib/blake3');
+exports.blake3 = blake3;

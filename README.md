@@ -1,33 +1,35 @@
 # noble-hashes ![Node CI](https://github.com/paulmillr/noble-hashes/workflows/Node%20CI/badge.svg) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
-Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2, HMAC, HKDF, PBKDF2 & Scrypt.
+Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE, HMAC, HKDF, PBKDF2 & Scrypt.
 
 Benefits of noble-hashes over other libraries:
 
-- **noble** brand (see below) / zero dependencies
-- Helps JS bundlers with lack of entry point; ensures small size of your app
-- No unrolled loops. Makes it much easier to verify and reduces source code size 2-5x
-- Unique tests ensure correctness. That includes chained tests (`hash(hash(hash(....)))`), sliding window tests, DoS tests
-- Differential fuzzing ensures even more correctness. We do it with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
-- Hash functions support hashing 4GB of data per update on 64-bit systems (unlimited with streaming)
-- Scrypt supports `n: 2**22` with 4GB arrays (almost every other implementation crashes; some crash on `2**20`), `maxmem` security param, `onProgress` callback
-- Overall size of all primitives is ~1800 TypeScript LOC, or 35KB minified (12KB gzipped).
-You can select specific functions, SHA256-only would be ~400 LOC / 6.5KB minified (3KB gzipped)
+- **noble** family (see below), zero dependencies
+- 🔻 Helps JS bundlers with lack of entry point; ensures small size of your app
+- 🔁 No unrolled loops: makes it much easier to verify and reduces source code size 2-5x
+- 🏎 Ultra-fast, hand-optimized for caveats of JS engines
+- 🔍 Unique tests ensure correctness: chained tests (`hash(hash(hash(....)))`), sliding window tests, DoS tests
+- 🧪 Differential fuzzing ensures even more correctness with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
+- 🔑 Scrypt supports `n: 2**22` with 4GB arrays (other implementations crash on `2**21` even `2**20`), `maxmem` security param, `onProgress` callback
+- 🦘 SHA3 supports KangarooTwelve and MarsupilamiFourteen
+- All primitives are just ~2KLOC / 41KB minified / 14KB gzipped. SHA256-only is 240LOC / 7KB minified / 3KB gzipped
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
 Matches following specs:
 
 - SHA2 aka SHA256 / SHA384 / SHA512 [(RFC 4634)](https://datatracker.ietf.org/doc/html/rfc4634)
-- SHA3 & Keccak ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [Website](https://keccak.team/keccak.html))
+- SHA3, Keccak, SHAKE, cSHAKE & KMAC ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [Website](https://keccak.team/keccak.html)), [(NIST SP 800-185)](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
+- KangarooTwelve & MarsupilamiFourteen ([Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt), [Website](https://keccak.team/keccak.html))
 - RIPEMD-160 ([RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286), [Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html))
 - BLAKE2b, BLAKE2s ([RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net))
+- BLAKE3 [(Website)](https://blake3.io)
 - HMAC [(RFC 2104)](https://datatracker.ietf.org/doc/html/rfc2104)
 - HKDF [(RFC 5869)](https://datatracker.ietf.org/doc/html/rfc5869)
 - PBKDF2 [(RFC 2898)](https://datatracker.ietf.org/doc/html/rfc2898)
 - Scrypt ([RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914), [Website](https://www.tarsnap.com/scrypt.html))
 
-### This library belongs to *noble* crypto
+### This library belongs to _noble_ crypto
 
 > **noble-crypto** — high-security, easily auditable set of contained cryptographic libraries and tools.
 
@@ -87,11 +89,12 @@ All hash functions:
 - return `Uint8Array`
 - can receive `string`, which is automatically converted to `Uint8Array`
   via utf8 encoding **(not hex)**
+- support hashing 4GB of data per update on 64-bit systems (unlimited with streaming)
 
 ```ts
 function hash(message: Uint8Array | string): Uint8Array;
 hash(new Uint8Array([1, 3]));
-hash('string') == hash(new TextEncoder().encode('string'))
+hash('string') == hash(new TextEncoder().encode('string'));
 ```
 
 All hash functions can be constructed via `hash.create()` method:
@@ -100,45 +103,59 @@ All hash functions can be constructed via `hash.create()` method:
 - `digest()` finalizes the hash and makes it no longer usable
 
 ```ts
-hash.create().update(new Uint8Array([1, 3])).digest()
+hash
+  .create()
+  .update(new Uint8Array([1, 3]))
+  .digest();
 ```
 
-*Some* hash functions can also receive `options` object, which can be either passed as a:
+_Some_ hash functions can also receive `options` object, which can be either passed as a:
 
 - second argument to hash function
 - first argument to class initializer
 
 ```ts
 blake2s('abc');
-const options = {key: a, personalization: b, salt: c, dkLen: 32};
+const options = { key: a, personalization: b, salt: c, dkLen: 32 };
 blake2s('abc', options);
 blake2s.create(options).update('abc').digest();
 ```
-
 
 ##### SHA2 (sha256, sha512, sha512_256)
 
 ```typescript
 import { sha256 } from 'noble-hashes/lib/sha256.js';
 // function sha256(data: Uint8Array): Uint8Array;
-const hash1 = sha256('abc');
-const hash2 = sha256.create().update(Uint8Array.from([1, 2, 3])).digest();
+const h1a = sha256('abc');
+const h1b = sha256
+  .create()
+  .update(Uint8Array.from([1, 2, 3]))
+  .digest();
 ```
 
 ```typescript
 import { sha512 } from 'noble-hashes/lib/sha512.js';
-const hash3 = sha512('abc');
-const hash4 = sha512.create().update(Uint8Array.from([1, 2, 3])).digest();
+const h2a = sha512('abc');
+const h2b = sha512
+  .create()
+  .update(Uint8Array.from([1, 2, 3]))
+  .digest();
 
 // SHA512/256 variant
 import { sha512_256 } from 'noble-hashes/lib/sha512.js';
-const hash3_a = sha512_256('abc');
-const hash4_a = sha512_256.create().update(Uint8Array.from([1, 2, 3])).digest();
+const h3a = sha512_256('abc');
+const h3b = sha512_256
+  .create()
+  .update(Uint8Array.from([1, 2, 3]))
+  .digest();
 
+// SHA384
 import { sha384 } from 'noble-hashes/lib/sha512.js';
-const hash3_b = sha384('abc');
-const hash4_b = sha384.create().update(Uint8Array.from([1, 2, 3])).digest();
-
+const h4a = sha384('abc');
+const h4b = sha384
+  .create()
+  .update(Uint8Array.from([1, 2, 3]))
+  .digest();
 ```
 
 To learn more about SHA512/256, check out [the paper](https://eprint.iacr.org/2010/548.pdf).
@@ -147,15 +164,44 @@ To learn more about SHA512/256, check out [the paper](https://eprint.iacr.org/20
 
 ```typescript
 import {
-  sha3_224, sha3_256, sha3_384, sha3_512,
-  keccak_224, keccak_256, keccak_384, keccak_512
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+  keccak_224,
+  keccak_256,
+  keccak_384,
+  keccak_512,
+  shake128,
+  shake256
 } from 'noble-hashes/lib/sha3.js';
-const hash5 = sha3_256('abc');
-const hash6 = sha3_256.create().update(Uint8Array.from([1, 2, 3])).digest();
-const hash7 = keccak_256('abc');
+const h5a = sha3_256('abc');
+const h5b = sha3_256
+  .create()
+  .update(Uint8Array.from([1, 2, 3]))
+  .digest();
+const h6a = keccak_256('abc');
+const h7a = shake128('abc', { dkLen: 512 });
+const h7b = shake256('abc', { dkLen: 512 })
 ```
 
 See [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
+
+##### SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)
+
+```typescript
+import {
+  cshake128, cshake256, kmac128, kmac256, k12, m14
+} from 'noble-hashes/lib/sha3-addons.js';
+const h7c = cshake128('abc', { personalization: 'def' })
+const h7d = cshake256('abc', { personalization: 'def' })
+const h7e = kmac128('key', 'message')
+const h7f = kmac256('key', 'message')
+const h7h = k12('abc');
+const h7g = m14('abc')
+```
+
+🦘 K12 and M14 are basically faster versions of Keccak.
 
 ##### RIPEMD-160
 
@@ -163,7 +209,10 @@ See [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/
 import { ripemd160 } from 'noble-hashes/lib/ripemd160.js';
 // function ripemd160(data: Uint8Array): Uint8Array;
 const hash8 = ripemd160('abc');
-const hash9 = ripemd160().create().update(Uint8Array.from([1, 2, 3])).digest();
+const hash9 = ripemd160()
+  .create()
+  .update(Uint8Array.from([1, 2, 3]))
+  .digest();
 ```
 
 ##### BLAKE2b, BLAKE2s
@@ -171,10 +220,21 @@ const hash9 = ripemd160().create().update(Uint8Array.from([1, 2, 3])).digest();
 ```typescript
 import { blake2b } from 'noble-hashes/lib/blake2b.js';
 import { blake2s } from 'noble-hashes/lib/blake2s.js';
-const hash10 = blake2s('abc');
-const b2params = {key: new Uint8Array([1]), personalization: t, salt: t, dkLen: 32};
-const hash11 = blake2s('abc', b2params);
-const hash12 = blake2s.create(b2params).update(Uint8Array.from([1, 2, 3])).digest();
+const h10a = blake2s('abc');
+const b2params = { key: new Uint8Array([1]), personalization: t, salt: t, dkLen: 32 };
+const h10b = blake2s('abc', b2params);
+const h10c = blake2s
+  .create(b2params)
+  .update(Uint8Array.from([1, 2, 3]))
+  .digest();
+```
+
+##### BLAKE3
+
+```typescript
+import { blake3 } from 'noble-hashes/lib/blake3.js';
+// All params are optional
+const h11 = blake3('abc', { dkLen: 256, key: 'def', context: 'fji' })
 ```
 
 ##### HMAC
@@ -201,7 +261,7 @@ const hk1 = hkdf(sha256, inputKey, salt, info, dkLen);
 // == same as
 import { hkdf_extract, hkdf_expand } from 'noble-hashes/lib/kdf.js';
 import { sha256 } from 'noble-hashes/lib/sha256.js';
-const prk = hkdf_extract(sha256, inputKey, salt)
+const prk = hkdf_extract(sha256, inputKey, salt);
 const hk2 = hkdf_expand(sha256, prk, info, dkLen);
 ```
 
@@ -212,9 +272,10 @@ import { pbkdf2, pbkdf2Async } from 'noble-hashes/lib/kdf.js';
 import { sha256 } from 'noble-hashes/lib/sha256.js';
 const pbkey1 = pbkdf2(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
 const pbkey2 = await pbkdf2Async(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
-const pbkey3 = await pbkdf2Async(
-  sha256, Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]), { c: 32, dkLen: 32 }
-);
+const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]), {
+  c: 32,
+  dkLen: 32,
+});
 ```
 
 ##### Scrypt
@@ -223,17 +284,16 @@ const pbkey3 = await pbkdf2Async(
 import { scrypt, scryptAsync } from 'noble-hashes/lib/scrypt.js';
 const scr1 = scrypt('password', 'salt', { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
 const scr2 = await scryptAsync('password', 'salt', { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
-const scr3 = await scryptAsync(
-  Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]),
-  {
-    N: 2 ** 22,
-    r: 8,
-    p: 1,
-    dkLen: 32,
-    onProgress(percentage) { console.log('progress', percentage); },
-    maxmem: 2 ** 32 + (128 * 8 * 1) // N * r * p * 128 + (128*r*p)
-  }
-);
+const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]), {
+  N: 2 ** 22,
+  r: 8,
+  p: 1,
+  dkLen: 32,
+  onProgress(percentage) {
+    console.log('progress', percentage);
+  },
+  maxmem: 2 ** 32 + 128 * 8 * 1, // N * r * p * 128 + (128*r*p)
+});
 ```
 
 - `N, r, p` are work factors. To understand them, see [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
@@ -245,7 +305,7 @@ Memory usage of scrypt is calculated with the formula `N * r * p * 128 + (128 * 
 `{N: 2 ** 22, r: 8, p: 1}` will use 4GB + 1KB of memory. To prevent DoS, we limit scrypt to `1GB + 1KB` of RAM used,
 which corresponds to `{N: 2 ** 20, r: 8, p: 1}`. If you want to use higher values, increase `maxmem` using the formula above.
 
-*Note:* noble supports `2**22` (4GB RAM) which is the highest amount amongst JS libs. Many other implementations don't support it.
+_Note:_ noble supports `2**22` (4GB RAM) which is the highest amount amongst JS libs. Many other implementations don't support it.
 We cannot support `2**23`, because there is a limitation in JS engines that makes allocating
 arrays bigger than 4GB impossible, but we're looking into other possible solutions.
 
@@ -267,7 +327,7 @@ The library will be audited by an independent security firm in the next few mont
 
 The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz). You can run the fuzzer by yourself to check it.
 
-A note on [timing attacks](https://en.wikipedia.org/wiki/Timing_attack): *JIT-compiler* and *Garbage Collector* make "constant time" extremely hard to achieve in a scripting language. Which means *any other JS library can't have constant-timeness*. Even statically typed Rust, a language without GC, [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security) for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones. Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
+A note on [timing attacks](https://en.wikipedia.org/wiki/Timing_attack): _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to achieve in a scripting language. Which means _any other JS library can't have constant-timeness_. Even statically typed Rust, a language without GC, [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security) for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones. Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
 
 We consider infrastructure attacks like rogue NPM modules very important; that's why it's crucial to minimize the amount of 3rd-party dependencies & native bindings. If your app uses 500 dependencies, any dep could get hacked and you'll be downloading rootkits with every `npm install`. Our goal is to minimize this attack vector.
 
@@ -277,20 +337,23 @@ Benchmarks measured with Apple M1. Note that PBKDF2 and Scrypt are tested with e
 work factor. To run benchmarks, execute `npm run bench-install` and then `npm run bench`
 
 ```
-SHA256 32B x 941,619 ops/sec @ 1μs/op
-SHA384 32B x 420,875 ops/sec @ 2μs/op
-SHA512 32B x 422,654 ops/sec @ 2μs/op
+SHA256 32B x 954,198 ops/sec @ 1μs/op
+SHA384 32B x 433,087 ops/sec @ 2μs/op
+SHA512 32B x 430,292 ops/sec @ 2μs/op
 SHA512-256 32B x 422,832 ops/sec @ 2μs/op
 SHA3-256 32B x 184,229 ops/sec @ 5μs/op
-keccak-256 32B x 186,046 ops/sec @ 5μs/op
+Keccak-256 32B x 186,046 ops/sec @ 5μs/op
+Kangaroo12 32B x 268,672 ops/sec @ 3μs/op
+Marsupilami14 32B x 244,379 ops/sec @ 4μs/op
 BLAKE2s 32B x 505,561 ops/sec @ 1μs/op
 BLAKE2b 32B x 284,981 ops/sec @ 3μs/op
+BLAKE3 32B x 479,386 ops/sec @ 2μs/op
 HMAC-SHA256 32B x 277,161 ops/sec @ 3μs/op
 RIPEMD160 32B x 984,251 ops/sec @ 1μs/op
-HKDF-SHA256 32B noble x 115,500 ops/sec @ 8μs/op
-PBKDF2-HMAC-SHA256 262144 noble x 2 ops/sec @ 338ms/op
-PBKDF2-HMAC-SHA512 262144 noble x 0 ops/sec @ 1024ms/op
-Scrypt r: 8, p: 1, n: 262144 noble x 1 ops/sec @ 637ms/op
+HKDF-SHA256 32B x 115,500 ops/sec @ 8μs/op
+PBKDF2-HMAC-SHA256 262144 x 2 ops/sec @ 338ms/op
+PBKDF2-HMAC-SHA512 262144 x 0 ops/sec @ 1024ms/op
+Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 637ms/op
 ```
 
 Compare to native node.js implementation that uses C bindings instead of pure-js code:
@@ -313,7 +376,7 @@ Scrypt 262144 scrypt.js x 0 ops/sec @ 1678ms/op
 ```
 
 It is possible to [make this library 4x+ faster](./test/benchmark/README.md) by
-*doing code generation of full loop unrolls*. We've decided against it. Reasons:
+_doing code generation of full loop unrolls_. We've decided against it. Reasons:
 
 - the library must be auditable, with minimum amount of code, and zero dependencies
 - most method invocations with the lib are going to be something like hashing 32b to 64kb of data
@@ -329,7 +392,7 @@ The current performance is good enough when compared to other projects; SHA256 i
 4. `npm run test` will execute all main tests. See [our approach to testing](./test/README.md)
 5. `npm run test-dos` will test against DoS; by measuring function complexity. **Takes ~20 minutes**
 6. `npm run test-big` will execute hashing on 4GB inputs,
-  scrypt with 1024 different `N, r, p` combinations, etc. **Takes several hours**. Using 8-32+ core CPU helps.
+   scrypt with 1024 different `N, r, p` combinations, etc. **Takes several hours**. Using 8-32+ core CPU helps.
 
 ## License
 

@@ -29,7 +29,13 @@ function pbkdf2Init(hash: CHash, _password: Input, _salt: Input, _opts: Pbkdf2Op
   return { c, dkLen, asyncTick, DK, PRF, PRFSalt };
 }
 
-function pbkdf2Output(PRF: Hash, PRFSalt: Hash, DK: Uint8Array, prfW: Hash, u: Uint8Array) {
+function pbkdf2Output<T extends Hash<T>>(
+  PRF: Hash<T>,
+  PRFSalt: Hash<T>,
+  DK: Uint8Array,
+  prfW: Hash<T>,
+  u: Uint8Array
+) {
   PRF._clean();
   PRFSalt._clean();
   if (prfW) prfW._clean();

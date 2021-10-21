@@ -31,7 +31,7 @@ const [SHA512_Kh, SHA512_Kl] = u64.split([
 const SHA512_W_H = new Uint32Array(80);
 const SHA512_W_L = new Uint32Array(80);
 
-export class SHA512 extends SHA2 {
+export class SHA512 extends SHA2<SHA512> {
   // We cannot use array here since array allows indexing by variable which means optimizer/compiler cannot use registers.
   // Also looks cleaner and easier to verify with spec.
   // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
@@ -57,7 +57,7 @@ export class SHA512 extends SHA2 {
     super(128, 64, 16, false);
   }
   // prettier-ignore
-  _get(): [
+  protected get(): [
     number, number, number, number, number, number, number, number,
     number, number, number, number, number, number, number, number
   ] {
@@ -65,7 +65,7 @@ export class SHA512 extends SHA2 {
     return [Ah, Al, Bh, Bl, Ch, Cl, Dh, Dl, Eh, El, Fh, Fl, Gh, Gl, Hh, Hl];
   }
   // prettier-ignore
-  private _set(
+  protected set(
     Ah: number, Al: number, Bh: number, Bl: number, Ch: number, Cl: number, Dh: number, Dl: number,
     Eh: number, El: number, Fh: number, Fl: number, Gh: number, Gl: number, Hh: number, Hl: number
   ) {
@@ -86,7 +86,7 @@ export class SHA512 extends SHA2 {
     this.Hh = Hh | 0;
     this.Hl = Hl | 0;
   }
-  _process(view: DataView, offset: number) {
+  protected process(view: DataView, offset: number) {
     // Extend the first 16 words into the remaining 64 words w[16..79] of the message schedule array
     for (let i = 0; i < 16; i++, offset += 4) {
       SHA512_W_H[i] = view.getUint32(offset);
@@ -154,15 +154,15 @@ export class SHA512 extends SHA2 {
     ({ h: Fh, l: Fl } = u64.add(this.Fh | 0, this.Fl | 0, Fh | 0, Fl | 0));
     ({ h: Gh, l: Gl } = u64.add(this.Gh | 0, this.Gl | 0, Gh | 0, Gl | 0));
     ({ h: Hh, l: Hl } = u64.add(this.Hh | 0, this.Hl | 0, Hh | 0, Hl | 0));
-    this._set(Ah, Al, Bh, Bl, Ch, Cl, Dh, Dl, Eh, El, Fh, Fl, Gh, Gl, Hh, Hl);
+    this.set(Ah, Al, Bh, Bl, Ch, Cl, Dh, Dl, Eh, El, Fh, Fl, Gh, Gl, Hh, Hl);
   }
-  _roundClean() {
+  protected roundClean() {
     SHA512_W_H.fill(0);
     SHA512_W_L.fill(0);
   }
   _clean() {
     this.buffer.fill(0);
-    this._set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   }
 }
 

@@ -3,10 +3,12 @@ const { run, mark } = bench; // or bench.mark
 const crypto = require('crypto');
 // Noble
 const { sha256 } = require('../../lib/sha256');
-const { sha512, sha512_256, sha384 } = require('../../lib/sha512');
+const { sha384, sha512, sha512_256 } = require('../../lib/sha512');
 const { sha3_256, keccak_256 } = require('../../lib/sha3');
+const { k12, m14 } = require('../../lib/sha3-addons');
 const { blake2s } = require('../../lib/blake2s');
 const { blake2b } = require('../../lib/blake2b');
+const { blake3 } = require('../../lib/blake3');
 const { hmac } = require('../../lib/hmac');
 const { ripemd160 } = require('../../lib/ripemd160');
 // Others
@@ -23,8 +25,6 @@ const stable3 = require('@stablelib/sha3');
 const stableBlake2s = require('@stablelib/blake2s');
 const stableBlake2b = require('@stablelib/blake2b');
 const jssha3 = require('js-sha3');
-const noble_ripemd160 = require('noble-ripemd160');
-
 
 const wrapBuf = (arrayBuffer) => new Uint8Array(arrayBuffer);
 
@@ -59,10 +59,12 @@ const HASHES = {
     'js-sha3': (buf) => wrapBuf(jssha3.sha3_256.create().update(buf).arrayBuffer()),
     noble: (buf) => sha3_256(buf),
   },
-  'keccak-256': {
+  'Keccak-256': {
     'js-sha3': (buf) => wrapBuf(jssha3.keccak_256.create().update(buf).arrayBuffer()),
     noble: (buf) => keccak_256(buf),
   },
+  Kangaroo12: { noble: (buf) => k12(buf) },
+  Marsupilami14: { noble: (buf) => m14(buf) },
   BLAKE2s: {
     node: (buf) => crypto.createHash('blake2s256').update(buf).digest(),
     stablelib: (buf) => new stableBlake2s.BLAKE2s().update(buf).digest(),
@@ -73,17 +75,19 @@ const HASHES = {
     stablelib: (buf) => new stableBlake2b.BLAKE2b().update(buf).digest(),
     noble: (buf) => blake2b(buf),
   },
+  BLAKE3: {
+    noble: (buf) => blake3(buf),
+  },
+  RIPEMD160: {
+    node: (buf) => crypto.createHash('ripemd160').update(buf).digest(),
+    'crypto-browserify': (buf) => createHash('ripemd160').update(Buffer.from(buf)).digest(),
+    noble: (buf) => ripemd160(buf),
+  },
   'HMAC-SHA256': {
     node: (buf) => crypto.createHmac('sha256', buf).update(buf).digest(),
     'crypto-browserify': (buf) => createHmac('sha256', buf).update(buf).digest(),
     stablelib: (buf) => new stableHmac.HMAC(stable256.SHA256, buf).update(buf).digest(),
     noble: (buf) => hmac(sha256, buf, buf),
-  },
-  RIPEMD160: {
-    node: (buf) => crypto.createHash('ripemd160').update(buf).digest(),
-    'crypto-browserify': (buf) => createHash('ripemd160').update(Buffer.from(buf)).digest(),
-    'noble-ripemd160': (buf) => new noble_ripemd160.RIPEMD160().update(buf).digest(),
-    noble: (buf) => ripemd160(buf),
   },
 };
 

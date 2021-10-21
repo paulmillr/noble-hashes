@@ -11,16 +11,18 @@ function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: b
 }
 
 // Base SHA2 class (RFC 6234)
-export abstract class SHA2 extends Hash {
+export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
+  protected abstract process(buf: DataView, offset: number): void;
+  protected abstract get(): number[];
+  protected abstract set(...args: number[]): void;
   abstract _clean(): void;
-  abstract _get(): number[];
-  abstract _process(buf: DataView, offset: number): void;
-  abstract _roundClean(): void;
+  protected abstract roundClean(): void;
   // For partial updates less than block size
-  buffer: Uint8Array;
-  finished = false;
-  length = 0;
-  view: DataView;
+  protected buffer: Uint8Array;
+  protected view: DataView;
+  protected finished = false;
+  protected length = 0;
+  protected pos = 0;
 
   constructor(
     readonly blockLen: number,
@@ -32,37 +34,29 @@ export abstract class SHA2 extends Hash {
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
   }
-  update(_data: Input): this {
-    const { view, blockLen, finished } = this;
+  update(data: Input): this {
+    const { view, buffer, blockLen, finished } = this;
     if (finished) throw new Error('digest() was already called');
-    const data = toBytes(_data);
-    // We have data in internal buffer, try to fill from data
-    let offset = this.length % blockLen; // Offset position in internal buffer
-    let pos = 0; // Position in data buffer
-    let len = data.length;
-    if (offset) {
-      const left = blockLen - offset; // How much bytes we need write to fill buffer?
-      const tmp = data.subarray(0, left);
-      this.buffer.set(tmp, offset);
-      this.length += pos = tmp.length;
-      if (len < left) {
-        this._roundClean();
-        return this; // fast path, internal buffer still has incomplete block
+    data = toBytes(data);
+    const len = data.length;
+    for (let pos = 0; pos < len; ) {
+      const take = Math.min(blockLen - this.pos, len - pos);
+      // Fast path: we have at least one block in input, cast it to view and process
+      if (take === blockLen) {
+        const dataView = createView(data);
+        for (; blockLen <= len - pos; pos += blockLen) this.process(dataView, pos);
+        continue;
       }
-      this._process(view, 0);
-      offset = 0;
+      buffer.set(data.subarray(pos, pos + take), this.pos);
+      this.pos += take;
+      pos += take;
+      if (this.pos === blockLen) {
+        this.process(view, 0);
+        this.pos = 0;
+      }
     }
-    // Now lets process all blocks in data that left without copying it to internal buffer
-    const dataView = createView(data);
-    for (; blockLen <= len - pos; pos += blockLen, offset = 0, this.length += blockLen)
-      this._process(dataView, pos);
-    this._roundClean();
-    // If there is still some data (at this point it can be only incomplete block),
-    // then copy it to internal buffer
-    // Internal buffer is empty here, because all leftovers was processed in first step
-    if (!(len - pos)) return this;
-    this.buffer.set(data.subarray(pos), offset);
-    this.length += len - pos;
+    this.length += data.length;
+    this.roundClean();
     return this;
   }
   _writeDigest(out: Uint8Array) {
@@ -72,24 +66,25 @@ export abstract class SHA2 extends Hash {
     // We can avoid allocation of buffer for padding completely if it
     // was previously not allocated here. But it won't change performance.
     const { buffer, view, blockLen, isLE } = this;
-    let i = this.length % this.blockLen | 0; // current buffer offset
+    let { pos } = this;
     // append the bit '1' to the message
-    buffer[i++] = 0b10000000;
-    // we have more than blocksize-lengthOffset bytes in buffer, so we cannot put length in current block, need process it and pad again
-    if (i > blockLen - this.padOffset) {
-      for (let j = 0; j < blockLen - i; j++) buffer[i + j] = 0;
-      this._process(view, 0);
-      i = 0;
+    buffer[pos++] = 0b10000000;
+    this.buffer.subarray(pos).fill(0);
+    // we have less than padOffset left in buffer, so we cannot put length in current block, need process it and pad again
+    if (this.padOffset > blockLen - pos) {
+      this.buffer.subarray(pos).fill(0);
+      this.process(view, 0);
+      pos = 0;
     }
     // Pad until full block byte with zeros
-    for (let j = i; j < blockLen; j++) buffer[j] = 0;
+    for (let i = pos; i < blockLen; i++) buffer[i] = 0;
     // NOTE: sha512 requires length to be 128bit integer, but length in JS will overflow before that
     // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
     // So we just write lowest 64bit of that value.
     setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
-    this._process(view, 0);
+    this.process(view, 0);
     const oview = createView(out);
-    this._get().forEach((v, i) => oview.setUint32(4 * i, v, this.isLE));
+    this.get().forEach((v, i) => oview.setUint32(4 * i, v, isLE));
   }
   digest() {
     const { buffer, outputLen } = this;
@@ -97,5 +92,15 @@ export abstract class SHA2 extends Hash {
     const res = buffer.slice(0, outputLen);
     this._clean();
     return res;
+  }
+  _cloneInto(to?: T): T {
+    to ||= new (this.constructor as any)() as T;
+    to.set(...this.get());
+    const { blockLen, buffer, length, finished, pos } = this;
+    to.length = length;
+    to.pos = pos;
+    to.finished = finished;
+    if (length % blockLen) to.buffer.set(buffer);
+    return to;
   }
 }

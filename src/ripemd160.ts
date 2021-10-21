@@ -35,7 +35,7 @@ function f(group: number, x: number, y: number, z: number): number {
 }
 // Temporary buffer, not used to store anything between runs
 const BUF = new Uint32Array(16);
-export class RIPEMD160 extends SHA2 {
+export class RIPEMD160 extends SHA2<RIPEMD160> {
   private h0 = 0x67452301 | 0;
   private h1 = 0xefcdab89 | 0;
   private h2 = 0x98badcfe | 0;
@@ -45,18 +45,18 @@ export class RIPEMD160 extends SHA2 {
   constructor() {
     super(64, 20, 8, true);
   }
-  _get(): [number, number, number, number, number] {
+  protected get(): [number, number, number, number, number] {
     const { h0, h1, h2, h3, h4 } = this;
     return [h0, h1, h2, h3, h4];
   }
-  private _set(h0: number, h1: number, h2: number, h3: number, h4: number) {
+  protected set(h0: number, h1: number, h2: number, h3: number, h4: number) {
     this.h0 = h0 | 0;
     this.h1 = h1 | 0;
     this.h2 = h2 | 0;
     this.h3 = h3 | 0;
     this.h4 = h4 | 0;
   }
-  _process(view: DataView, offset: number): void {
+  protected process(view: DataView, offset: number): void {
     for (let i = 0; i < 16; i++, offset += 4) BUF[i] = view.getUint32(offset, true);
     // prettier-ignore
     let al = this.h0 | 0, ar = al,
@@ -83,7 +83,7 @@ export class RIPEMD160 extends SHA2 {
       }
     }
     // Add the compressed chunk to the current hash value
-    this._set(
+    this.set(
       (this.h1 + cl + dr) | 0,
       (this.h2 + dl + er) | 0,
       (this.h3 + el + ar) | 0,
@@ -91,12 +91,12 @@ export class RIPEMD160 extends SHA2 {
       (this.h0 + bl + cr) | 0
     );
   }
-  _roundClean() {
+  protected roundClean() {
     BUF.fill(0);
   }
   _clean() {
     this.buffer.fill(0);
-    this._set(0, 0, 0, 0, 0);
+    this.set(0, 0, 0, 0, 0);
   }
 }
 

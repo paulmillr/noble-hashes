@@ -101,6 +101,9 @@ function stats(list) {
   };
 }
 
+const times = (byte, n) => new Uint8Array(n).fill(byte);
+const pattern = (toByte, len) => Uint8Array.from({ length: len }, (i, j) => j % (toByte + 1));
+
 module.exports = {
   utf8ToBytes,
   hexToBytes,
@@ -117,4 +120,6 @@ module.exports = {
     bytes: new Uint8Array([]),
   },
   stats,
+  times,
+  pattern,
 };

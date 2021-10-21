@@ -1,12 +1,8 @@
-// prettier-ignore
-import {
-  assertHash, Cloneable, cloneHashInto, Hash, CHash, Input, toBytes
-} from './utils';
-
+import { assertHash, Hash, CHash, Input, toBytes } from './utils';
 // HMAC (RFC 2104)
-class HMAC extends Hash {
-  oHash: Hash;
-  iHash: Hash;
+class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
+  oHash: T;
+  iHash: T;
   blockLen: number;
   outputLen: number;
   finished = false;
@@ -15,7 +11,7 @@ class HMAC extends Hash {
     super();
     assertHash(hash);
     const key = toBytes(_key);
-    this.iHash = hash.create();
+    this.iHash = hash.create() as T;
     if (!(this.iHash instanceof Hash))
       throw new TypeError('Expected instance of class which extends utils.Hash');
     const blockLen = (this.blockLen = this.iHash.blockLen);
@@ -26,7 +22,7 @@ class HMAC extends Hash {
     for (let i = 0; i < pad.length; i++) pad[i] ^= 0x36;
     this.iHash.update(pad);
     // By doing update (processing of first block) of outer hash here we can re-use it between multiple calls via clone
-    this.oHash = hash.create();
+    this.oHash = hash.create() as T;
     // Undo internal XOR && apply outer XOR
     for (let i = 0; i < pad.length; i++) pad[i] ^= 0x36 ^ 0x5c;
     this.oHash.update(pad);
@@ -49,16 +45,17 @@ class HMAC extends Hash {
     this._writeDigest(out);
     return out;
   }
-  _cloneInto(obj?: this) {
-    if (!obj) obj = Object.create(Object.getPrototypeOf(this), {});
+  _cloneInto(to?: HMAC<T>): HMAC<T> {
+    // Create new instance without calling constructor since key already in state and we don't know it.
+    to ||= Object.create(Object.getPrototypeOf(this), {});
     const { oHash, iHash, finished, blockLen, outputLen } = this;
-    obj = obj as this;
-    obj.finished = finished;
-    obj.blockLen = blockLen;
-    obj.outputLen = outputLen;
-    obj.oHash = cloneHashInto(oHash as Cloneable, obj.oHash as Cloneable);
-    obj.iHash = cloneHashInto(iHash as Cloneable, obj.iHash as Cloneable);
-    return obj as this;
+    to = to as this;
+    to.finished = finished;
+    to.blockLen = blockLen;
+    to.outputLen = outputLen;
+    to.oHash = oHash._cloneInto(to.oHash);
+    to.iHash = iHash._cloneInto(to.iHash);
+    return to;
   }
   _clean() {
     this.oHash._clean();
