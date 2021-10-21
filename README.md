@@ -96,12 +96,8 @@ hash
 
 _Some_ hash functions can also receive `options` object, which can be either passed as a:
 
-- second argument to hash function
-- first argument to class initializer
-
-```ts
-blake3('abc', { key: a, context: b, dkLen: 32 });
-```
+- second argument to hash function: `blake3('abc', { key: a, context: b, dkLen: 32 })`
+- first argument to class initializer: `blake3.create({ key: a, context: b, dkLen: 32 })`
 
 ##### SHA2 (sha256, sha512, sha512_256)
 
