@@ -2,7 +2,9 @@ import * as u64 from './_u64';
 import * as blake2 from './_blake2';
 import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils';
 
-// Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19), same as SHA-256
+// Initial state:
+// first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19)
+// same as SHA-256
 // prettier-ignore
 export const IV = new Uint32Array([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19

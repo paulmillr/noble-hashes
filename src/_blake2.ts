@@ -37,16 +37,17 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
   constructor(
     readonly blockLen: number,
     public outputLen: number,
-    opts: BlakeOpts,
+    opts: BlakeOpts = {},
     keyLen: number,
     saltLen: number,
     persLen: number
   ) {
     super();
+    assertNumber(blockLen);
     assertNumber(outputLen);
+    assertNumber(keyLen);
     if (outputLen < 1 || outputLen > keyLen)
       throw new Error('Blake2: outputLen bigger than keyLen');
-    if (!opts) opts = {};
     if (opts.key !== undefined && (opts.key.length < 1 || opts.key.length > keyLen))
       throw new Error(`Key should be up 1..${keyLen} byte long or undefined`);
     if (opts.salt !== undefined && opts.salt.length !== saltLen)

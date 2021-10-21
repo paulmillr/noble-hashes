@@ -6,7 +6,8 @@ const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);
 // Majority function, true if any two inpust is true
 const Maj = (a: number, b: number, c: number) => (a & b) ^ (a & c) ^ (b & c);
 
-// Round contants (first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311):
+// Round constants:
+// first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
 // prettier-ignore
 const SHA256_K = new Uint32Array([
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,

@@ -23,7 +23,7 @@ export type cShakeOpts = ShakeOpts & { personalization?: Input; NISTfn?: Input }
 // Personalization
 function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
   if (!opts || (!opts.personalization && !opts.NISTfn)) return hash;
-  (hash as any).suffix = 0x04;
+  hash.suffix = 0x04;
   // Encode and pad inplace to avoid unneccesary memory copies/slices (so we don't need to zero them later)
   // bytepad(encode_string(N) || encode_string(S), 168)
   const fn = toBytesOptional(opts.NISTfn);
@@ -118,8 +118,8 @@ class KangarooTwelve extends Hash<KangarooTwelve> {
   newLeaf() {
     return (this.leafHash = new Keccak(this.leafBlockLen, 0x0b, this.leafOutputLen, this.rounds));
   }
-  update(_data: Uint8Array) {
-    const data = toBytes(_data);
+  update(data: Input) {
+    data = toBytes(data);
     const { blockLen, rootHash } = this;
     let pos = 0; // Position inside data buffer
     let leaf: Keccak | undefined = this.leafHash;
