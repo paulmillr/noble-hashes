@@ -1,33 +1,18 @@
 # noble-hashes ![Node CI](https://github.com/paulmillr/noble-hashes/workflows/Node%20CI/badge.svg) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
-Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE, HMAC, HKDF, PBKDF2 & Scrypt.
+Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2 & Scrypt.
 
-Benefits of noble-hashes over other libraries:
-
-- **noble** family (see below), zero dependencies
+- **noble** family, zero dependencies
 - 🔻 Helps JS bundlers with lack of entry point; ensures small size of your app
 - 🔁 No unrolled loops: makes it much easier to verify and reduces source code size 2-5x
 - 🏎 Ultra-fast, hand-optimized for caveats of JS engines
 - 🔍 Unique tests ensure correctness: chained tests (`hash(hash(hash(....)))`), sliding window tests, DoS tests
 - 🧪 Differential fuzzing ensures even more correctness with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
 - 🔑 Scrypt supports `n: 2**22` with 4GB arrays (other implementations crash on `2**21` even `2**20`), `maxmem` security param, `onProgress` callback
-- 🦘 SHA3 supports KangarooTwelve and MarsupilamiFourteen
+- 🦘 SHA3 supports Keccak, KangarooTwelve and MarsupilamiFourteen
 - All primitives are just ~2KLOC / 41KB minified / 14KB gzipped. SHA256-only is 240LOC / 7KB minified / 3KB gzipped
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
-
-Matches following specs:
-
-- SHA2 aka SHA256 / SHA384 / SHA512 [(RFC 4634)](https://datatracker.ietf.org/doc/html/rfc4634)
-- SHA3, Keccak, SHAKE, cSHAKE & KMAC ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [Website](https://keccak.team/keccak.html)), [(NIST SP 800-185)](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
-- KangarooTwelve & MarsupilamiFourteen ([Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt), [Website](https://keccak.team/keccak.html))
-- RIPEMD-160 ([RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286), [Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html))
-- BLAKE2b, BLAKE2s ([RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net))
-- BLAKE3 [(Website)](https://blake3.io)
-- HMAC [(RFC 2104)](https://datatracker.ietf.org/doc/html/rfc2104)
-- HKDF [(RFC 5869)](https://datatracker.ietf.org/doc/html/rfc5869)
-- PBKDF2 [(RFC 2898)](https://datatracker.ietf.org/doc/html/rfc2898)
-- Scrypt ([RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914), [Website](https://www.tarsnap.com/scrypt.html))
 
 ### This library belongs to _noble_ crypto
 
@@ -158,6 +143,8 @@ const h4b = sha384
   .digest();
 ```
 
+See [(RFC 4634)](https://datatracker.ietf.org/doc/html/rfc4634)
+
 To learn more about SHA512/256, check out [the paper](https://eprint.iacr.org/2010/548.pdf).
 
 ##### SHA3 (sha3_256, keccak_256, etc)
@@ -185,7 +172,9 @@ const h7a = shake128('abc', { dkLen: 512 });
 const h7b = shake256('abc', { dkLen: 512 })
 ```
 
-See [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
+See ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [Website](https://keccak.team/keccak.html)), [(NIST SP 800-185)](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
+
+Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
 ##### SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)
 
@@ -203,6 +192,8 @@ const h7g = m14('abc')
 
 🦘 K12 and M14 are basically faster versions of Keccak.
 
+See [Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt), [Website](https://keccak.team/keccak.html).
+
 ##### RIPEMD-160
 
 ```typescript
@@ -214,6 +205,8 @@ const hash9 = ripemd160()
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
 ```
+
+See [RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286), [Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
 
 ##### BLAKE2b, BLAKE2s
 
@@ -229,6 +222,8 @@ const h10c = blake2s
   .digest();
 ```
 
+See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net).
+
 ##### BLAKE3
 
 ```typescript
@@ -236,6 +231,8 @@ import { blake3 } from 'noble-hashes/lib/blake3.js';
 // All params are optional
 const h11 = blake3('abc', { dkLen: 256, key: 'def', context: 'fji' })
 ```
+
+See [Website](https://blake3.io).
 
 ##### HMAC
 
@@ -245,6 +242,8 @@ import { sha256 } from 'noble-hashes/lib/sha256.js';
 const mac1 = hmac(sha256, 'key', 'message');
 const mac2 = hmac.create(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.from([4, 5, 6]).digest();
 ```
+
+Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 
 ##### HKDF
 
@@ -265,6 +264,8 @@ const prk = hkdf_extract(sha256, inputKey, salt);
 const hk2 = hkdf_expand(sha256, prk, info, dkLen);
 ```
 
+Matches [(RFC 5869)](https://datatracker.ietf.org/doc/html/rfc5869).
+
 ##### PBKDF2
 
 ```typescript
@@ -277,6 +278,8 @@ const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.
   dkLen: 32,
 });
 ```
+
+Matches [(RFC 2898)](https://datatracker.ietf.org/doc/html/rfc2898).
 
 ##### Scrypt
 
@@ -295,6 +298,8 @@ const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5
   maxmem: 2 ** 32 + 128 * 8 * 1, // N * r * p * 128 + (128*r*p)
 });
 ```
+
+Matches [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914), [Website](https://www.tarsnap.com/scrypt.html)
 
 - `N, r, p` are work factors. To understand them, see [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
 - `dkLen` is the length of output bytes
