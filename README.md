@@ -100,17 +100,13 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - first argument to class initializer
 
 ```ts
-blake2s('abc');
-const options = { key: a, personalization: b, salt: c, dkLen: 32 };
-blake2s('abc', options);
-blake2s.create(options).update('abc').digest();
+blake3('abc', { key: a, context: b, dkLen: 32 });
 ```
 
 ##### SHA2 (sha256, sha512, sha512_256)
 
 ```typescript
 import { sha256 } from 'noble-hashes/lib/sha256.js';
-// function sha256(data: Uint8Array): Uint8Array;
 const h1a = sha256('abc');
 const h1b = sha256
   .create()
@@ -143,9 +139,7 @@ const h4b = sha384
   .digest();
 ```
 
-See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634)
-
-To learn more about SHA512/256, check out [the paper](https://eprint.iacr.org/2010/548.pdf).
+See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and [the paper on SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
 ##### SHA3 (sha3_256, keccak_256, etc)
 
