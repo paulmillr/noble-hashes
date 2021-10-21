@@ -143,7 +143,7 @@ const h4b = sha384
   .digest();
 ```
 
-See [(RFC 4634)](https://datatracker.ietf.org/doc/html/rfc4634)
+See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634)
 
 To learn more about SHA512/256, check out [the paper](https://eprint.iacr.org/2010/548.pdf).
 
@@ -264,7 +264,7 @@ const prk = hkdf_extract(sha256, inputKey, salt);
 const hk2 = hkdf_expand(sha256, prk, info, dkLen);
 ```
 
-Matches [(RFC 5869)](https://datatracker.ietf.org/doc/html/rfc5869).
+Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
 
 ##### PBKDF2
 
@@ -279,7 +279,7 @@ const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.
 });
 ```
 
-Matches [(RFC 2898)](https://datatracker.ietf.org/doc/html/rfc2898).
+Matches [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898).
 
 ##### Scrypt
 
