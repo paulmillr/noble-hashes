@@ -233,7 +233,7 @@ See [Website](https://blake3.io).
 ##### HMAC
 
 ```typescript
-import { hmac } from 'noble-hashes/lib/mac.js';
+import { hmac } from 'noble-hashes/lib/hmac.js';
 import { sha256 } from 'noble-hashes/lib/sha256.js';
 const mac1 = hmac(sha256, 'key', 'message');
 const mac2 = hmac.create(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.from([4, 5, 6]).digest();
@@ -265,7 +265,7 @@ Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
 ##### PBKDF2
 
 ```typescript
-import { pbkdf2, pbkdf2Async } from 'noble-hashes/lib/kdf.js';
+import { pbkdf2, pbkdf2Async } from 'noble-hashes/lib/pbkdf2.js';
 import { sha256 } from 'noble-hashes/lib/sha256.js';
 const pbkey1 = pbkdf2(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
 const pbkey2 = await pbkdf2Async(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
