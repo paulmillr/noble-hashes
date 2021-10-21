@@ -365,14 +365,13 @@ Compare to native node.js implementation that uses C bindings instead of pure-js
 SHA256 32B node x 569,151 ops/sec @ 1μs/op
 SHA384 32B node x 548,245 ops/sec @ 1μs/op
 SHA512 32B node x 551,267 ops/sec @ 1μs/op
-SHA512-256 32B node x 534,473 ops/sec @ 1μs/op
 SHA3 32B node x 545,553 ops/sec @ 1μs/op
 BLAKE2s 32B node x 545,256 ops/sec @ 1μs/op
 BLAKE2b 32B node x 583,090 ops/sec @ 1μs/op
-HMAC-SHA256 32B node x 500,751 ops/sec @ 1μs/op
 RIPEMD160 32B node x 509,424 ops/sec @ 1μs/op
+HMAC-SHA256 32B node x 500,751 ops/sec @ 1μs/op
 HKDF-SHA256 32B node x 207,856 ops/sec @ 4μs/op
-PBKDF2-256 262144 node x 23 ops/sec @ 42ms/op
+PBKDF2-HMAC-SHA256 262144 node x 23 ops/sec @ 42ms/op
 Scrypt 262144 node x 1 ops/sec @ 564ms/op
 // `scrypt.js` package
 Scrypt 262144 scrypt.js x 0 ops/sec @ 1678ms/op
