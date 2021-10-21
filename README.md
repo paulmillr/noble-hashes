@@ -8,7 +8,7 @@ Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, 
 - 🏎 Ultra-fast, hand-optimized for caveats of JS engines
 - 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests
 - 🧪 Differential fuzzing ensures even more correctness with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
-- 🔑 Scrypt supports `n: 2**22` with 4GB arrays while other implementations crash on `2**21` even `2**20`, `maxmem` security param, `onProgress` callback
+- 🔑 Scrypt supports `n: 2**22` with 4GB arrays while other implementations crash on `2**21` or even `2**20`, `maxmem` security param, `onProgress` callback
 - 🦘 SHA3 supports Keccak, KangarooTwelve and MarsupilamiFourteen
 - All primitives are just ~2KLOC / 41KB minified / 14KB gzipped. SHA256-only is 240LOC / 7KB minified / 3KB gzipped
 
