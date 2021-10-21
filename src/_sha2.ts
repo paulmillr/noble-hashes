@@ -72,7 +72,6 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     this.buffer.subarray(pos).fill(0);
     // we have less than padOffset left in buffer, so we cannot put length in current block, need process it and pad again
     if (this.padOffset > blockLen - pos) {
-      this.buffer.subarray(pos).fill(0);
       this.process(view, 0);
       pos = 0;
     }
