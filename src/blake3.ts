@@ -45,20 +45,21 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> {
   private chunksCnt = 0; // How much chunks we already have
   private stack: Uint32Array[] = [];
 
-  constructor(opts?: Blake3Opts, flags = 0) {
-    super(64, opts?.dkLen === undefined ? 32 : opts.dkLen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
-    this.outputLen = opts?.dkLen === undefined ? 32 : opts.dkLen;
+  constructor(opts: Blake3Opts = {}, flags = 0) {
+    super(64, opts.dkLen === undefined ? 32 : opts.dkLen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
+    if (!opts && typeof opts !== 'object') opts = {};
+    this.outputLen = opts.dkLen === undefined ? 32 : opts.dkLen;
     assertNumber(this.outputLen);
-    if (opts?.key !== undefined && opts.context !== undefined)
+    if (opts.key !== undefined && opts.context !== undefined)
       throw new Error('Blake3: only key or context can be specified at same time');
-    else if (opts?.key !== undefined) {
+    else if (opts.key !== undefined) {
       const key = toBytes(opts.key);
       if (key.length !== 32) throw new Error('Blake3: key should be 32 byte');
       this.IV = u32(key);
       this.flags = flags | Flags.KEYED_HASH;
-    } else if (opts?.context !== undefined) {
+    } else if (opts.context !== undefined) {
       const context_key = new BLAKE3({ dkLen: 32 }, Flags.DERIVE_KEY_CONTEXT)
-        .update(opts?.context)
+        .update(opts.context)
         .digest();
       this.IV = u32(context_key);
       this.flags = flags | Flags.DERIVE_KEY_MATERIAL;

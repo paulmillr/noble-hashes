@@ -48,21 +48,21 @@ const HASHES = {
     stablelib: (buf) => stable512.hash(buf),
     noble: (buf) => sha512(buf),
   },
-  'SHA512-256': {
-    node: (buf) => crypto.createHash('sha512-256').update(buf).digest(),
-    stablelib: (buf) => new stable512_256.SHA512_256().update(buf).digest(),
-    noble: (buf) => sha512_256(buf),
-  },
-  'SHA3-256': {
+  // 'SHA512-256': {
+  //   node: (buf) => crypto.createHash('sha512-256').update(buf).digest(),
+  //   stablelib: (buf) => new stable512_256.SHA512_256().update(buf).digest(),
+  //   noble: (buf) => sha512_256(buf),
+  // },
+  'SHA3-256 & keccak-256': {
     node: (buf) => crypto.createHash('sha3-256').update(buf).digest(),
     stablelib: (buf) => new stable3.SHA3256().update(buf).digest(),
     'js-sha3': (buf) => wrapBuf(jssha3.sha3_256.create().update(buf).arrayBuffer()),
     noble: (buf) => sha3_256(buf),
   },
-  'Keccak-256': {
-    'js-sha3': (buf) => wrapBuf(jssha3.keccak_256.create().update(buf).arrayBuffer()),
-    noble: (buf) => keccak_256(buf),
-  },
+  // 'Keccak-256': {
+  //   'js-sha3': (buf) => wrapBuf(jssha3.keccak_256.create().update(buf).arrayBuffer()),
+  //   noble: (buf) => keccak_256(buf),
+  // },
   Kangaroo12: { noble: (buf) => k12(buf) },
   Marsupilami14: { noble: (buf) => m14(buf) },
   BLAKE2s: {

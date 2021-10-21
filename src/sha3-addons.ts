@@ -21,7 +21,7 @@ const toBytesOptional = (buf?: Input) => (buf !== undefined ? toBytes(buf) : new
 export type cShakeOpts = ShakeOpts & { personalization?: Input; NISTfn?: Input };
 
 // Personalization
-function cshakePers(hash: Keccak, opts?: cShakeOpts): Keccak {
+function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
   if (!opts || (!opts.personalization && !opts.NISTfn)) return hash;
   (hash as any).suffix = 0x04;
   // Encode and pad inplace to avoid unneccesary memory copies/slices (so we don't need to zero them later)
@@ -38,9 +38,9 @@ function cshakePers(hash: Keccak, opts?: cShakeOpts): Keccak {
 }
 
 const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
-  wrapConstructorWithOpts<Keccak, cShakeOpts>((opts?: cShakeOpts) =>
+  wrapConstructorWithOpts<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
     cshakePers(
-      new Keccak(blockLen, suffix, opts?.dkLen !== undefined ? opts.dkLen : outputLen),
+      new Keccak(blockLen, suffix, opts.dkLen !== undefined ? opts.dkLen : outputLen),
       opts
     )
   );
@@ -49,9 +49,9 @@ export const cshake128 = gencShake(0x1f, 168, 128 / 8);
 export const cshake256 = gencShake(0x1f, 136, 256 / 8);
 
 class KMAC extends Keccak {
-  constructor(public blockLen: number, public outputLen: number, key: Input, opts?: cShakeOpts) {
+  constructor(public blockLen: number, public outputLen: number, key: Input, opts: cShakeOpts = {}) {
     super(blockLen, 0x1f, outputLen);
-    cshakePers(this, { NISTfn: 'KMAC', personalization: opts?.personalization });
+    cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
     key = toBytes(key);
     // 1. newX = bytepad(encode_string(K), 168) || X || right_encode(L).
     const blockLenBytes = leftEncode(this.blockLen);
@@ -80,8 +80,8 @@ class KMAC extends Keccak {
 function genKmac(blockLen: number, outputLen: number) {
   const kmac = (key: Input, message: Input, opts?: cShakeOpts): Uint8Array =>
     kmac.create(key, opts).update(message).digest();
-  kmac.create = (key: Input, opts?: cShakeOpts) =>
-    new KMAC(blockLen, opts?.dkLen !== undefined ? opts.dkLen : outputLen, key, opts);
+  kmac.create = (key: Input, opts: cShakeOpts = {}) =>
+    new KMAC(blockLen, opts.dkLen !== undefined ? opts.dkLen : outputLen, key, opts);
   kmac.init = kmac.create;
   return kmac;
 }

@@ -345,9 +345,7 @@ work factor. To run benchmarks, execute `npm run bench-install` and then `npm ru
 SHA256 32B x 954,198 ops/sec @ 1μs/op
 SHA384 32B x 433,087 ops/sec @ 2μs/op
 SHA512 32B x 430,292 ops/sec @ 2μs/op
-SHA512-256 32B x 422,832 ops/sec @ 2μs/op
-SHA3-256 32B x 184,229 ops/sec @ 5μs/op
-Keccak-256 32B x 186,046 ops/sec @ 5μs/op
+SHA3-256 & keccak-256 32B x 184,229 ops/sec @ 5μs/op
 Kangaroo12 32B x 268,672 ops/sec @ 3μs/op
 Marsupilami14 32B x 244,379 ops/sec @ 4μs/op
 BLAKE2s 32B x 505,561 ops/sec @ 1μs/op

@@ -171,8 +171,8 @@ export type ShakeOpts = { dkLen?: number };
 
 const genShake = (suffix: number, blockLen: number, outputLen: number) =>
   wrapConstructorWithOpts<Keccak, ShakeOpts>(
-    (opts?: ShakeOpts) =>
-      new Keccak(blockLen, suffix, opts?.dkLen !== undefined ? opts.dkLen : outputLen)
+    (opts: ShakeOpts = {}) =>
+      new Keccak(blockLen, suffix, opts.dkLen !== undefined ? opts.dkLen : outputLen)
   );
 
 export const shake128 = genShake(0x1f, 168, 128 / 8);
