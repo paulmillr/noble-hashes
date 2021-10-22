@@ -105,6 +105,19 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
 - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
 
+## Modules
+- [SHA2 (sha256, sha512, sha512_256)](#sha2-sha256-sha512-sha512_256)
+- [SHA3 (sha3_256, keccak_256, etc)](#sha3-sha3_256-keccak_256-etc)
+- [SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)](#sha3-addons-cshake-kmac-kangarootwelve-marsupilamifourteen)
+- [RIPEMD-160](#ripemd-160)
+- [BLAKE2b, BLAKE2s](#blake2b-blake2s)
+- [BLAKE3](#blake3)
+- [HMAC](#hmac)
+- [HKDF](#hkdf)
+- [PBKDF2](#pbkdf2)
+- [Scrypt](#scrypt)
+- [utils](#utils)
+
 ##### SHA2 (sha256, sha512, sha512_256)
 
 ```typescript
