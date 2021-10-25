@@ -1,7 +1,7 @@
 import { Hash, Input, toBytes, wrapConstructorWithOpts, assertNumber, u32 } from './utils';
 import { Keccak, ShakeOpts } from './sha3';
 // cSHAKE && KMAC
-function leftEncode(n: number) {
+function leftEncode(n: number): Uint8Array {
   const res = [n & 0xff];
   n >>= 8;
   for (; n > 0; n >>= 8) res.unshift(n & 0xff);
@@ -9,31 +9,34 @@ function leftEncode(n: number) {
   return new Uint8Array(res);
 }
 
-function rightEncode(n: number) {
-  const res = [];
+function rightEncode(n: number): Uint8Array {
+  const res = [n & 0xff];
+  n >>= 8;
   for (; n > 0; n >>= 8) res.unshift(n & 0xff);
   res.push(res.length);
   return new Uint8Array(res);
 }
 
 const toBytesOptional = (buf?: Input) => (buf !== undefined ? toBytes(buf) : new Uint8Array([]));
-
+// NOTE: second modulo is necessary since we don't need to add padding if current element takes whole block
+const getPadding = (len: number, block: number) => new Uint8Array((block - (len % block)) % block);
 export type cShakeOpts = ShakeOpts & { personalization?: Input; NISTfn?: Input };
 
 // Personalization
 function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
   if (!opts || (!opts.personalization && !opts.NISTfn)) return hash;
-  hash.suffix = 0x04;
   // Encode and pad inplace to avoid unneccesary memory copies/slices (so we don't need to zero them later)
   // bytepad(encode_string(N) || encode_string(S), 168)
+  const blockLenBytes = leftEncode(hash.blockLen);
   const fn = toBytesOptional(opts.NISTfn);
   const fnLen = leftEncode(8 * fn.length); // length in bits
   const pers = toBytesOptional(opts.personalization);
   const persLen = leftEncode(8 * pers.length); // length in bits
-  const blockLenBytes = leftEncode(hash.blockLen);
+  if (!fn.length && !pers.length) return hash;
+  hash.suffix = 0x04;
   hash.update(blockLenBytes).update(fnLen).update(fn).update(persLen).update(pers);
   let totalLen = blockLenBytes.length + fnLen.length + fn.length + persLen.length + pers.length;
-  hash.update(new Uint8Array(hash.blockLen - (totalLen % hash.blockLen)));
+  hash.update(getPadding(totalLen, hash.blockLen));
   return hash;
 }
 
@@ -49,7 +52,12 @@ export const cshake128 = gencShake(0x1f, 168, 128 / 8);
 export const cshake256 = gencShake(0x1f, 136, 256 / 8);
 
 class KMAC extends Keccak {
-  constructor(public blockLen: number, public outputLen: number, key: Input, opts: cShakeOpts = {}) {
+  constructor(
+    public blockLen: number,
+    public outputLen: number,
+    key: Input,
+    opts: cShakeOpts = {}
+  ) {
     super(blockLen, 0x1f, outputLen);
     cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
     key = toBytes(key);
@@ -58,7 +66,7 @@ class KMAC extends Keccak {
     const keyLen = leftEncode(8 * key.length);
     this.update(blockLenBytes).update(keyLen).update(key);
     const totalLen = blockLenBytes.length + keyLen.length + key.length;
-    this.update(new Uint8Array(this.blockLen - (totalLen % this.blockLen)));
+    this.update(getPadding(totalLen, this.blockLen));
   }
   _writeDigest(buf: Uint8Array) {
     this.update(rightEncode(this.outputLen * 8)); // outputLen in bits
@@ -90,6 +98,14 @@ export const kmac128 = genKmac(168, 128 / 8);
 export const kmac256 = genKmac(136, 256 / 8);
 
 // Kangaroo
+// Same as NIST rightEncode, but returns [0] for zero string
+function rightEncodeK12(n: number): Uint8Array {
+  const res = [];
+  for (; n > 0; n >>= 8) res.unshift(n & 0xff);
+  res.push(res.length);
+  return new Uint8Array(res);
+}
+
 export type KangarooOpts = { dkLen?: number; personalization?: Input };
 const EMPTY = new Uint8Array([]);
 
@@ -156,12 +172,12 @@ class KangarooTwelve extends Hash<KangarooTwelve> {
     this.finished = true;
     const { personalization, rootHash, blockLen } = this;
     this.update(personalization);
-    this.update(rightEncode(personalization.length));
+    this.update(rightEncodeK12(personalization.length));
     // Leaf hash
     if (this.leafHash) {
       rootHash.update(this.leafHash.digest());
       const leafBlocks = Math.ceil(this.length / blockLen) - 1; // First block is root
-      rootHash.update(rightEncode(leafBlocks)).update(new Uint8Array([0xff, 0xff]));
+      rootHash.update(rightEncodeK12(leafBlocks)).update(new Uint8Array([0xff, 0xff]));
     }
     rootHash._writeDigest(buf);
   }

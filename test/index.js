@@ -4,6 +4,8 @@ require('./hashes.test.js').init();
 // Specific vectors for hash functions if available
 require('./keccak.test.js');
 require('./blake.test.js');
+// Tests generated from rust
+require('./sha3-addons.test.js');
 require('./hmac.test.js');
 require('./kdf.test.js');
 require('./async.test.js');

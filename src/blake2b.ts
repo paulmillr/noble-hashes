@@ -141,9 +141,9 @@ class BLAKE2b extends blake2.BLAKE2<BLAKE2b> {
   protected compress(msg: Uint32Array, offset: number, isLast: boolean) {
     this.get().forEach((v, i) => (BUF[i] = v)); // First half from state.
     BUF.set(IV, 16); // Second half from IV.
-    let { h, l } = u64.fromBig(BigInt(this.length), true);
-    BUF[24] = IV[8] ^ h; // Low word of the offset.
-    BUF[25] = IV[9] ^ l; // High word.
+    let { h, l } = u64.fromBig(BigInt(this.length));
+    BUF[24] = IV[8] ^ l; // Low word of the offset.
+    BUF[25] = IV[9] ^ h; // High word.
     // Invert all bits for last block
     if (isLast) {
       BUF[28] = ~BUF[28];

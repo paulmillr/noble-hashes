@@ -104,13 +104,13 @@ class BLAKE2s extends blake2.BLAKE2<BLAKE2s> {
     this.v7 = v7 | 0;
   }
   protected compress(msg: Uint32Array, offset: number, isLast: boolean) {
-    const { h, l } = u64.fromBig(BigInt(this.length), true);
+    const { h, l } = u64.fromBig(BigInt(this.length));
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
         blake2.SIGMA, offset, msg, 10,
         this.v0, this.v1, this.v2, this.v3, this.v4, this.v5, this.v6, this.v7,
-        IV[0], IV[1], IV[2], IV[3], h ^ IV[4], l ^ IV[5], isLast ? ~IV[6] : IV[6], IV[7]
+        IV[0], IV[1], IV[2], IV[3], l ^ IV[4], h ^ IV[5], isLast ? ~IV[6] : IV[6], IV[7]
       );
     this.v0 ^= v0 ^ v8;
     this.v1 ^= v1 ^ v9;

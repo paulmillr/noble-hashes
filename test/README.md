@@ -38,6 +38,10 @@ To sum it all up:
   `hash([0]); hash([0, 1]); hash([0, 1, 2]); hash([0, 1, 2, 3]); ...`
   `hash().update([0]).update([1]).update([2, ...]); hash().update([0]).update([1, 2]).update([3, ...]); ...`
 
+## Benefits
+
+Our tests caught bugs in node.js native implementation of scrypt and in js-sha3 js module of kmac.
+
 ## Test vectors
 
 - Blake2: https://github.com/BLAKE2/BLAKE2/tree/master/testvectors

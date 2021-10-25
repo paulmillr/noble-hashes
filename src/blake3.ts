@@ -92,33 +92,37 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> {
     state[6] = v6 ^ v14;
     state[7] = v7 ^ v15;
   }
-  private finishChunk(buf: Uint32Array, bufPos: number = 0, isLast = false) {
-    const flags = this.flags | (!this.chunkPos ? Flags.CHUNK_START : 0) | Flags.CHUNK_END;
-    this.b2Compress(this.chunksDone, flags, buf, bufPos);
-    let chunk = this.state;
-    this.state = this.IV.slice();
-    // If not the last one, compress only when there are trailing zeros in chunk counter
-    for (let last, chunks = this.chunksDone + 1; isLast || !(chunks & 1); chunks >>= 1) {
-      if (!(last = this.stack.pop())) break;
-      this.buffer32.set(last, 0);
-      this.buffer32.set(chunk, 8);
-      this.pos = this.blockLen;
-      this.b2Compress(0, this.flags | Flags.PARENT, this.buffer32, 0);
-      chunk = this.state;
-      this.state = this.IV.slice();
-    }
-    this.chunksDone++;
-    this.pos = 0;
-    this.chunkPos = 0;
-    this.stack.push(chunk);
-  }
-  protected compress(buf: Uint32Array, bufPos: number = 0) {
-    this.pos = this.blockLen;
-    // If current block is last in chunk (16 blocks), then compress whole chunk instead of block
-    if (this.chunkPos === 15) return this.finishChunk(buf, bufPos);
-    const flags = this.flags | (!this.chunkPos ? Flags.CHUNK_START : 0);
+  protected compress(buf: Uint32Array, bufPos: number = 0, isLast: boolean = false) {
+    // Compress last block
+    let flags = this.flags;
+    if (!this.chunkPos) flags |= Flags.CHUNK_START;
+    if (this.chunkPos === 15 || isLast) flags |= Flags.CHUNK_END;
+    if (!isLast) this.pos = this.blockLen;
     this.b2Compress(this.chunksDone, flags, buf, bufPos);
     this.chunkPos += 1;
+    // If current block is last in chunk (16 blocks), then compress chunks
+    if (this.chunkPos === 16 || isLast) {
+      let chunk = this.state;
+      this.state = this.IV.slice();
+      // If not the last one, compress only when there are trailing zeros in chunk counter
+      // chunks used as binary tree where current stack is path. Zero means current leaf is finished and can be compressed.
+      // 1 (001) - leaf not finished (just push current chunk to stack)
+      // 2 (010) - leaf finished at depth=1 (merge with last elm on stack and push back)
+      // 3 (011) - last leaf not finished
+      // 4 (100) - leafs finished at depth=1 and depth=2
+      for (let last, chunks = this.chunksDone + 1; isLast || !(chunks & 1); chunks >>= 1) {
+        if (!(last = this.stack.pop())) break;
+        this.buffer32.set(last, 0);
+        this.buffer32.set(chunk, 8);
+        this.pos = this.blockLen;
+        this.b2Compress(0, this.flags | Flags.PARENT, this.buffer32, 0);
+        chunk = this.state;
+        this.state = this.IV.slice();
+      }
+      this.chunksDone++;
+      this.chunkPos = 0;
+      this.stack.push(chunk);
+    }
     this.pos = 0;
   }
   _cloneInto(to?: BLAKE3): BLAKE3 {
@@ -139,15 +143,15 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> {
     for (let i of this.stack) i.fill(0);
   }
   // Same as b2Compress, but doesn't modify state and returns 16 u32 array (instead of 8)
-  private compressOut(counter: number, flags: number, out: Uint32Array) {
+  private b2CompressOut(counter: number, flags: number, out: Uint32Array) {
     const { state, pos, buffer32 } = this;
-    const { h, l } = u64.fromBig(BigInt(counter), true);
+    const { h, l } = u64.fromBig(BigInt(counter));
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       blake2s.compress(
         SIGMA, 0, buffer32, 7,
         state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7],
-        blake2s.IV[0], blake2s.IV[1], blake2s.IV[2], blake2s.IV[3], h, l, pos, flags
+        blake2s.IV[0], blake2s.IV[1], blake2s.IV[2], blake2s.IV[3], l, h, pos, flags
       );
     out[0] = v0 ^ v8;
     out[1] = v1 ^ v9;
@@ -175,7 +179,7 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> {
     let flags = this.flags | Flags.ROOT;
     if (this.stack.length) {
       flags |= Flags.PARENT;
-      this.finishChunk(this.buffer32, 0, true);
+      this.compress(this.buffer32, 0, true);
       this.chunksDone = 0;
       this.pos = this.blockLen;
     } else {
@@ -185,9 +189,10 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> {
     const tmp = this.buffer32.slice();
     const tmp8 = u8(tmp);
     for (let i = 0, pos = 0; pos < this.outputLen; i++, pos += this.blockLen) {
-      this.compressOut(i, flags, tmp);
+      this.b2CompressOut(i, flags, tmp);
       buf.set(tmp8.subarray(0, buf.length - pos), pos);
     }
+    tmp.fill(0);
     this._clean();
   }
   digest() {

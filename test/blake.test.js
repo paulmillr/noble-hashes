@@ -30,13 +30,11 @@ should('Blake2 python', () => {
 });
 
 should('BLAKE2s: dkLen', () => {
-  assert.throws(() => blake2s('test', { dkLen: 0 }));
   for (const dkLen of TYPE_TEST.int) assert.throws(() => blake2s('test', { dkLen }));
   assert.throws(() => blake2s('test', { dkLen: 33 }));
 });
 
 should('BLAKE2b: dkLen', () => {
-  assert.throws(() => blake2b('test', { dkLen: 0 }));
   for (const dkLen of TYPE_TEST.int) assert.throws(() => blake2b('test', { dkLen }));
   assert.throws(() => blake2b('test', { dkLen: 65 }));
 });
