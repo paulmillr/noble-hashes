@@ -181,7 +181,7 @@ const h7a = shake128('abc', { dkLen: 512 });
 const h7b = shake256('abc', { dkLen: 512 })
 ```
 
-See ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [Website](https://keccak.team/keccak.html)), [(NIST SP 800-185)](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
+See ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [Website](https://keccak.team/keccak.html)).
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
@@ -201,7 +201,7 @@ const h7g = m14('abc')
 
 🦘 K12 and M14 are basically faster versions of Keccak.
 
-See [Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt), [Website](https://keccak.team/keccak.html).
+See [KangarooTwelve Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt), [Website](https://keccak.team/keccak.html) and [(NIST SP 800-185)](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
 
 ##### RIPEMD-160
 
