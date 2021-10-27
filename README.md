@@ -395,7 +395,7 @@ _doing code generation of full loop unrolls_. We've decided against it. Reasons:
 - most method invocations with the lib are going to be something like hashing 32b to 64kb of data
 - hashing big inputs is 10x faster with low-level languages, which means you should probably pick 'em instead
 
-The current performance is good enough when compared to other projects; SHA256 is 1.6x faster than native C bindings.
+The current performance is good enough when compared to other projects; SHA256 takes only 900 nanoseconds to run.
 
 ## Contributing & testing
 
