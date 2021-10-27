@@ -347,22 +347,23 @@ We consider infrastructure attacks like rogue NPM modules very important; that's
 
 ## Speed
 
-Benchmarks measured with Apple M1. Note that PBKDF2 and Scrypt are tested with extremely high
-work factor. To run benchmarks, execute `npm run bench-install` and then `npm run bench`
+Benchmarks measured on Apple M1 with macOS 12 using 32-byte inputs.
+Note that PBKDF2 and Scrypt are tested with extremely high work factor.
+To run benchmarks, execute `npm run bench-install` and then `npm run bench`
 
 ```
-SHA256 32B x 954,198 ops/sec @ 1μs/op
-SHA384 32B x 433,087 ops/sec @ 2μs/op
-SHA512 32B x 430,292 ops/sec @ 2μs/op
-SHA3-256 & keccak-256 32B x 184,229 ops/sec @ 5μs/op
-Kangaroo12 32B x 268,672 ops/sec @ 3μs/op
-Marsupilami14 32B x 244,379 ops/sec @ 4μs/op
-BLAKE2s 32B x 505,561 ops/sec @ 1μs/op
-BLAKE2b 32B x 284,981 ops/sec @ 3μs/op
-BLAKE3 32B x 479,386 ops/sec @ 2μs/op
-HMAC-SHA256 32B x 277,161 ops/sec @ 3μs/op
-RIPEMD160 32B x 984,251 ops/sec @ 1μs/op
-HKDF-SHA256 32B x 115,500 ops/sec @ 8μs/op
+SHA256 x 1,131,221 ops/sec @ 884ns/op
+SHA384 x 452,284 ops/sec @ 2μs/op
+SHA512 x 451,059 ops/sec @ 2μs/op
+SHA3-256, keccak256, shake256 x 185,494 ops/sec @ 5μs/op
+Kangaroo12 x 300,480 ops/sec @ 3μs/op
+Marsupilami14 x 269,614 ops/sec @ 3μs/op
+BLAKE2b x 291,375 ops/sec @ 3μs/op
+BLAKE2s x 505,561 ops/sec @ 1μs/op
+BLAKE3 x 576,036 ops/sec @ 1μs/op
+HMAC-SHA256 x 342,583 ops/sec @ 2μs/op
+RIPEMD160 noble x 1,191,895 ops/sec @ 839ns/op
+HKDF-SHA256 x 115,500 ops/sec @ 8μs/op
 PBKDF2-HMAC-SHA256 262144 x 2 ops/sec @ 338ms/op
 PBKDF2-HMAC-SHA512 262144 x 0 ops/sec @ 1024ms/op
 Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 637ms/op
@@ -371,14 +372,16 @@ Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 637ms/op
 Compare to native node.js implementation that uses C bindings instead of pure-js code:
 
 ```
-SHA256 32B native x 569,151 ops/sec @ 1μs/op
-SHA384 32B native x 548,245 ops/sec @ 1μs/op
-SHA512 32B native x 551,267 ops/sec @ 1μs/op
-SHA3 32B native x 545,553 ops/sec @ 1μs/op
-BLAKE2s 32B native x 545,256 ops/sec @ 1μs/op
-BLAKE2b 32B native x 583,090 ops/sec @ 1μs/op
-RIPEMD160 32B native x 509,424 ops/sec @ 1μs/op
-HMAC-SHA256 32B native x 500,751 ops/sec @ 1μs/op
+SHA256 32B native x 1,164,144 ops/sec @ 859ns/op
+SHA384 32B native x 938,086 ops/sec @ 1μs/op
+SHA512 32B native x 946,969 ops/sec @ 1μs/op
+SHA3 32B native x 879,507 ops/sec @ 1μs/op
+keccak, k12, m14 are not implemented
+BLAKE2b 32B native x 879,507 ops/sec @ 1μs/op
+BLAKE2s 32B native x 977,517 ops/sec @ 1μs/op
+BLAKE3 is not implemented
+RIPEMD160 32B native x 913,242 ops/sec @ 1μs/op
+HMAC-SHA256 32B native x 755,287 ops/sec @ 1μs/op
 HKDF-SHA256 32B native x 207,856 ops/sec @ 4μs/op
 PBKDF2-HMAC-SHA256 262144 native x 23 ops/sec @ 42ms/op
 Scrypt 262144 native x 1 ops/sec @ 564ms/op

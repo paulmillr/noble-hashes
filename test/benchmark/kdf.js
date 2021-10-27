@@ -19,6 +19,7 @@ const { HKDF: stableHKDF } = require('@stablelib/hkdf');
 const stable512 = require('@stablelib/sha512');
 const _scryptAsync = require('scrypt-async');
 const { syncScrypt: scryptJsSync, scrypt: scryptJsAsync } = require('scrypt-js');
+const wasm = require('hash-wasm');
 
 function scryptAsyncSync(iters) {
   let res = undefined; // workaround for bad scrypt api
@@ -57,6 +58,15 @@ const KDF = {
   },
   'PBKDF2-HMAC-SHA512': {
     node: (iters) => crypto.pbkdf2Sync(password, salt, iters, 64, 'sha512'),
+    'hash-wasm': (iters) =>
+      wasm.pbkdf2({
+        password: 'password',
+        salt,
+        iterations: iters,
+        hashLength: 32,
+        hashFunction: wasm.createSHA512(),
+        outputType: 'binary',
+      }),
     stablelib: (iters) => stablePBKDF2(stable512.SHA512, password, salt, iters, 64),
     noble: (iters) => pbkdf2(sha512, password, salt, { c: iters, dkLen: 64 }),
     'noble (async)': (iters) => pbkdf2Async(sha512, password, salt, { c: iters, dkLen: 64 }),
@@ -74,6 +84,17 @@ const KDF = {
       new Promise((resolve) =>
         crypto.scrypt(password, salt, 32, { N: iters, r: 8, p: 1, maxmem: 1024 ** 4 }, resolve)
       ),
+    'hash-wasm': async (iters) =>
+      await wasm.scrypt({
+        password: 'password',
+        salt,
+        costFactor: iters,
+        blockSize: 8,
+        parallelism: 1,
+        hashLength: 32,
+        outputType: 'binary',
+      }),
+    // 'hash-wasm': (iters) =>
     'scrypt-async': (iters) =>
       new Promise((resolve) =>
         _scryptAsync(

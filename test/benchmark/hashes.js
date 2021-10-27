@@ -24,12 +24,14 @@ const stable3 = require('@stablelib/sha3');
 const stableb2b = require('@stablelib/blake2b');
 const stableb2s = require('@stablelib/blake2s');
 const jssha3 = require('js-sha3');
-
+const wasm_ = require('hash-wasm');
+const wasm = {};
 const wrapBuf = (arrayBuffer) => new Uint8Array(arrayBuffer);
 
 const HASHES = {
   SHA256: {
     node: (buf) => crypto.createHash('sha256').update(buf).digest(),
+    'hash-wasm': (buf) => wasm.sha256.init().update(buf).digest(),
     'crypto-browserify': (buf) => createHash('sha256').update(buf).digest(),
     stablelib: (buf) => stable256.hash(buf),
     'fast-sha256': (buf) => fastsha256.hash(buf),
@@ -43,12 +45,14 @@ const HASHES = {
   },
   SHA512: {
     node: (buf) => crypto.createHash('sha512').update(buf).digest(),
+    'hash-wasm': (buf) => wasm.sha512.init().update(buf).digest(),
     'crypto-browserify': (buf) => createHash('sha512').update(buf).digest(),
     stablelib: (buf) => stable2_512.hash(buf),
     noble: (buf) => sha512(buf),
   },
   'SHA3-256, keccak256, shake256': {
     node: (buf) => crypto.createHash('sha3-256').update(buf).digest(),
+    'hash-wasm': (buf) => wasm.sha3.init().update(buf).digest(),
     stablelib: (buf) => new stable3.SHA3256().update(buf).digest(),
     'js-sha3': (buf) => wrapBuf(jssha3.sha3_256.create().update(buf).arrayBuffer()),
     noble: (buf) => sha3_256(buf),
@@ -57,15 +61,18 @@ const HASHES = {
   Marsupilami14: { noble: (buf) => m14(buf) },
   BLAKE2b: {
     node: (buf) => crypto.createHash('blake2b512').update(buf).digest(),
+    'hash-wasm': (buf) => wasm.blake2b.init().update(buf).digest(),
     stablelib: (buf) => new stableb2b.BLAKE2b().update(buf).digest(),
     noble: (buf) => blake2b(buf),
   },
   BLAKE2s: {
     node: (buf) => crypto.createHash('blake2s256').update(buf).digest(),
+    'hash-wasm': (buf) => wasm.blake2s.init().update(buf).digest(),
     stablelib: (buf) => new stableb2s.BLAKE2s().update(buf).digest(),
     noble: (buf) => blake2s(buf),
   },
   BLAKE3: {
+    'hash-wasm': (buf) => wasm.blake3.init().update(buf).digest(),
     noble: (buf) => blake3(buf),
   },
   RIPEMD160: {
@@ -93,6 +100,12 @@ const buffers = {
 
 const main = () =>
   run(async () => {
+    wasm.sha256 = await wasm_.createSHA256();
+    wasm.sha512 = await wasm_.createSHA512();
+    wasm.sha3 = await wasm_.createSHA3();
+    wasm.blake2b = await wasm_.createBLAKE2b();
+    wasm.blake2s = await wasm_.createBLAKE2s();
+    wasm.blake3 = await wasm_.createBLAKE3();
     for (let [k, libs] of Object.entries(HASHES)) {
       console.log(`==== ${k} ====`);
       for (const [size, [samples, buf]] of Object.entries(buffers)) {
