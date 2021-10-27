@@ -21,11 +21,12 @@ export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 
 // So, just to be sure not to corrupt anything.
 if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
+const hexes = Array.from({ length: 256 }, (v, i) => i.toString(16).padStart(2, '0'));
 export function bytesToHex(uint8a: Uint8Array): string {
   // pre-caching chars could speed this up 6x.
   let hex = '';
   for (let i = 0; i < uint8a.length; i++) {
-    hex += uint8a[i].toString(16).padStart(2, '0');
+    hex += hexes[i];
   }
   return hex;
 }
