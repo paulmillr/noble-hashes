@@ -106,7 +106,7 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
 
 ## Modules
-- [SHA2 (sha256, sha512, sha512_256)](#sha2-sha256-sha512-sha512_256)
+- [SHA2 (sha256, sha384, sha512, sha512_256)](#sha2-sha256-sha384-sha512-sha512_256)
 - [SHA3 (sha3_256, keccak_256, etc)](#sha3-sha3_256-keccak_256-etc)
 - [SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)](#sha3-addons-cshake-kmac-kangarootwelve-marsupilamifourteen)
 - [RIPEMD-160](#ripemd-160)
@@ -118,7 +118,7 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - [Scrypt](#scrypt)
 - [utils](#utils)
 
-##### SHA2 (sha256, sha512, sha512_256)
+##### SHA2 (sha256, sha384, sha512, sha512_256)
 
 ```typescript
 import { sha256 } from 'noble-hashes/lib/sha256.js';
