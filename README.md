@@ -156,7 +156,7 @@ const h4b = sha384
 
 See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and [the paper on SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
-##### SHA3 (sha3_256, keccak_256, etc)
+##### SHA3 (FIPS, SHAKE, Keccak)
 
 ```typescript
 import {
