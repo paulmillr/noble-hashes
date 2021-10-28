@@ -107,7 +107,7 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 
 ## Modules
 - [SHA2 (sha256, sha384, sha512, sha512_256)](#sha2-sha256-sha384-sha512-sha512_256)
-- [SHA3 (sha3_256, keccak_256, etc)](#sha3-sha3_256-keccak_256-etc)
+- [SHA3 (FIPS, SHAKE, Keccak)](#sha3-fips-shake-keccak)
 - [SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)](#sha3-addons-cshake-kmac-kangarootwelve-marsupilamifourteen)
 - [RIPEMD-160](#ripemd-160)
 - [BLAKE2b, BLAKE2s](#blake2b-blake2s)
