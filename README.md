@@ -362,7 +362,7 @@ BLAKE2b x 291,375 ops/sec @ 3μs/op
 BLAKE2s x 505,561 ops/sec @ 1μs/op
 BLAKE3 x 576,036 ops/sec @ 1μs/op
 HMAC-SHA256 x 342,583 ops/sec @ 2μs/op
-RIPEMD160 noble x 1,191,895 ops/sec @ 839ns/op
+RIPEMD160 x 1,191,895 ops/sec @ 839ns/op
 HKDF-SHA256 x 115,500 ops/sec @ 8μs/op
 PBKDF2-HMAC-SHA256 262144 x 2 ops/sec @ 338ms/op
 PBKDF2-HMAC-SHA512 262144 x 0 ops/sec @ 1024ms/op
