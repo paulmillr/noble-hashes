@@ -26,7 +26,7 @@ export function bytesToHex(uint8a: Uint8Array): string {
   // pre-caching chars could speed this up 6x.
   let hex = '';
   for (let i = 0; i < uint8a.length; i++) {
-    hex += hexes[i];
+    hex += hexes[uint8a[i]];
   }
   return hex;
 }
