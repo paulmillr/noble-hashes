@@ -41,12 +41,12 @@ export function hkdf_expand(
     HMACTmp.update(counter === 0 ? EMPTY_BUFFER : T)
       .update(info)
       .update(HKDF_COUNTER)
-      ._writeDigest(T);
+      .digestInto(T);
     okm.set(T, hash.outputLen * counter);
     HMAC._cloneInto(HMACTmp);
   }
-  HMAC._clean();
-  HMACTmp._clean();
+  HMAC.destroy();
+  HMACTmp.destroy();
   T.fill(0);
   return okm.slice(0, length);
 }

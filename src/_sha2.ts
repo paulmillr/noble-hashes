@@ -15,7 +15,7 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
   protected abstract process(buf: DataView, offset: number): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
-  abstract _clean(): void;
+  abstract destroy(): void;
   protected abstract roundClean(): void;
   // For partial updates less than block size
   protected buffer: Uint8Array;
@@ -23,6 +23,7 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
   protected finished = false;
   protected length = 0;
   protected pos = 0;
+  protected destroyed = false;
 
   constructor(
     readonly blockLen: number,
@@ -35,6 +36,7 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     this.view = createView(this.buffer);
   }
   update(data: Input): this {
+    if (this.destroyed) throw new Error('instance is destroyed');
     const { view, buffer, blockLen, finished } = this;
     if (finished) throw new Error('digest() was already called');
     data = toBytes(data);
@@ -59,7 +61,10 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     this.roundClean();
     return this;
   }
-  _writeDigest(out: Uint8Array) {
+  digestInto(out: Uint8Array) {
+    if (this.destroyed) throw new Error('instance is destroyed');
+    if (!(out instanceof Uint8Array) || out.length < this.outputLen)
+      throw new Error('_Sha2: Invalid output buffer');
     if (this.finished) throw new Error('digest() was already called');
     this.finished = true;
     // Padding
@@ -87,18 +92,19 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
   }
   digest() {
     const { buffer, outputLen } = this;
-    this._writeDigest(buffer);
+    this.digestInto(buffer);
     const res = buffer.slice(0, outputLen);
-    this._clean();
+    this.destroy();
     return res;
   }
   _cloneInto(to?: T): T {
     to ||= new (this.constructor as any)() as T;
     to.set(...this.get());
-    const { blockLen, buffer, length, finished, pos } = this;
+    const { blockLen, buffer, length, finished, destroyed, pos } = this;
     to.length = length;
     to.pos = pos;
     to.finished = finished;
+    to.destroyed = destroyed;
     if (length % blockLen) to.buffer.set(buffer);
     return to;
   }

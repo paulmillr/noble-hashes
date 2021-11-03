@@ -121,8 +121,9 @@ class BLAKE2s extends blake2.BLAKE2<BLAKE2s> {
     this.v6 ^= v6 ^ v14;
     this.v7 ^= v7 ^ v15;
   }
-  _clean() {
-    this.buffer.fill(0);
+  destroy() {
+    this.destroyed = true;
+    this.buffer32.fill(0);
     this.set(0, 0, 0, 0, 0, 0, 0, 0);
   }
 }

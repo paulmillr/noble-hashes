@@ -36,9 +36,9 @@ function pbkdf2Output<T extends Hash<T>>(
   prfW: Hash<T>,
   u: Uint8Array
 ) {
-  PRF._clean();
-  PRFSalt._clean();
-  if (prfW) prfW._clean();
+  PRF.destroy();
+  PRFSalt.destroy();
+  if (prfW) prfW.destroy();
   u.fill(0);
   return DK;
 }
@@ -56,11 +56,11 @@ export function pbkdf2(hash: CHash, password: Input, salt: Input, _opts: Pbkdf2O
     view.setInt32(0, ti, false);
     // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc
     // U1 = PRF(Password, Salt + INT_32_BE(i))
-    (prfW = PRFSalt._cloneInto(prfW)).update(arr)._writeDigest(u);
+    (prfW = PRFSalt._cloneInto(prfW)).update(arr).digestInto(u);
     Ti.set(u.subarray(0, Ti.length));
     for (let ui = 1; ui < c; ui++) {
       // Uc = PRF(Password, Uc−1)
-      PRF._cloneInto(prfW).update(u)._writeDigest(u);
+      PRF._cloneInto(prfW).update(u).digestInto(u);
       for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
     }
   }
@@ -80,11 +80,11 @@ export async function pbkdf2Async(hash: CHash, password: Input, salt: Input, _op
     view.setInt32(0, ti, false);
     // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc
     // U1 = PRF(Password, Salt + INT_32_BE(i))
-    (prfW = PRFSalt._cloneInto(prfW)).update(arr)._writeDigest(u);
+    (prfW = PRFSalt._cloneInto(prfW)).update(arr).digestInto(u);
     Ti.set(u.subarray(0, Ti.length));
     await asyncLoop(c - 1, asyncTick, (i) => {
       // Uc = PRF(Password, Uc−1)
-      PRF._cloneInto(prfW).update(u)._writeDigest(u);
+      PRF._cloneInto(prfW).update(u).digestInto(u);
       for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
     });
   }

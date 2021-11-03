@@ -27,12 +27,13 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
   protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
-  abstract _clean(): void;
+  abstract destroy(): void;
   protected buffer: Uint8Array;
   protected buffer32: Uint32Array;
   protected length: number = 0;
   protected pos: number = 0;
   protected finished = false;
+  protected destroyed = false;
 
   constructor(
     readonly blockLen: number,
@@ -57,6 +58,7 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     this.buffer32 = u32((this.buffer = new Uint8Array(blockLen)));
   }
   update(data: Input) {
+    if (this.destroyed) throw new Error('instance is destroyed');
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
     // is the next one. This significantly complicates logic and reduces ability
@@ -89,7 +91,10 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     }
     return this;
   }
-  _writeDigest(out: Uint8Array) {
+  digestInto(out: Uint8Array) {
+    if (this.destroyed) throw new Error('instance is destroyed');
+    if (!(out instanceof Uint8Array) || out.length < this.outputLen)
+      throw new Error('_Blake2: Invalid output buffer');
     const { finished, pos, buffer32 } = this;
     if (finished) throw new Error('digest() was already called');
     this.finished = true;
@@ -101,17 +106,18 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
   }
   digest() {
     const { buffer, outputLen } = this;
-    this._writeDigest(buffer);
+    this.digestInto(buffer);
     const res = buffer.slice(0, outputLen);
-    this._clean();
+    this.destroy();
     return res;
   }
   _cloneInto(to?: T): T {
-    const { buffer, length, finished, outputLen, pos } = this;
+    const { buffer, length, finished, destroyed, outputLen, pos } = this;
     to ||= new (this.constructor as any)({ dkLen: outputLen }) as T;
     to.set(...this.get());
     to.length = length;
     to.finished = finished;
+    to.destroyed = destroyed;
     to.outputLen = outputLen;
     to.buffer.set(buffer);
     to.pos = pos;

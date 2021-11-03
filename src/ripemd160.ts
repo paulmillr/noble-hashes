@@ -94,7 +94,8 @@ export class RIPEMD160 extends SHA2<RIPEMD160> {
   protected roundClean() {
     BUF.fill(0);
   }
-  _clean() {
+  destroy() {
+    this.destroyed = true;
     this.buffer.fill(0);
     this.set(0, 0, 0, 0, 0);
   }

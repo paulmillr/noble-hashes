@@ -101,7 +101,7 @@ class SHA256 extends SHA2<SHA256> {
   protected roundClean() {
     SHA256_W.fill(0);
   }
-  _clean() {
+  destroy() {
     this.set(0, 0, 0, 0, 0, 0, 0, 0);
     this.buffer.fill(0);
   }

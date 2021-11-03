@@ -5,7 +5,8 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   iHash: T;
   blockLen: number;
   outputLen: number;
-  finished = false;
+  private finished = false;
+  private destroyed = false;
 
   constructor(hash: CHash, _key: Input) {
     super();
@@ -29,37 +30,43 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     pad.fill(0);
   }
   update(buf: Input) {
+    if (this.destroyed) throw new Error('instance is destroyed');
     this.iHash.update(buf);
     return this;
   }
-  _writeDigest(out: Uint8Array) {
+  digestInto(out: Uint8Array) {
+    if (this.destroyed) throw new Error('instance is destroyed');
+    if (!(out instanceof Uint8Array) || out.length !== this.outputLen)
+      throw new Error('HMAC: Invalid output buffer');
     if (this.finished) throw new Error('digest() was already called');
     this.finished = true;
-    this.iHash._writeDigest(out);
+    this.iHash.digestInto(out);
     this.oHash.update(out);
-    this.oHash._writeDigest(out);
-    this._clean();
+    this.oHash.digestInto(out);
+    this.destroy();
   }
   digest() {
     const out = new Uint8Array(this.oHash.outputLen);
-    this._writeDigest(out);
+    this.digestInto(out);
     return out;
   }
   _cloneInto(to?: HMAC<T>): HMAC<T> {
     // Create new instance without calling constructor since key already in state and we don't know it.
     to ||= Object.create(Object.getPrototypeOf(this), {});
-    const { oHash, iHash, finished, blockLen, outputLen } = this;
+    const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
     to = to as this;
     to.finished = finished;
+    to.destroyed = destroyed;
     to.blockLen = blockLen;
     to.outputLen = outputLen;
     to.oHash = oHash._cloneInto(to.oHash);
     to.iHash = iHash._cloneInto(to.iHash);
     return to;
   }
-  _clean() {
-    this.oHash._clean();
-    this.iHash._clean();
+  destroy() {
+    this.destroyed = true;
+    this.oHash.destroy();
+    this.iHash.destroy();
   }
 }
 

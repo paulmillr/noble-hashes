@@ -160,7 +160,7 @@ export class SHA512 extends SHA2<SHA512> {
     SHA512_W_H.fill(0);
     SHA512_W_L.fill(0);
   }
-  _clean() {
+  destroy() {
     this.buffer.fill(0);
     this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   }

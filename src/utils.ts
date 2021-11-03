@@ -90,17 +90,31 @@ export abstract class Hash<T extends Hash<T>> {
   abstract blockLen: number; // Bytes per block
   abstract outputLen: number; // Bytes in output
   abstract update(buf: Input): this;
+  // Writes digest into buf
+  abstract digestInto(buf: Uint8Array): void;
   abstract digest(): Uint8Array;
-  // Internal methods (unsafe)
-  // Unsafe because expects buf to be length of outputLen. Behaviour when buf length is not equal to outputLen is undefined.
-  abstract _writeDigest(buf: Uint8Array): void;
-  abstract _clean(): void;
+  // Cleanup internal state. Not '.clean' because instance is not usable after that.
+  // Clean usually resets instance to initial state, but it is not possible for keyed hashes if key is consumed into state.
+  // NOTE: if digest is not consumed by user, user need manually call '.destroy' if zeroing is required
+  abstract destroy(): void;
   // Unsafe because doesn't check if "to" is correct. Can be used as clone() if no opts passed.
-  // Why cloneInto instead of clone? Mostly performance (same as _writeDigest), but also has nice property: it reuses instance
+  // Why cloneInto instead of clone? Mostly performance (same as _digestInto), but also has nice property: it reuses instance
   // which means all internal buffers is overwritten, which also causes overwrite buffer which used for digest (in some cases).
   // We don't provide any guarantees about cleanup (it is impossible to!), so should be enough for now.
   abstract _cloneInto(to?: T): T;
+  // Safe version that clones internal state
+  clone(): T {
+    return this._cloneInto();
+  }
 }
+
+export type HashXOF<T extends Hash<T>> = Hash<T> & {
+  // XOF: streaming API to read digest in chunks. Same as 'squeeze' in keccak/k12 and 'seek' in blake3, but more generic name.
+  // NOTE: when hash used in XOF mode it is up to user to call '.destroy' afterwards, since we cannot destroy state,
+  // next call can require more bytes.
+  XOF(bytes: number): Uint8Array; // Read 'bytes' bytes from digest stream
+  XOFInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
+};
 
 // Check if object doens't have custom constructor (like Uint8Array/Array)
 const isPlainObject = (obj: any) =>
@@ -138,7 +152,7 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   return hashC;
 }
 
-const crypto: { node?: any; web?: Crypto } = (() => {
+export const crypto: { node?: any; web?: Crypto } = (() => {
   const webCrypto = typeof self === 'object' && 'crypto' in self ? self.crypto : undefined;
   const nodeRequire = typeof module !== 'undefined' && typeof require === 'function';
   return {
