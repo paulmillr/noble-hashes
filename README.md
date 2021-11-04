@@ -9,7 +9,7 @@ Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, 
 - 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests
 - 🧪 Differential fuzzing ensures even more correctness with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
 - 🔑 Scrypt supports `n: 2**22` with 4GB arrays while other implementations crash on `2**21` or even `2**20`, `maxmem` security param, `onProgress` callback
-- 🦘 SHA3 supports Keccak, KangarooTwelve and MarsupilamiFourteen
+- 🦘 SHA3 supports Keccak, TupleHash, KangarooTwelve and MarsupilamiFourteen
 - All primitives are just ~2KLOC / 41KB minified / 14KB gzipped. SHA256-only is 240LOC / 7KB minified / 3KB gzipped
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
@@ -210,13 +210,9 @@ p.feed('test');
 const rand1b = p.fetch(1);
 ```
 
-- Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): cSHAKE, KMAC, TupleHash, ParallelHash (+ XOF variants)
+- Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
 - 🦘 K12 ([KangarooTwelve Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt)) and M14 aka MarsupilamiFourteen are basically parallel versions of Keccak with reduced number of rounds (same as Blake3 and ParallelHash).
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
-
-🦘 K12 and M14 are basically faster versions of Keccak.
-
-See [KangarooTwelve Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt), [Website](https://keccak.team/keccak.html) and [(NIST SP 800-185)](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
 
 ##### RIPEMD-160
 
