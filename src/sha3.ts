@@ -7,6 +7,7 @@ import {
   wrapConstructor,
   wrapConstructorWithOpts,
   assertNumber,
+  HashXOF,
 } from './utils';
 
 // Various per round constants calculations
@@ -34,7 +35,7 @@ const rotlL = (h: number, l: number, s: number) =>
   s > 32 ? u64.rotlBL(h, l, s) : u64.rotlSL(h, l, s);
 
 // Same as keccakf1600, but allows to skip some rounds
-function keccakP(s: Uint32Array, rounds: number = 24) {
+export function keccakP(s: Uint32Array, rounds: number = 24) {
   const B = new Uint32Array(5 * 2);
   // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
   for (let round = 24 - rounds; round < 24; round++) {
@@ -77,17 +78,20 @@ function keccakP(s: Uint32Array, rounds: number = 24) {
   B.fill(0);
 }
 
-export class Keccak extends Hash<Keccak> {
+export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
   protected state: Uint8Array;
-  private pos = 0;
+  protected pos = 0;
+  protected posOut = 0;
   protected finished = false;
   protected state32: Uint32Array;
+  protected destroyed = false;
   // NOTE: we accept arguments in bytes instead of bits here.
   constructor(
     public blockLen: number,
     public suffix: number,
     public outputLen: number,
-    private rounds: number = 24
+    protected enableXOF = false,
+    protected rounds: number = 24
   ) {
     super();
     // Can be passed from user as dkLen
@@ -98,59 +102,84 @@ export class Keccak extends Hash<Keccak> {
     this.state = new Uint8Array(200);
     this.state32 = u32(this.state);
   }
-  private keccak() {
+  protected keccak() {
     keccakP(this.state32, this.rounds);
+    this.posOut = 0;
+    this.pos = 0;
   }
   update(data: Input) {
-    const { blockLen, state, finished } = this;
-    if (finished) throw new Error('digest() was already called');
+    if (this.destroyed) throw new Error('instance is destroyed');
+    if (this.finished) throw new Error('digest() was already called');
+    const { blockLen, state } = this;
     data = toBytes(data);
     const len = data.length;
     for (let pos = 0; pos < len; ) {
       const take = Math.min(blockLen - this.pos, len - pos);
       for (let i = 0; i < take; i++) state[this.pos++] ^= data[pos++];
-      if (this.pos !== blockLen) continue;
-      this.keccak();
-      this.pos = 0;
+      if (this.pos === blockLen) this.keccak();
     }
     return this;
   }
-  _writeDigest(out: Uint8Array) {
-    if (this.finished) throw new Error('digest() was already called');
+  protected finish() {
+    if (this.finished) return;
     this.finished = true;
-    const { state, suffix, pos, blockLen, outputLen } = this;
+    const { state, suffix, pos, blockLen } = this;
     // Do the padding
     state[pos] ^= suffix;
     if ((suffix & 0x80) !== 0 && pos === blockLen - 1) this.keccak();
     state[blockLen - 1] ^= 0x80;
     this.keccak();
-    // Squeeze
-    for (let left = outputLen, outPos = 0; left > 0; ) {
-      const chunk = Math.min(left, this.blockLen);
-      out.set(this.state.subarray(0, chunk), outPos);
-      left -= chunk;
-      outPos += chunk;
-      if (left) this.keccak();
-    }
   }
-  digest() {
-    const out = new Uint8Array(this.outputLen);
-    this._writeDigest(out);
-    this._clean();
+  protected writeInto(out: Uint8Array): Uint8Array {
+    if (this.destroyed) throw new Error('instance is destroyed');
+    if (!(out instanceof Uint8Array)) throw new Error('Keccak: invalid output buffer');
+    this.finish();
+    for (let pos = 0, len = out.length; pos < len; ) {
+      if (this.posOut >= this.blockLen) this.keccak();
+      const take = Math.min(this.blockLen - this.posOut, len - pos);
+      out.set(this.state.subarray(this.posOut, this.posOut + take), pos);
+      this.posOut += take;
+      pos += take;
+    }
     return out;
   }
-  _clean() {
+  XOFInto(out: Uint8Array): Uint8Array {
+    // Sha3/Keccak usage with XOF is probably mistake, only SHAKE instances can do XOF
+    if (!this.enableXOF) throw new Error('XOF is not possible for this instance');
+    return this.writeInto(out);
+  }
+  XOF(bytes: number): Uint8Array {
+    assertNumber(bytes);
+    return this.XOFInto(new Uint8Array(bytes));
+  }
+  digestInto(out: Uint8Array) {
+    if (out.length < this.outputLen) throw new Error('Keccak: invalid output buffer');
+    if (this.finished) throw new Error('digest() was already called');
+    this.finish();
+    this.writeInto(out);
+    this.destroy();
+    return out;
+  }
+  digest() {
+    return this.digestInto(new Uint8Array(this.outputLen));
+  }
+  destroy() {
+    this.destroyed = true;
     this.state.fill(0);
   }
   _cloneInto(to?: Keccak): Keccak {
-    const { blockLen, suffix, outputLen, rounds, state, pos, finished } = this;
-    to ||= new Keccak(blockLen, suffix, outputLen, rounds);
-    to.state.set(state);
-    to.pos = pos;
-    to.finished = finished;
+    const { blockLen, suffix, outputLen, rounds, enableXOF } = this;
+    to ||= new Keccak(blockLen, suffix, outputLen, enableXOF, rounds);
+    to.state32.set(this.state32);
+    to.pos = this.pos;
+    to.posOut = this.posOut;
+    to.finished = this.finished;
+    to.rounds = rounds;
     // Suffix can change in cSHAKE
     to.suffix = suffix;
     to.outputLen = outputLen;
+    to.enableXOF = enableXOF;
+    to.destroyed = this.destroyed;
     return to;
   }
 }
@@ -172,7 +201,7 @@ export type ShakeOpts = { dkLen?: number };
 const genShake = (suffix: number, blockLen: number, outputLen: number) =>
   wrapConstructorWithOpts<Keccak, ShakeOpts>(
     (opts: ShakeOpts = {}) =>
-      new Keccak(blockLen, suffix, opts.dkLen !== undefined ? opts.dkLen : outputLen)
+      new Keccak(blockLen, suffix, opts.dkLen !== undefined ? opts.dkLen : outputLen, true)
   );
 
 export const shake128 = genShake(0x1f, 168, 128 / 8);

@@ -55,7 +55,9 @@ const {
 } = require('noble-hashes/lib/sha3');
 // prettier-ignore
 const {
-  cshake128, cshake256, kmac128, kmac256, k12, m14
+  cshake128, cshake256, kmac128, kmac256,
+  tuple128, tuple256, parallel128, parallel256,
+  k12, m14, prg
 } = require('noble-hashes/lib/sha3-addons');
 const { ripemd160 } = require('noble-hashes/lib/ripemd160');
 const { blake3 } = require('noble-hashes/lib/blake3');
@@ -185,7 +187,7 @@ See ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
-##### SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)
+##### SHA3 Addons (cSHAKE, KMAC, TupleHash, ParalllelHash, KangarooTwelve, MarsupilamiFourteen)
 
 ```typescript
 import {
@@ -196,8 +198,21 @@ const h7d = cshake256('abc', { personalization: 'def' })
 const h7e = kmac128('key', 'message')
 const h7f = kmac256('key', 'message')
 const h7h = k12('abc');
-const h7g = m14('abc')
+const h7g = m14('abc');
+const h7i = tuple128(['ab', 'c']); // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash(['abc'])
+// Same as k12/blake3, but without reduced number of rounds. Doesn't speedup anything due lack of SIMD and threading,
+// added for compatibility.
+const h7j = parallel128('abc', { blockLen: 8 });
+// pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
+// * with a capacity of 254 bits.
+const p = prg(254);
+p.feed('test');
+const rand1b = p.fetch(1);
 ```
+
+- Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): cSHAKE, KMAC, TupleHash, ParallelHash (+ XOF variants)
+- 🦘 K12 ([KangarooTwelve Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt)) and M14 aka MarsupilamiFourteen are basically parallel versions of Keccak with reduced number of rounds (same as Blake3 and ParallelHash).
+- [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
 
 🦘 K12 and M14 are basically faster versions of Keccak.
 

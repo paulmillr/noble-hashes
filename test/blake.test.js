@@ -2,7 +2,7 @@ const assert = require('assert');
 const { should } = require('micro-should');
 const { blake2b } = require('../lib/blake2b');
 const { blake2s } = require('../lib/blake2s');
-const { TYPE_TEST, pattern } = require('./utils');
+const { TYPE_TEST, pattern, concatBytes } = require('./utils');
 const blake2_vectors = require('./vectors/blake2-kat.json');
 const blake2_python = require('./vectors/blake2-python.json');
 const blake3_vectors = require('./vectors/blake3.json');
@@ -98,5 +98,25 @@ for (let i = 0; i < blake3_vectors.cases.length; i++) {
     assert.deepStrictEqual(Buffer.from(res).toString('hex'), v.derive_key);
   });
 }
+
+should('Blake3 XOF', () => {
+  // XOF ok on xof instances
+  blake3.init().XOF(10);
+  assert.throws(() => {
+    const h = blake3.init();
+    h.XOF(10);
+    h.digest();
+  }, 'digest after XOF');
+  assert.throws(() => {
+    const h = blake3.init();
+    h.digest();
+    h.XOF(10);
+  }, 'XOF after digest');
+  const bigOut = blake3('', { dkLen: 130816 });
+  const hashxof = blake3.init();
+  const out = [];
+  for (let i = 0; i < 512; i++) out.push(hashxof.XOF(i));
+  assert.deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size');
+});
 
 if (require.main === module) should.run();

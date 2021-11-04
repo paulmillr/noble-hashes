@@ -1,6 +1,6 @@
-import { Hash, Input, toBytes, wrapConstructorWithOpts, assertNumber, u32 } from './utils';
+import { Input, toBytes, wrapConstructorWithOpts, assertNumber, u32, Hash, HashXOF } from './utils';
 import { Keccak, ShakeOpts } from './sha3';
-// cSHAKE && KMAC
+// cSHAKE && KMAC (NIST SP800-185)
 function leftEncode(n: number): Uint8Array {
   const res = [n & 0xff];
   n >>= 8;
@@ -43,7 +43,7 @@ function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
 const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
   wrapConstructorWithOpts<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
     cshakePers(
-      new Keccak(blockLen, suffix, opts.dkLen !== undefined ? opts.dkLen : outputLen),
+      new Keccak(blockLen, suffix, opts.dkLen !== undefined ? opts.dkLen : outputLen, true),
       opts
     )
   );
@@ -51,14 +51,15 @@ const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
 export const cshake128 = gencShake(0x1f, 168, 128 / 8);
 export const cshake256 = gencShake(0x1f, 136, 256 / 8);
 
-class KMAC extends Keccak {
+class KMAC extends Keccak implements HashXOF<KMAC> {
   constructor(
-    public blockLen: number,
-    public outputLen: number,
+    blockLen: number,
+    outputLen: number,
+    enableXOF: boolean,
     key: Input,
     opts: cShakeOpts = {}
   ) {
-    super(blockLen, 0x1f, outputLen);
+    super(blockLen, 0x1f, outputLen, enableXOF);
     cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
     key = toBytes(key);
     // 1. newX = bytepad(encode_string(K), 168) || X || right_encode(L).
@@ -68,9 +69,9 @@ class KMAC extends Keccak {
     const totalLen = blockLenBytes.length + keyLen.length + key.length;
     this.update(getPadding(totalLen, this.blockLen));
   }
-  _writeDigest(buf: Uint8Array) {
-    this.update(rightEncode(this.outputLen * 8)); // outputLen in bits
-    return Keccak.prototype._writeDigest.call(this, buf);
+  protected finish() {
+    if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : this.outputLen * 8)); // outputLen in bits
+    super.finish();
   }
   _cloneInto(to?: KMAC): KMAC {
     // Create new instance without calling constructor since key already in state and we don't know it.
@@ -81,21 +82,165 @@ class KMAC extends Keccak {
       to.blockLen = this.blockLen;
       to.state32 = u32(to.state);
     }
-    return Keccak.prototype._cloneInto.call(this, to) as KMAC;
+    return super._cloneInto(to) as KMAC;
+  }
+  clone(): KMAC {
+    return this._cloneInto();
   }
 }
 
-function genKmac(blockLen: number, outputLen: number) {
+function genKmac(blockLen: number, outputLen: number, xof = false) {
   const kmac = (key: Input, message: Input, opts?: cShakeOpts): Uint8Array =>
     kmac.create(key, opts).update(message).digest();
   kmac.create = (key: Input, opts: cShakeOpts = {}) =>
-    new KMAC(blockLen, opts.dkLen !== undefined ? opts.dkLen : outputLen, key, opts);
+    new KMAC(blockLen, opts.dkLen !== undefined ? opts.dkLen : outputLen, xof, key, opts);
   kmac.init = kmac.create;
   return kmac;
 }
 
 export const kmac128 = genKmac(168, 128 / 8);
 export const kmac256 = genKmac(136, 256 / 8);
+export const kmac128xof = genKmac(168, 128 / 8, true);
+export const kmac256xof = genKmac(136, 256 / 8, true);
+
+// TupleHash
+// Usage: tuple(['ab', 'cd']) != tuple(['a', 'bcd'])
+class TupleHash extends Keccak implements HashXOF<TupleHash> {
+  constructor(blockLen: number, outputLen: number, enableXOF: boolean, opts: cShakeOpts = {}) {
+    super(blockLen, 0x1f, outputLen, enableXOF);
+    cshakePers(this, { NISTfn: 'TupleHash', personalization: opts.personalization });
+    // Change update after cshake processed
+    this.update = (data: Input) => {
+      data = toBytes(data);
+      super.update(leftEncode(data.length * 8));
+      super.update(data);
+      return this;
+    };
+  }
+  protected finish() {
+    if (!this.finished) super.update(rightEncode(this.enableXOF ? 0 : this.outputLen * 8)); // outputLen in bits
+    super.finish();
+  }
+  _cloneInto(to?: TupleHash): TupleHash {
+    to ||= new TupleHash(this.blockLen, this.outputLen, this.enableXOF);
+    return super._cloneInto(to) as TupleHash;
+  }
+  clone(): TupleHash {
+    return this._cloneInto();
+  }
+}
+
+function genTuple(blockLen: number, outputLen: number, xof = false) {
+  const tuple = (messages: Input[], opts?: cShakeOpts): Uint8Array => {
+    const h = tuple.create(opts);
+    for (const msg of messages) h.update(msg);
+    return h.digest();
+  };
+  tuple.create = (opts: cShakeOpts = {}) =>
+    new TupleHash(blockLen, opts.dkLen !== undefined ? opts.dkLen : outputLen, xof, opts);
+  tuple.init = tuple.create;
+  return tuple;
+}
+
+export const tuple128 = genTuple(168, 128 / 8);
+export const tuple256 = genTuple(136, 256 / 8);
+export const tuple128xof = genTuple(168, 128 / 8, true);
+export const tuple256xof = genTuple(136, 256 / 8, true);
+
+// ParallelHash (same as K12/M14, but without speedup for inputs less 8kb, reduced number of rounds and more simple)
+type ParallelOpts = cShakeOpts & { blockLen?: number };
+
+class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
+  private leafHash?: Hash<Keccak>;
+  private chunkPos = 0; // Position of current block in chunk
+  private chunksDone = 0; // How many chunks we already have
+  private chunkLen: number;
+  constructor(
+    blockLen: number,
+    outputLen: number,
+    protected leafCons: () => Hash<Keccak>,
+    enableXOF: boolean,
+    opts: ParallelOpts = {}
+  ) {
+    super(blockLen, 0x1f, outputLen, enableXOF);
+    cshakePers(this, { NISTfn: 'ParallelHash', personalization: opts.personalization });
+    let { blockLen: B } = opts;
+    B ||= 8;
+    assertNumber(B);
+    this.chunkLen = B;
+    super.update(leftEncode(B));
+    // Change update after cshake processed
+    this.update = (data: Input) => {
+      data = toBytes(data);
+      const { chunkLen, leafCons } = this;
+      for (let pos = 0, len = data.length; pos < len; ) {
+        if (this.chunkPos == chunkLen || !this.leafHash) {
+          if (this.leafHash) {
+            super.update(this.leafHash.digest());
+            this.chunksDone++;
+          }
+          this.leafHash = leafCons();
+          this.chunkPos = 0;
+        }
+        const take = Math.min(chunkLen - this.chunkPos, len - pos);
+        this.leafHash.update(data.subarray(pos, pos + take));
+        this.chunkPos += take;
+        pos += take;
+      }
+      return this;
+    };
+  }
+  protected finish() {
+    if (this.finished) return;
+    if (this.leafHash) {
+      super.update(this.leafHash.digest());
+      this.chunksDone++;
+    }
+    super.update(rightEncode(this.chunksDone));
+    super.update(rightEncode(this.enableXOF ? 0 : this.outputLen * 8)); // outputLen in bits
+    super.finish();
+  }
+  _cloneInto(to?: ParallelHash): ParallelHash {
+    to ||= new ParallelHash(this.blockLen, this.outputLen, this.leafCons, this.enableXOF);
+    if (this.leafHash) to.leafHash = this.leafHash._cloneInto(to.leafHash as Keccak);
+    to.chunkPos = this.chunkPos;
+    to.chunkLen = this.chunkLen;
+    to.chunksDone = this.chunksDone;
+    return super._cloneInto(to) as ParallelHash;
+  }
+  destroy() {
+    super.destroy.call(this);
+    if (this.leafHash) this.leafHash.destroy();
+  }
+  clone(): ParallelHash {
+    return this._cloneInto();
+  }
+}
+
+function genParallel(
+  blockLen: number,
+  outputLen: number,
+  leaf: ReturnType<typeof gencShake>,
+  xof = false
+) {
+  const parallel = (message: Input, opts?: ParallelOpts): Uint8Array =>
+    parallel.create(opts).update(message).digest();
+  parallel.create = (opts: ParallelOpts = {}) =>
+    new ParallelHash(
+      blockLen,
+      opts.dkLen !== undefined ? opts.dkLen : outputLen,
+      () => leaf.init({ dkLen: 2 * outputLen }),
+      xof,
+      opts
+    );
+  parallel.init = parallel.create;
+  return parallel;
+}
+
+export const parallel128 = genParallel(168, 128 / 8, cshake128);
+export const parallel256 = genParallel(136, 256 / 8, cshake256);
+export const parallel128xof = genParallel(168, 128 / 8, cshake128, true);
+export const parallel256xof = genParallel(136, 256 / 8, cshake256, true);
 
 // Kangaroo
 // Same as NIST rightEncode, but returns [0] for zero string
@@ -109,108 +254,146 @@ function rightEncodeK12(n: number): Uint8Array {
 export type KangarooOpts = { dkLen?: number; personalization?: Input };
 const EMPTY = new Uint8Array([]);
 
-class KangarooTwelve extends Hash<KangarooTwelve> {
-  outputLen: number;
-  blockLen = 8192;
-  private finished = false;
-  private rootHash: Keccak;
+class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
+  readonly chunkLen = 8192;
   private leafHash?: Keccak;
-  private length = 0;
   private personalization: Uint8Array;
+  private chunkPos = 0; // Position of current block in chunk
+  private chunksDone = 0; // How many chunks we already have
   constructor(
-    private rounds = 12,
-    private leafBlockLen = 168,
-    private leafOutputLen = 32,
-    opts: KangarooOpts = {}
+    blockLen: number,
+    protected leafLen: number,
+    outputLen: number,
+    rounds: number,
+    opts: KangarooOpts
   ) {
-    super();
-    let { dkLen, personalization } = opts;
-    if (dkLen !== undefined) assertNumber(dkLen);
-    dkLen ||= 32;
-    this.outputLen = dkLen;
+    super(blockLen, 0x07, outputLen, true, rounds);
+    const { personalization } = opts;
     this.personalization = toBytesOptional(personalization);
-    this.rootHash = new Keccak(leafBlockLen, 0x07, dkLen, rounds);
-  }
-  newLeaf() {
-    return (this.leafHash = new Keccak(this.leafBlockLen, 0x0b, this.leafOutputLen, this.rounds));
   }
   update(data: Input) {
     data = toBytes(data);
-    const { blockLen, rootHash } = this;
-    let pos = 0; // Position inside data buffer
-    let leaf: Keccak | undefined = this.leafHash;
-    // First block is not filled yet
-    if (!leaf) {
-      if (this.length < blockLen) {
-        const left = Math.min(blockLen - (this.length % blockLen), data.length);
-        rootHash.update(data.subarray(0, left));
-        pos += left;
-        this.length += left;
+    const { chunkLen, blockLen, leafLen, rounds } = this;
+    for (let pos = 0, len = data.length; pos < len; ) {
+      if (this.chunkPos == chunkLen) {
+        if (this.leafHash) super.update(this.leafHash.digest());
+        else {
+          this.suffix = 0x06; // Its safe to change suffix here since its used only in digest()
+          super.update(new Uint8Array([3, 0, 0, 0, 0, 0, 0, 0]));
+        }
+        this.leafHash = new Keccak(blockLen, 0x0b, leafLen, false, rounds);
+        this.chunksDone++;
+        this.chunkPos = 0;
       }
-      // Fast path, there is no bytes left
-      if (pos === data.length) return this;
-      // At this point first block is filled and we still has bytes left -> create leaf node
-      rootHash.suffix = 0x06; // Its safe to change suffix here since its used only in digest()
-      rootHash.update(new Uint8Array([3, 0, 0, 0, 0, 0, 0, 0]));
-      leaf = this.newLeaf();
-    }
-    // At this point we have always have leafHash
-    while (data.length - pos) {
-      const left = Math.min(blockLen - (this.length % blockLen), data.length - pos);
-      leaf.update(data.subarray(pos, pos + left));
-      pos += left;
-      this.length += left;
-      if (this.length % blockLen) continue;
-      // Leaf finished
-      rootHash.update(leaf.digest());
-      leaf = this.newLeaf();
+      const take = Math.min(chunkLen - this.chunkPos, len - pos);
+      const chunk = data.subarray(pos, pos + take);
+      if (this.leafHash) this.leafHash.update(chunk);
+      else super.update(chunk);
+      this.chunkPos += take;
+      pos += take;
     }
     return this;
   }
-  _writeDigest(buf: Uint8Array) {
-    if (this.finished) throw new Error('digest() was already called');
-    this.finished = true;
-    const { personalization, rootHash, blockLen } = this;
-    this.update(personalization);
-    this.update(rightEncodeK12(personalization.length));
+  protected finish() {
+    if (this.finished) return;
+    const { personalization } = this;
+    this.update(personalization).update(rightEncodeK12(personalization.length));
     // Leaf hash
     if (this.leafHash) {
-      rootHash.update(this.leafHash.digest());
-      const leafBlocks = Math.ceil(this.length / blockLen) - 1; // First block is root
-      rootHash.update(rightEncodeK12(leafBlocks)).update(new Uint8Array([0xff, 0xff]));
+      super.update(this.leafHash.digest());
+      super.update(rightEncodeK12(this.chunksDone));
+      super.update(new Uint8Array([0xff, 0xff]));
     }
-    rootHash._writeDigest(buf);
+    super.finish.call(this);
   }
-  digest() {
-    const res = new Uint8Array(this.outputLen);
-    this._writeDigest(res);
-    this._clean();
-    return res;
-  }
-  _clean() {
-    this.rootHash._clean();
-    if (this.leafHash) this.leafHash._clean();
+  destroy() {
+    super.destroy.call(this);
+    if (this.leafHash) this.leafHash.destroy();
     // We cannot zero personalization buffer since it is user provided and we don't want to mutate user input
     this.personalization = EMPTY;
   }
   _cloneInto(to?: KangarooTwelve): KangarooTwelve {
-    const { outputLen, personalization, length, finished, rootHash, leafHash } = this;
-    to ||= new KangarooTwelve(this.rounds, this.leafBlockLen, this.leafOutputLen, {
-      dkLen: outputLen,
-      personalization,
-    });
-    rootHash._cloneInto(to.rootHash);
+    const { blockLen, leafLen, leafHash, outputLen, rounds } = this;
+    to ||= new KangarooTwelve(blockLen, leafLen, outputLen, rounds, {});
+    super._cloneInto(to);
     if (leafHash) to.leafHash = leafHash._cloneInto(to.leafHash);
-    to.length = length;
-    to.finished = finished;
+    to.personalization.set(this.personalization);
+    to.leafLen = this.leafLen;
+    to.chunkPos = this.chunkPos;
+    to.chunksDone = this.chunksDone;
     return to;
+  }
+  clone(): KangarooTwelve {
+    return this._cloneInto();
   }
 }
 // Default to 32 bytes, so it can be used without opts
 export const k12 = wrapConstructorWithOpts<KangarooTwelve, KangarooOpts>(
-  (opts?: KangarooOpts) => new KangarooTwelve(12, 168, 32, opts)
+  (opts: KangarooOpts = {}) =>
+    new KangarooTwelve(168, 32, opts.dkLen !== undefined ? opts.dkLen : 32, 12, opts)
 );
 // MarsupilamiFourteen
 export const m14 = wrapConstructorWithOpts<KangarooTwelve, KangarooOpts>(
-  (opts?: KangarooOpts) => new KangarooTwelve(14, 136, 64, opts)
+  (opts: KangarooOpts = {}) =>
+    new KangarooTwelve(136, 64, opts.dkLen !== undefined ? opts.dkLen : 64, 14, opts)
 );
+
+// https://keccak.team/files/CSF-0.1.pdf
+// + https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG
+class KeccakPRG extends Keccak {
+  protected rate: number;
+  constructor(capacity: number) {
+    assertNumber(capacity);
+    // Rho should be full bytes
+    if (capacity < 0 || capacity > 1600 - 10 || (1600 - capacity - 2) % 8)
+      throw new Error('KeccakPRG: Invalid capacity');
+    // blockLen = rho in bytes
+    super((1600 - capacity - 2) / 8, 0, 0, true);
+    this.rate = 1600 - capacity;
+    this.posOut = Math.floor((this.rate + 7) / 8);
+  }
+  keccak() {
+    // Duplex padding
+    this.state[this.pos] ^= 0x01;
+    this.state[this.blockLen] ^= 0x02; // Rho is full bytes
+    super.keccak();
+    this.pos = 0;
+    this.posOut = 0;
+  }
+  update(data: Input) {
+    super.update(data);
+    this.posOut = this.blockLen;
+    return this;
+  }
+  feed(data: Input) {
+    return this.update(data);
+  }
+  protected finish() {}
+  digestInto(out: Uint8Array): Uint8Array {
+    throw new Error('KeccakPRG: digest is not allowed, please use .fetch instead.');
+  }
+  fetch(bytes: number): Uint8Array {
+    return this.XOF(bytes);
+  }
+  // Ensure irreversibility (even if state leaked previous outputs cannot be computed)
+  forget() {
+    if (this.rate < 1600 / 2 + 1) throw new Error('KeccakPRG: rate too low to use forget');
+    this.keccak();
+    for (let i = 0; i < this.blockLen; i++) this.state[i] = 0;
+    this.pos = this.blockLen;
+    this.keccak();
+    this.posOut = this.blockLen;
+  }
+  _cloneInto(to?: KeccakPRG): KeccakPRG {
+    const { rate } = this;
+    to ||= new KeccakPRG(1600 - rate);
+    super._cloneInto(to);
+    to.rate = rate;
+    return to;
+  }
+  clone(): KeccakPRG {
+    return this._cloneInto();
+  }
+}
+
+export const prg = (capacity = 254) => new KeccakPRG(capacity);
