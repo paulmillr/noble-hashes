@@ -52,53 +52,61 @@ function getVectors(name) {
 
 const fromHex = (hex) => Uint8Array.from(Buffer.from(hex, 'hex'));
 
-for (let v of getVectors('ShortMsgKAT_SHA3-224')) {
-  if (+v.Len % 8) continue; // partial bytes is not supported
-  should(`SHA3-224 len=${v.Len} hex=${v.Msg}`, () => {
+should(`SHA3-224`, () => {
+  for (let v of getVectors('ShortMsgKAT_SHA3-224')) {
+    if (+v.Len % 8) continue; // partial bytes is not supported
     const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-    assert.deepStrictEqual(sha3_224(msg), fromHex(v.MD));
-  });
-}
+    assert.deepStrictEqual(sha3_224(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
+  }
+});
 
-for (let v of getVectors('ShortMsgKAT_SHA3-256')) {
-  if (+v.Len % 8) continue; // partial bytes is not supported
-  should(`SHA3-256 len=${v.Len} hex=${v.Msg}`, () => {
+should(`SHA3-256`, () => {
+  for (let v of getVectors('ShortMsgKAT_SHA3-256')) {
+    if (+v.Len % 8) continue; // partial bytes is not supported
     const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-    assert.deepStrictEqual(sha3_256(msg), fromHex(v.MD));
-  });
-}
+    assert.deepStrictEqual(sha3_256(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
+  }
+});
 
-for (let v of getVectors('ShortMsgKAT_SHA3-384')) {
-  if (+v.Len % 8) continue; // partial bytes is not supported
-  should(`SHA3-384 len=${v.Len} hex=${v.Msg}`, () => {
+should(`SHA3-384`, () => {
+  for (let v of getVectors('ShortMsgKAT_SHA3-384')) {
+    if (+v.Len % 8) continue; // partial bytes is not supported
     const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-    assert.deepStrictEqual(sha3_384(msg), fromHex(v.MD));
-  });
-}
+    assert.deepStrictEqual(sha3_384(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
+  }
+});
 
-for (let v of getVectors('ShortMsgKAT_SHA3-512')) {
-  if (+v.Len % 8) continue; // partial bytes is not supported
-  should(`SHA3-512 len=${v.Len} hex=${v.Msg}`, () => {
+should(`SHA3-512`, () => {
+  for (let v of getVectors('ShortMsgKAT_SHA3-512')) {
+    if (+v.Len % 8) continue; // partial bytes is not supported
     const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-    assert.deepStrictEqual(sha3_512(msg), fromHex(v.MD));
-  });
-}
+    assert.deepStrictEqual(sha3_512(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
+  }
+});
 
-for (let v of getVectors('ShortMsgKAT_SHAKE128')) {
-  if (+v.Len % 8) continue; // partial bytes is not supported
-  should(`Shake128 len=${v.Len} hex=${v.Msg}`, () => {
+should(`Shake128`, () => {
+  for (let v of getVectors('ShortMsgKAT_SHAKE128')) {
+    if (+v.Len % 8) continue; // partial bytes is not supported
     const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-    assert.deepStrictEqual(shake128(msg, { dkLen: 512 }), fromHex(v.Squeezed));
-  });
-}
+    assert.deepStrictEqual(
+      shake128(msg, { dkLen: 512 }),
+      fromHex(v.Squeezed),
+      `len=${v.Len} hex=${v.Msg}`
+    );
+  }
+});
 
-for (let v of getVectors('ShortMsgKAT_SHAKE256')) {
-  if (+v.Len % 8) continue; // partial bytes is not supported
-  should(`Shake256 len=${v.Len} hex=${v.Msg}`, () => {
+should(`Shake256`, () => {
+  for (let v of getVectors('ShortMsgKAT_SHAKE256')) {
+    if (+v.Len % 8) continue; // partial bytes is not supported
     const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-    assert.deepStrictEqual(shake256(msg, { dkLen: 512 }), fromHex(v.Squeezed));
-  });
-}
+    assert.deepStrictEqual(
+      shake256(msg, { dkLen: 512 }),
+      fromHex(v.Squeezed),
+      `len=${v.Len} hex=${v.Msg}`
+    );
+  }
+});
 
 const K12_VECTORS = [
   // KangarooTwelve(M=empty, C=empty, 32 bytes):
