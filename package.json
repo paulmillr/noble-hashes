@@ -45,6 +45,7 @@
     "sha256",
     "sha512",
     "keccak",
+    "kangarootwelve",
     "ripemd160",
     "blake2",
     "blake3",
