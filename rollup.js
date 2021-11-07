@@ -38,7 +38,7 @@ exports.keccak_384 = keccak_384;
 exports.keccak_512 = keccak_512;
 const {
   cshake128, cshake256, kmac128, kmac256, k12, m14
-} = require('./lib/sha3');
+} = require('./lib/sha3-addons');
 exports.cshake128 = cshake128;
 exports.cshake256 = cshake256;
 exports.kmac128 = kmac128;
