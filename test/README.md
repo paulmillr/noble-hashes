@@ -45,3 +45,4 @@ Our tests caught bugs in node.js native implementation of scrypt and in js-sha3 
 ## Test vectors
 
 - Blake2: https://github.com/BLAKE2/BLAKE2/tree/master/testvectors
+- Blake3, sha3 & addons: generated with https://github.com/paulmillr/noble-hashes-vectors

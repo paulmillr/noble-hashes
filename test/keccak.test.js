@@ -30,12 +30,12 @@ const {
   parallelhash128xof,
   parallelhash256,
   parallelhash256xof,
-  prg,
+  keccakprg: prg,
 } = require('../lib/sha3-addons');
 const { pattern, times, EMPTY, TYPE_TEST, concatBytes, jsonGZ } = require('./utils.js');
 const fs = require('fs');
 // Generated from test cases of KeccakPRG in XKCP
-const PRG_VECTORS = jsonGZ('vectors/keccakPRG.json.gz');
+const PRG_VECTORS = jsonGZ('vectors/sha3-addon-keccak-prg.json.gz');
 
 function getVectors(name) {
   const vectors = fs.readFileSync(`${__dirname}/vectors/${name}.txt`, 'utf8').split('\n\n');
@@ -728,9 +728,9 @@ should('Shake128', () => {
   }
 });
 
-for (let i = 0; i < PRG_VECTORS.length; i++) {
-  const v = PRG_VECTORS[i];
-  should(`KeccakPRG (${i})`, () => {
+should(`KeccakPRG ${PRG_VECTORS.length} vectors`, () => {
+  for (let i = 0; i < PRG_VECTORS.length; i++) {
+    const v = PRG_VECTORS[i];
     const input = fromHex(v.input);
     const p = prg(+v.capacity);
     p.feed(fromHex(v.input));
@@ -742,9 +742,9 @@ for (let i = 0; i < PRG_VECTORS.length; i++) {
       } catch (e) {}
       if (out[0] & 4) out = p.fetch(v.output.length / 2);
     }
-    assert.deepStrictEqual(out, fromHex(v.output));
-  });
-}
+    assert.deepStrictEqual(out, fromHex(v.output), `prg vector ${i} failed`);
+  }
+});
 
 should('XOF', () => {
   const NOT_XOF = [

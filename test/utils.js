@@ -1,3 +1,5 @@
+const fs = require('fs');
+const zlib = require('zlib');
 const utf8ToBytes = (str) => new TextEncoder().encode(str);
 const hexToBytes = (str) => Uint8Array.from(Buffer.from(str, 'hex'));
 const truncate = (buf, length) => (length ? buf.slice(0, length) : buf);
@@ -104,6 +106,8 @@ function stats(list) {
 const times = (byte, n) => new Uint8Array(n).fill(byte);
 const pattern = (toByte, len) => Uint8Array.from({ length: len }, (i, j) => j % (toByte + 1));
 
+const jsonGZ = (path) => JSON.parse(zlib.gunzipSync(fs.readFileSync(`${__dirname}/${path}`)));
+
 module.exports = {
   utf8ToBytes,
   hexToBytes,
@@ -122,4 +126,5 @@ module.exports = {
   stats,
   times,
   pattern,
+  jsonGZ,
 };

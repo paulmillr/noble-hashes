@@ -56,8 +56,8 @@ const {
 // prettier-ignore
 const {
   cshake128, cshake256, kmac128, kmac256,
-  tuple128, tuple256, parallel128, parallel256,
-  k12, m14, prg
+  k12, m14,
+  tuplehash256, parallelhash256, keccakprg
 } = require('noble-hashes/lib/sha3-addons');
 const { ripemd160 } = require('noble-hashes/lib/ripemd160');
 const { blake3 } = require('noble-hashes/lib/blake3');
@@ -191,7 +191,8 @@ Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchang
 
 ```typescript
 import {
-  cshake128, cshake256, kmac128, kmac256, k12, m14
+  cshake128, cshake256, kmac128, kmac256, k12, m14,
+  tuplehash128, tuplehash256, parallelhash128, parallelhash256, keccakprg
 } from 'noble-hashes/lib/sha3-addons.js';
 const h7c = cshake128('abc', { personalization: 'def' })
 const h7d = cshake256('abc', { personalization: 'def' })
@@ -199,13 +200,13 @@ const h7e = kmac128('key', 'message')
 const h7f = kmac256('key', 'message')
 const h7h = k12('abc');
 const h7g = m14('abc');
-const h7i = tuple128(['ab', 'c']); // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash(['abc'])
+const h7i = tuplehash128(['ab', 'c']); // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash(['abc'])
 // Same as k12/blake3, but without reduced number of rounds. Doesn't speedup anything due lack of SIMD and threading,
 // added for compatibility.
-const h7j = parallel128('abc', { blockLen: 8 });
+const h7j = parallelhash128('abc', { blockLen: 8 });
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
 // * with a capacity of 254 bits.
-const p = prg(254);
+const p = keccakprg(254);
 p.feed('test');
 const rand1b = p.fetch(1);
 ```

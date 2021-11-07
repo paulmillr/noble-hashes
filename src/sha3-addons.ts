@@ -142,10 +142,10 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
   return tuple;
 }
 
-export const tuple128 = genTuple(168, 128 / 8);
-export const tuple256 = genTuple(136, 256 / 8);
-export const tuple128xof = genTuple(168, 128 / 8, true);
-export const tuple256xof = genTuple(136, 256 / 8, true);
+export const tuplehash128 = genTuple(168, 128 / 8);
+export const tuplehash256 = genTuple(136, 256 / 8);
+export const tuplehash128xof = genTuple(168, 128 / 8, true);
+export const tuplehash256xof = genTuple(136, 256 / 8, true);
 
 // ParallelHash (same as K12/M14, but without speedup for inputs less 8kb, reduced number of rounds and more simple)
 type ParallelOpts = cShakeOpts & { blockLen?: number };
@@ -237,10 +237,10 @@ function genParallel(
   return parallel;
 }
 
-export const parallel128 = genParallel(168, 128 / 8, cshake128);
-export const parallel256 = genParallel(136, 256 / 8, cshake256);
-export const parallel128xof = genParallel(168, 128 / 8, cshake128, true);
-export const parallel256xof = genParallel(136, 256 / 8, cshake256, true);
+export const parallelhash128 = genParallel(168, 128 / 8, cshake128);
+export const parallelhash256 = genParallel(136, 256 / 8, cshake256);
+export const parallelhash128xof = genParallel(168, 128 / 8, cshake128, true);
+export const parallelhash256xof = genParallel(136, 256 / 8, cshake256, true);
 
 // Kangaroo
 // Same as NIST rightEncode, but returns [0] for zero string
@@ -396,4 +396,4 @@ class KeccakPRG extends Keccak {
   }
 }
 
-export const prg = (capacity = 254) => new KeccakPRG(capacity);
+export const keccakprg = (capacity = 254) => new KeccakPRG(capacity);
