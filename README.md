@@ -111,7 +111,7 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 
 - [SHA2 (sha256, sha384, sha512, sha512_256)](#sha2-sha256-sha384-sha512-sha512_256)
 - [SHA3 (FIPS, SHAKE, Keccak)](#sha3-fips-shake-keccak)
-- [SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)](#sha3-addons-cshake-kmac-kangarootwelve-marsupilamifourteen)
+- [SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)](#sha3-addons-cshake-kmac-tuplehash-parallelhash-kangarootwelve-marsupilamifourteen)
 - [RIPEMD-160](#ripemd-160)
 - [BLAKE2b, BLAKE2s](#blake2b-blake2s)
 - [BLAKE3](#blake3)
@@ -188,7 +188,7 @@ See ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
-##### SHA3 Addons (cSHAKE, KMAC, TupleHash, ParalllelHash, KangarooTwelve, MarsupilamiFourteen)
+##### SHA3 Addons (cSHAKE, KMAC, TupleHash, ParallelHash, KangarooTwelve, MarsupilamiFourteen)
 
 ```typescript
 import {
