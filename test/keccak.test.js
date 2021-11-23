@@ -780,23 +780,23 @@ should('XOF', () => {
   ];
   const XOF_KMAC = [kmac128xof, kmac256xof];
   // XOF call on non-xof variants fails
-  for (let f of NOT_XOF) assert.throws(() => f.init().XOF(10), 'xof on non-xof');
+  for (let f of NOT_XOF) assert.throws(() => f.init().xof(10), 'xof on non-xof');
   for (let f of NOT_XOF_KMAC)
-    assert.throws(() => f.init(new Uint8Array([1, 2, 3])).XOF(10), 'xof on non-xof (kmac)');
+    assert.throws(() => f.init(new Uint8Array([1, 2, 3])).xof(10), 'xof on non-xof (kmac)');
   // XOF ok on xof instances
-  for (let f of XOF) f.init().XOF(10);
-  for (let f of XOF_KMAC) f.init(new Uint8Array([1, 2, 3])).XOF(10);
+  for (let f of XOF) f.init().xof(10);
+  for (let f of XOF_KMAC) f.init(new Uint8Array([1, 2, 3])).xof(10);
   for (let f of XOF) {
     assert.throws(() => {
       const h = f.init();
-      h.XOF(10);
+      h.xof(10);
       h.digest();
     }, 'digest after XOF');
   }
   for (let f of XOF_KMAC) {
     assert.throws(() => {
       const h = f.init(new Uint8Array([1, 2, 3]));
-      h.XOF(10);
+      h.xof(10);
       h.digest();
     }, 'digest after XOF (kmac)');
   }
@@ -804,28 +804,28 @@ should('XOF', () => {
     assert.throws(() => {
       const h = f.init();
       h.digest();
-      h.XOF(10);
+      h.xof(10);
     }, 'XOF after digest');
   }
   for (let f of XOF_KMAC) {
     assert.throws(() => {
       const h = f.init(new Uint8Array([1, 2, 3]));
       h.digest();
-      h.XOF(10);
+      h.xof(10);
     }, 'XOF after digest (kmac)');
   }
   for (let f of XOF) {
     const bigOut = f('', { dkLen: 130816 });
     const hashxof = f.init();
     const out = [];
-    for (let i = 0; i < 512; i++) out.push(hashxof.XOF(i));
+    for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
     assert.deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size');
   }
   for (let f of XOF_KMAC) {
     const bigOut = f('key', '', { dkLen: 130816 });
     const hashxof = f.init('key');
     const out = [];
-    for (let i = 0; i < 512; i++) out.push(hashxof.XOF(i));
+    for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
     assert.deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size (kmac)');
   }
 });

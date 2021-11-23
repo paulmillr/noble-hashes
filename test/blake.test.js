@@ -101,21 +101,21 @@ for (let i = 0; i < blake3_vectors.cases.length; i++) {
 
 should('Blake3 XOF', () => {
   // XOF ok on xof instances
-  blake3.init().XOF(10);
+  blake3.init().xof(10);
   assert.throws(() => {
     const h = blake3.init();
-    h.XOF(10);
+    h.xof(10);
     h.digest();
   }, 'digest after XOF');
   assert.throws(() => {
     const h = blake3.init();
     h.digest();
-    h.XOF(10);
+    h.xof(10);
   }, 'XOF after digest');
   const bigOut = blake3('', { dkLen: 130816 });
   const hashxof = blake3.init();
   const out = [];
-  for (let i = 0; i < 512; i++) out.push(hashxof.XOF(i));
+  for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
   assert.deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size');
 });
 
