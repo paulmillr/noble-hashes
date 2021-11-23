@@ -216,13 +216,13 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     }
     return out;
   }
-  XOFInto(out: Uint8Array): Uint8Array {
+  xofInto(out: Uint8Array): Uint8Array {
     if (!this.enableXOF) throw new Error('XOF impossible after digest call');
     return this.writeInto(out);
   }
-  XOF(bytes: number): Uint8Array {
+  xof(bytes: number): Uint8Array {
     assertNumber(bytes);
-    return this.XOFInto(new Uint8Array(bytes));
+    return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
     if (out.length < this.outputLen) throw new Error('Blake3: Invalid output buffer');

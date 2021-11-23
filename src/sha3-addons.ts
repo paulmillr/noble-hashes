@@ -373,7 +373,7 @@ class KeccakPRG extends Keccak {
     throw new Error('KeccakPRG: digest is not allowed, please use .fetch instead.');
   }
   fetch(bytes: number): Uint8Array {
-    return this.XOF(bytes);
+    return this.xof(bytes);
   }
   // Ensure irreversibility (even if state leaked previous outputs cannot be computed)
   forget() {

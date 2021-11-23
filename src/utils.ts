@@ -112,8 +112,8 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
   // XOF: streaming API to read digest in chunks. Same as 'squeeze' in keccak/k12 and 'seek' in blake3, but more generic name.
   // NOTE: when hash used in XOF mode it is up to user to call '.destroy' afterwards, since we cannot destroy state,
   // next call can require more bytes.
-  XOF(bytes: number): Uint8Array; // Read 'bytes' bytes from digest stream
-  XOFInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
+  xof(bytes: number): Uint8Array; // Read 'bytes' bytes from digest stream
+  xofInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
 };
 
 // Check if object doens't have custom constructor (like Uint8Array/Array)
@@ -152,7 +152,7 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   return hashC;
 }
 
-export const crypto: { node?: any; web?: Crypto } = (() => {
+export const crypto: { node?: any; web?: any } = (() => {
   const webCrypto = typeof self === 'object' && 'crypto' in self ? self.crypto : undefined;
   const nodeRequire = typeof module !== 'undefined' && typeof require === 'function';
   return {

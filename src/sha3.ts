@@ -143,14 +143,14 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     }
     return out;
   }
-  XOFInto(out: Uint8Array): Uint8Array {
+  xofInto(out: Uint8Array): Uint8Array {
     // Sha3/Keccak usage with XOF is probably mistake, only SHAKE instances can do XOF
     if (!this.enableXOF) throw new Error('XOF is not possible for this instance');
     return this.writeInto(out);
   }
-  XOF(bytes: number): Uint8Array {
+  xof(bytes: number): Uint8Array {
     assertNumber(bytes);
-    return this.XOFInto(new Uint8Array(bytes));
+    return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
     if (out.length < this.outputLen) throw new Error('Keccak: invalid output buffer');
