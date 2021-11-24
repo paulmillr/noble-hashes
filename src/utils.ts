@@ -1,5 +1,17 @@
 /*! noble-hashes - MIT License (c) 2021 Paul Miller (paulmillr.com) */
 
+// Global symbols in both browsers and Node.js since v11
+// https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder
+// https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder
+// https://nodejs.org/docs/latest-v12.x/api/util.html#util_class_util_textencoder
+// https://nodejs.org/docs/latest-v12.x/api/util.html#util_class_util_textdecoder
+// See https://github.com/microsoft/TypeScript/issues/31535
+declare const TextEncoder: any;
+declare const TextDecoder: any;
+
+// Global symbol available in browsers only
+declare const self: Record<string, any> | undefined
+
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
