@@ -1,10 +1,13 @@
-import { Hash, createView, Input, toBytes } from './utils';
+import { _n, Hash, createView, Input, toBytes } from './utils';
+
+const _32n = _n(32);
+const _u32_max = _n(0xffffffff);
 
 // Polyfill for Safari 14
 function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: boolean): void {
   if (typeof view.setBigUint64 === 'function') return view.setBigUint64(byteOffset, value, isLE);
-  const wh = Number((value >> 32n) & 0xffffffffn);
-  const wl = Number(value & 0xffffffffn);
+  const wh = Number((value >> _32n) & _u32_max);
+  const wl = Number(value & _u32_max);
   const [h, l] = isLE ? [4, 0] : [0, 4];
   view.setUint32(byteOffset + h, wh, isLE);
   view.setUint32(byteOffset + l, wl, isLE);
