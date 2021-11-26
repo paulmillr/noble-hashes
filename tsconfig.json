@@ -4,9 +4,13 @@
         "outDir": "lib/cjs",
         "target": "es2020",
         "module": "commonjs",
+        "moduleResolution": "node",
         "noUnusedLocals": true,
         "esModuleInterop": true,
-        "resolveJsonModule": true
+        "baseUrl": ".",
+        "paths": {
+            "@noble/hashes/lib/crypto": [ "src/crypto" ]
+        },
     },
     "include": ["src"],
     "exclude": [

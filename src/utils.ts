@@ -1,6 +1,6 @@
 /*! noble-hashes - MIT License (c) 2021 Paul Miller (paulmillr.com) */
 
-import { crypto } from './crypto';
+import { crypto } from '@noble/hashes/lib/crypto';
 
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |

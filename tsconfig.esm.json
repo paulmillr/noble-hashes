@@ -4,8 +4,13 @@
         "outDir": "lib/esm",
         "target": "es2020",
         "module": "es6",
+        "moduleResolution": "node",
         "noUnusedLocals": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "baseUrl": ".",
+        "paths": {
+            "@noble/hashes/lib/crypto": [ "src/crypto" ]
+        },
     },
     "include": ["src"],
     "exclude": [
