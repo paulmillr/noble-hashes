@@ -156,8 +156,6 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   return hashC;
 }
 
-export { crypto };
-
 export function randomBytes(bytesLength = 32): Uint8Array {
   if (crypto.web) {
     return crypto.web.getRandomValues(new Uint8Array(bytesLength));
