@@ -7,13 +7,79 @@
     "lib": "lib",
     "test": "test"
   },
+  "exports": {
+    "./lib": {
+      "import": "./lib/esm/index.js",
+      "default": "./lib/cjs/index.js"
+    },
+    "./lib/blake2b": {
+      "import": "./lib/esm/blake2b.js",
+      "default": "./lib/cjs/blake2b.js"
+    },
+    "./lib/blake2s": {
+      "import": "./lib/esm/blake2s.js",
+      "default": "./lib/cjs/blake2s.js"
+    },
+    "./lib/blake3": {
+      "import": "./lib/esm/blake3.js",
+      "default": "./lib/cjs/blake3.js"
+    },
+    "./lib/crypto": {
+      "node": {
+        "import": "./lib/esm/crypto.js",
+        "default": "./lib/cjs/crypto.js"
+      },
+      "import": "./lib/esm/cryptoBrowser.js",
+      "default": "./lib/cjs/cryptoBrowser.js"
+    },
+    "./lib/hkdf": {
+      "import": "./lib/esm/hkdf.js",
+      "default": "./lib/cjs/hkdf.js"
+    },
+    "./lib/hmac": {
+      "import": "./lib/esm/hmac.js",
+      "default": "./lib/cjs/hmac.js"
+    },
+    "./lib/pbkdf2": {
+      "import": "./lib/esm/pbkdf2.js",
+      "default": "./lib/cjs/pbkdf2.js"
+    },
+    "./lib/ripemd160": {
+      "import": "./lib/esm/ripemd160.js",
+      "default": "./lib/cjs/ripemd160.js"
+    },
+    "./lib/scrypt": {
+      "import": "./lib/esm/scrypt.js",
+      "default": "./lib/cjs/scrypt.js"
+    },
+    "./lib/sha3-addons": {
+      "import": "./lib/esm/sha3-addons.js",
+      "default": "./lib/cjs/sha3-addons.js"
+    },
+    "./lib/sha3": {
+      "import": "./lib/esm/sha3.js",
+      "default": "./lib/cjs/sha3.js"
+    },
+    "./lib/sha256": {
+      "import": "./lib/esm/sha256.js",
+      "default": "./lib/cjs/sha256.js"
+    },
+    "./lib/sha512": {
+      "import": "./lib/esm/sha512.js",
+      "default": "./lib/cjs/sha512.js"
+    },
+    "./lib/utils": {
+      "import": "./lib/esm/utils.js",
+      "default": "./lib/cjs/utils.js"
+    }
+  },
   "files": [
     "lib"
   ],
   "scripts": {
     "bench": "node test/benchmark/index.js",
     "bench-install": "cd test/benchmark && npm install && cd ../../",
-    "build": "tsc -d",
+    "build": "tsc -d -p tsconfig.json && tsc -d -p tsconfig.esm.json",
     "build-release": "rollup -c rollup.config.js",
     "lint": "prettier --print-width 100 --single-quote --check src",
     "test": "node test/index.js",
