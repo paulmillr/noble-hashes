@@ -64,13 +64,11 @@
     },
     "./lib/crypto": {
       "browser": {
-        "import": "./lib/esm/crypto/browser.js",
-        "default": "./lib/crypto/browser.js"
+        "import": "./lib/esm/cryptoBrowser.js",
+        "default": "./lib/crypto.js"
       },
-      "node": {
-        "import": "./lib/esm/crypto/node.js",
-        "default": "./lib/crypto/node.js"
-      }
+      "import": "./lib/esm/cryptoNode.js",
+      "default": "./lib/crypto.js"
     },
     "./lib/blake2b": {
       "import": "./lib/esm/blake2b.js",
