@@ -12,6 +12,16 @@
       "import": "./lib/esm/index.js",
       "default": "./lib/cjs/index.js"
     },
+    "./lib/crypto": {
+      "browser": {
+        "import": "./lib/esm/crypto/browser.js",
+        "default": "./lib/cjs/crypto/browser.js"
+      },
+      "node": {
+        "import": "./lib/esm/crypto/node.js",
+        "default": "./lib/cjs/crypto/node.js"
+      }
+    },
     "./lib/blake2b": {
       "import": "./lib/esm/blake2b.js",
       "default": "./lib/cjs/blake2b.js"
@@ -23,14 +33,6 @@
     "./lib/blake3": {
       "import": "./lib/esm/blake3.js",
       "default": "./lib/cjs/blake3.js"
-    },
-    "./lib/crypto": {
-      "node": {
-        "import": "./lib/esm/crypto.js",
-        "default": "./lib/cjs/crypto.js"
-      },
-      "import": "./lib/esm/cryptoBrowser.js",
-      "default": "./lib/cjs/cryptoBrowser.js"
     },
     "./lib/hkdf": {
       "import": "./lib/esm/hkdf.js",
