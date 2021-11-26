@@ -6,9 +6,7 @@ export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
 
 // helper to protect against older bundlers
 export const _n: (value: string | number | bigint | boolean) => bigint =
-  typeof BigInt !== 'undefined'
-    ? BigInt
-    : () => Number.NaN as unknown as bigint;
+  typeof BigInt !== 'undefined' ? BigInt : () => Number.NaN as unknown as bigint;
 
 // Cast array to different type
 export const u8 = (arr: TypedArray) => new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
