@@ -1,5 +1,7 @@
 /*! noble-hashes - MIT License (c) 2021 Paul Miller (paulmillr.com) */
 
+// The import here is via the package name. This is to ensure
+// that exports mapping/resolution does fall into place.
 import { crypto } from '@noble/hashes/lib/crypto';
 
 // prettier-ignore
