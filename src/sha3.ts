@@ -30,7 +30,7 @@ for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
   let t = _0n;
   for (let j = 0; j < 7; j++) {
     R = ((R << _1n) ^ ((R >> _7n) * _0x71n)) % _256n;
-    if (R & _2n) t ^= _1n << ((_1n << BigInt(j)) - _1n);
+    if (R & _2n) t ^= _1n << ((_1n << _n(j)) - _1n);
   }
   _SHA3_IOTA.push(t);
 }
