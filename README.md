@@ -369,23 +369,23 @@ We consider infrastructure attacks like rogue NPM modules very important; that's
 
 ## Speed
 
-Benchmarks measured on Apple M1 with macOS 12 using 32-byte inputs.
+Benchmarks measured on Apple M1 with macOS 12.
 Note that PBKDF2 and Scrypt are tested with extremely high work factor.
 To run benchmarks, execute `npm run bench-install` and then `npm run bench`
 
 ```
-SHA256 x 1,131,221 ops/sec @ 884ns/op
-SHA384 x 452,284 ops/sec @ 2μs/op
-SHA512 x 451,059 ops/sec @ 2μs/op
-SHA3-256, keccak256, shake256 x 185,494 ops/sec @ 5μs/op
-Kangaroo12 x 300,480 ops/sec @ 3μs/op
-Marsupilami14 x 269,614 ops/sec @ 3μs/op
-BLAKE2b x 291,375 ops/sec @ 3μs/op
-BLAKE2s x 505,561 ops/sec @ 1μs/op
-BLAKE3 x 576,036 ops/sec @ 1μs/op
-HMAC-SHA256 x 342,583 ops/sec @ 2μs/op
-RIPEMD160 x 1,191,895 ops/sec @ 839ns/op
-HKDF-SHA256 x 115,500 ops/sec @ 8μs/op
+SHA256 32B x 1,126,126 ops/sec @ 888ns/op
+SHA384 32B x 443,458 ops/sec @ 2μs/op
+SHA512 32B x 448,631 ops/sec @ 2μs/op
+SHA3-256, keccak256, shake256 32B x 183,621 ops/sec @ 5μs/op
+Kangaroo12 32B x 310,077 ops/sec @ 3μs/op
+Marsupilami14 32B x 278,164 ops/sec @ 3μs/op
+BLAKE2b 32B x 297,353 ops/sec @ 3μs/op
+BLAKE2s 32B x 507,614 ops/sec @ 1μs/op
+BLAKE3 32B x 584,795 ops/sec @ 1μs/op
+RIPEMD160 32B x 1,186,239 ops/sec @ 843ns/op
+HMAC-SHA256 32B x 346,860 ops/sec @ 2μs/op
+HKDF-SHA256 32B x 153,045 ops/sec @ 6μs/op
 PBKDF2-HMAC-SHA256 262144 x 2 ops/sec @ 338ms/op
 PBKDF2-HMAC-SHA512 262144 x 0 ops/sec @ 1024ms/op
 Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 637ms/op

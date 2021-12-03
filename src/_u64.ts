@@ -1,12 +1,14 @@
-const U32_MASK64 = 2n ** 32n - 1n;
+const U32_MASK64 = BigInt(2 ** 32 - 1);
+const _32n = BigInt(32);
 
 export function fromBig(n: bigint, le = false) {
-  if (le) return { h: Number(n & U32_MASK64), l: Number((n >> 32n) & U32_MASK64) };
-  return { h: Number((n >> 32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
+  if (le) return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
+  return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
 }
 
 export function split(lst: bigint[], le = false) {
-  let [Ah, Al] = [new Uint32Array(lst.length), new Uint32Array(lst.length)];
+  let Ah = new Uint32Array(lst.length);
+  let Al = new Uint32Array(lst.length);
   for (let i = 0; i < lst.length; i++) {
     const { h, l } = fromBig(lst[i], le);
     [Ah[i], Al[i]] = [h, l];
@@ -14,7 +16,7 @@ export function split(lst: bigint[], le = false) {
   return [Ah, Al];
 }
 
-export const toBig = (h: number, l: number) => (BigInt(h >>> 0) << 32n) | BigInt(l >>> 0);
+export const toBig = (h: number, l: number) => (BigInt(h >>> 0) << _32n) | BigInt(l >>> 0);
 // for Shift in [0, 32)
 export const shrSH = (h: number, l: number, s: number) => h >>> s;
 export const shrSL = (h: number, l: number, s: number) => (h << (32 - s)) | (l >>> s);

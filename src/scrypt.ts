@@ -61,7 +61,8 @@ function XorAndSalsa(
 
 function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, r: number) {
   // The block B is r 128-byte chunks (which is equivalent of 2r 64-byte chunks)
-  let [head, tail] = [oi + 0, oi + 16 * r];
+  let head = oi + 0;
+  let tail = oi + 16 * r;
   for (let i = 0; i < 16; i++) out[tail + i] = input[ii + (2 * r - 1) * 16 + i]; // X ← B[2r−1]
   for (let i = 0; i < r; i++, head += 16, ii += 16) {
     // We write odd & even Yi at same time. Even: 0bXXXXX0 Odd:  0bXXXXX1

@@ -7,7 +7,8 @@ import { wrapConstructor } from './utils';
 const Rho = new Uint8Array([7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8]);
 const Id = Uint8Array.from({ length: 16 }, (_, i) => i);
 const Pi = Id.map((i) => (9 * i + 5) % 16);
-let [idxL, idxR] = [[Id], [Pi]];
+let idxL = [Id];
+let idxR = [Pi];
 for (let i = 0; i < 4; i++) for (let j of [idxL, idxR]) j.push(j[i].map((k) => Rho[k]));
 
 const shifts = [
