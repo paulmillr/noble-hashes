@@ -1,6 +1,6 @@
 {
   "name": "@noble/hashes",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Fast 0-dependency JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2, Scrypt",
   "directories": {
     "lib": "lib",
