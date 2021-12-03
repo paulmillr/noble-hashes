@@ -1,5 +1,9 @@
 /*! noble-hashes - MIT License (c) 2021 Paul Miller (paulmillr.com) */
 
+// The import here is via the package name. This is to ensure
+// that exports mapping/resolution does fall into place.
+import { crypto } from '@noble/hashes/lib/crypto';
+
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
@@ -151,15 +155,6 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   hashC.init = hashC.create;
   return hashC;
 }
-
-export const crypto: { node?: any; web?: any } = (() => {
-  const webCrypto = typeof self === 'object' && 'crypto' in self ? self.crypto : undefined;
-  const nodeRequire = typeof module !== 'undefined' && typeof require === 'function';
-  return {
-    node: nodeRequire && !webCrypto ? require('crypto') : undefined,
-    web: webCrypto,
-  };
-})();
 
 export function randomBytes(bytesLength = 32): Uint8Array {
   if (crypto.web) {

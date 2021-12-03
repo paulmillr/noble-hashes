@@ -1,9 +1,9 @@
 {
     "compilerOptions": {
         "strict": true,
-        "outDir": "lib",
+        "outDir": "lib/esm",
         "target": "es2020",
-        "module": "commonjs",
+        "module": "es6",
         "moduleResolution": "node",
         "noUnusedLocals": true,
         "esModuleInterop": true,
