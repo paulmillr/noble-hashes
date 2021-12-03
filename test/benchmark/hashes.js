@@ -28,6 +28,8 @@ const wasm_ = require('hash-wasm');
 const wasm = {};
 const wrapBuf = (arrayBuffer) => new Uint8Array(arrayBuffer);
 
+const ONLY_NOBLE = process.argv[2] === 'noble';
+
 const HASHES = {
   SHA256: {
     node: (buf) => crypto.createHash('sha256').update(buf).digest(),
@@ -100,20 +102,25 @@ const buffers = {
 
 const main = () =>
   run(async () => {
-    wasm.sha256 = await wasm_.createSHA256();
-    wasm.sha512 = await wasm_.createSHA512();
-    wasm.sha3 = await wasm_.createSHA3();
-    wasm.blake2b = await wasm_.createBLAKE2b();
-    wasm.blake2s = await wasm_.createBLAKE2s();
-    wasm.blake3 = await wasm_.createBLAKE3();
+    if (!ONLY_NOBLE) {
+      wasm.sha256 = await wasm_.createSHA256();
+      wasm.sha512 = await wasm_.createSHA512();
+      wasm.sha3 = await wasm_.createSHA3();
+      wasm.blake2b = await wasm_.createBLAKE2b();
+      wasm.blake2s = await wasm_.createBLAKE2s();
+      wasm.blake3 = await wasm_.createBLAKE3();
+    }
     for (let [k, libs] of Object.entries(HASHES)) {
-      console.log(`==== ${k} ====`);
+      if (!ONLY_NOBLE) console.log(`==== ${k} ====`);
       for (const [size, [samples, buf]] of Object.entries(buffers)) {
         for (const [lib, fn] of Object.entries(libs)) {
+          if (ONLY_NOBLE && lib !== 'noble') continue;
           // if (lib !== 'noble') continue;
-          await mark(`${k} ${size} ${lib}`, samples, () => fn(buf));
+          let title = `${k} ${size}`;
+          if (!ONLY_NOBLE) title += ` ${lib}`;
+          await mark(title, samples, () => fn(buf));
         }
-        console.log();
+        if (!ONLY_NOBLE) console.log();
       }
     }
     // Log current RAM

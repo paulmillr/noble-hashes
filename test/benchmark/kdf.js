@@ -29,16 +29,7 @@ function scryptAsyncSync(iters) {
   return res;
 }
 
-// buffer title, sample count, data
-const buffers = {
-  '32 B': [200000, new Uint8Array(32).fill(1)],
-  '64 B': [200000, new Uint8Array(64).fill(1)],
-  '1 KB': [50000, new Uint8Array(1024).fill(2)],
-  '8 KB': [6250, new Uint8Array(1024 * 8).fill(3)],
-  // Slow, but 100 doesn't show difference, probably opt doesn't happen or something
-  '1 MB': [250, new Uint8Array(1024 * 1024).fill(4)],
-};
-
+const ONLY_NOBLE = process.argv[2] === 'noble';
 const [password, salt] = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
 const KDF_ITERS = [
   // [10000, 2],
@@ -131,19 +122,27 @@ const HKDF = {
 const main = () =>
   run(async () => {
     for (let [k, libs] of Object.entries(HKDF)) {
-      console.log(`==== ${k} ====`);
+      if (!ONLY_NOBLE) console.log(`==== ${k} ====`);
       for (const [samples, len] of HKDF_EXPAND) {
-        for (const [lib, fn] of Object.entries(libs))
-          await mark(`${k} ${len} ${lib}`, samples, () => fn(len));
-        console.log();
+        for (const [lib, fn] of Object.entries(libs)) {
+          if (ONLY_NOBLE && lib !== 'noble') continue;
+          let title = `${k} ${len}`;
+          if (!ONLY_NOBLE) title += ` ${lib}`;
+          await mark(title, samples, () => fn(len));
+        }
+        if (!ONLY_NOBLE) console.log();
       }
     }
     for (let [k, libs] of Object.entries(KDF)) {
-      console.log(`==== ${k} ====`);
+      if (!ONLY_NOBLE) console.log(`==== ${k} ====`);
       for (const [samples, iters] of KDF_ITERS) {
-        for (const [lib, fn] of Object.entries(libs))
-          await mark(`${k} ${iters} ${lib}`, samples, () => fn(iters));
-        console.log();
+        for (const [lib, fn] of Object.entries(libs)) {
+          if (ONLY_NOBLE && lib !== 'noble') continue;
+          let title = `${k} ${iters}`;
+          if (!ONLY_NOBLE) title += ` ${lib}`;
+          await mark(title, samples, () => fn(iters));
+        }
+        if (!ONLY_NOBLE) console.log();
       }
     }
     // Log current RAM
