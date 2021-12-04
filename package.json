@@ -65,9 +65,9 @@
     "./lib/crypto": {
       "browser": {
         "import": "./lib/esm/cryptoBrowser.js",
-        "default": "./lib/crypto.js"
+        "default": "./lib/cryptoBrowser.js"
       },
-      "import": "./lib/esm/cryptoNode.js",
+      "import": "./lib/esm/crypto.js",
       "default": "./lib/crypto.js"
     },
     "./lib/blake2b": {
