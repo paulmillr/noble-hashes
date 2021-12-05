@@ -45,6 +45,9 @@ console.log(sha256(new Uint8Array([1, 2, 3])));
 // you could also pass strings that will be UTF8-encoded to Uint8Array
 console.log(sha256('abc'))); // == sha256(new TextEncoder().encode('abc'))
 
+// ESM version inside `esm` directory
+import { sha256 } from '@noble/hashes/lib/esm/sha256';
+
 // sha384 is here, because it uses same internals as sha512
 const { sha512, sha512_256, sha384 } = require('@noble/hashes/lib/sha512');
 // prettier-ignore
