@@ -1,6 +1,6 @@
-import * as blake2 from './_blake2';
-import * as u64 from './_u64';
-import { toBytes, u32, wrapConstructorWithOpts } from './utils';
+import * as blake2 from './_blake2.js';
+import * as u64 from './_u64.js';
+import { toBytes, u32, wrapConstructorWithOpts } from './utils.js';
 
 // Same as SHA-512 but LE
 // prettier-ignore

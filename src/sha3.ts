@@ -1,4 +1,4 @@
-import * as u64 from './_u64';
+import * as u64 from './_u64.js';
 import {
   Hash,
   u32,
@@ -8,7 +8,7 @@ import {
   wrapConstructorWithOpts,
   assertNumber,
   HashXOF,
-} from './utils';
+} from './utils.js';
 
 // Various per round constants calculations
 const [SHA3_PI, SHA3_ROTL, _SHA3_IOTA]: [number[], number[], bigint[]] = [[], [], []];

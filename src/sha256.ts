@@ -1,5 +1,5 @@
-import { SHA2 } from './_sha2';
-import { rotr, wrapConstructor } from './utils';
+import { SHA2 } from './_sha2.js';
+import { rotr, wrapConstructor } from './utils.js';
 
 // Choice: a ? b : c
 const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);

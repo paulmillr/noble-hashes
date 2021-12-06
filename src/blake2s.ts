@@ -1,6 +1,6 @@
-import * as u64 from './_u64';
-import * as blake2 from './_blake2';
-import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils';
+import * as u64 from './_u64.js';
+import * as blake2 from './_blake2.js';
+import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils.js';
 
 // Initial state:
 // first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19)
