@@ -1,6 +1,6 @@
-import { SHA2 } from './_sha2';
+import { SHA2 } from './_sha2.js';
 
-import { wrapConstructor } from './utils';
+import { wrapConstructor } from './utils.js';
 
 // https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
 // https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf

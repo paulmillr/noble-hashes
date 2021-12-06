@@ -1,8 +1,8 @@
 // prettier-ignore
 import {
   assertHash, assertNumber, CHash, Input, toBytes
-} from './utils';
-import { hmac } from './hmac';
+} from './utils.js';
+import { hmac } from './hmac.js';
 
 // HKDF (RFC 5869)
 // HKDF-Extract(IKM, salt) -> PRK NOTE: arguments position differs from spec (IKM is first one, since it is not optional)

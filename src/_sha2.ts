@@ -1,4 +1,4 @@
-import { Hash, createView, Input, toBytes } from './utils';
+import { Hash, createView, Input, toBytes } from './utils.js';
 
 // Polyfill for Safari 14
 function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: boolean): void {

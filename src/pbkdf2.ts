@@ -1,8 +1,8 @@
-import { hmac } from './hmac';
+import { hmac } from './hmac.js';
 // prettier-ignore
 import {
   Hash, CHash, Input, createView, toBytes, assertNumber, assertHash, checkOpts, asyncLoop
-} from './utils';
+} from './utils.js';
 
 // PBKDF (RFC 2898)
 export type Pbkdf2Opt = {

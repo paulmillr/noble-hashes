@@ -1,4 +1,4 @@
-import { assertHash, Hash, CHash, Input, toBytes } from './utils';
+import { assertHash, Hash, CHash, Input, toBytes } from './utils.js';
 // HMAC (RFC 2104)
 class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   oHash: T;

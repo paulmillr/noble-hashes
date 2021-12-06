@@ -1,6 +1,6 @@
-import { sha256 } from './sha256';
-import { pbkdf2 } from './pbkdf2';
-import { assertNumber, asyncLoop, checkOpts, Input, u32 } from './utils';
+import { sha256 } from './sha256.js';
+import { pbkdf2 } from './pbkdf2.js';
+import { assertNumber, asyncLoop, checkOpts, Input, u32 } from './utils.js';
 
 // Left rotate for uint32
 const rotl = (a: number, b: number) => (a << b) | (a >>> (32 - b));
