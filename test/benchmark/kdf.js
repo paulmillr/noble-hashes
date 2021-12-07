@@ -63,7 +63,7 @@ const KDF = {
         password: 'password',
         salt,
         iterations: iters,
-        hashLength: 32,
+        hashLength: 64,
         hashFunction: wasm.createSHA512(),
         outputType: 'binary',
       }),
