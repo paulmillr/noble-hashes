@@ -43,6 +43,15 @@ const KDF_ITERS = [
 const KDF = {
   'PBKDF2-HMAC-SHA256': {
     node: (iters) => crypto.pbkdf2Sync(password, salt, iters, 32, 'sha256'),
+    'hash-wasm': (iters) =>
+      wasm.pbkdf2({
+        password: 'password',
+        salt,
+        iterations: iters,
+        hashLength: 32,
+        hashFunction: wasm.createSHA256(),
+        outputType: 'binary',
+      }),
     stablelib: (iters) => stablePBKDF2(stable256.SHA256, password, salt, iters, 32),
     noble: (iters) => pbkdf2(sha256, password, salt, { c: iters, dkLen: 32 }),
     'noble (async)': (iters) => pbkdf2Async(sha256, password, salt, { c: iters, dkLen: 32 }),
@@ -54,7 +63,7 @@ const KDF = {
         password: 'password',
         salt,
         iterations: iters,
-        hashLength: 32,
+        hashLength: 64,
         hashFunction: wasm.createSHA512(),
         outputType: 'binary',
       }),
