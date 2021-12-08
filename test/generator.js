@@ -168,7 +168,11 @@ function executeKDFTests(limit = true) {
     for (let c of cases) {
       const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
       const opt = { c: c.c, dkLen: c.dkLen };
-      assert.deepStrictEqual(pbkdf2(ripemd160, c.pwd, c.salt, opt), exp, `pbkdf2(ripemd160, ${opt})`);
+      assert.deepStrictEqual(
+        pbkdf2(ripemd160, c.pwd, c.salt, opt),
+        exp,
+        `pbkdf2(ripemd160, ${opt})`
+      );
       assert.deepStrictEqual(
         await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
         exp,
@@ -211,9 +215,9 @@ function executeKDFTests(limit = true) {
         await pbkdf2Async(blake2b, c.pwd, c.salt, opt),
         exp,
         `pbkdf2Async(blake2b, ${opt})`
-       );
-     }
-   });
+      );
+    }
+  });
 }
 
 module.exports = {
