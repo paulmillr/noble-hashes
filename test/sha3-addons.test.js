@@ -25,8 +25,8 @@ const tupleData = (hex) => {
 };
 
 should(`pass generated test vectors`, () => {
-for (let i = 0; i < vectors.length; i++) {
-  const v = vectors[i];
+  for (let i = 0; i < vectors.length; i++) {
+    const v = vectors[i];
     const opt = {
       personalization: fromHex(v.personalization),
       NISTfn: fromHex(v.nist_fn),
@@ -47,7 +47,7 @@ for (let i = 0; i < vectors.length; i++) {
     };
     let err = `(${i}): ${v.fn_name}`;
     assert.deepStrictEqual(Buffer.from(fn[v.fn_name]()).toString('hex'), v.exp, err);
-}
+  }
 });
 
 if (require.main === module) should.run();

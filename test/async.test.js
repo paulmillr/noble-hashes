@@ -71,21 +71,18 @@ should('scrypt progreessCallback', () => {
   // Should be called ~10k
   assert.deepStrictEqual(t.length, 10083);
   // Should be exact numbers
-  assert.deepStrictEqual(t.slice(0, 5), [
-    0.00009918212890625,
-    0.0001983642578125,
-    0.00029754638671875,
-    0.000396728515625,
-    0.00049591064453125,
-  ]);
+  assert.deepStrictEqual(
+    t.slice(0, 5),
+    [
+      0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
+      0.00049591064453125,
+    ]
+  );
   // Should end with 1
-  assert.deepStrictEqual(t.slice(-5), [
-    0.9996566772460938,
-    0.999755859375,
-    0.9998550415039062,
-    0.9999542236328125,
-    1,
-  ]);
+  assert.deepStrictEqual(
+    t.slice(-5),
+    [0.9996566772460938, 0.999755859375, 0.9998550415039062, 0.9999542236328125, 1]
+  );
 });
 
 should('scryptAsync progreessCallback', async () => {
@@ -94,21 +91,18 @@ should('scryptAsync progreessCallback', async () => {
   // Should be called ~10k
   assert.deepStrictEqual(t.length, 10083);
   // Should be exact numbers
-  assert.deepStrictEqual(t.slice(0, 5), [
-    0.00009918212890625,
-    0.0001983642578125,
-    0.00029754638671875,
-    0.000396728515625,
-    0.00049591064453125,
-  ]);
+  assert.deepStrictEqual(
+    t.slice(0, 5),
+    [
+      0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
+      0.00049591064453125,
+    ]
+  );
   // Should end with 1
-  assert.deepStrictEqual(t.slice(-5), [
-    0.9996566772460938,
-    0.999755859375,
-    0.9998550415039062,
-    0.9999542236328125,
-    1,
-  ]);
+  assert.deepStrictEqual(
+    t.slice(-5),
+    [0.9996566772460938, 0.999755859375, 0.9998550415039062, 0.9999542236328125, 1]
+  );
 });
 
 if (require.main === module) should.run();

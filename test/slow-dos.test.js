@@ -25,15 +25,17 @@ async function bench(callback, iters = 10) {
 }
 // Handle flaky tests. If complexity test passed even 1 of 5 attempts, then its ok.
 // Only when all attempts failed, test is failed.
-const retry = (callback, retries = 5) => async () => {
-  for (let i = 0; i < retries - 1; i++) {
-    try {
-      return await callback();
-    } catch (e) {}
-  }
-  // last attempt, throw exception if failed
-  return await callback();
-};
+const retry =
+  (callback, retries = 5) =>
+  async () => {
+    for (let i = 0; i < retries - 1; i++) {
+      try {
+        return await callback();
+      } catch (e) {}
+    }
+    // last attempt, throw exception if failed
+    return await callback();
+  };
 
 // O(N)
 function linear(buf) {
