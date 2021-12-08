@@ -1,7 +1,15 @@
 import * as u64 from './_u64.js';
 import * as blake2 from './_blake2.js';
 import * as blake2s from './blake2s.js';
-import { Input, u8, u32, toBytes, wrapConstructorWithOpts, assertNumber, HashXOF } from './utils.js';
+import {
+  Input,
+  u8,
+  u32,
+  toBytes,
+  wrapConstructorWithOpts,
+  assertNumber,
+  HashXOF,
+} from './utils.js';
 
 // Flag bitset
 enum Flags {

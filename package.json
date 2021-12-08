@@ -15,6 +15,7 @@
     "build": "tsc -d && tsc -p tsconfig.esm.json",
     "build-release": "rollup -c rollup.config.js",
     "lint": "prettier --print-width 100 --single-quote --check src",
+    "format": "prettier --print-width 100 --single-quote --write src",
     "test": "node test/index.js",
     "test-dos": "node test/slow-dos.test.js",
     "test-big": "node test/slow-big.test.js"
