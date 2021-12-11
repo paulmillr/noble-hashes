@@ -35,18 +35,16 @@ Use NPM in node.js / browser, or include single file from
 
 > npm install @noble/hashes
 
-The library does not have an entry point. It allows you to select specific primitives and drop everything else. If you only want to use sha256, just use the library with rollup or other bundlers. This is done to make your bundles tiny. We support ECMAScript modules (ESM).
+The library does not have an entry point. It allows you to select specific primitives and drop everything else. If you only want to use sha256, just use the library with rollup or other bundlers. This is done to make your bundles tiny.
 
 ```js
-const { sha256 } = require('@noble/hashes/lib/sha256');
+// Common.js and ECMAScript Modules (ESM)
+import { sha256 } from '@noble/hashes/lib/sha256';
 console.log(sha256(new Uint8Array([1, 2, 3])));
 // Uint8Array(32) [3, 144,  88, 198, 242, 192, 203,  73, ...]
 
 // you could also pass strings that will be UTF8-encoded to Uint8Array
 console.log(sha256('abc'))); // == sha256(new TextEncoder().encode('abc'))
-
-// ESM version inside `esm` directory
-import { sha256 } from '@noble/hashes/lib/esm/sha256';
 
 // sha384 is here, because it uses same internals as sha512
 const { sha512, sha512_256, sha384 } = require('@noble/hashes/lib/sha512');
