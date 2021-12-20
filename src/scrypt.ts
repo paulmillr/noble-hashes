@@ -191,7 +191,7 @@ export function scrypt(password: Input, salt: Input, _opts: ScryptOpts) {
   return scryptOutput(password, dkLen, B, V, tmp);
 }
 
-export async function scryptAsync(password: Uint8Array, salt: Uint8Array, _opts: ScryptOpts) {
+export async function scryptAsync(password: Input, salt: Input, _opts: ScryptOpts) {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(
     password,
     salt,
