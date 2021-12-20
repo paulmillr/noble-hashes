@@ -2,7 +2,7 @@ import { hkdf } from './hkdf.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2Async } from './pbkdf2.js';
 import { scryptAsync } from './scrypt.js';
-import { toBytes } from './utils.js';
+import { createView, toBytes } from './utils.js';
 
 // A tiny KDF for various applications like AES key-gen
 //
@@ -26,12 +26,12 @@ function strHasLength(str: string, min: number, max: number): boolean {
 
 // Scrypt KDF
 export function scrypt(password: string, salt: string): Promise<Uint8Array> {
-  return scryptAsync(toBytes(password), toBytes(salt), { N: SCRYPT_FACTOR, r: 8, p: 1, dkLen: 32 });
+  return scryptAsync(password, salt, { N: SCRYPT_FACTOR, r: 8, p: 1, dkLen: 32 });
 }
 
 // PBKDF2-HMAC-SHA256
 export function pbkdf2(password: string, salt: string): Promise<Uint8Array> {
-  return pbkdf2Async(sha256, toBytes(password), toBytes(salt), { c: PBKDF2_FACTOR, dkLen: 32 });
+  return pbkdf2Async(sha256, password, salt, { c: PBKDF2_FACTOR, dkLen: 32 });
 }
 
 // Combines two 32-byte byte arrays
@@ -47,11 +47,10 @@ function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
 // Derives main key. Takes a lot of time.
 // username and password must have enough entropy.
 export async function deriveMainSeed(username: string, password: string): Promise<Uint8Array> {
-  if (!strHasLength(username, 1, 255)) throw new Error('invalid username');
-  if (!strHasLength(password, 1, 255)) throw new Error('invalid password');
-  const scrp = scrypt(password + '\u{1}', username + '\u{1}');
-  const pbkp = pbkdf2(password + '\u{2}', username + '\u{2}');
-  const [scr, pbk] = await Promise.all([scrp, pbkp]);
+  if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
+  if (!strHasLength(password, 8, 255)) throw new Error('invalid password');
+  const scr = await scrypt(password + '\u{1}', username + '\u{1}');
+  const pbk = await pbkdf2(password + '\u{2}', username + '\u{2}');
   const res = xor32(scr, pbk);
   scr.fill(0);
   pbk.fill(0);
@@ -70,21 +69,20 @@ export function deriveChildKey(
   if (!has32Bytes(seed)) throw new Error('invalid seed');
   // Note that length here also repeats two lines below
   // We do an additional length check here to reduce the scope of DoS attacks
-  if (!strHasLength(protocol, 3, 15)) throw new Error('invalid protocol');
-  protocol = protocol.toLowerCase(); // Normalize to lower case.
-  if (!/^[a-z0-9]{3,15}$/.test(protocol)) throw new Error('invalid protocol');
+  if (!(strHasLength(protocol, 3, 15) && /^[a-z0-9]{3,15}$/.test(protocol))) {
+    throw new Error('invalid protocol');
+  }
   const allowsStr = PROTOCOLS_ALLOWING_STR.includes(protocol);
-  let salt; // Extract salt. Default is undefined.
+  let salt: Uint8Array; // Extract salt. Default is undefined.
   if (typeof accountId === 'string') {
     if (!allowsStr) throw new Error('accountId must be a number');
     if (!strHasLength(accountId, 1, 255)) throw new Error('accountId must be valid string');
     salt = toBytes(accountId);
-  } else if (typeof accountId === 'number') {
+  } else if (Number.isSafeInteger(accountId)) {
     if (accountId < 0 || accountId > 2 ** 32 - 1) throw new Error('invalid accountId');
     // Convert to Big Endian Uint32
-    const view = new DataView(new ArrayBuffer(4));
-    view.setUint32(0, accountId, false);
-    salt = new Uint8Array(view.buffer);
+    salt = new Uint8Array(4);
+    createView(salt).setUint32(0, accountId, false);
   } else {
     throw new Error(`accountId must be a number${allowsStr ? ' or string' : ''}`);
   }
