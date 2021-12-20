@@ -8,6 +8,7 @@ require('./blake.test.js');
 require('./sha3-addons.test.js');
 require('./hmac.test.js');
 require('./kdf.test.js');
+require('./eskdf.test.js');
 require('./async.test.js');
 require('./clone.test.js');
 require('./u64.test.js');

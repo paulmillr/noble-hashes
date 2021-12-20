@@ -120,6 +120,7 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - [HKDF](#hkdf)
 - [PBKDF2](#pbkdf2)
 - [Scrypt](#scrypt)
+- [ESKDF](#eskdf)
 - [utils](#utils)
 
 ##### SHA2 (sha256, sha384, sha512, sha512_256)
@@ -345,6 +346,19 @@ which corresponds to `{N: 2 ** 20, r: 8, p: 1}`. If you want to use higher value
 _Note:_ noble supports `2**22` (4GB RAM) which is the highest amount amongst JS libs. Many other implementations don't support it.
 We cannot support `2**23`, because there is a limitation in JS engines that makes allocating
 arrays bigger than 4GB impossible, but we're looking into other possible solutions.
+
+##### ESKDF
+
+A tiny stretched KDF for various applications like AES key-gen. Takes >= 2 seconds to execute.
+
+Takes username and password, then takes protocol name and account id.
+
+```typescript
+const kdf = await eskdf('example-university', 'beginning-new-example');
+const key = kdf.deriveChildKey('aes', 0);
+console.log(kdf.fingerprint);
+kdf.expire();
+```
 
 ##### utils
 

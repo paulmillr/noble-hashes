@@ -1,0 +1,141 @@
+{
+  "derive_main_seed": {
+    "valid": [
+      {
+        "output": "e879507d6748a40845e4e410d20213fe80033332b624eb9efb5dea32518e3f8b",
+        "fingerprint": "B6:2C:85:DF:E3:A1",
+        "username": "example@example.org",
+        "password": "beginning-new-example"
+      },
+      {
+        "output": "1173fb229e2124228c532d376d07916bcd3a1de4ddb7196d60bd1b066d5faa40",
+        "fingerprint": "05:11:D9:B9:32:80",
+        "username": "exampleexampleorg",
+        "password": "long-long-long-short-short-long"
+      },
+      {
+        "output": "ed78fd16aaa9540ccf83f46643f425b8481479ca2e1890102c4f813f66859904",
+        "fingerprint": "AE:A3:DD:D3:49:ED",
+        "username": "+214678952439018",
+        "password": "beginning-dvzyhr@&*$P:OAA!mZ4"
+      },
+      {
+        "output": "aa567881d8e85243af8a02bc448b4c9f19c48caf3de4e19822a0f382c514a219",
+        "fingerprint": "82:20:E2:D7:11:50",
+        "username": "abcdefghijk",
+        "password": "y519079pwaeofhj 0yq285u"
+      },
+      {
+        "output": "2539543c58f197513ded2182fb5336e5693b3690794d6fdc97f57c93276f586e",
+        "fingerprint": "5D:46:6B:C5:E2:8E",
+        "username": "follower",
+        "password": "D3$85jKz;:?!j08a"
+      },
+      {
+        "output": "71549b292b2d73eb1adc7bd3fa18bc9328039352e208585c80671c677122397a",
+        "fingerprint": "BA:EC:D1:64:0E:10",
+        "username": "N_@ABC.ABC",
+        "password": "https://wikipedia.org"
+      },
+      {
+        "output": "ca5054a0643aeeaeb2eca9112a5b65e1b24108184591c350d6aec48c5c9c1cfe",
+        "fingerprint": "16:82:07:13:6A:11",
+        "username": "eskdf-phrase",
+        "password": "appear skin fence orient hub inform glow quarter gym adult season unable image step shed"
+      }
+    ],
+    "invalid": [
+      {
+        "username": "",
+        "password": ""
+      },
+      {
+        "username": "",
+        "password": "124576y9"
+      },
+      {
+        "username": "124576y9",
+        "password": ""
+      },
+      {
+        "username": "",
+        "password": ""
+      },
+      {
+        "username": "513",
+        "password": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "username": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "password": "513"
+      }
+    ]
+  },
+  "derive_child_key": {
+    "seed": {
+      "username": "example@example.org",
+      "password": "beginning-new-example",
+      "fingerprint": "B6:2C:85:DF:E3:A1"
+    },
+    "valid": [
+      {
+        "output": "78ae9652ecd567d3be03b6dad2713ce94b05e7ec29dc42e99edddd5a09be969e",
+        "protocol": "aes"
+      },
+      {
+        "output": "78ae9652ecd567d3be03b6dad2713ce94b05e7ec29dc42e99edddd5a09be969e",
+        "protocol": "AES",
+        "account_id": 0
+      },
+      {
+        "output": "ff184225d340939012588900d0653bded7a6e5fb9ac36773e76d5b2b8a3ad0e3",
+        "protocol": "aes",
+        "account_id": 1
+      },
+      {
+        "output": "b60c6eeec234c8b6350383412a4418206b44125239f79d4cda48e036f9fbd93e",
+        "protocol": "aes",
+        "account_id": 4294967295
+      },
+      {
+        "output": "a9cd0d24eb032f2064a98f705f5094130ef9ae17acc823120634635e10960666",
+        "protocol": "aes128"
+      },
+      {
+        "output": "9f970f746208a7bd6b586ff0000123d76101e4b9c3cc07b3694d127669ac3712",
+        "protocol": "zipper",
+        "account_id": 50
+      },
+      {
+        "output": "dcdd6d42da86d4b3c53e3f5cd0f41cc1310235ba059ed5312e2ae4499b89ac3a",
+        "protocol": "12345678901234",
+        "account_id": 1024
+      }
+    ],
+    "invalid": [
+      {
+        "protocol": ""
+      },
+      {
+        "protocol": "12345678901234567",
+        "account_id": 1024
+      },
+      {
+        "protocol": "",
+        "account_id": 1024
+      },
+      {
+        "protocol": "a",
+        "account_id": 0
+      },
+      {
+        "protocol": "ed",
+        "account_id": 4242
+      },
+      {
+        "protocol": "ae$",
+        "account_id": 0
+      }
+    ]
+  }
+}

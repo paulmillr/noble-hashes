@@ -73,7 +73,7 @@ export async function asyncLoop(iters: number, tick: number, cb: (i: number) => 
 declare const TextEncoder: any;
 declare const TextDecoder: any;
 export type Input = Uint8Array | string;
-export function toBytes(data: Input) {
+export function toBytes(data: Input): Uint8Array {
   if (typeof data === 'string') data = new TextEncoder().encode(data);
   if (!(data instanceof Uint8Array))
     throw new TypeError(`Expected input type is Uint8Array (got ${typeof data})`);
