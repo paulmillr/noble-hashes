@@ -9,7 +9,7 @@
         "esModuleInterop": true,
         "baseUrl": ".",
         "paths": {
-            "@noble/hashes/lib/crypto": [ "src/crypto" ]
+            "@noble/hashes/crypto": [ "src/crypto" ]
         },
     },
     "include": ["src"],

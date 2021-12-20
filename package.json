@@ -59,11 +59,11 @@
     "noble"
   ],
   "exports": {
-    "./lib": {
+    "./index": {
       "import": "./lib/esm/index.js",
       "default": "./lib/index.js"
     },
-    "./lib/crypto": {
+    "./crypto": {
       "browser": {
         "import": "./lib/esm/cryptoBrowser.js",
         "default": "./lib/cryptoBrowser.js"
@@ -71,70 +71,75 @@
       "import": "./lib/esm/crypto.js",
       "default": "./lib/crypto.js"
     },
-    "./lib/blake2b": {
+    "./blake2b": {
       "import": "./lib/esm/blake2b.js",
       "default": "./lib/blake2b.js"
     },
-    "./lib/blake2b.d.ts": "./lib/blake2b.d.ts",
-    "./lib/blake2s": {
+    "./blake2b.d.ts": "./lib/blake2b.d.ts",
+    "./blake2s": {
       "import": "./lib/esm/blake2s.js",
       "default": "./lib/blake2s.js"
     },
-    "./lib/blake2s.d.ts": "./lib/blake2s.d.ts",
-    "./lib/blake3": {
+    "./blake2s.d.ts": "./lib/blake2s.d.ts",
+    "./blake3": {
       "import": "./lib/esm/blake3.js",
       "default": "./lib/blake3.js"
     },
-    "./lib/blake3.d.ts": "./lib/blake3.d.ts",
-    "./lib/hkdf": {
+    "./blake3.d.ts": "./lib/blake3.d.ts",
+    "./eskdf": {
+      "import": "./lib/esm/eskdf.js",
+      "default": "./lib/eskdf.js"
+    },
+    "./eskdf.d.ts": "./lib/eskdf.d.ts",
+    "./hkdf": {
       "import": "./lib/esm/hkdf.js",
       "default": "./lib/hkdf.js"
     },
-    "./lib/hkdf.d.ts": "./lib/hkdf.d.ts",
-    "./lib/hmac": {
+    "./hkdf.d.ts": "./lib/hkdf.d.ts",
+    "./hmac": {
       "import": "./lib/esm/hmac.js",
       "default": "./lib/hmac.js"
     },
-    "./lib/hmac.d.ts": "./lib/hmac.d.ts",
-    "./lib/pbkdf2": {
+    "./hmac.d.ts": "./lib/hmac.d.ts",
+    "./pbkdf2": {
       "import": "./lib/esm/pbkdf2.js",
       "default": "./lib/pbkdf2.js"
     },
-    "./lib/pbkdf2.d.ts": "./lib/pbkdf2.d.ts",
-    "./lib/ripemd160": {
+    "./pbkdf2.d.ts": "./lib/pbkdf2.d.ts",
+    "./ripemd160": {
       "import": "./lib/esm/ripemd160.js",
       "default": "./lib/ripemd160.js"
     },
-    "./lib/ripemd160.d.ts": "./lib/ripemd160.d.ts",
-    "./lib/scrypt": {
+    "./ripemd160.d.ts": "./lib/ripemd160.d.ts",
+    "./scrypt": {
       "import": "./lib/esm/scrypt.js",
       "default": "./lib/scrypt.js"
     },
-    "./lib/scrypt.d.ts": "./lib/scrypt.d.ts",
-    "./lib/sha3-addons": {
+    "./scrypt.d.ts": "./lib/scrypt.d.ts",
+    "./sha3-addons": {
       "import": "./lib/esm/sha3-addons.js",
       "default": "./lib/sha3-addons.js"
     },
-    "./lib/sha3-addons.d.ts": "./lib/sha3-addons.d.ts",
-    "./lib/sha3": {
+    "./sha3-addons.d.ts": "./lib/sha3-addons.d.ts",
+    "./sha3": {
       "import": "./lib/esm/sha3.js",
       "default": "./lib/sha3.js"
     },
-    "./lib/sha3.d.ts": "./lib/sha3.d.ts",
-    "./lib/sha256": {
+    "./sha3.d.ts": "./lib/sha3.d.ts",
+    "./sha256": {
       "import": "./lib/esm/sha256.js",
       "default": "./lib/sha256.js"
     },
-    "./lib/sha256.d.ts": "./lib/sha256.d.ts",
-    "./lib/sha512": {
+    "./sha256.d.ts": "./lib/sha256.d.ts",
+    "./sha512": {
       "import": "./lib/esm/sha512.js",
       "default": "./lib/sha512.js"
     },
-    "./lib/sha512.d.ts": "./lib/sha512.d.ts",
-    "./lib/utils": {
+    "./sha512.d.ts": "./lib/sha512.d.ts",
+    "./utils": {
       "import": "./lib/esm/utils.js",
       "default": "./lib/utils.js"
     },
-    "./lib/utils.d.ts": "./lib/utils.d.ts"
+    "./utils.d.ts": "./lib/utils.d.ts"
   }
 }

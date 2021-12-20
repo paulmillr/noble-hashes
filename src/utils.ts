@@ -2,7 +2,7 @@
 
 // The import here is via the package name. This is to ensure
 // that exports mapping/resolution does fall into place.
-import { crypto } from '@noble/hashes/lib/crypto';
+import { crypto } from '@noble/hashes/crypto';
 
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
