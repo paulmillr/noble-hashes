@@ -1,12 +1,12 @@
 const assert = require('assert');
 const { should } = require('micro-should');
-const { blake2b } = require('../lib/blake2b');
-const { blake2s } = require('../lib/blake2s');
+const { blake2b } = require('../blake2b');
+const { blake2s } = require('../blake2s');
 const { TYPE_TEST, pattern, concatBytes } = require('./utils');
 const blake2_vectors = require('./vectors/blake2-kat.json');
 const blake2_python = require('./vectors/blake2-python.json');
 const blake3_vectors = require('./vectors/blake3.json');
-const { blake3 } = require('../lib/blake3');
+const { blake3 } = require('../blake3');
 
 should('Blake2 vectors', () => {
   for (const v of blake2_vectors) {

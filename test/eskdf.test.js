@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { should } = require('micro-should');
-const eskdf = require('../lib/eskdf');
+const eskdf = require('../eskdf');
 const vectors = require('./vectors/eskdf.json');
 
 function toHex(arr) {

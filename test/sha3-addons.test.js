@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { should } = require('micro-should');
-const { blake3 } = require('../lib/blake3');
+const { blake3 } = require('../blake3');
 const {
   k12,
   cshake128,
@@ -11,7 +11,7 @@ const {
   parallelhash256,
   tuplehash128,
   tuplehash256,
-} = require('../lib/sha3-addons');
+} = require('../sha3-addons');
 const { jsonGZ } = require('./utils.js');
 const vectors = jsonGZ('vectors/sha3-addons.json.gz').v;
 

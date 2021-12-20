@@ -2,11 +2,11 @@ const bench = require('micro-bmark');
 const { run, mark } = bench; // or bench.mark
 const crypto = require('crypto');
 // Noble
-const { sha256 } = require('../../lib/sha256');
-const { sha512 } = require('../../lib/sha512');
-const { pbkdf2, pbkdf2Async } = require('../../lib/pbkdf2');
-const { hkdf } = require('../../lib/hkdf');
-const { scrypt, scryptAsync } = require('../../lib/scrypt');
+const { sha256 } = require('../../sha256');
+const { sha512 } = require('../../sha512');
+const { pbkdf2, pbkdf2Async } = require('../../pbkdf2');
+const { hkdf } = require('../../hkdf');
+const { scrypt, scryptAsync } = require('../../scrypt');
 // Others
 
 const stable256 = require('@stablelib/sha256');
