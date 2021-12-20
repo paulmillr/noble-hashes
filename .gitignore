@@ -1,4 +1,6 @@
 node_modules
 /build/
-/lib/**/*.js
-/lib/**/*.ts
+/*.js
+/*.d.ts
+/esm/*.js
+/esm/*.d.ts

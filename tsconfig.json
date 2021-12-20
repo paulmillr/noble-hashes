@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "strict": true,
-        "outDir": "lib",
+        "outDir": ".",
         "target": "es2020",
         "lib": ["es2020"], // Set explicitly to remove DOM
         "module": "commonjs",
@@ -15,7 +15,6 @@
     },
     "include": ["src"],
     "exclude": [
-        "node_modules",
-        "lib",
+        "node_modules"
     ],
 }
