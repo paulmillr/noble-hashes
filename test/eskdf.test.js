@@ -24,7 +24,7 @@ function toHex(arr) {
   for (let v of vectors.derive_main_seed.invalid) {
     const { username, password } = v;
     should(`deriveMainSeed errors on ${username} ${password}`, () => {
-      assert.rejects(() => eskdf.deriveMainSeed(username, password));
+      assert.throws(() => eskdf.deriveMainSeed(username, password));
     });
   }
   const s = vectors.derive_child_key.seed;
