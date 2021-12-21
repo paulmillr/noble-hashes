@@ -2,7 +2,7 @@ import { hkdf } from './hkdf.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.js';
 import { scrypt as _scrypt } from './scrypt.js';
-import { createView, toBytes } from './utils.js';
+import { assertBytes, createView, toBytes } from './utils.js';
 
 // A tiny KDF for various applications like AES key-gen
 //
@@ -15,10 +15,6 @@ import { createView, toBytes } from './utils.js';
 const SCRYPT_FACTOR = 2 ** 19;
 const PBKDF2_FACTOR = 2 ** 17;
 const PROTOCOLS_ALLOWING_STR = ['ssh', 'tor', 'file'];
-
-function has32Bytes(a: any): a is Uint8Array {
-  return a instanceof Uint8Array && a.length === 32;
-}
 
 function strHasLength(str: string, min: number, max: number): boolean {
   return typeof str === 'string' && str.length >= min && str.length <= max;
@@ -36,7 +32,8 @@ export function pbkdf2(password: string, salt: string): Uint8Array {
 
 // Combines two 32-byte byte arrays
 function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
-  if (!has32Bytes(a) || !has32Bytes(b)) throw new Error('invalid xor32 call');
+  assertBytes(a, 32);
+  assertBytes(b, 32);
   const arr = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
     arr[i] = a[i] ^ b[i];
@@ -66,7 +63,7 @@ export function deriveChildKey(
   accountId: number | string = 0,
   keyLength = 32
 ): Uint8Array {
-  if (!has32Bytes(seed)) throw new Error('invalid seed');
+  assertBytes(seed, 32);
   // Note that length here also repeats two lines below
   // We do an additional length check here to reduce the scope of DoS attacks
   if (!(strHasLength(protocol, 3, 15) && /^[a-z0-9]{3,15}$/.test(protocol))) {
@@ -104,8 +101,8 @@ type ESKDF = Promise<
 export async function eskdf(username: string, password: string): ESKDF {
   let seed: Uint8Array | undefined = await deriveMainSeed(username, password);
   function derive(protocol: string, accountId: number | string = 0): Uint8Array {
-    if (!has32Bytes(seed)) throw new Error('invalid seed');
-    return deriveChildKey(seed, protocol, accountId);
+    assertBytes(seed!, 32);
+    return deriveChildKey(seed!, protocol, accountId);
   }
   function expire() {
     seed = undefined;
