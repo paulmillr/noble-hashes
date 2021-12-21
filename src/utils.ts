@@ -90,6 +90,18 @@ export function assertBool(b: boolean) {
   }
 }
 
+export function assertBytes(bytes: Uint8Array, ...lengths: number[]) {
+  if (
+    bytes instanceof Uint8Array &&
+    (!lengths.length || lengths.includes(bytes.length))
+  ) {
+    return;
+  }
+  throw new TypeError(
+    `Expected ${lengths} bytes, not ${typeof bytes} with length=${bytes.length}`
+  );
+}
+
 export function assertHash(hash: CHash) {
   if (typeof hash !== 'function' || typeof hash.init !== 'function')
     throw new Error('Hash should be wrapped by utils.wrapConstructor');
