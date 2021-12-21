@@ -1,7 +1,7 @@
 import { hkdf } from './hkdf.js';
 import { sha256 } from './sha256.js';
-import { pbkdf2Async } from './pbkdf2.js';
-import { scryptAsync } from './scrypt.js';
+import { pbkdf2 as _pbkdf2 } from './pbkdf2.js';
+import { scrypt as _scrypt } from './scrypt.js';
 import { createView, toBytes } from './utils.js';
 
 // A tiny KDF for various applications like AES key-gen
@@ -25,13 +25,13 @@ function strHasLength(str: string, min: number, max: number): boolean {
 }
 
 // Scrypt KDF
-export function scrypt(password: string, salt: string): Promise<Uint8Array> {
-  return scryptAsync(password, salt, { N: SCRYPT_FACTOR, r: 8, p: 1, dkLen: 32 });
+export function scrypt(password: string, salt: string): Uint8Array {
+  return _scrypt(password, salt, { N: SCRYPT_FACTOR, r: 8, p: 1, dkLen: 32 });
 }
 
 // PBKDF2-HMAC-SHA256
-export function pbkdf2(password: string, salt: string): Promise<Uint8Array> {
-  return pbkdf2Async(sha256, password, salt, { c: PBKDF2_FACTOR, dkLen: 32 });
+export function pbkdf2(password: string, salt: string): Uint8Array {
+  return _pbkdf2(sha256, password, salt, { c: PBKDF2_FACTOR, dkLen: 32 });
 }
 
 // Combines two 32-byte byte arrays
@@ -46,11 +46,11 @@ function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
 
 // Derives main key. Takes a lot of time.
 // username and password must have enough entropy.
-export async function deriveMainSeed(username: string, password: string): Promise<Uint8Array> {
+export function deriveMainSeed(username: string, password: string): Uint8Array {
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
   if (!strHasLength(password, 8, 255)) throw new Error('invalid password');
-  const scr = await scrypt(password + '\u{1}', username + '\u{1}');
-  const pbk = await pbkdf2(password + '\u{2}', username + '\u{2}');
+  const scr = scrypt(password + '\u{1}', username + '\u{1}');
+  const pbk = pbkdf2(password + '\u{2}', username + '\u{2}');
   const res = xor32(scr, pbk);
   scr.fill(0);
   pbk.fill(0);
