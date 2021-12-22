@@ -75,7 +75,7 @@
       "import": "./esm/crypto.js",
       "default": "./crypto.js"
     },
-    "_sha2": {
+    "./_sha2": {
       "import": "./esm/_sha2.js",
       "default": "./_sha2.js"
     },
