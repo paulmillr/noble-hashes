@@ -91,15 +91,10 @@ export function assertBool(b: boolean) {
 }
 
 export function assertBytes(bytes: Uint8Array, ...lengths: number[]) {
-  if (
-    bytes instanceof Uint8Array &&
-    (!lengths.length || lengths.includes(bytes.length))
-  ) {
+  if (bytes instanceof Uint8Array && (!lengths.length || lengths.includes(bytes.length))) {
     return;
   }
-  throw new TypeError(
-    `Expected ${lengths} bytes, not ${typeof bytes} with length=${bytes.length}`
-  );
+  throw new TypeError(`Expected ${lengths} bytes, not ${typeof bytes} with length=${bytes.length}`);
 }
 
 export function assertHash(hash: CHash) {
