@@ -31,7 +31,8 @@
   },
   "license": "MIT",
   "browser": {
-    "crypto": false
+    "crypto": false,
+    "./crypto": "./cryptoBrowser.js"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "13.0.6",
