@@ -48,6 +48,7 @@ export function hkdf_expand(
   HMAC.destroy();
   HMACTmp.destroy();
   T.fill(0);
+  HKDF_COUNTER.fill(0);
   return okm.slice(0, length);
 }
 // Extract+Expand
