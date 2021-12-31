@@ -35,6 +35,27 @@ export function bytesToHex(uint8a: Uint8Array): string {
   return hex;
 }
 
+function parseHexByte(hexByte: string): number {
+  if (hexByte.length !== 2) throw new Error('Invalid byte sequence');
+  const byte = Number.parseInt(hexByte, 16);
+  if (Number.isNaN(byte)) throw new Error('Invalid byte sequence');
+  return byte;
+}
+
+// Buffer.from(hex, 'hex') -> hexToBytes(hex)
+export function hexToBytes(hex: string): Uint8Array {
+  if (typeof hex !== 'string') {
+    throw new TypeError('hexToBytes: expected string, got ' + typeof hex);
+  }
+  if (hex.length % 2) throw new Error('hexToBytes: received invalid unpadded hex');
+  const array = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < array.length; i++) {
+    const j = i * 2;
+    array[i] = parseHexByte(hex.slice(j, j + 2));
+  }
+  return array;
+}
+
 // Currently avoid insertion of polyfills with packers (browserify/webpack/etc)
 // But setTimeout is pretty slow, maybe worth to investigate howto do minimal polyfill here
 export const nextTick: () => Promise<unknown> = (() => {
@@ -65,23 +86,42 @@ export async function asyncLoop(iters: number, tick: number, cb: (i: number) => 
 }
 
 // Global symbols in both browsers and Node.js since v11
-// https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder
-// https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder
-// https://nodejs.org/docs/latest-v12.x/api/util.html#util_class_util_textencoder
-// https://nodejs.org/docs/latest-v12.x/api/util.html#util_class_util_textdecoder
 // See https://github.com/microsoft/TypeScript/issues/31535
 declare const TextEncoder: any;
 declare const TextDecoder: any;
+
+export function utf8ToBytes(str: string): Uint8Array {
+  if (typeof str !== 'string') {
+    throw new TypeError(`utf8ToBytes expected string, got ${typeof str}`);
+  }
+  return new TextEncoder().encode(str);
+}
+
 export type Input = Uint8Array | string;
 export function toBytes(data: Input): Uint8Array {
-  if (typeof data === 'string') data = new TextEncoder().encode(data);
+  if (typeof data === 'string') data = utf8ToBytes(data);
   if (!(data instanceof Uint8Array))
     throw new TypeError(`Expected input type is Uint8Array (got ${typeof data})`);
   return data;
 }
 
+// Buffer.concat([buf1, buf2]) -> concatBytes(buf1, buf2)
+export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
+  if (arrays.length === 1) {
+    return arrays[0];
+  }
+  const length = arrays.reduce((a, arr) => a + arr.length, 0);
+  const result = new Uint8Array(length);
+  for (let i = 0, pad = 0; i < arrays.length; i++) {
+    const arr = arrays[i];
+    result.set(arr, pad);
+    pad += arr.length;
+  }
+  return result;
+}
+
 export function assertNumber(n: number) {
-  if (!Number.isSafeInteger(n)) throw new Error(`Wrong integer: ${n}`);
+  if (!Number.isSafeInteger(n) || n < 0) throw new Error(`Wrong positive integer: ${n}`);
 }
 
 export function assertBool(b: boolean) {
