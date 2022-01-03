@@ -25,6 +25,7 @@
     "test-big": "node test/slow-big.test.js"
   },
   "author": "Paul Miller (https://paulmillr.com)",
+  "homepage": "https://paulmillr.com/noble/",
   "repository": {
     "type": "git",
     "url": "https://github.com/paulmillr/noble-hashes.git"
