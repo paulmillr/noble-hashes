@@ -1,8 +1,8 @@
 const assert = require('assert');
 const { should } = require('micro-should');
-const { sha256 } = require('../sha256');
-const { sha512 } = require('../sha512');
-const { hmac } = require('../hmac');
+const { sha256 } = require('../lib/sha256');
+const { sha512 } = require('../lib/sha512');
+const { hmac } = require('../lib/hmac');
 const {
   utf8ToBytes,
   hexToBytes,

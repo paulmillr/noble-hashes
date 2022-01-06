@@ -1,8 +1,8 @@
 const assert = require('assert');
 const { should } = require('micro-should');
 const crypto = require('crypto');
-const { sha256 } = require('../sha256');
-const { sha384, sha512, sha512_256 } = require('../sha512');
+const { sha256 } = require('../lib/sha256');
+const { sha384, sha512, sha512_256 } = require('../lib/sha512');
 const {
   sha3_224,
   sha3_256,
@@ -11,13 +11,13 @@ const {
   keccak_256,
   shake128,
   shake256,
-} = require('../sha3');
-const { k12 } = require('../sha3-addons');
-const { blake2b } = require('../blake2b');
-const { blake2s } = require('../blake2s');
-const { blake3 } = require('../blake3');
-const { ripemd160 } = require('../ripemd160');
-const { hmac } = require('../hmac');
+} = require('../lib/sha3');
+const { k12 } = require('../lib/sha3-addons');
+const { blake2b } = require('../lib/blake2b');
+const { blake2s } = require('../lib/blake2s');
+const { blake3 } = require('../lib/blake3');
+const { ripemd160 } = require('../lib/ripemd160');
+const { hmac } = require('../lib/hmac');
 const {
   utf8ToBytes,
   hexToBytes,

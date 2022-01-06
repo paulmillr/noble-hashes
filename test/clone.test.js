@@ -1,14 +1,14 @@
 const assert = require('assert');
 const { should } = require('micro-should');
-const { sha256 } = require('../sha256');
-const { sha512 } = require('../sha512');
-const { hmac } = require('../hmac');
-const { sha3_256, shake256 } = require('../sha3');
-const { k12, kmac256, prg } = require('../sha3-addons');
-const { blake2b } = require('../blake2b');
-const { blake2s } = require('../blake2s');
-const { blake3, blake3derive } = require('../blake3');
-const { ripemd160 } = require('../ripemd160');
+const { sha256 } = require('../lib/sha256');
+const { sha512 } = require('../lib/sha512');
+const { hmac } = require('../lib/hmac');
+const { sha3_256, shake256 } = require('../lib/sha3');
+const { k12, kmac256, prg } = require('../lib/sha3-addons');
+const { blake2b } = require('../lib/blake2b');
+const { blake2s } = require('../lib/blake2s');
+const { blake3, blake3derive } = require('../lib/blake3');
+const { ripemd160 } = require('../lib/ripemd160');
 
 // small -- minimal personalization options, big -- all personalization options
 // test that clone works correctly if "to" is same class instance but with completely different personalization

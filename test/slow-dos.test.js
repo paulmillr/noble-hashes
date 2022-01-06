@@ -3,12 +3,12 @@ const { should } = require('micro-should');
 const { RANDOM } = require('./generator');
 const { HASHES } = require('./hashes.test');
 const { stats } = require('./utils');
-const { sha256 } = require('../sha256');
-const { hmac } = require('../hmac');
-const { hkdf } = require('../hkdf');
-const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
-const { scrypt, scryptAsync } = require('../scrypt');
-const { createView } = require('../utils');
+const { sha256 } = require('../lib/sha256');
+const { hmac } = require('../lib/hmac');
+const { hkdf } = require('../lib/hkdf');
+const { pbkdf2, pbkdf2Async } = require('../lib/pbkdf2');
+const { scrypt, scryptAsync } = require('../lib/scrypt');
+const { createView } = require('../lib/utils');
 
 const getTime = () => Number(process.hrtime.bigint());
 

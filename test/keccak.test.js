@@ -12,7 +12,7 @@ const {
   keccak_256,
   keccak_384,
   keccak_512,
-} = require('../sha3');
+} = require('../lib/sha3');
 const {
   k12,
   m14,
@@ -31,7 +31,7 @@ const {
   parallelhash256,
   parallelhash256xof,
   keccakprg: prg,
-} = require('../sha3-addons');
+} = require('../lib/sha3-addons');
 const { pattern, times, EMPTY, TYPE_TEST, concatBytes, jsonGZ } = require('./utils.js');
 const fs = require('fs');
 // Generated from test cases of KeccakPRG in XKCP
