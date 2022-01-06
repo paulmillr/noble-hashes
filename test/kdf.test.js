@@ -1,11 +1,11 @@
 const assert = require('assert');
 const crypto = require('crypto');
 const { should } = require('micro-should');
-const { sha256 } = require('../lib/sha256');
-const { sha512 } = require('../lib/sha512');
-const { hkdf, hkdf_extract } = require('../lib/hkdf');
-const { pbkdf2, pbkdf2Async } = require('../lib/pbkdf2');
-const { scrypt, scryptAsync } = require('../lib/scrypt');
+const { sha256 } = require('../sha256');
+const { sha512 } = require('../sha512');
+const { hkdf, hkdf_extract } = require('../hkdf');
+const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
+const { scrypt, scryptAsync } = require('../scrypt');
 const { utf8ToBytes, hexToBytes, TYPE_TEST, SPACE, EMPTY } = require('./utils');
 const { executeKDFTests } = require('./generator');
 // HKDF test vectors from RFC 5869

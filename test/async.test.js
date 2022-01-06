@@ -1,9 +1,9 @@
 const assert = require('assert');
 const { should } = require('micro-should');
-const utils = require('../lib/utils');
-const { scrypt, scryptAsync } = require('../lib/scrypt');
-const { pbkdf2Async } = require('../lib/pbkdf2');
-const { sha256 } = require('../lib/sha256');
+const utils = require('../utils');
+const { scrypt, scryptAsync } = require('../scrypt');
+const { pbkdf2Async } = require('../pbkdf2');
+const { sha256 } = require('../sha256');
 const { deepStrictEqual } = require('assert');
 
 // Collect statistic about block of event loop by sync code

@@ -1,14 +1,14 @@
 const crypto = require('crypto');
 const assert = require('assert');
 const { should } = require('micro-should');
-const { sha256 } = require('../lib/sha256');
-const { sha512 } = require('../lib/sha512');
-const { blake2s } = require('../lib/blake2s');
-const { blake2b } = require('../lib/blake2b');
-const { sha3_256, sha3_512 } = require('../lib/sha3');
-const { ripemd160 } = require('../lib/ripemd160');
-const { hkdf } = require('../lib/hkdf');
-const { pbkdf2, pbkdf2Async } = require('../lib/pbkdf2');
+const { sha256 } = require('../sha256');
+const { sha512 } = require('../sha512');
+const { blake2s } = require('../blake2s');
+const { blake2b } = require('../blake2b');
+const { sha3_256, sha3_512 } = require('../sha3');
+const { ripemd160 } = require('../ripemd160');
+const { hkdf } = require('../hkdf');
+const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
 const { concatBytes } = require('./utils');
 // Random data, by using hash we trying to achieve uniform distribution of each byte values
 let start = new Uint8Array([1, 2, 3, 4, 5]);

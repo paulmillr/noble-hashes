@@ -4,4 +4,3 @@ node_modules
 /*.d.ts
 /esm/*.js
 /esm/*.d.ts
-/lib
