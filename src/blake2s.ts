@@ -128,6 +128,11 @@ class BLAKE2s extends blake2.BLAKE2<BLAKE2s> {
   }
 }
 
+/**
+ * BLAKE2s - optimized for 32-bit platforms. JS doesn't have uint64, so it's faster than BLAKE2b.
+ * @param msg - message that would be hashed
+ * @param opts - dkLen, key, salt, personalization
+ */
 export const blake2s = wrapConstructorWithOpts<BLAKE2s, blake2.BlakeOpts>(
   (opts) => new BLAKE2s(opts)
 );

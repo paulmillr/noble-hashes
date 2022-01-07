@@ -70,7 +70,12 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   }
 }
 
+/**
+ * HMAC: RFC2104 message authentication code.
+ * @param hash - hash function that would be used e.g. sha256
+ * @param key - message key
+ * @param message - message data
+ */
 export const hmac = (hash: CHash, key: Input, message: Input): Uint8Array =>
   new HMAC<any>(hash, key).update(message).digest();
 hmac.create = (hash: CHash, key: Input) => new HMAC<any>(hash, key);
-hmac.init = hmac.create;

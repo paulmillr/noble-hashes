@@ -194,10 +194,18 @@ const gen = (suffix: number, blockLen: number, outputLen: number) =>
   wrapConstructor(() => new Keccak(blockLen, suffix, outputLen));
 
 export const sha3_224 = gen(0x06, 144, 224 / 8);
+/**
+ * SHA3-256 hash function
+ * @param message - that would be hashed
+ */
 export const sha3_256 = gen(0x06, 136, 256 / 8);
 export const sha3_384 = gen(0x06, 104, 384 / 8);
 export const sha3_512 = gen(0x06, 72, 512 / 8);
 export const keccak_224 = gen(0x01, 144, 224 / 8);
+/**
+ * keccak-256 hash function. Different from SHA3-256.
+ * @param message - that would be hashed
+ */
 export const keccak_256 = gen(0x01, 136, 256 / 8);
 export const keccak_384 = gen(0x01, 104, 384 / 8);
 export const keccak_512 = gen(0x01, 72, 512 / 8);

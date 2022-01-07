@@ -138,7 +138,7 @@ export function assertBytes(bytes: Uint8Array, ...lengths: number[]) {
 }
 
 export function assertHash(hash: CHash) {
-  if (typeof hash !== 'function' || typeof hash.init !== 'function')
+  if (typeof hash !== 'function' || typeof hash.create !== 'function')
     throw new Error('Hash should be wrapped by utils.wrapConstructor');
   assertNumber(hash.outputLen);
   assertNumber(hash.blockLen);
@@ -195,7 +195,6 @@ export function wrapConstructor<T extends Hash<T>>(hashConstructor: () => Hash<T
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.create = () => hashConstructor();
-  hashC.init = hashC.create;
   return hashC;
 }
 
@@ -207,7 +206,6 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.create = (opts: T) => hashCons(opts);
-  hashC.init = hashC.create;
   return hashC;
 }
 

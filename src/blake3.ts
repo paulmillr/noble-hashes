@@ -245,4 +245,9 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   }
 }
 
+/**
+ * BLAKE3 hash function.
+ * @param msg - message that would be hashed
+ * @param opts - dkLen, key, context
+ */
 export const blake3 = wrapConstructorWithOpts<BLAKE3, Blake3Opts>((opts) => new BLAKE3(opts));

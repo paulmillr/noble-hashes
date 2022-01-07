@@ -102,7 +102,6 @@ function genKmac(blockLen: number, outputLen: number, xof = false) {
     kmac.create(key, opts).update(message).digest();
   kmac.create = (key: Input, opts: cShakeOpts = {}) =>
     new KMAC(blockLen, opts.dkLen !== undefined ? opts.dkLen : outputLen, xof, key, opts);
-  kmac.init = kmac.create;
   return kmac;
 }
 
@@ -146,7 +145,6 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
   };
   tuple.create = (opts: cShakeOpts = {}) =>
     new TupleHash(blockLen, opts.dkLen !== undefined ? opts.dkLen : outputLen, xof, opts);
-  tuple.init = tuple.create;
   return tuple;
 }
 
@@ -237,11 +235,10 @@ function genParallel(
     new ParallelHash(
       blockLen,
       opts.dkLen !== undefined ? opts.dkLen : outputLen,
-      () => leaf.init({ dkLen: 2 * outputLen }),
+      () => leaf.create({ dkLen: 2 * outputLen }),
       xof,
       opts
     );
-  parallel.init = parallel.create;
   return parallel;
 }
 

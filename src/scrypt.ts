@@ -2,9 +2,13 @@ import { sha256 } from './sha256.js';
 import { pbkdf2 } from './pbkdf2.js';
 import { assertNumber, asyncLoop, checkOpts, Input, u32 } from './utils.js';
 
+// RFC 7914 Scrypt KDF
+
 // Left rotate for uint32
 const rotl = (a: number, b: number) => (a << b) | (a >>> (32 - b));
 
+// The main Scrypt loop: uses Salsa extensively.
+// Six versions of the function were tried, this is the fastest one.
 // prettier-ignore
 function XorAndSalsa(
   prev: Uint32Array,
@@ -72,13 +76,12 @@ function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, 
   }
 }
 
-// RFC 7914
 export type ScryptOpts = {
-  N: number; // costFactor CPU/memory cost parameter - Must be a power of 2 (e.g. 1024)
-  r: number; // blocksize parameter, which fine-tunes sequential memory read size and performance. (8 is commonly used)
-  p: number; // Parallelization parameter. (1 .. 232-1 * hLen/MFlen)
-  dkLen?: number; // Desired key length in bytes (Intended output length in octets of the derived key
-  asyncTick?: number; // Maximum time in ms for which async function can block execution
+  N: number; // cost factor
+  r: number; // block size
+  p: number; // parallelization
+  dkLen?: number; // key length
+  asyncTick?: number; // block execution max time
   maxmem?: number;
   onProgress?: (progress: number) => void;
 };
@@ -165,11 +168,25 @@ function scryptOutput(
   return res;
 }
 
-export function scrypt(password: Input, salt: Input, _opts: ScryptOpts) {
+/**
+ * Scrypt KDF from RFC 7914.
+ * @param password - pass
+ * @param salt - salt
+ * @param opts - parameters
+ * - `N` is cpu/mem work factor (power of 2 e.g. 2**18)
+ * - `r` is block size (8 is common), fine-tunes sequential memory read size and performance
+ * - `p` is parallelization factor (1 is common)
+ * - `dkLen` is output key length in bytes e.g. 32.
+ * - `asyncTick` - (default: 10) max time in ms for which async function can block execution
+ * - `maxmem` - (default: `1024 ** 3 + 1024` aka 1GB+1KB). A limit that the app could use for scrypt
+ * - `onProgress` - callback function that would be executed for progress report
+ * @returns Derived key
+ */
+export function scrypt(password: Input, salt: Input, opts: ScryptOpts) {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
     password,
     salt,
-    _opts
+    opts
   );
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
@@ -191,11 +208,14 @@ export function scrypt(password: Input, salt: Input, _opts: ScryptOpts) {
   return scryptOutput(password, dkLen, B, V, tmp);
 }
 
-export async function scryptAsync(password: Input, salt: Input, _opts: ScryptOpts) {
+/**
+ * Scrypt KDF from RFC 7914.
+ */
+export async function scryptAsync(password: Input, salt: Input, opts: ScryptOpts) {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(
     password,
     salt,
-    _opts
+    opts
   );
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;

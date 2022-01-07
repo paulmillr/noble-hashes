@@ -5,12 +5,6 @@ import { scrypt as _scrypt } from './scrypt.js';
 import { assertBytes, createView, toBytes } from './utils.js';
 
 // A tiny KDF for various applications like AES key-gen
-//
-//   const kdf = await eskdf('example-university', 'beginning-new-example');
-//   const key = kdf.deriveChildKey('aes', 0);
-//   console.log(kdf.fingerprint);
-//   kdf.expire();
-//
 
 const SCRYPT_FACTOR = 2 ** 19;
 const PBKDF2_FACTOR = 2 ** 17;
@@ -41,8 +35,10 @@ function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
   return arr;
 }
 
-// Derives main key. Takes a lot of time.
-// username and password must have enough entropy.
+/**
+ * Derives main seed. Takes a lot of time.
+ * Prefer `eskdf` method instead.
+ */
 export function deriveMainSeed(username: string, password: string): Uint8Array {
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
   if (!strHasLength(password, 8, 255)) throw new Error('invalid password');
@@ -54,9 +50,10 @@ export function deriveMainSeed(username: string, password: string): Uint8Array {
   return res;
 }
 
-// Derives a child key. Child key cannot be associated with any other child key
-// because of properties of underlying KDF.
-//   deriveChildKey(seed, 'aes');
+/**
+ * Derives a child key. Prefer `eskdf` method instead.
+ * @example deriveChildKey(seed, 'aes', 0)
+ */
 export function deriveChildKey(
   seed: Uint8Array,
   protocol: string,
@@ -90,21 +87,46 @@ export function deriveChildKey(
 // We are not using classes because constructor cannot be async
 type ESKDF = Promise<
   Readonly<{
+  /**
+   * Derives a child key. Child key will not be associated with any
+   * other child key because of properties of underlying KDF.
+   * @param protocol - 3-15 character protocol name
+   * @param accountId - numeric identifier of account
+   * @param keyLength - (default: 32) key length
+   * @example deriveChildKey('aes', 0)
+   */
     deriveChildKey: (protocol: string, accountId: number | string) => Uint8Array;
+    /**
+     * Deletes the main seed from eskdf instance
+     */
     expire: () => void;
+    /**
+     * Account fingerprint
+     */
     fingerprint: string;
   }>
 >;
 
-// We are using closure + object instead of class because
-// we want to make `seed` non-accessible for any external function.
+/**
+ * ESKDF
+ * @param username - username, email, or identifier, min: 8 characters, should have enough entropy
+ * @param password - password, min: 8 characters, should have enough entropy
+ * @example
+ * const kdf = await eskdf('example-university', 'beginning-new-example');
+ * const key = kdf.deriveChildKey('aes', 0);
+ * console.log(kdf.fingerprint);
+ * kdf.expire();
+ */
 export async function eskdf(username: string, password: string): ESKDF {
+  // We are using closure + object instead of class because
+  // we want to make `seed` non-accessible for any external function.
   let seed: Uint8Array | undefined = await deriveMainSeed(username, password);
   function derive(protocol: string, accountId: number | string = 0): Uint8Array {
     assertBytes(seed!, 32);
     return deriveChildKey(seed!, protocol, accountId);
   }
   function expire() {
+    seed?.fill(1);
     seed = undefined;
   }
   // prettier-ignore

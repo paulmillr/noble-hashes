@@ -102,4 +102,8 @@ export class RIPEMD160 extends SHA2<RIPEMD160> {
   }
 }
 
+/**
+ * RIPEMD-160 - a hash function from 1990s.
+ * @param message - msg that would be hashed
+ */
 export const ripemd160 = wrapConstructor(() => new RIPEMD160());

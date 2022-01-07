@@ -3,7 +3,7 @@
 Audited & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2 & Scrypt.
 
 - **noble** family, zero dependencies
-- 🔐 [**Audited**](#security) by an independent security firm
+- 🔐 [**Audited**](#security) by an independent security firm. No vulnerabilities have been found!
 - 🔻 Helps JS bundlers with lack of entry point; ensures small size of your app
 - 🔁 No unrolled loops: makes it much easier to verify and reduces source code size 2-5x
 - 🏎 Ultra-fast, hand-optimized for caveats of JS engines
@@ -376,7 +376,7 @@ console.log(toHex(randomBytes(32)));
 
 Noble is production-ready.
 
-1. The library has been audited on Jan 5, 2022 by an independent security firm cure53: [PDF](https://cure53.de/pentest-report_hashing-libs.pdf). The audit has been funded by Ethereum Foundation with help of [Nomic Labs](https://nomiclabs.io).
+1. The library has been audited on Jan 5, 2022 by an independent security firm cure53: [PDF](https://cure53.de/pentest-report_hashing-libs.pdf). No vulnerabilities have been found. The audit has been funded by Ethereum Foundation with help of [Nomic Labs](https://nomiclabs.io). Modules `blake3` and `sha3-addons` have not been audited.
 2. The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz). You can run the fuzzer by yourself to check it.
 3. [Timing attack](https://en.wikipedia.org/wiki/Timing_attack) considerations: _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to achieve in a scripting language. Which means _any other JS library can't have constant-timeness_. Even statically typed Rust, a language without GC, [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security) for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones. Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
 4. Memory dump considerations: the library shares state buffers between hash function calls. The buffers are zeroed-out after each call. However, if an attacker can read application memory, you are doomed in any case:

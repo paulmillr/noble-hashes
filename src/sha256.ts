@@ -107,4 +107,8 @@ class SHA256 extends SHA2<SHA256> {
   }
 }
 
+/**
+ * SHA2-256 hash function
+ * @param message - data that would be hashed
+ */
 export const sha256 = wrapConstructor(() => new SHA256());

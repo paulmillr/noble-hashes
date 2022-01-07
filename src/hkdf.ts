@@ -1,15 +1,22 @@
-// prettier-ignore
-import {
-  assertHash, assertNumber, CHash, Input, toBytes
-} from './utils.js';
+import { assertHash, assertNumber, CHash, Input, toBytes } from './utils.js';
 import { hmac } from './hmac.js';
 
 // HKDF (RFC 5869)
-// HKDF-Extract(IKM, salt) -> PRK NOTE: arguments position differs from spec (IKM is first one, since it is not optional)
-export function hkdf_extract(hash: CHash, ikm: Input, salt?: Input) {
+// https://soatok.blog/2021/11/17/understanding-hkdf/
+
+/**
+ * HKDF-Extract(IKM, salt) -> PRK
+ * Arguments position differs from spec (IKM is first one, since it is not optional)
+ * @param hash
+ * @param ikm
+ * @param salt
+ * @returns
+ */
+export function extract(hash: CHash, ikm: Input, salt?: Input) {
   assertHash(hash);
-  // NOTE: some libraries treats zero-length array as 'not provided', we don't, since we have undefined as 'not provided'
-  // More info: https://github.com/RustCrypto/KDFs/issues/15
+  // NOTE: some libraries treat zero-length array as 'not provided';
+  // we don't, since we have undefined as 'not provided'
+  // https://github.com/RustCrypto/KDFs/issues/15
   if (salt === undefined) salt = new Uint8Array(hash.outputLen); // if not provided, it is set to a string of HashLen zeros
   return hmac(hash, toBytes(salt), toBytes(ikm));
 }
@@ -17,12 +24,14 @@ export function hkdf_extract(hash: CHash, ikm: Input, salt?: Input) {
 // HKDF-Expand(PRK, info, L) -> OKM
 const HKDF_COUNTER = new Uint8Array([0]);
 const EMPTY_BUFFER = new Uint8Array();
-export function hkdf_expand(
-  hash: CHash,
-  prk: Input, // a pseudorandom key of at least HashLen octets (usually, the output from the extract step)
-  info?: Input, // optional context and application specific information (can be a zero-length string)
-  length: number = 32 // length of output keying material in octets
-) {
+
+/**
+ * HKDF-expand from the spec.
+ * @param prk - a pseudorandom key of at least HashLen octets (usually, the output from the extract step)
+ * @param info - optional context and application specific information (can be a zero-length string)
+ * @param length - length of output keying material in octets
+ */
+export function expand(hash: CHash, prk: Input, info?: Input, length: number = 32) {
   assertHash(hash);
   assertNumber(length);
   if (length > 255 * hash.outputLen) throw new Error('Length should be <= 255*HashLen');
@@ -31,7 +40,7 @@ export function hkdf_expand(
   // first L(ength) octets of T
   const okm = new Uint8Array(blocks * hash.outputLen);
   // Re-use HMAC instance between blocks
-  const HMAC = hmac.init(hash, prk);
+  const HMAC = hmac.create(hash, prk);
   const HMACTmp = HMAC._cloneInto();
   const T = new Uint8Array(HMAC.outputLen);
   for (let counter = 0; counter < blocks; counter++) {
@@ -51,11 +60,19 @@ export function hkdf_expand(
   HKDF_COUNTER.fill(0);
   return okm.slice(0, length);
 }
-// Extract+Expand
+
+/**
+ * HKDF (RFC 5869): extract + expand in one step.
+ * @param hash - hash function that would be used (e.g. sha256)
+ * @param ikm - input keying material, the initial key
+ * @param salt - optional salt value (a non-secret random value)
+ * @param info - optional context and application specific information
+ * @param length - length of output keying material in octets
+ */
 export const hkdf = (
   hash: CHash,
   ikm: Input,
   salt: Input | undefined,
   info: Input | undefined,
   length: number
-) => hkdf_expand(hash, hkdf_extract(hash, ikm, salt), info, length);
+) => expand(hash, extract(hash, ikm, salt), info, length);

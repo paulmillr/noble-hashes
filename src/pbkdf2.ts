@@ -24,7 +24,7 @@ function pbkdf2Init(hash: CHash, _password: Input, _salt: Input, _opts: Pbkdf2Op
   // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
   const DK = new Uint8Array(dkLen);
   // U1 = PRF(Password, Salt + INT_32_BE(i))
-  const PRF = hmac.init(hash, password);
+  const PRF = hmac.create(hash, password);
   const PRFSalt = PRF._cloneInto().update(salt);
   return { c, dkLen, asyncTick, DK, PRF, PRFSalt };
 }
@@ -43,8 +43,15 @@ function pbkdf2Output<T extends Hash<T>>(
   return DK;
 }
 
-export function pbkdf2(hash: CHash, password: Input, salt: Input, _opts: Pbkdf2Opt) {
-  const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, _opts);
+/**
+ * PBKDF2-HMAC: RFC 2898 key derivation function
+ * @param hash - hash function that would be used e.g. sha256
+ * @param password - password from which a derived key is generated
+ * @param salt - cryptographic salt
+ * @param opts - {c, dkLen} where c is work factor and dkLen is output message size
+ */
+export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Opt) {
+  const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
   let prfW: any; // Working copy
   const arr = new Uint8Array(4);
   const view = createView(arr);
@@ -67,8 +74,8 @@ export function pbkdf2(hash: CHash, password: Input, salt: Input, _opts: Pbkdf2O
   return pbkdf2Output(PRF, PRFSalt, DK, prfW, u);
 }
 
-export async function pbkdf2Async(hash: CHash, password: Input, salt: Input, _opts: Pbkdf2Opt) {
-  const { c, dkLen, asyncTick, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, _opts);
+export async function pbkdf2Async(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Opt) {
+  const { c, dkLen, asyncTick, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
   let prfW: any; // Working copy
   const arr = new Uint8Array(4);
   const view = createView(arr);
