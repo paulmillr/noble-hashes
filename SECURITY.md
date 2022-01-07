@@ -4,12 +4,12 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| >=0.2.0   | :white_check_mark: |
-| <0.2.0   | :x:                |
+| >=1.0.0   | :white_check_mark: |
+| <1.0.0   | :x:                |
 
 ## Reporting a Vulnerability
 
-Use maintainer's email specified at https://github.com/paulmillr.
+Use maintainer's email specified at https://paulmillr.com
 
 It's preferred that you use
 PGP key from [pgp proof](https://paulmillr.com/pgp_proof.txt) (current is [46BEEF337A641ABB](https://paulmillr.com/pgp_proof.txt)).

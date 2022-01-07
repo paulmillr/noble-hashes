@@ -1,8 +1,9 @@
 # noble-hashes ![Node CI](https://github.com/paulmillr/noble-hashes/workflows/Node%20CI/badge.svg) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
-Fast, secure & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2 & Scrypt.
+Fast & minimal audited JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2 & Scrypt.
 
 - **noble** family, zero dependencies
+- 🔐 [**Audited**](#security) by an independent security firm
 - 🔻 Helps JS bundlers with lack of entry point; ensures small size of your app
 - 🔁 No unrolled loops: makes it much easier to verify and reduces source code size 2-5x
 - 🏎 Ultra-fast, hand-optimized for caveats of JS engines
@@ -375,13 +376,17 @@ console.log(toHex(randomBytes(32)));
 
 Noble is production-ready.
 
-The library will be audited by an independent security firm in the next few months.
+1. The library has been audited by an independent security firm cure53: [PDF](https://cure53.de/pentest-report_hashing-libs.pdf). The audit has been funded by Ethereum Foundation with help of [Nomic Labs](https://nomiclabs.io).
+2. The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz). You can run the fuzzer by yourself to check it.
+3. [Timing attack](https://en.wikipedia.org/wiki/Timing_attack) considerations: _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to achieve in a scripting language. Which means _any other JS library can't have constant-timeness_. Even statically typed Rust, a language without GC, [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security) for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones. Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
+4. Memory dump considerations: the library shares state buffers between hash function calls. The buffers are zeroed-out after each call. However, if an attacker can read application memory, you are doomed in any case:
+    - At some point, input will be a string and strings are immutable in JS: there is no way to overwrite them with zeros. For example: deriving key from `scrypt(password, salt)` where password and salt are strings
+    - Input from a file will stay in file buffers
+    - Input / output will be re-used multiple times in application which means it could stay in memory
+    - `await anything()` will always write all internal variables (including numbers) to memory. With async functions / Promises there are no guarantees when the code chunk would be executed. Which means attacker can have plenty of time to read data from memory
+    - There is no way to guarantee anything about zeroing sensitive data without complex tests-suite which will dump process memory and verify that there is no sensitive data left. For JS it means testing all browsers (incl. mobile), which is complex. And of course it will be useless without using the same test-suite in the actual application that consumes the library
 
-The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz). You can run the fuzzer by yourself to check it.
-
-A note on [timing attacks](https://en.wikipedia.org/wiki/Timing_attack): _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to achieve in a scripting language. Which means _any other JS library can't have constant-timeness_. Even statically typed Rust, a language without GC, [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security) for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones. Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
-
-We consider infrastructure attacks like rogue NPM modules very important; that's why it's crucial to minimize the amount of 3rd-party dependencies & native bindings. If your app uses 500 dependencies, any dep could get hacked and you'll be downloading rootkits with every `npm install`. Our goal is to minimize this attack vector.
+We consider infrastructure attacks like rogue NPM modules very important; that's why it's crucial to minimize the amount of 3rd-party dependencies & native bindings. If your app uses 500 dependencies, any dep could get hacked and you'll be downloading malware with every `npm install`. Our goal is to minimize this attack vector.
 
 ## Speed
 
@@ -391,20 +396,20 @@ To run benchmarks, execute `npm run bench-install` and then `npm run bench`
 
 ```
 SHA256 32B x 1,126,126 ops/sec @ 888ns/op
-SHA384 32B x 443,458 ops/sec @ 2μs/op
-SHA512 32B x 448,631 ops/sec @ 2μs/op
-SHA3-256, keccak256, shake256 32B x 183,621 ops/sec @ 5μs/op
-Kangaroo12 32B x 310,077 ops/sec @ 3μs/op
+SHA384 32B x 463,606 ops/sec @ 2μs/op
+SHA512 32B x 467,945 ops/sec @ 2μs/op
+SHA3-256, keccak256, shake256 32B x 184,026 ops/sec @ 5μs/op
+Kangaroo12 32B x 312,891 ops/sec @ 3μs/op
 Marsupilami14 32B x 278,164 ops/sec @ 3μs/op
 BLAKE2b 32B x 297,353 ops/sec @ 3μs/op
 BLAKE2s 32B x 507,614 ops/sec @ 1μs/op
-BLAKE3 32B x 584,795 ops/sec @ 1μs/op
-RIPEMD160 32B x 1,186,239 ops/sec @ 843ns/op
+BLAKE3 32B x 591,016 ops/sec @ 1μs/op
+RIPEMD160 32B x 1,230,012 ops/sec @ 813ns/op
 HMAC-SHA256 32B x 346,860 ops/sec @ 2μs/op
-HKDF-SHA256 32B x 153,045 ops/sec @ 6μs/op
-PBKDF2-HMAC-SHA256 262144 x 2 ops/sec @ 338ms/op
-PBKDF2-HMAC-SHA512 262144 x 0 ops/sec @ 1024ms/op
-Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 637ms/op
+HKDF-SHA256 32B x 153,397 ops/sec @ 6μs/op
+PBKDF2-HMAC-SHA256 262144 x 3 ops/sec @ 326ms/op
+PBKDF2-HMAC-SHA512 262144 x 1 ops/sec @ 970ms/op
+Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 636ms/op
 ```
 
 Compare to native node.js implementation that uses C bindings instead of pure-js code:
@@ -441,8 +446,8 @@ The current performance is good enough when compared to other projects; SHA256 t
 2. `npm install` to install build dependencies like TypeScript
 3. `npm run build` to compile TypeScript code
 4. `npm run test` will execute all main tests. See [our approach to testing](./test/README.md)
-5. `npm run test-dos` will test against DoS; by measuring function complexity. **Takes ~20 minutes**
-6. `npm run test-big` will execute hashing on 4GB inputs,
+5. `npm run test:dos` will test against DoS; by measuring function complexity. **Takes ~20 minutes**
+6. `npm run test:big` will execute hashing on 4GB inputs,
    scrypt with 1024 different `N, r, p` combinations, etc. **Takes several hours**. Using 8-32+ core CPU helps.
 
 ## License
