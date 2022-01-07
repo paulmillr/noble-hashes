@@ -352,6 +352,17 @@ arrays bigger than 4GB impossible, but we're looking into other possible solutio
 
 A tiny stretched KDF for various applications like AES key-gen. Takes >= 2 seconds to execute.
 
+Takes following params:
+
+- `username` - username, email, or identifier, min: 8 characters, should have enough entropy
+- `password` - min: 8 characters, should have enough entropy
+
+Produces ESKDF instance that has `deriveChildKey(protocol, accountId, keyLength)` function.
+
+- `protocol` - 3-15 character protocol name
+- `accountId` - numeric identifier of account
+- `keyLength` - (default: 32) key length
+
 Takes username and password, then takes protocol name and account id.
 
 ```typescript
