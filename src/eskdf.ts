@@ -126,7 +126,7 @@ export async function eskdf(username: string, password: string): ESKDF {
     return deriveChildKey(seed!, protocol, accountId);
   }
   function expire() {
-    seed?.fill(1);
+    if (seed) seed.fill(1);
     seed = undefined;
   }
   // prettier-ignore
