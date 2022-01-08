@@ -26,6 +26,9 @@ export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 
 if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
 const hexes = Array.from({ length: 256 }, (v, i) => i.toString(16).padStart(2, '0'));
+/**
+ * @example bytesToHex(Uint8Array.from([0xde, 0xad, 0xbe, 0xef]))
+ */
 export function bytesToHex(uint8a: Uint8Array): string {
   // pre-caching chars could speed this up 6x.
   let hex = '';
@@ -42,7 +45,9 @@ function parseHexByte(hexByte: string): number {
   return byte;
 }
 
-// Buffer.from(hex, 'hex') -> hexToBytes(hex)
+/**
+ * @example hexToBytes('deadbeef')
+ */
 export function hexToBytes(hex: string): Uint8Array {
   if (typeof hex !== 'string') {
     throw new TypeError('hexToBytes: expected string, got ' + typeof hex);
@@ -105,7 +110,10 @@ export function toBytes(data: Input): Uint8Array {
   return data;
 }
 
-// Buffer.concat([buf1, buf2]) -> concatBytes(buf1, buf2)
+/**
+ * Concats Uint8Array-s into one; like `Buffer.concat([buf1, buf2])`
+ * @example concatBytes(buf1, buf2)
+ */
 export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   if (arrays.length === 1) {
     return arrays[0];
@@ -167,10 +175,12 @@ export abstract class Hash<T extends Hash<T>> {
   }
 }
 
+/**
+ * XOF: streaming API to read digest in chunks.
+ * Same as 'squeeze' in keccak/k12 and 'seek' in blake3, but more generic name.
+ * When hash used in XOF mode it is up to user to call '.destroy' afterwards, since we cannot destroy state, next call can require more bytes.
+ */
 export type HashXOF<T extends Hash<T>> = Hash<T> & {
-  // XOF: streaming API to read digest in chunks. Same as 'squeeze' in keccak/k12 and 'seek' in blake3, but more generic name.
-  // NOTE: when hash used in XOF mode it is up to user to call '.destroy' afterwards, since we cannot destroy state,
-  // next call can require more bytes.
   xof(bytes: number): Uint8Array; // Read 'bytes' bytes from digest stream
   xofInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
 };
@@ -209,6 +219,9 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   return hashC;
 }
 
+/**
+ * Secure PRNG
+ */
 export function randomBytes(bytesLength = 32): Uint8Array {
   if (crypto.web) {
     return crypto.web.getRandomValues(new Uint8Array(bytesLength));

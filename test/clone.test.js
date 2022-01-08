@@ -13,39 +13,39 @@ const { ripemd160 } = require('../ripemd160');
 // small -- minimal personalization options, big -- all personalization options
 // test that clone works correctly if "to" is same class instance but with completely different personalization
 const HASHES = {
-  sha256: { small: () => sha256.init() },
-  sha512: { small: () => sha512.init() },
-  ripemd160: { small: () => ripemd160.init() },
-  sha3: { small: () => sha3_256.init() },
+  sha256: { small: () => sha256.create() },
+  sha512: { small: () => sha512.create() },
+  ripemd160: { small: () => ripemd160.create() },
+  sha3: { small: () => sha3_256.create() },
   shake256: {
-    small: () => shake256.init(),
-    big: () => shake256.init({ dkLen: 256 }),
+    small: () => shake256.create(),
+    big: () => shake256.create({ dkLen: 256 }),
   },
   shake256: {
-    small: () => shake256.init(),
-    big: () => shake256.init({ dkLen: 256 }),
+    small: () => shake256.create(),
+    big: () => shake256.create({ dkLen: 256 }),
   },
   hmac: {
-    small: () => hmac.init(sha256, new Uint8Array([5, 4, 3, 2, 1])),
-    big: () => hmac.init(sha256, new Uint8Array([1, 2, 3, 4, 5])),
+    small: () => hmac.create(sha256, new Uint8Array([5, 4, 3, 2, 1])),
+    big: () => hmac.create(sha256, new Uint8Array([1, 2, 3, 4, 5])),
   },
   kmac: {
-    small: () => kmac256.init(new Uint8Array([])),
+    small: () => kmac256.create(new Uint8Array([])),
     big: () =>
-      kmac256.init(new Uint8Array([11, 22, 33]), { personalization: new Uint8Array([44, 55, 66]) }),
+      kmac256.create(new Uint8Array([11, 22, 33]), { personalization: new Uint8Array([44, 55, 66]) }),
   },
   k12: {
-    small: () => k12.init(new Uint8Array([])),
+    small: () => k12.create(new Uint8Array([])),
     big: () =>
-      k12.init(new Uint8Array([11, 22, 33]), {
+      k12.create(new Uint8Array([11, 22, 33]), {
         personalization: new Uint8Array([44, 55, 66]),
         dkLen: 256,
       }),
   },
   blake2s: {
-    small: () => blake2s.init(),
+    small: () => blake2s.create(),
     big: () =>
-      blake2s.init({
+      blake2s.create({
         key: new Uint8Array([11, 22, 33]),
         salt: new Uint8Array([14, 15, 16, 17, 18, 19, 155, 144]),
         personalization: new Uint8Array([24, 25, 26, 27, 28, 29, 255, 244]),
@@ -53,9 +53,9 @@ const HASHES = {
       }),
   },
   blake2b: {
-    small: () => blake2b.init(),
+    small: () => blake2b.create(),
     big: () =>
-      blake2b.init({
+      blake2b.create({
         key: new Uint8Array([11, 22, 33]),
         salt: new Uint8Array([14, 15, 16, 17, 18, 19, 155, 144, 144, 155, 19, 18, 17, 16, 15, 14]),
         personalization: new Uint8Array([
@@ -65,9 +65,9 @@ const HASHES = {
       }),
   },
   blake3: {
-    small: () => blake3.init(),
+    small: () => blake3.create(),
     // derive has different IV
-    big: () => blake3.init({ context: 'someContext', dkLen: 256 }),
+    big: () => blake3.create({ context: 'someContext', dkLen: 256 }),
   },
 };
 

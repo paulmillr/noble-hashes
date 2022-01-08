@@ -120,40 +120,40 @@ const HMAC_VECTORS = [
 for (let i = 0; i < HMAC_VECTORS.length; i++) {
   const t = HMAC_VECTORS[i];
   should(`HMAC vector (${i}) sha256 full`, () => {
-    const h256 = hmac.init(sha256, t.key).update(concatBytes(...t.data));
+    const h256 = hmac.create(sha256, t.key).update(concatBytes(...t.data));
     assert.deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
   });
   should(`HMAC vector (${i}) sha256 partial`, () => {
-    const h256 = hmac.init(sha256, t.key);
+    const h256 = hmac.create(sha256, t.key);
     for (let d of t.data) h256.update(d);
     assert.deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
   });
   should(`HMAC vector (${i}) sha256 partial (cleanup=true)`, () => {
-    const h256 = hmac.init(sha256, t.key, { cleanup: true });
+    const h256 = hmac.create(sha256, t.key, { cleanup: true });
     for (let d of t.data) h256.update(d);
     assert.deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
   });
   should(`HMAC vector (${i}) sha256 partial (cleanup=false)`, () => {
-    const h256 = hmac.init(sha256, t.key, { cleanup: false });
+    const h256 = hmac.create(sha256, t.key, { cleanup: false });
     for (let d of t.data) h256.update(d);
     assert.deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
   });
   should(`HMAC vector (${i}) sha512 full`, () => {
-    const h512 = hmac.init(sha512, t.key).update(concatBytes(...t.data));
+    const h512 = hmac.create(sha512, t.key).update(concatBytes(...t.data));
     assert.deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
   });
   should(`HMAC vector (${i}) sha512 partial`, () => {
-    const h512 = hmac.init(sha512, t.key);
+    const h512 = hmac.create(sha512, t.key);
     for (let d of t.data) h512.update(d);
     assert.deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
   });
   should(`HMAC vector (${i}) sha512 partial (cleanup=false)`, () => {
-    const h512 = hmac.init(sha512, t.key, { cleanup: false });
+    const h512 = hmac.create(sha512, t.key, { cleanup: false });
     for (let d of t.data) h512.update(d);
     assert.deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
   });
   should(`HMAC vector (${i}) sha512 partial (cleanup=true)`, () => {
-    const h512 = hmac.init(sha512, t.key, { cleanup: true });
+    const h512 = hmac.create(sha512, t.key, { cleanup: true });
     for (let d of t.data) h512.update(d);
     assert.deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
   });
@@ -161,18 +161,18 @@ for (let i = 0; i < HMAC_VECTORS.length; i++) {
 
 should('HMAC types', () => {
   hmac(sha256, 'key', 'msg');
-  hmac.init(sha256, 'key');
+  hmac.create(sha256, 'key');
   for (const t of TYPE_TEST.bytes) {
     assert.throws(() => hmac(sha256, t, 'msg'), `hmac(key=${t})`);
     assert.throws(() => hmac(sha256, 'key', t), `hmac(msg=${t})`);
-    assert.throws(() => hmac.init(sha256, t), `hmac.init(key=${t})`);
+    assert.throws(() => hmac.create(sha256, t), `hmac.create(key=${t})`);
   }
   assert.throws(() => hmac(sha256, undefined, 'msg'), `hmac(key=undefined)`);
   assert.throws(() => hmac(sha256, 'key'), `hmac(msg=undefined)`);
-  assert.throws(() => hmac.init(sha256, undefined), `hmac.init(key=undefined)`);
+  assert.throws(() => hmac.create(sha256, undefined), `hmac.create(key=undefined)`);
   // for (const t of TYPE_TEST.opts) {
   //   assert.throws(() => hmac(sha256, 'key', 'salt', t), `hmac(opt=${t})`);
-  //   assert.throws(() => hmac.init(sha256, 'key', t), `hmac.init(opt=${t})`);
+  //   assert.throws(() => hmac.create(sha256, 'key', t), `hmac.create(opt=${t})`);
   // }
   for (const t of TYPE_TEST.hash) assert.throws(() => hmac(t, 'key', 'salt'), `hmac(hash=${t})`);
   assert.deepStrictEqual(
@@ -187,12 +187,12 @@ should('HMAC types', () => {
   );
   assert.deepStrictEqual(
     hmac(sha512, SPACE.str, SPACE.str),
-    hmac.init(sha512, SPACE.str).update(SPACE.bytes).digest(),
+    hmac.create(sha512, SPACE.str).update(SPACE.bytes).digest(),
     'hmac.SPACE (full form bytes)'
   );
   assert.deepStrictEqual(
     hmac(sha512, SPACE.str, SPACE.str),
-    hmac.init(sha512, SPACE.str).update(SPACE.str).digest(),
+    hmac.create(sha512, SPACE.str).update(SPACE.str).digest(),
     'hmac.SPACE (full form stingr)'
   );
 });

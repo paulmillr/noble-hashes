@@ -72,7 +72,7 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
 
 /**
  * HMAC: RFC2104 message authentication code.
- * @param hash - hash function that would be used e.g. sha256
+ * @param hash - function that would be used e.g. sha256
  * @param key - message key
  * @param message - message data
  */

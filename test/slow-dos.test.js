@@ -128,7 +128,7 @@ function pbkdf2DOS(hash, password, salt, c) {
   for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
     const Ti = DK.subarray(pos, pos + outputLen);
     createView(PBKDF_CNT).setInt32(0, ti, false);
-    let u = hmac.init(hash, password).update(salt).update(PBKDF_CNT).digest();
+    let u = hmac.create(hash, password).update(salt).update(PBKDF_CNT).digest();
     Ti.set(u.subarray(0, Ti.length));
     for (let ui = 1; ui < c; ui++) {
       u = hmac(hash, password, u);

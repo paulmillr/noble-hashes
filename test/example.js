@@ -2,14 +2,14 @@ import { sha256 } from '@noble/hashes/lib/sha256.js';
 // function sha256(data: Uint8Array): Uint8Array;
 const hash1 = sha256('abc');
 const hash2 = sha256
-  .init()
+  .create()
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
 import { sha512 } from '@noble/hashes/lib/sha512.js';
 // function sha512(data: Uint8Array): Uint8Array;
 const hash3 = sha512('abc');
 const hash4 = sha512
-  .init()
+  .create()
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
 import {
@@ -24,7 +24,7 @@ import {
 } from '@noble/hashes/lib/sha3.js';
 const hash5 = sha3_256('abc');
 const hash6 = sha3_256
-  .init()
+  .create()
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
 const hash7 = keccak_256('abc');
@@ -32,7 +32,7 @@ import { ripemd160 } from '@noble/hashes/lib/ripemd160.js';
 // function ripemd160(data: Uint8Array): Uint8Array;
 const hash8 = ripemd160('abc');
 const hash9 = ripemd160()
-  .init()
+  .create()
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
 import { blake2b } from '@noble/hashes/lib/blake2b.js';
@@ -41,14 +41,14 @@ const hash10 = blake2s('abc');
 const b2params = { key: new Uint8Array([1]), personalization: t, salt: t, dkLen: 32 };
 const hash11 = blake2s('abc', b2params);
 const hash12 = blake2s
-  .init(b2params)
+  .create(b2params)
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
 import { hmac } from '@noble/hashes/lib/mac.js';
 import { sha256 } from '@noble/hashes/lib/sha256.js';
 const mac1 = hmac(sha256, 'key', 'message');
 const mac2 = hmac
-  .init(sha256, Uint8Array.from([1, 2, 3]))
+  .create(sha256, Uint8Array.from([1, 2, 3]))
   .update(Uint8Array.from([4, 5, 6]))
   .digest();
 
