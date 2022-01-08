@@ -87,14 +87,14 @@ export function deriveChildKey(
 // We are not using classes because constructor cannot be async
 type ESKDF = Promise<
   Readonly<{
-  /**
-   * Derives a child key. Child key will not be associated with any
-   * other child key because of properties of underlying KDF.
-   * @param protocol - 3-15 character protocol name
-   * @param accountId - numeric identifier of account
-   * @param keyLength - (default: 32) key length
-   * @example deriveChildKey('aes', 0)
-   */
+    /**
+     * Derives a child key. Child key will not be associated with any
+     * other child key because of properties of underlying KDF.
+     * @param protocol - 3-15 character protocol name
+     * @param accountId - numeric identifier of account
+     * @param keyLength - (default: 32) key length
+     * @example deriveChildKey('aes', 0)
+     */
     deriveChildKey: (protocol: string, accountId: number | string) => Uint8Array;
     /**
      * Deletes the main seed from eskdf instance

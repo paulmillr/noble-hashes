@@ -32,7 +32,9 @@ const HASHES = {
   kmac: {
     small: () => kmac256.create(new Uint8Array([])),
     big: () =>
-      kmac256.create(new Uint8Array([11, 22, 33]), { personalization: new Uint8Array([44, 55, 66]) }),
+      kmac256.create(new Uint8Array([11, 22, 33]), {
+        personalization: new Uint8Array([44, 55, 66]),
+      }),
   },
   k12: {
     small: () => k12.create(new Uint8Array([])),
