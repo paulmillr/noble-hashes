@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { should } = require('micro-should');
 const { sha256 } = require('../sha256');
 const { sha512 } = require('../sha512');
-const { hkdf, hkdf_extract } = require('../hkdf');
+const hkdf = require('../hkdf');
 const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
 const { scrypt, scryptAsync } = require('../scrypt');
 const { utf8ToBytes, hexToBytes, TYPE_TEST, SPACE, EMPTY } = require('./utils');
@@ -171,12 +171,15 @@ const PBKDF2_VECTORS = [
 for (let i = 0; i < HKDF_VECTORS.length; i++) {
   const t = HKDF_VECTORS[i];
   should(`HKDF vector (${i})`, () => {
-    const PRK = hkdf_extract(t.hash, t.IKM, t.salt);
+    const PRK = hkdf.extract(t.hash, t.IKM, t.salt);
     assert.deepStrictEqual(PRK, t.PRK);
-    const OKM = hkdf(t.hash, t.IKM, t.salt, t.info, t.L);
+    const OKM = hkdf.hkdf(t.hash, t.IKM, t.salt, t.info, t.L);
     assert.deepStrictEqual(OKM, t.OKM);
-    assert.deepStrictEqual(hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: true }), t.OKM);
-    assert.deepStrictEqual(hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: false }), t.OKM);
+    assert.deepStrictEqual(hkdf.hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: true }), t.OKM);
+    assert.deepStrictEqual(
+      hkdf.hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: false }),
+      t.OKM
+    );
   });
 }
 

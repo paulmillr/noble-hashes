@@ -282,7 +282,7 @@ Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 ##### HKDF
 
 ```typescript
-import { hkdf } from '@noble/hashes/kdf';
+import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
 import { randomBytes } from '@noble/hashes/utils';
 const inputKey = randomBytes(32);
@@ -292,10 +292,10 @@ const dkLen = 32;
 const hk1 = hkdf(sha256, inputKey, salt, info, dkLen);
 
 // == same as
-import { hkdf_extract, hkdf_expand } from '@noble/hashes/kdf';
+import * as hkdf from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
-const prk = hkdf_extract(sha256, inputKey, salt);
-const hk2 = hkdf_expand(sha256, prk, info, dkLen);
+const prk = hkdf.extract(sha256, inputKey, salt);
+const hk2 = hkdf.expand(sha256, prk, info, dkLen);
 ```
 
 Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
@@ -403,7 +403,7 @@ We consider infrastructure attacks like rogue NPM modules very important; that's
 
 Benchmarks measured on Apple M1 with macOS 12.
 Note that PBKDF2 and Scrypt are tested with extremely high work factor.
-To run benchmarks, execute `npm run bench-install` and then `npm run bench`
+To run benchmarks, execute `npm run bench:install` and then `npm run bench`
 
 ```
 SHA256 32B x 1,126,126 ops/sec @ 888ns/op
