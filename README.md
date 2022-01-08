@@ -5,7 +5,7 @@ Audited & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF,
 - **noble** family, zero dependencies
 - 🔐 [**Audited**](#security) by an independent security firm. No vulnerabilities have been found!
 - 🔻 Helps JS bundlers with lack of entry point; ensures small size of your app
-- 🔁 No unrolled loops: makes it much easier to verify and reduces source code size 2-5x
+- 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🏎 Ultra-fast, hand-optimized for caveats of JS engines
 - 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests
 - 🧪 Differential fuzzing ensures even more correctness with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
