@@ -115,9 +115,8 @@ export function toBytes(data: Input): Uint8Array {
  * @example concatBytes(buf1, buf2)
  */
 export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
-  if (arrays.length === 1) {
-    return arrays[0];
-  }
+  if (!arrays.every((a) => a instanceof Uint8Array)) throw new Error('Uint8Array list expected');
+  if (arrays.length === 1) return arrays[0];
   const length = arrays.reduce((a, arr) => a + arr.length, 0);
   const result = new Uint8Array(length);
   for (let i = 0, pad = 0; i < arrays.length; i++) {
