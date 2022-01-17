@@ -39,27 +39,6 @@
     "rollup": "~2.60.1",
     "typescript": "4.5.4"
   },
-  "keywords": [
-    "sha",
-    "sha2",
-    "sha3",
-    "sha256",
-    "sha512",
-    "keccak",
-    "kangarootwelve",
-    "ripemd160",
-    "blake2",
-    "blake3",
-    "hmac",
-    "hkdf",
-    "pbkdf2",
-    "scrypt",
-    "kdf",
-    "hash",
-    "cryptography",
-    "security",
-    "noble"
-  ],
   "exports": {
     "./index": {
       "import": "./esm/index.js",
@@ -147,5 +126,26 @@
       "default": "./utils.js"
     },
     "./utils.d.ts": "utils.d.ts"
-  }
+  },
+  "keywords": [
+    "sha",
+    "sha2",
+    "sha3",
+    "sha256",
+    "sha512",
+    "keccak",
+    "kangarootwelve",
+    "ripemd160",
+    "blake2",
+    "blake3",
+    "hmac",
+    "hkdf",
+    "pbkdf2",
+    "scrypt",
+    "kdf",
+    "hash",
+    "cryptography",
+    "security",
+    "noble"
+  ]
 }
