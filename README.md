@@ -465,6 +465,6 @@ The current performance is good enough when compared to other projects; SHA256 t
 
 The MIT License (MIT)
 
-Copyright (c) 2021 Paul Miller [(https://paulmillr.com)](https://paulmillr.com)
+Copyright (c) 2022 Paul Miller [(https://paulmillr.com)](https://paulmillr.com)
 
 See LICENSE file.
