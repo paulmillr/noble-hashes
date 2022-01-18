@@ -147,5 +147,11 @@
     "cryptography",
     "security",
     "noble"
+  ],
+  "funding": [
+    {
+      "type": "individual",
+      "url": "https://paulmillr.com/funding/"
+    }
   ]
 }
