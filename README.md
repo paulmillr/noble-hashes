@@ -11,7 +11,7 @@ Audited & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF,
 - 🧪 Differential fuzzing ensures even more correctness with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
 - 🐢 Scrypt supports `N: 2**22` with 4GB arrays, while other implementations crash on `2**21`
 - 🦘 SHA3 supports Keccak, TupleHash, KangarooTwelve and MarsupilamiFourteen
-- 🪶 Just 2.8k lines / 14KB gzipped. SHA256-only is 240 lines / 3KB gzipped
+- 🪶 Just 2.3k lines / 14KB gzipped. SHA256-only is 240 lines / 3KB gzipped
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
