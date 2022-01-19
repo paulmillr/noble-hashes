@@ -128,16 +128,13 @@ export function assertNumber(n: number) {
 }
 
 export function assertBool(b: boolean) {
-  if (typeof b !== 'boolean') {
-    throw new Error(`Expected boolean, not ${b}`);
-  }
+  if (typeof b !== 'boolean') throw new Error(`Expected boolean, not ${b}`);
 }
 
 export function assertBytes(bytes: Uint8Array, ...lengths: number[]) {
-  if (bytes instanceof Uint8Array && (!lengths.length || lengths.includes(bytes.length))) {
-    return;
-  }
-  throw new TypeError(`Expected ${lengths} bytes, not ${typeof bytes} with length=${bytes.length}`);
+  if (!(bytes instanceof Uint8Array)) throw new TypeError('Expected Uint8Array');
+  if (lengths.length > 0 && !lengths.includes(bytes.length))
+    throw new TypeError(`Expected Uint8Array of length ${lengths}, not of length=${bytes.length}`);
 }
 
 export function assertHash(hash: CHash) {
@@ -145,6 +142,18 @@ export function assertHash(hash: CHash) {
     throw new Error('Hash should be wrapped by utils.wrapConstructor');
   assertNumber(hash.outputLen);
   assertNumber(hash.blockLen);
+}
+
+export function assertExists(instance: any, checkFinished = true) {
+  if (instance.destroyed) throw new Error('Hash instance has been destroyed');
+  if (checkFinished && instance.finished) throw new Error('Hash#digest() has already been called');
+}
+export function assertOutput(out: any, instance: any) {
+  assertBytes(out);
+  const min = instance.outputLen;
+  if (out.length < min) {
+    throw new Error(`digestInto() expects output buffer of length at least ${min}`);
+  }
 }
 
 // For runtime check if class implements interface
@@ -185,11 +194,14 @@ const isPlainObject = (obj: any) =>
   Object.prototype.toString.call(obj) === '[object Object]' && obj.constructor === Object;
 
 type EmptyObj = {};
-export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(def: T1, _opts?: T2): T1 & T2 {
-  if (_opts !== undefined && (typeof _opts !== 'object' || !isPlainObject(_opts)))
+export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
+  defaults: T1,
+  opts?: T2
+): T1 & T2 {
+  if (opts !== undefined && (typeof opts !== 'object' || !isPlainObject(opts)))
     throw new TypeError('Options should be object or undefined');
-  const opts = Object.assign(def, _opts);
-  return opts as T1 & T2;
+  const merged = Object.assign(defaults, opts);
+  return merged as T1 & T2;
 }
 
 export type CHash = ReturnType<typeof wrapConstructor>;

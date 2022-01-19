@@ -1,4 +1,4 @@
-import { assertHash, Hash, CHash, Input, toBytes } from './utils.js';
+import { assertBytes, assertHash, assertExists, Hash, CHash, Input, toBytes } from './utils.js';
 // HMAC (RFC 2104)
 class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   oHash: T;
@@ -30,15 +30,13 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     pad.fill(0);
   }
   update(buf: Input) {
-    if (this.destroyed) throw new Error('instance is destroyed');
+    assertExists(this);
     this.iHash.update(buf);
     return this;
   }
   digestInto(out: Uint8Array) {
-    if (this.destroyed) throw new Error('instance is destroyed');
-    if (!(out instanceof Uint8Array) || out.length !== this.outputLen)
-      throw new Error('HMAC: Invalid output buffer');
-    if (this.finished) throw new Error('digest() was already called');
+    assertExists(this);
+    assertBytes(out, this.outputLen);
     this.finished = true;
     this.iHash.digestInto(out);
     this.oHash.update(out);

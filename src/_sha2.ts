@@ -1,4 +1,4 @@
-import { Hash, createView, Input, toBytes } from './utils.js';
+import { assertExists, assertOutput, Hash, createView, Input, toBytes } from './utils.js';
 
 // Polyfill for Safari 14
 function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: boolean): void {
@@ -39,9 +39,8 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     this.view = createView(this.buffer);
   }
   update(data: Input): this {
-    if (this.destroyed) throw new Error('instance is destroyed');
-    const { view, buffer, blockLen, finished } = this;
-    if (finished) throw new Error('digest() was already called');
+    assertExists(this);
+    const { view, buffer, blockLen } = this;
     data = toBytes(data);
     const len = data.length;
     for (let pos = 0; pos < len; ) {
@@ -65,10 +64,8 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     return this;
   }
   digestInto(out: Uint8Array) {
-    if (this.destroyed) throw new Error('instance is destroyed');
-    if (!(out instanceof Uint8Array) || out.length < this.outputLen)
-      throw new Error('_Sha2: Invalid output buffer');
-    if (this.finished) throw new Error('digest() was already called');
+    assertExists(this);
+    assertOutput(out, this);
     this.finished = true;
     // Padding
     // We can avoid allocation of buffer for padding completely if it
@@ -85,9 +82,9 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     }
     // Pad until full block byte with zeros
     for (let i = pos; i < blockLen; i++) buffer[i] = 0;
-    // NOTE: sha512 requires length to be 128bit integer, but length in JS will overflow before that
+    // Note: sha512 requires length to be 128bit integer, but length in JS will overflow before that
     // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
-    // So we just write lowest 64bit of that value.
+    // So we just write lowest 64 bits of that value.
     setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
     this.process(view, 0);
     const oview = createView(out);

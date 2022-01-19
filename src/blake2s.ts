@@ -1,5 +1,5 @@
+import { BLAKE2, BlakeOpts, SIGMA } from './_blake2.js';
 import * as u64 from './_u64.js';
-import * as blake2 from './_blake2.js';
 import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils.js';
 
 // Initial state:
@@ -54,7 +54,7 @@ export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds
   return { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 };
 }
 
-class BLAKE2s extends blake2.BLAKE2<BLAKE2s> {
+class BLAKE2s extends BLAKE2<BLAKE2s> {
   // Internal state, same as SHA-256
   private v0 = IV[0] | 0;
   private v1 = IV[1] | 0;
@@ -65,7 +65,7 @@ class BLAKE2s extends blake2.BLAKE2<BLAKE2s> {
   private v6 = IV[6] | 0;
   private v7 = IV[7] | 0;
 
-  constructor(opts: blake2.BlakeOpts = {}) {
+  constructor(opts: BlakeOpts = {}) {
     super(64, opts.dkLen === undefined ? 32 : opts.dkLen, opts, 32, 8, 8);
     const keyLength = opts.key ? opts.key.length : 0;
     this.v0 ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
@@ -108,7 +108,7 @@ class BLAKE2s extends blake2.BLAKE2<BLAKE2s> {
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
-        blake2.SIGMA, offset, msg, 10,
+        SIGMA, offset, msg, 10,
         this.v0, this.v1, this.v2, this.v3, this.v4, this.v5, this.v6, this.v7,
         IV[0], IV[1], IV[2], IV[3], l ^ IV[4], h ^ IV[5], isLast ? ~IV[6] : IV[6], IV[7]
       );
@@ -133,6 +133,4 @@ class BLAKE2s extends blake2.BLAKE2<BLAKE2s> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, salt, personalization
  */
-export const blake2s = wrapConstructorWithOpts<BLAKE2s, blake2.BlakeOpts>(
-  (opts) => new BLAKE2s(opts)
-);
+export const blake2s = wrapConstructorWithOpts<BLAKE2s, BlakeOpts>((opts) => new BLAKE2s(opts));

@@ -1,7 +1,14 @@
 import { hmac } from './hmac.js';
-// prettier-ignore
 import {
-  Hash, CHash, Input, createView, toBytes, assertNumber, assertHash, checkOpts, asyncLoop
+  Hash,
+  CHash,
+  Input,
+  createView,
+  toBytes,
+  assertNumber,
+  assertHash,
+  checkOpts,
+  asyncLoop,
 } from './utils.js';
 
 // PBKDF (RFC 2898)

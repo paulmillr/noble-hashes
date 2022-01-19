@@ -9,6 +9,9 @@ import {
   wrapConstructorWithOpts,
   assertNumber,
   HashXOF,
+  assertBytes,
+  assertOutput,
+  assertExists,
 } from './utils.js';
 
 // Flag bitset
@@ -211,13 +214,13 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     this.b2CompressOut();
   }
   private writeInto(out: Uint8Array) {
-    if (this.destroyed) throw new Error('instance is destroyed');
-    if (!(out instanceof Uint8Array)) throw new Error('Blake3: Invalid output buffer');
+    assertExists(this, false);
+    assertBytes(out);
     this.finish();
     const { blockLen, bufferOut } = this;
     for (let pos = 0, len = out.length; pos < len; ) {
       if (this.posOut >= blockLen) this.b2CompressOut();
-      const take = Math.min(this.blockLen - this.posOut, len - pos);
+      const take = Math.min(blockLen - this.posOut, len - pos);
       out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);
       this.posOut += take;
       pos += take;
@@ -225,7 +228,7 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     return out;
   }
   xofInto(out: Uint8Array): Uint8Array {
-    if (!this.enableXOF) throw new Error('XOF impossible after digest call');
+    if (!this.enableXOF) throw new Error('XOF is not possible after digest call');
     return this.writeInto(out);
   }
   xof(bytes: number): Uint8Array {
@@ -233,7 +236,7 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
-    if (out.length < this.outputLen) throw new Error('Blake3: Invalid output buffer');
+    assertOutput(out, this);
     if (this.finished) throw new Error('digest() was already called');
     this.enableXOF = false;
     this.writeInto(out);

@@ -1,6 +1,7 @@
 const U32_MASK64 = BigInt(2 ** 32 - 1);
 const _32n = BigInt(32);
 
+// We are not using BigUint64Array, because they are extremely slow as per 2022
 export function fromBig(n: bigint, le = false) {
   if (le) return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
   return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };

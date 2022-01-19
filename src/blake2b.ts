@@ -1,4 +1,4 @@
-import * as blake2 from './_blake2.js';
+import { BLAKE2, BlakeOpts, SIGMA } from './_blake2.js';
 import * as u64 from './_u64.js';
 import { toBytes, u32, wrapConstructorWithOpts } from './utils.js';
 
@@ -62,7 +62,7 @@ function G2(a: number, b: number, c: number, d: number, msg: Uint32Array, x: num
   (BUF[2 * d] = Dl), (BUF[2 * d + 1] = Dh);
 }
 
-class BLAKE2b extends blake2.BLAKE2<BLAKE2b> {
+class BLAKE2b extends BLAKE2<BLAKE2b> {
   // Same as SHA-512, but LE
   private v0l = IV[0] | 0;
   private v0h = IV[1] | 0;
@@ -81,7 +81,7 @@ class BLAKE2b extends blake2.BLAKE2<BLAKE2b> {
   private v7l = IV[14] | 0;
   private v7h = IV[15] | 0;
 
-  constructor(opts: blake2.BlakeOpts = {}) {
+  constructor(opts: BlakeOpts = {}) {
     super(128, opts.dkLen === undefined ? 64 : opts.dkLen, opts, 64, 16, 16);
     const keyLength = opts.key ? opts.key.length : 0;
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
@@ -150,7 +150,7 @@ class BLAKE2b extends blake2.BLAKE2<BLAKE2b> {
       BUF[29] = ~BUF[29];
     }
     let j = 0;
-    const s = blake2.SIGMA;
+    const s = SIGMA;
     for (let i = 0; i < 12; i++) {
       G1(0, 4, 8, 12, msg, offset + 2 * s[j++]);
       G2(0, 4, 8, 12, msg, offset + 2 * s[j++]);
@@ -200,6 +200,4 @@ class BLAKE2b extends blake2.BLAKE2<BLAKE2b> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, salt, personalization
  */
-export const blake2b = wrapConstructorWithOpts<BLAKE2b, blake2.BlakeOpts>(
-  (opts) => new BLAKE2b(opts)
-);
+export const blake2b = wrapConstructorWithOpts<BLAKE2b, BlakeOpts>((opts) => new BLAKE2b(opts));

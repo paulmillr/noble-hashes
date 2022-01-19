@@ -25,6 +25,10 @@ function rightEncode(n: number): Uint8Array {
   return new Uint8Array(res);
 }
 
+function chooseLen(opts: ShakeOpts, outputLen: number): number {
+  return opts.dkLen === undefined ? outputLen : opts.dkLen;
+}
+
 const toBytesOptional = (buf?: Input) => (buf !== undefined ? toBytes(buf) : new Uint8Array([]));
 // NOTE: second modulo is necessary since we don't need to add padding if current element takes whole block
 const getPadding = (len: number, block: number) => new Uint8Array((block - (len % block)) % block);
@@ -50,10 +54,7 @@ function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
 
 const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
   wrapConstructorWithOpts<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
-    cshakePers(
-      new Keccak(blockLen, suffix, opts.dkLen !== undefined ? opts.dkLen : outputLen, true),
-      opts
-    )
+    cshakePers(new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true), opts)
   );
 
 export const cshake128 = gencShake(0x1f, 168, 128 / 8);
@@ -101,7 +102,7 @@ function genKmac(blockLen: number, outputLen: number, xof = false) {
   const kmac = (key: Input, message: Input, opts?: cShakeOpts): Uint8Array =>
     kmac.create(key, opts).update(message).digest();
   kmac.create = (key: Input, opts: cShakeOpts = {}) =>
-    new KMAC(blockLen, opts.dkLen !== undefined ? opts.dkLen : outputLen, xof, key, opts);
+    new KMAC(blockLen, chooseLen(opts, outputLen), xof, key, opts);
   return kmac;
 }
 
@@ -144,7 +145,7 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
     return h.digest();
   };
   tuple.create = (opts: cShakeOpts = {}) =>
-    new TupleHash(blockLen, opts.dkLen !== undefined ? opts.dkLen : outputLen, xof, opts);
+    new TupleHash(blockLen, chooseLen(opts, outputLen), xof, opts);
   return tuple;
 }
 
@@ -234,7 +235,7 @@ function genParallel(
   parallel.create = (opts: ParallelOpts = {}) =>
     new ParallelHash(
       blockLen,
-      opts.dkLen !== undefined ? opts.dkLen : outputLen,
+      chooseLen(opts, outputLen),
       () => leaf.create({ dkLen: 2 * outputLen }),
       xof,
       opts
@@ -334,13 +335,11 @@ class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
 }
 // Default to 32 bytes, so it can be used without opts
 export const k12 = wrapConstructorWithOpts<KangarooTwelve, KangarooOpts>(
-  (opts: KangarooOpts = {}) =>
-    new KangarooTwelve(168, 32, opts.dkLen !== undefined ? opts.dkLen : 32, 12, opts)
+  (opts: KangarooOpts = {}) => new KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
 );
 // MarsupilamiFourteen
 export const m14 = wrapConstructorWithOpts<KangarooTwelve, KangarooOpts>(
-  (opts: KangarooOpts = {}) =>
-    new KangarooTwelve(136, 64, opts.dkLen !== undefined ? opts.dkLen : 64, 14, opts)
+  (opts: KangarooOpts = {}) => new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)
 );
 
 // https://keccak.team/files/CSF-0.1.pdf

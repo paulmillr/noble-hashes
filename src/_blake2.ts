@@ -1,4 +1,4 @@
-import { assertNumber, Hash, Input, toBytes, u32 } from './utils.js';
+import { assertOutput, assertExists, assertNumber, Hash, Input, toBytes, u32 } from './utils.js';
 // prettier-ignore
 export const SIGMA = new Uint8Array([
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -58,13 +58,12 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     this.buffer32 = u32((this.buffer = new Uint8Array(blockLen)));
   }
   update(data: Input) {
-    if (this.destroyed) throw new Error('instance is destroyed');
+    assertExists(this);
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
     // is the next one. This significantly complicates logic and reduces ability
     // to do zero-copy processing
-    const { finished, blockLen, buffer, buffer32 } = this;
-    if (finished) throw new Error('digest() was already called');
+    const { blockLen, buffer, buffer32 } = this;
     data = toBytes(data);
     const len = data.length;
     for (let pos = 0; pos < len; ) {
@@ -92,11 +91,9 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     return this;
   }
   digestInto(out: Uint8Array) {
-    if (this.destroyed) throw new Error('instance is destroyed');
-    if (!(out instanceof Uint8Array) || out.length < this.outputLen)
-      throw new Error('_Blake2: Invalid output buffer');
-    const { finished, pos, buffer32 } = this;
-    if (finished) throw new Error('digest() was already called');
+    assertExists(this);
+    assertOutput(out, this);
+    const { pos, buffer32 } = this;
     this.finished = true;
     // Padding
     this.buffer.subarray(pos).fill(0);

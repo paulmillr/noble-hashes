@@ -6,7 +6,10 @@ import {
   toBytes,
   wrapConstructor,
   wrapConstructorWithOpts,
+  assertBytes,
   assertNumber,
+  assertExists,
+  assertOutput,
   HashXOF,
 } from './utils.js';
 
@@ -114,8 +117,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.pos = 0;
   }
   update(data: Input) {
-    if (this.destroyed) throw new Error('instance is destroyed');
-    if (this.finished) throw new Error('digest() was already called');
+    assertExists(this);
     const { blockLen, state } = this;
     data = toBytes(data);
     const len = data.length;
@@ -137,13 +139,15 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.keccak();
   }
   protected writeInto(out: Uint8Array): Uint8Array {
-    if (this.destroyed) throw new Error('instance is destroyed');
-    if (!(out instanceof Uint8Array)) throw new Error('Keccak: invalid output buffer');
+    assertExists(this, false);
+    assertBytes(out);
     this.finish();
+    const bufferOut = this.state;
+    const { blockLen } = this;
     for (let pos = 0, len = out.length; pos < len; ) {
-      if (this.posOut >= this.blockLen) this.keccak();
-      const take = Math.min(this.blockLen - this.posOut, len - pos);
-      out.set(this.state.subarray(this.posOut, this.posOut + take), pos);
+      if (this.posOut >= blockLen) this.keccak();
+      const take = Math.min(blockLen - this.posOut, len - pos);
+      out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);
       this.posOut += take;
       pos += take;
     }
@@ -159,9 +163,8 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
-    if (out.length < this.outputLen) throw new Error('Keccak: invalid output buffer');
+    assertOutput(out, this);
     if (this.finished) throw new Error('digest() was already called');
-    this.finish();
     this.writeInto(out);
     this.destroy();
     return out;
@@ -215,7 +218,7 @@ export type ShakeOpts = { dkLen?: number };
 const genShake = (suffix: number, blockLen: number, outputLen: number) =>
   wrapConstructorWithOpts<Keccak, ShakeOpts>(
     (opts: ShakeOpts = {}) =>
-      new Keccak(blockLen, suffix, opts.dkLen !== undefined ? opts.dkLen : outputLen, true)
+      new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true)
   );
 
 export const shake128 = genShake(0x1f, 168, 128 / 8);
