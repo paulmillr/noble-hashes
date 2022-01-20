@@ -28,6 +28,7 @@
     "hash-wasm": "^4.9.0",
     "js-sha3": "^0.8.0",
     "scrypt-async": "^2.0.1",
-    "scrypt-js": "^3.0.1"
+    "scrypt-js": "^3.0.1",
+    "sha3": "^2.1.4"
   }
 }
