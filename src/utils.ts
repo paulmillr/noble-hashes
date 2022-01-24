@@ -98,11 +98,16 @@ export function utf8ToBytes(str: string): Uint8Array {
   return new TextEncoder().encode(str);
 }
 
+// We can't do `instanceof Uint8Array` because it's unreliable between Web Workers etc
+function isUint8a(bytes: Uint8Array | unknown): bytes is Uint8Array {
+  // Caching fn and tag is 1% faster. We don't do it.
+  return bytes != null && Object.prototype.toString.call(bytes) === '[object Uint8Array]';
+}
+
 export type Input = Uint8Array | string;
 export function toBytes(data: Input): Uint8Array {
   if (typeof data === 'string') data = utf8ToBytes(data);
-  if (!(data instanceof Uint8Array))
-    throw new TypeError(`Expected input type is Uint8Array (got ${typeof data})`);
+  if (!isUint8a(data)) throw new TypeError(`Expected input type is Uint8Array, got ${typeof data}`);
   return data;
 }
 
@@ -111,7 +116,7 @@ export function toBytes(data: Input): Uint8Array {
  * @example concatBytes(buf1, buf2)
  */
 export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
-  if (!arrays.every((a) => a instanceof Uint8Array)) throw new Error('Uint8Array list expected');
+  if (!arrays.every(isUint8a)) throw new Error('Uint8Array list expected');
   if (arrays.length === 1) return arrays[0];
   const length = arrays.reduce((a, arr) => a + arr.length, 0);
   const result = new Uint8Array(length);
@@ -132,7 +137,7 @@ export function assertBool(b: boolean) {
 }
 
 export function assertBytes(bytes: Uint8Array, ...lengths: number[]) {
-  if (!(bytes instanceof Uint8Array)) throw new TypeError('Expected Uint8Array');
+  if (!isUint8a(bytes)) throw new TypeError('Expected Uint8Array');
   if (lengths.length > 0 && !lengths.includes(bytes.length))
     throw new TypeError(`Expected Uint8Array of length ${lengths}, not of length=${bytes.length}`);
 }
