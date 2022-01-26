@@ -5,7 +5,7 @@ tl;dr: Yes, 4x+; but auditability would be bad.
 CSP policy treats this construction as 'unsafe-eval':
 
 ```js
-const x = (()=>{ let out = ''; ... return new Function(..., out) });
+const unrolled = (() => { let out = 'let a = 1;'; ... return new Function(..., out) })();
 ```
 
 There are websites and extensions that force this policy. Which means there is no way to do unrolling directly in JS without build systems.
@@ -33,7 +33,7 @@ Now we have a lot of overhead for a simple operation which will take significant
 So, how bad it is? Almost x4!
 
 ```
-SHA3 32 B    x 184,331 ops/sec => 536,403   ops/sec unrolled
+SHA3 32 B    x 184,331 ops/sec => 640,614   ops/sec unrolled
 BLAKE2s 32 B x 464,468 ops/sec => 1,820,714 ops/sec unrolled
 BLAKE2b 32 B x 282,965 ops/sec => 749,857   ops/sec unrolled
 ```
