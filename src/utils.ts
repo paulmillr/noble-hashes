@@ -31,6 +31,7 @@ const hexes = Array.from({ length: 256 }, (v, i) => i.toString(16).padStart(2, '
  */
 export function bytesToHex(uint8a: Uint8Array): string {
   // pre-caching improves the speed 6x
+  if (!(uint8a instanceof Uint8Array)) throw new Error('Uint8Array expected');
   let hex = '';
   for (let i = 0; i < uint8a.length; i++) {
     hex += hexes[uint8a[i]];
@@ -51,7 +52,7 @@ export function hexToBytes(hex: string): Uint8Array {
     const j = i * 2;
     const hexByte = hex.slice(j, j + 2);
     const byte = Number.parseInt(hexByte, 16);
-    if (Number.isNaN(byte)) throw new Error('Invalid byte sequence');
+    if (Number.isNaN(byte) || byte > 0) throw new Error('Invalid byte sequence');
     array[i] = byte;
   }
   return array;
