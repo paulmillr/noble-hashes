@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { should } = require('micro-should');
-const u64 = require('../_u64');
+const u64 = require('../_u64').default;
 
 const U64_MASK = 2n ** 64n - 1n;
 const U32_MASK = (2 ** 32 - 1) | 0;
