@@ -1,5 +1,4 @@
 import { SHA2 } from './_sha2.js';
-
 import { wrapConstructor } from './utils.js';
 
 // https://homes.esat.kuleuven.be/~bosselae/ripemd160.html

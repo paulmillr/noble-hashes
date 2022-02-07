@@ -1,12 +1,5 @@
-import {
-  Input,
-  toBytes,
-  wrapConstructorWithOpts,
-  assertNumber,
-  u32,
-  Hash,
-  HashXOF,
-} from './utils.js';
+import { number as assertNumber } from './_assert';
+import { Input, toBytes, wrapConstructorWithOpts, u32, Hash, HashXOF } from './utils.js';
 import { Keccak, ShakeOpts } from './sha3.js';
 // cSHAKE && KMAC (NIST SP800-185)
 function leftEncode(n: number): Uint8Array {

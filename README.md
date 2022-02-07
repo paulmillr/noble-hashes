@@ -409,18 +409,18 @@ To run benchmarks, execute `npm run bench:install` and then `npm run bench`
 SHA256 32B x 1,126,126 ops/sec @ 888ns/op
 SHA384 32B x 463,606 ops/sec @ 2μs/op
 SHA512 32B x 467,945 ops/sec @ 2μs/op
-SHA3-256, keccak256, shake256 32B x 184,026 ops/sec @ 5μs/op
-Kangaroo12 32B x 312,891 ops/sec @ 3μs/op
-Marsupilami14 32B x 278,164 ops/sec @ 3μs/op
-BLAKE2b 32B x 297,353 ops/sec @ 3μs/op
-BLAKE2s 32B x 507,614 ops/sec @ 1μs/op
-BLAKE3 32B x 591,016 ops/sec @ 1μs/op
+SHA3-256, keccak256, shake256 32B x 192,049 ops/sec @ 5μs/op
+Kangaroo12 32B x 318,066 ops/sec @ 3μs/op
+Marsupilami14 32B x 283,929 ops/sec @ 3μs/op
+BLAKE2b 32B x 352,112 ops/sec @ 2μs/op
+BLAKE2s 32B x 511,770 ops/sec @ 1μs/op
+BLAKE3 32B x 582,072 ops/sec @ 1μs/op
 RIPEMD160 32B x 1,230,012 ops/sec @ 813ns/op
-HMAC-SHA256 32B x 346,860 ops/sec @ 2μs/op
-HKDF-SHA256 32B x 153,397 ops/sec @ 6μs/op
+HMAC-SHA256 32B x 238,663 ops/sec @ 4μs/op
+HKDF-SHA256 32B x 108,377 ops/sec @ 9μs/op
 PBKDF2-HMAC-SHA256 262144 x 3 ops/sec @ 326ms/op
 PBKDF2-HMAC-SHA512 262144 x 1 ops/sec @ 970ms/op
-Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 636ms/op
+Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 616ms/op
 ```
 
 Compare to native node.js implementation that uses C bindings instead of pure-js code:

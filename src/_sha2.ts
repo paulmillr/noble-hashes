@@ -1,4 +1,5 @@
-import { assertExists, assertOutput, Hash, createView, Input, toBytes } from './utils.js';
+import assert from './_assert.js';
+import { Hash, createView, Input, toBytes } from './utils.js';
 
 // Polyfill for Safari 14
 function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: boolean): void {
@@ -39,7 +40,7 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     this.view = createView(this.buffer);
   }
   update(data: Input): this {
-    assertExists(this);
+    assert.exists(this);
     const { view, buffer, blockLen } = this;
     data = toBytes(data);
     const len = data.length;
@@ -64,8 +65,8 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     return this;
   }
   digestInto(out: Uint8Array) {
-    assertExists(this);
-    assertOutput(out, this);
+    assert.exists(this);
+    assert.output(out, this);
     this.finished = true;
     // Padding
     // We can avoid allocation of buffer for padding completely if it

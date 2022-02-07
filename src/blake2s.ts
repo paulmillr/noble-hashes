@@ -1,5 +1,5 @@
 import { BLAKE2, BlakeOpts, SIGMA } from './_blake2.js';
-import * as u64 from './_u64.js';
+import u64 from './_u64.js';
 import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils.js';
 
 // Initial state:

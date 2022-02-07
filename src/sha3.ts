@@ -1,4 +1,5 @@
-import * as u64 from './_u64.js';
+import assert from './_assert.js';
+import u64 from './_u64.js';
 import {
   Hash,
   u32,
@@ -6,10 +7,6 @@ import {
   toBytes,
   wrapConstructor,
   wrapConstructorWithOpts,
-  assertBytes,
-  assertNumber,
-  assertExists,
-  assertOutput,
   HashXOF,
 } from './utils.js';
 
@@ -104,7 +101,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
   ) {
     super();
     // Can be passed from user as dkLen
-    assertNumber(outputLen);
+    assert.number(outputLen);
     // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
     if (0 >= this.blockLen || this.blockLen >= 200)
       throw new Error('Sha3 supports only keccak-f1600 function');
@@ -117,7 +114,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.pos = 0;
   }
   update(data: Input) {
-    assertExists(this);
+    assert.exists(this);
     const { blockLen, state } = this;
     data = toBytes(data);
     const len = data.length;
@@ -139,8 +136,8 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.keccak();
   }
   protected writeInto(out: Uint8Array): Uint8Array {
-    assertExists(this, false);
-    assertBytes(out);
+    assert.exists(this, false);
+    assert.bytes(out);
     this.finish();
     const bufferOut = this.state;
     const { blockLen } = this;
@@ -159,11 +156,11 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     return this.writeInto(out);
   }
   xof(bytes: number): Uint8Array {
-    assertNumber(bytes);
+    assert.number(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
-    assertOutput(out, this);
+    assert.output(out, this);
     if (this.finished) throw new Error('digest() was already called');
     this.writeInto(out);
     this.destroy();

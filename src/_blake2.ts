@@ -1,4 +1,5 @@
-import { assertOutput, assertExists, assertNumber, Hash, Input, toBytes, u32 } from './utils.js';
+import assert from './_assert.js';
+import { Hash, Input, toBytes, u32 } from './utils.js';
 // prettier-ignore
 export const SIGMA = new Uint8Array([
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -44,9 +45,9 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     persLen: number
   ) {
     super();
-    assertNumber(blockLen);
-    assertNumber(outputLen);
-    assertNumber(keyLen);
+    assert.number(blockLen);
+    assert.number(outputLen);
+    assert.number(keyLen);
     if (outputLen < 0 || outputLen > keyLen)
       throw new Error('Blake2: outputLen bigger than keyLen');
     if (opts.key !== undefined && (opts.key.length < 1 || opts.key.length > keyLen))
@@ -58,7 +59,7 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     this.buffer32 = u32((this.buffer = new Uint8Array(blockLen)));
   }
   update(data: Input) {
-    assertExists(this);
+    assert.exists(this);
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
     // is the next one. This significantly complicates logic and reduces ability
@@ -91,8 +92,8 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     return this;
   }
   digestInto(out: Uint8Array) {
-    assertExists(this);
-    assertOutput(out, this);
+    assert.exists(this);
+    assert.output(out, this);
     const { pos, buffer32 } = this;
     this.finished = true;
     // Padding

@@ -1,18 +1,8 @@
-import * as u64 from './_u64.js';
-import * as blake2 from './_blake2.js';
-import * as blake2s from './blake2s.js';
-import {
-  Input,
-  u8,
-  u32,
-  toBytes,
-  wrapConstructorWithOpts,
-  assertNumber,
-  HashXOF,
-  assertBytes,
-  assertOutput,
-  assertExists,
-} from './utils.js';
+import assert from './_assert.js';
+import u64 from './_u64.js';
+import { BLAKE2 } from './_blake2.js';
+import { compress, IV } from './blake2s.js';
+import { Input, u8, u32, toBytes, wrapConstructorWithOpts, HashXOF } from './utils.js';
 
 // Flag bitset
 enum Flags {
@@ -48,7 +38,7 @@ export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
 //   complicated, which we are trying to avoid, since this library is intended to be used
 //   for cryptographic purposes. Also, parallelization happens only on chunk level (1024 bytes),
 //   which won't really benefit small inputs.
-class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
+class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   private IV: Uint32Array;
   private flags = 0 | 0;
   private state: Uint32Array;
@@ -65,7 +55,7 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   constructor(opts: Blake3Opts = {}, flags = 0) {
     super(64, opts.dkLen === undefined ? 32 : opts.dkLen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
     this.outputLen = opts.dkLen === undefined ? 32 : opts.dkLen;
-    assertNumber(this.outputLen);
+    assert.number(this.outputLen);
     if (opts.key !== undefined && opts.context !== undefined)
       throw new Error('Blake3: only key or context can be specified at same time');
     else if (opts.key !== undefined) {
@@ -80,7 +70,7 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
       this.IV = u32(context_key);
       this.flags = flags | Flags.DERIVE_KEY_MATERIAL;
     } else {
-      this.IV = blake2s.IV.slice();
+      this.IV = IV.slice();
       this.flags = flags;
     }
     this.state = this.IV.slice();
@@ -92,23 +82,23 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   }
   protected set() {}
   private b2Compress(counter: number, flags: number, buf: Uint32Array, bufPos: number = 0) {
-    const { state, pos } = this;
+    const { state: s, pos } = this;
     const { h, l } = u64.fromBig(BigInt(counter), true);
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
-      blake2s.compress(
+      compress(
         SIGMA, bufPos, buf, 7,
-        state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7],
-        blake2s.IV[0], blake2s.IV[1], blake2s.IV[2], blake2s.IV[3], h, l, pos, flags
+        s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
+        IV[0], IV[1], IV[2], IV[3], h, l, pos, flags
       );
-    state[0] = v0 ^ v8;
-    state[1] = v1 ^ v9;
-    state[2] = v2 ^ v10;
-    state[3] = v3 ^ v11;
-    state[4] = v4 ^ v12;
-    state[5] = v5 ^ v13;
-    state[6] = v6 ^ v14;
-    state[7] = v7 ^ v15;
+    s[0] = v0 ^ v8;
+    s[1] = v1 ^ v9;
+    s[2] = v2 ^ v10;
+    s[3] = v3 ^ v11;
+    s[4] = v4 ^ v12;
+    s[5] = v5 ^ v13;
+    s[6] = v6 ^ v14;
+    s[7] = v7 ^ v15;
   }
   protected compress(buf: Uint32Array, bufPos: number = 0, isLast: boolean = false) {
     // Compress last block
@@ -168,31 +158,31 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   }
   // Same as b2Compress, but doesn't modify state and returns 16 u32 array (instead of 8)
   private b2CompressOut() {
-    const { state, pos, flags, buffer32, bufferOut32 } = this;
+    const { state: s, pos, flags, buffer32, bufferOut32: out32 } = this;
     const { h, l } = u64.fromBig(BigInt(this.chunkOut++));
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
-      blake2s.compress(
+      compress(
         SIGMA, 0, buffer32, 7,
-        state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7],
-        blake2s.IV[0], blake2s.IV[1], blake2s.IV[2], blake2s.IV[3], l, h, pos, flags
+        s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
+        IV[0], IV[1], IV[2], IV[3], l, h, pos, flags
       );
-    bufferOut32[0] = v0 ^ v8;
-    bufferOut32[1] = v1 ^ v9;
-    bufferOut32[2] = v2 ^ v10;
-    bufferOut32[3] = v3 ^ v11;
-    bufferOut32[4] = v4 ^ v12;
-    bufferOut32[5] = v5 ^ v13;
-    bufferOut32[6] = v6 ^ v14;
-    bufferOut32[7] = v7 ^ v15;
-    bufferOut32[8] = state[0] ^ v8;
-    bufferOut32[9] = state[1] ^ v9;
-    bufferOut32[10] = state[2] ^ v10;
-    bufferOut32[11] = state[3] ^ v11;
-    bufferOut32[12] = state[4] ^ v12;
-    bufferOut32[13] = state[5] ^ v13;
-    bufferOut32[14] = state[6] ^ v14;
-    bufferOut32[15] = state[7] ^ v15;
+    out32[0] = v0 ^ v8;
+    out32[1] = v1 ^ v9;
+    out32[2] = v2 ^ v10;
+    out32[3] = v3 ^ v11;
+    out32[4] = v4 ^ v12;
+    out32[5] = v5 ^ v13;
+    out32[6] = v6 ^ v14;
+    out32[7] = v7 ^ v15;
+    out32[8] = s[0] ^ v8;
+    out32[9] = s[1] ^ v9;
+    out32[10] = s[2] ^ v10;
+    out32[11] = s[3] ^ v11;
+    out32[12] = s[4] ^ v12;
+    out32[13] = s[5] ^ v13;
+    out32[14] = s[6] ^ v14;
+    out32[15] = s[7] ^ v15;
     this.posOut = 0;
   }
   protected finish() {
@@ -214,8 +204,8 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     this.b2CompressOut();
   }
   private writeInto(out: Uint8Array) {
-    assertExists(this, false);
-    assertBytes(out);
+    assert.exists(this, false);
+    assert.bytes(out);
     this.finish();
     const { blockLen, bufferOut } = this;
     for (let pos = 0, len = out.length; pos < len; ) {
@@ -232,11 +222,11 @@ class BLAKE3 extends blake2.BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     return this.writeInto(out);
   }
   xof(bytes: number): Uint8Array {
-    assertNumber(bytes);
+    assert.number(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
-    assertOutput(out, this);
+    assert.output(out, this);
     if (this.finished) throw new Error('digest() was already called');
     this.enableXOF = false;
     this.writeInto(out);

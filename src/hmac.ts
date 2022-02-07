@@ -1,4 +1,5 @@
-import { assertBytes, assertHash, assertExists, Hash, CHash, Input, toBytes } from './utils.js';
+import assert from './_assert.js';
+import { Hash, CHash, Input, toBytes } from './utils.js';
 // HMAC (RFC 2104)
 class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   oHash: T;
@@ -10,7 +11,7 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
 
   constructor(hash: CHash, _key: Input) {
     super();
-    assertHash(hash);
+    assert.hash(hash);
     const key = toBytes(_key);
     this.iHash = hash.create() as T;
     if (!(this.iHash instanceof Hash))
@@ -30,13 +31,13 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     pad.fill(0);
   }
   update(buf: Input) {
-    assertExists(this);
+    assert.exists(this);
     this.iHash.update(buf);
     return this;
   }
   digestInto(out: Uint8Array) {
-    assertExists(this);
-    assertBytes(out, this.outputLen);
+    assert.exists(this);
+    assert.bytes(out, this.outputLen);
     this.finished = true;
     this.iHash.digestInto(out);
     this.oHash.update(out);
