@@ -1,17 +1,19 @@
+import { bytes as assertBytes } from './_assert.js';
 import { hkdf } from './hkdf.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.js';
 import { scrypt as _scrypt } from './scrypt.js';
-import { assertBytes, createView, toBytes } from './utils.js';
+import { createView, toBytes } from './utils.js';
 
 // A tiny KDF for various applications like AES key-gen
 
 const SCRYPT_FACTOR = 2 ** 19;
 const PBKDF2_FACTOR = 2 ** 17;
-const PROTOCOLS_ALLOWING_STR = ['ssh', 'tor', 'file'];
-
 function strHasLength(str: string, min: number, max: number): boolean {
   return typeof str === 'string' && str.length >= min && str.length <= max;
+}
+function protocolAllowsStr(protocol: string): boolean {
+  return /^password\d+|ssh|tor|file$/.test(protocol);
 }
 
 // Scrypt KDF
@@ -66,7 +68,7 @@ export function deriveChildKey(
   if (!(strHasLength(protocol, 3, 15) && /^[a-z0-9]{3,15}$/.test(protocol))) {
     throw new Error('invalid protocol');
   }
-  const allowsStr = PROTOCOLS_ALLOWING_STR.includes(protocol);
+  const allowsStr = protocolAllowsStr(protocol);
   let salt: Uint8Array; // Extract salt. Default is undefined.
   if (typeof accountId === 'string') {
     if (!allowsStr) throw new Error('accountId must be a number');
