@@ -52,7 +52,7 @@ export function hexToBytes(hex: string): Uint8Array {
     const j = i * 2;
     const hexByte = hex.slice(j, j + 2);
     const byte = Number.parseInt(hexByte, 16);
-    if (Number.isNaN(byte) || byte > 0) throw new Error('Invalid byte sequence');
+    if (Number.isNaN(byte) || byte < 0) throw new Error('Invalid byte sequence');
     array[i] = byte;
   }
   return array;
