@@ -10,7 +10,8 @@
     "!rollup.js"
   ],
   "scripts": {
-    "bench": "node test/benchmark/index.js",
+    "bench": "node test/benchmark/index.js noble",
+    "bench:all": "node test/benchmark/index.js",
     "bench:install": "cd test/benchmark && npm install && cd ../../",
     "build": "tsc -d && tsc -p tsconfig.esm.json",
     "build:release": "rollup -c rollup.config.js",
