@@ -9,12 +9,6 @@ import { createView, toBytes } from './utils.js';
 
 const SCRYPT_FACTOR = 2 ** 19;
 const PBKDF2_FACTOR = 2 ** 17;
-function strHasLength(str: string, min: number, max: number): boolean {
-  return typeof str === 'string' && str.length >= min && str.length <= max;
-}
-function protocolAllowsStr(protocol: string): boolean {
-  return /^password\d+|ssh|tor|file$/.test(protocol);
-}
 
 // Scrypt KDF
 export function scrypt(password: string, salt: string): Uint8Array {
@@ -35,6 +29,10 @@ function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
     arr[i] = a[i] ^ b[i];
   }
   return arr;
+}
+
+function strHasLength(str: string, min: number, max: number): boolean {
+  return typeof str === 'string' && str.length >= min && str.length <= max;
 }
 
 /**
@@ -68,7 +66,10 @@ export function deriveChildKey(
   if (!(strHasLength(protocol, 3, 15) && /^[a-z0-9]{3,15}$/.test(protocol))) {
     throw new Error('invalid protocol');
   }
-  const allowsStr = protocolAllowsStr(protocol);
+  if (!(typeof keyLength === 'number' && keyLength >= 16 && keyLength <= 8192)) {
+    throw new Error('invalid keyLength');
+  }
+  const allowsStr = /^password\d{0,3}|ssh|tor|file$/.test(protocol);
   let salt: Uint8Array; // Extract salt. Default is undefined.
   if (typeof accountId === 'string') {
     if (!allowsStr) throw new Error('accountId must be a number');
