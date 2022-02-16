@@ -21,7 +21,7 @@ export const createView = (arr: TypedArray) =>
 export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (word >>> shift);
 
 export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
-// There is almost no big endian hardware, but js typed arrays uses platform specific endianess.
+// There is almost no big endian hardware, but js typed arrays uses platform specific endianness.
 // So, just to be sure not to corrupt anything.
 if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
@@ -58,21 +58,9 @@ export function hexToBytes(hex: string): Uint8Array {
   return array;
 }
 
-// Currently avoid insertion of polyfills with packers (browserify/webpack/etc)
-// But setTimeout is pretty slow, maybe worth to investigate howto do minimal polyfill here
-export const nextTick: () => Promise<unknown> = (() => {
-  const nodeRequire =
-    typeof module !== 'undefined' &&
-    typeof module.require === 'function' &&
-    module.require.bind(module);
-  try {
-    if (nodeRequire) {
-      const { setImmediate } = nodeRequire('timers');
-      return () => new Promise((resolve) => setImmediate(resolve));
-    }
-  } catch (e) {}
-  return () => new Promise((resolve) => setTimeout(resolve, 0));
-})();
+// There is no setImmediate in browser and setTimeout is slow. However, call to async function will return Promise
+// which will be fullfiled only on next scheduler queue processing step and this is exactly what we need.
+export const nextTick = async () => {};
 
 // Returns control to thread each 'tick' ms to avoid blocking
 export async function asyncLoop(iters: number, tick: number, cb: (i: number) => void) {
