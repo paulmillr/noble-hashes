@@ -3,7 +3,7 @@ import { hkdf } from './hkdf.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.js';
 import { scrypt as _scrypt } from './scrypt.js';
-import { createView, toBytes } from './utils.js';
+import { bytesToHex, createView, hexToBytes, toBytes } from './utils.js';
 
 // A tiny KDF for various applications like AES key-gen
 
@@ -36,8 +36,7 @@ function strHasLength(str: string, min: number, max: number): boolean {
 }
 
 /**
- * Derives main seed. Takes a lot of time.
- * Prefer `eskdf` method instead.
+ * Derives main seed. Takes a lot of time. Prefer `eskdf` method instead.
  */
 export function deriveMainSeed(username: string, password: string): Uint8Array {
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
@@ -54,7 +53,7 @@ export function deriveMainSeed(username: string, password: string): Uint8Array {
  * Derives a child key. Prefer `eskdf` method instead.
  * @example deriveChildKey(seed, 'aes', 0)
  */
-export function deriveChildKey(
+function deriveChildKey(
   seed: Uint8Array,
   protocol: string,
   accountId: number | string = 0,
@@ -87,18 +86,64 @@ export function deriveChildKey(
   return hkdf(sha256, seed, salt, info, keyLength);
 }
 
+function bytesToNumber(bytes: Uint8Array): bigint {
+  return BigInt('0x' + bytesToHex(bytes));
+}
+
+function numberToBytes(num: bigint, byteLength: number): Uint8Array {
+  if (num < BigInt(0)) throw new Error('expected positive number');
+  return hexToBytes(num.toString(16).padStart(byteLength, '0'));
+}
+
+/**
+ * Derives a child key, after that executes modular division.
+ * @example deriveChildKeyMod(seed, 'chat', 0, 65537n)
+ */
+function deriveChildKeyMod(
+  seed: Uint8Array,
+  protocol: string,
+  accountId: number | string,
+  modulo: bigint
+): Uint8Array {
+  if (typeof modulo !== 'bigint' || modulo < BigInt(3)) {
+    throw new Error('modulo must be valid bigint')
+  }
+  const _1 = BigInt(1);
+  // Convert to bit string, then convert to bytes
+  const byteLength = Math.ceil(modulo.toString(2).length / 8);
+  // FIPS 186 B.4.1 requires at least 64 more bits to combat modulo bias
+  const requiredBytes = byteLength + 8;
+  const key = deriveChildKey(seed, protocol, accountId, requiredBytes);
+  const num = bytesToNumber(key);
+  const reduced = (num % (modulo - _1)) +_1;
+  let res = numberToBytes(reduced, byteLength);
+  // if (littleEndian) res = res.reverse();
+  return res;
+}
+
 // We are not using classes because constructor cannot be async
 type ESKDF = Promise<
   Readonly<{
     /**
      * Derives a child key. Child key will not be associated with any
      * other child key because of properties of underlying KDF.
+     * Do not use the method for fields & elliptic curves, prefer `deriveChildKeyMod`.
      * @param protocol - 3-15 character protocol name
      * @param accountId - numeric identifier of account
      * @param keyLength - (default: 32) key length
      * @example deriveChildKey('aes', 0)
      */
-    deriveChildKey: (protocol: string, accountId: number | string) => Uint8Array;
+    deriveChildKey: (protocol: string, accountId: number | string, keyLength: number) => Uint8Array;
+    /**
+     * Derives a child key in range 1...modulo-1.
+     * Protected against modulo bias using algorithm from FIPS 186 B.4.1.
+     * Use the method for finite field & elliptic curve cryptography.
+     * @param protocol - 3-15 character protocol name
+     * @param accountId - numeric identifier of account
+     * @param modulo - number, by which the result would be reduced
+     * @example deriveChildKey('chat', 0, nist_p256_curve_order)
+     */
+    deriveChildKeyMod: (protocol: string, accountId: number | string, modulo: bigint) => Uint8Array;
     /**
      * Deletes the main seed from eskdf instance
      */
@@ -124,18 +169,20 @@ export async function eskdf(username: string, password: string): ESKDF {
   // We are using closure + object instead of class because
   // we want to make `seed` non-accessible for any external function.
   let seed: Uint8Array | undefined = await deriveMainSeed(username, password);
-  function derive(protocol: string, accountId: number | string = 0): Uint8Array {
-    assertBytes(seed!, 32);
+  function drv(protocol: string, accountId: number | string = 0): Uint8Array {
     return deriveChildKey(seed!, protocol, accountId);
+  }
+  function deriveMod(protocol: string, accountId:  number | string, modulo: bigint): Uint8Array {
+    return deriveChildKeyMod(seed!, protocol, accountId, modulo);
   }
   function expire() {
     if (seed) seed.fill(1);
     seed = undefined;
   }
   // prettier-ignore
-  const fingerprint = Array.from(derive('fingerprint', 0))
+  const fingerprint = Array.from(drv('fingerprint', 0))
     .slice(0, 6)
     .map((char) => char.toString(16).padStart(2, '0').toUpperCase())
     .join(':');
-  return Object.freeze({ deriveChildKey: derive, expire, fingerprint });
+  return Object.freeze({ deriveChildKey: drv, deriveChildKeyMod: deriveMod, expire, fingerprint });
 }

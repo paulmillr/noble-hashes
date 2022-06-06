@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { should } = require('micro-should');
-const eskdf = require('../eskdf');
+const { eskdf } = require('../eskdf');
 const vectors = require('./vectors/eskdf.json');
 
 function toHex(arr) {
@@ -15,31 +15,30 @@ function toHex(arr) {
   for (let v of vectors.derive_main_seed.valid) {
     const { output, fingerprint, username, password } = v;
     should(`deriveMainSeed ${fingerprint}`, async () => {
-      const seed = await eskdf.deriveMainSeed(username, password);
-      const keyc = await eskdf.eskdf(username, password);
-      assert.equal(toHex(seed), output);
+      const keyc = await eskdf(username, password);
+      // assert.equal(toHex(seed), output);
       assert.equal(keyc.fingerprint, fingerprint);
     });
   }
   for (let v of vectors.derive_main_seed.invalid) {
     const { username, password } = v;
     should(`deriveMainSeed errors on ${username} ${password}`, () => {
-      assert.throws(() => eskdf.deriveMainSeed(username, password));
+      assert.rejects(() => eskdf(username, password));
     });
   }
-  const s = vectors.derive_child_key.seed;
-  const seed = await eskdf.deriveMainSeed(s.username, s.password);
+  const { username, password } = vectors.derive_child_key.seed;
+  const e = await eskdf(username, password);
   for (let v of vectors.derive_child_key.valid) {
     const { output, protocol, account_id } = v;
     should(`deriveChildKey ${output}`, () => {
-      const key = eskdf.deriveChildKey(seed, protocol, account_id);
+      const key = e.deriveChildKey(protocol, account_id);
       assert.equal(toHex(key), output);
     });
   }
   for (let v of vectors.derive_child_key.invalid) {
     const { protocol, account_id } = v;
     should(`deriveChildKey errors on ${protocol} ${account_id}`, () => {
-      assert.throws(() => eskdf.deriveChildKey(seed, protocol, account_id));
+      assert.throws(() => e.deriveChildKey(protocol, account_id));
     });
   }
   // should.run();
