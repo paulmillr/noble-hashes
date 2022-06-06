@@ -1,4 +1,4 @@
-import nodeCrypto from 'crypto';
+import * as nodeCrypto from 'crypto';
 
 export const crypto: { node?: any; web?: any } = {
   node: nodeCrypto,

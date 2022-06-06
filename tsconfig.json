@@ -7,7 +7,6 @@
         "module": "commonjs",
         "moduleResolution": "node",
         "noUnusedLocals": true,
-        "esModuleInterop": true,
         "baseUrl": ".",
         "paths": {
             "@noble/hashes/crypto": [ "src/crypto" ]

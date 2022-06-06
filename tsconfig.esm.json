@@ -6,7 +6,6 @@
         "module": "es6",
         "moduleResolution": "node",
         "noUnusedLocals": true,
-        "esModuleInterop": true,
         "baseUrl": ".",
         "paths": {
             "@noble/hashes/crypto": [ "src/crypto" ]
