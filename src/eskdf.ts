@@ -106,7 +106,7 @@ function deriveChildKeyMod(
   modulo: bigint
 ): Uint8Array {
   if (typeof modulo !== 'bigint' || modulo < BigInt(3)) {
-    throw new Error('modulo must be valid bigint')
+    throw new Error('modulo must be valid bigint');
   }
   const _1 = BigInt(1);
   // Convert to bit string, then convert to bytes
@@ -115,7 +115,7 @@ function deriveChildKeyMod(
   const requiredBytes = byteLength + 8;
   const key = deriveChildKey(seed, protocol, accountId, requiredBytes);
   const num = bytesToNumber(key);
-  const reduced = (num % (modulo - _1)) +_1;
+  const reduced = (num % (modulo - _1)) + _1;
   let res = numberToBytes(reduced, byteLength);
   // if (littleEndian) res = res.reverse();
   return res;
@@ -172,7 +172,7 @@ export async function eskdf(username: string, password: string): ESKDF {
   function drv(protocol: string, accountId: number | string = 0): Uint8Array {
     return deriveChildKey(seed!, protocol, accountId);
   }
-  function deriveMod(protocol: string, accountId:  number | string, modulo: bigint): Uint8Array {
+  function deriveMod(protocol: string, accountId: number | string, modulo: bigint): Uint8Array {
     return deriveChildKeyMod(seed!, protocol, accountId, modulo);
   }
   function expire() {
