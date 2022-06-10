@@ -105,7 +105,7 @@ function countBytes(num: bigint): number {
  * If modulus is used, adds 64 bits to it as per FIPS 186 B.4.1 to combat modulo bias.
  */
 function getKeyLength(options: KeyOpts): number {
-  if (!options) return 32;
+  if (!options || typeof options !== 'object') return 32;
   const hasLen = 'keyLength' in options;
   const hasMod = 'modulus' in options;
   if (hasLen && hasMod) throw new Error('cannot combine keyLength and modulus options');
@@ -174,7 +174,7 @@ export async function eskdf(username: string, password: string): ESKDF {
     const keyLength = getKeyLength(options);
     const key = hkdf(sha256, seed!, salt, info, keyLength);
     // Modulus has already been validated
-    return options !== undefined && 'modulus' in options ? modReduceKey(key, options.modulus) : key;
+    return options && 'modulus' in options ? modReduceKey(key, options.modulus) : key;
   }
   function expire() {
     if (seed) seed.fill(1);
