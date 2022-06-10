@@ -284,8 +284,9 @@ const HASHES = {
   RIPEMD160: {
     fn: ripemd160,
     obj: ripemd160.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('ripemd160').update(buf).digest()),
-    node_obj: () => crypto.createHash('ripemd160'),
+    // Node.js 18 dropped support for RIPEMD160
+    // node: (buf) => Uint8Array.from(crypto.createHash('ripemd160').update(buf).digest()),
+    // node_obj: () => crypto.createHash('ripemd160'),
     // There is no official vectors, so we created them via:
     // > NIST_VECTORS.map((i) => crypto.createHash('ripemd160').update(i[2]).digest().toString('hex'))
     // Matched against some vectors from https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
