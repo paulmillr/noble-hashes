@@ -29,9 +29,15 @@ function toHex(arr) {
   const { username, password } = vectors.derive_child_key.seed;
   const e = await eskdf(username, password);
   for (let v of vectors.derive_child_key.valid) {
-    const { output, protocol, account_id } = v;
+    const { output, protocol, account_id, key_length, modulus } = v;
+    const opt =
+      key_length != null
+        ? { keyLength: key_length }
+        : modulus != null
+        ? { modulus: BigInt('0x' + modulus) }
+        : undefined;
     should(`deriveChildKey ${protocol} ${output}`, () => {
-      const key = e.deriveChildKey(protocol, account_id);
+      const key = e.deriveChildKey(protocol, account_id, opt);
       assert.equal(toHex(key), output);
     });
   }
@@ -39,6 +45,9 @@ function toHex(arr) {
     const { protocol, account_id } = v;
     should(`deriveChildKey errors on ${protocol} ${account_id}`, () => {
       assert.throws(() => e.deriveChildKey(protocol, account_id));
+    });
+    should(`deriveChildKey errors on double-options`, () => {
+      assert.throws(() => e.deriveChildKey('aes', 0, { keyLength: 64, modulus: BigInt(65537) }));
     });
   }
   // should.run();

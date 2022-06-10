@@ -110,6 +110,18 @@
         "output": "dcdd6d42da86d4b3c53e3f5cd0f41cc1310235ba059ed5312e2ae4499b89ac3a",
         "protocol": "12345678901234",
         "account_id": 1024
+      },
+      {
+        "output": "78ae9652ecd567d3be03b6dad2713ce94b05e7ec29dc42e99edddd5a09be969e0dc56b2a7b3efad991ff27b642f18b855c0715321bf0dcb2a4b452e8df3a9de1",
+        "protocol": "aes",
+        "account_id": 0,
+        "key_length": 64
+      },
+      {
+        "output": "0cbf255b06245e0dab0ce1738f9ce4657244743bbff8c3065544b1004be608e4",
+        "protocol": "ecc",
+        "account_id": 0,
+        "modulus": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1"
       }
     ],
     "invalid": [
@@ -118,7 +130,7 @@
       },
       {
         "protocol": "AES"
-      }
+      },
       {
         "protocol": "12345678901234567",
         "account_id": 1024
