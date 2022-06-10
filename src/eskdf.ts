@@ -31,6 +31,17 @@ function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
   return arr;
 }
 
+function bytesToNumber(bytes: Uint8Array): bigint {
+  return BigInt('0x' + bytesToHex(bytes));
+}
+
+function numberToBytes(num: bigint, byteLength: number): Uint8Array {
+  if (num < BigInt(0)) throw new Error('expected positive number');
+  const res = hexToBytes(num.toString(16).padStart(byteLength * 2, '0'));
+  if (res.length !== byteLength) throw new Error('invalid length of result key');
+  return res;
+}
+
 function strHasLength(str: string, min: number, max: number): boolean {
   return typeof str === 'string' && str.length >= min && str.length <= max;
 }
@@ -49,25 +60,19 @@ export function deriveMainSeed(username: string, password: string): Uint8Array {
   return res;
 }
 
+type AccountID = number | string;
+
 /**
- * Derives a child key. Prefer `eskdf` method instead.
- * @example deriveChildKey(seed, 'aes', 0)
+ * Converts protocol & accountId pair to HKDF salt & info params.
  */
-function deriveChildKey(
-  seed: Uint8Array,
-  protocol: string,
-  accountId: number | string = 0,
-  keyLength = 32
-): Uint8Array {
-  assertBytes(seed, 32);
+function getSaltInfo(protocol: string, accountId: AccountID = 0) {
   // Note that length here also repeats two lines below
   // We do an additional length check here to reduce the scope of DoS attacks
   if (!(strHasLength(protocol, 3, 15) && /^[a-z0-9]{3,15}$/.test(protocol))) {
     throw new Error('invalid protocol');
   }
-  if (!(typeof keyLength === 'number' && keyLength >= 16 && keyLength <= 8192)) {
-    throw new Error('invalid keyLength');
-  }
+
+  // Allow string account ids for some protocols
   const allowsStr = /^password\d{0,3}|ssh|tor|file$/.test(protocol);
   let salt: Uint8Array; // Extract salt. Default is undefined.
   if (typeof accountId === 'string') {
@@ -83,42 +88,43 @@ function deriveChildKey(
     throw new Error(`accountId must be a number${allowsStr ? ' or string' : ''}`);
   }
   const info = toBytes(protocol);
-  return hkdf(sha256, seed, salt, info, keyLength);
+  return { salt, info };
 }
 
-function bytesToNumber(bytes: Uint8Array): bigint {
-  return BigInt('0x' + bytesToHex(bytes));
-}
+type OptsLength = { keyLength: number };
+type OptsMod = { modulus: bigint };
+type KeyOpts = undefined | OptsLength | OptsMod;
 
-function numberToBytes(num: bigint, byteLength: number): Uint8Array {
-  if (num < BigInt(0)) throw new Error('expected positive number');
-  return hexToBytes(num.toString(16).padStart(byteLength, '0'));
+function countBytes(num: bigint): number {
+  if (typeof num !== 'bigint' || num <= BigInt(128)) throw new Error('invalid number');
+  return Math.ceil(num.toString(2).length / 8);
 }
 
 /**
- * Derives a child key, after that executes modular division.
- * @example deriveChildKeyMod(seed, 'chat', 0, 65537n)
+ * Parses keyLength and modulus options to extract length of result key.
+ * If modulus is used, adds 64 bits to it as per FIPS 186 B.4.1 to combat modulo bias.
  */
-function deriveChildKeyMod(
-  seed: Uint8Array,
-  protocol: string,
-  accountId: number | string,
-  modulo: bigint
-): Uint8Array {
-  if (typeof modulo !== 'bigint' || modulo < BigInt(3)) {
-    throw new Error('modulo must be valid bigint');
-  }
-  const _1 = BigInt(1);
-  // Convert to bit string, then convert to bytes
-  const byteLength = Math.ceil(modulo.toString(2).length / 8);
-  // FIPS 186 B.4.1 requires at least 64 more bits to combat modulo bias
-  const requiredBytes = byteLength + 8;
-  const key = deriveChildKey(seed, protocol, accountId, requiredBytes);
+function getKeyLength(options: KeyOpts): number {
+  if (!options) return 32;
+  const hasLen = 'keyLength' in options;
+  const hasMod = 'modulus' in options;
+  if (hasLen && hasMod) throw new Error('cannot combine keyLength and modulus options');
+  // FIPS 186 B.4.1 requires at least 64 more bits
+  let l = hasLen ? options.keyLength : hasMod ? countBytes(options.modulus) + 8 : 32;
+  if (!(typeof l === 'number' && l >= 16 && l <= 8192)) throw new Error('invalid keyLength');
+  return l;
+}
+
+/**
+ * Converts key to bigint and divides it by modulus. Big Endian.
+ * Implements FIPS 186 B.4.1, which removes 0 and modulo bias from output.
+ */
+function modReduceKey(key: Uint8Array, modulus: bigint): Uint8Array {
   const num = bytesToNumber(key);
-  const reduced = (num % (modulo - _1)) + _1;
-  let res = numberToBytes(reduced, byteLength);
-  // if (littleEndian) res = res.reverse();
-  return res;
+  const _1 = BigInt(1);
+  const reduced = (num % (modulus - _1)) + _1;
+  const bytes = numberToBytes(reduced, key.length - 8); // .reverse() for LE
+  return bytes;
 }
 
 // We are not using classes because constructor cannot be async
@@ -127,23 +133,13 @@ type ESKDF = Promise<
     /**
      * Derives a child key. Child key will not be associated with any
      * other child key because of properties of underlying KDF.
-     * Do not use the method for fields & elliptic curves, prefer `deriveChildKeyMod`.
+     *
      * @param protocol - 3-15 character protocol name
      * @param accountId - numeric identifier of account
-     * @param keyLength - (default: 32) key length
+     * @param options - `keyLength: 64` or `modulus: 41920438n`
      * @example deriveChildKey('aes', 0)
      */
-    deriveChildKey: (protocol: string, accountId: number | string, keyLength: number) => Uint8Array;
-    /**
-     * Derives a child key in range 1...modulo-1.
-     * Protected against modulo bias using algorithm from FIPS 186 B.4.1.
-     * Use the method for finite field & elliptic curve cryptography.
-     * @param protocol - 3-15 character protocol name
-     * @param accountId - numeric identifier of account
-     * @param modulo - number, by which the result would be reduced
-     * @example deriveChildKey('chat', 0, nist_p256_curve_order)
-     */
-    deriveChildKeyMod: (protocol: string, accountId: number | string, modulo: bigint) => Uint8Array;
+    deriveChildKey: (protocol: string, accountId: AccountID, options?: KeyOpts) => Uint8Array;
     /**
      * Deletes the main seed from eskdf instance
      */
@@ -168,21 +164,26 @@ type ESKDF = Promise<
 export async function eskdf(username: string, password: string): ESKDF {
   // We are using closure + object instead of class because
   // we want to make `seed` non-accessible for any external function.
-  let seed: Uint8Array | undefined = await deriveMainSeed(username, password);
-  function drv(protocol: string, accountId: number | string = 0): Uint8Array {
-    return deriveChildKey(seed!, protocol, accountId);
-  }
-  function deriveMod(protocol: string, accountId: number | string, modulo: bigint): Uint8Array {
-    return deriveChildKeyMod(seed!, protocol, accountId, modulo);
+  let seed: Uint8Array | undefined = deriveMainSeed(username, password);
+
+  function deriveCK(protocol: string, accountId: AccountID = 0, options?: KeyOpts): Uint8Array {
+    assertBytes(seed, 32);
+    // Validates protocol & accountId
+    const { salt, info } = getSaltInfo(protocol, accountId);
+    // Validates options
+    const keyLength = getKeyLength(options);
+    const key = hkdf(sha256, seed!, salt, info, keyLength);
+    // Modulus has already been validated
+    return options !== undefined && 'modulus' in options ? modReduceKey(key, options.modulus) : key;
   }
   function expire() {
     if (seed) seed.fill(1);
     seed = undefined;
   }
   // prettier-ignore
-  const fingerprint = Array.from(drv('fingerprint', 0))
+  const fingerprint = Array.from(deriveCK('fingerprint', 0))
     .slice(0, 6)
     .map((char) => char.toString(16).padStart(2, '0').toUpperCase())
     .join(':');
-  return Object.freeze({ deriveChildKey: drv, deriveChildKeyMod: deriveMod, expire, fingerprint });
+  return Object.freeze({ deriveChildKey: deriveCK, expire, fingerprint });
 }

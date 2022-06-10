@@ -22,15 +22,15 @@ function toHex(arr) {
   }
   for (let v of vectors.derive_main_seed.invalid) {
     const { username, password } = v;
-    should(`deriveMainSeed errors on ${username} ${password}`, () => {
-      assert.rejects(() => eskdf(username, password));
+    should(`deriveMainSeed errors on ${username} ${password}`, async () => {
+      await assert.rejects(() => eskdf(username, password));
     });
   }
   const { username, password } = vectors.derive_child_key.seed;
   const e = await eskdf(username, password);
   for (let v of vectors.derive_child_key.valid) {
     const { output, protocol, account_id } = v;
-    should(`deriveChildKey ${output}`, () => {
+    should(`deriveChildKey ${protocol} ${output}`, () => {
       const key = e.deriveChildKey(protocol, account_id);
       assert.equal(toHex(key), output);
     });
@@ -42,6 +42,7 @@ function toHex(arr) {
     });
   }
   // should.run();
+  if (require.main === module) should.run();
 })();
 
-if (require.main === module) should.run();
+// if (require.main === module) should.run();
