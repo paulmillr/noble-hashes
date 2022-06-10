@@ -109,8 +109,9 @@ function getKeyLength(options: KeyOpts): number {
   const hasLen = 'keyLength' in options;
   const hasMod = 'modulus' in options;
   if (hasLen && hasMod) throw new Error('cannot combine keyLength and modulus options');
+  if (!hasLen && !hasMod) throw new Error('must have either keyLength or modulus option');
   // FIPS 186 B.4.1 requires at least 64 more bits
-  let l = hasLen ? options.keyLength : hasMod ? countBytes(options.modulus) + 8 : 32;
+  let l = hasLen ? options.keyLength : hasMod ? countBytes(options.modulus) + 8 : 0;
   if (!(typeof l === 'number' && l >= 16 && l <= 8192)) throw new Error('invalid keyLength');
   return l;
 }
