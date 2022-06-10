@@ -6,10 +6,10 @@ export function bool(b: boolean) {
   if (typeof b !== 'boolean') throw new Error(`Expected boolean, not ${b}`);
 }
 
-export function bytes(bytes: Uint8Array | undefined, ...lengths: number[]): asserts bytes {
-  if (!(bytes instanceof Uint8Array)) throw new TypeError('Expected Uint8Array');
-  if (lengths.length > 0 && !lengths.includes(bytes.length))
-    throw new TypeError(`Expected Uint8Array of length ${lengths}, not of length=${bytes.length}`);
+export function bytes(b: Uint8Array | undefined, ...lengths: number[]) {
+  if (!(b instanceof Uint8Array)) throw new TypeError('Expected Uint8Array');
+  if (lengths.length > 0 && !lengths.includes(b.length))
+    throw new TypeError(`Expected Uint8Array of length ${lengths}, not of length=${b.length}`);
 }
 
 type Hash = {
