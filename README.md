@@ -357,19 +357,23 @@ Takes following params:
 - `username` - username, email, or identifier, min: 8 characters, should have enough entropy
 - `password` - min: 8 characters, should have enough entropy
 
-Produces ESKDF instance that has `deriveChildKey(protocol, accountId, keyLength)` function.
+Produces ESKDF instance that has `deriveChildKey(protocol, accountId[, options])` function.
 
 - `protocol` - 3-15 character protocol name
 - `accountId` - numeric identifier of account
-- `keyLength` - (default: 32) key length
+- `options` - `keyLength: 32` with specified key length (default is 32),
+  or `modulus: 2n ** 221n - 17n` with specified modulus. It will fetch modulus + 64 bits of
+  data, execute modular division. The result will have negligible bias as per FIPS 186 B.4.1.
+  Can be used to generate, for example, elliptic curve keys.
 
 Takes username and password, then takes protocol name and account id.
 
 ```typescript
 import { eskdf } from '@noble/hashes/eskdf';
-const kdf = await eskdf('example-university', 'beginning-new-example');
-const key = kdf.deriveChildKey('aes', 0);
+const kdf = await eskdf('example@university', 'beginning-new-example');
 console.log(kdf.fingerprint);
+const key = kdf.deriveChildKey('aes', 0);
+const ecc = kdf.deriveChildKey('ecc', 0, { modulus: 2n ** 252n - 27742317777372353535851937790883648493n })
 kdf.expire();
 ```
 
