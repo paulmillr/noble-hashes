@@ -373,6 +373,7 @@ import { eskdf } from '@noble/hashes/eskdf';
 const kdf = await eskdf('example@university', 'beginning-new-example');
 console.log(kdf.fingerprint);
 const key = kdf.deriveChildKey('aes', 0);
+const key = kdf.deriveChildKey('aes', 0, { keyLength: 16 });
 const ecc = kdf.deriveChildKey('ecc', 0, { modulus: 2n ** 252n - 27742317777372353535851937790883648493n })
 kdf.expire();
 ```
