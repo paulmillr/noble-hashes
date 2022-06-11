@@ -158,28 +158,29 @@ function executeKDFTests(limit = true) {
     }
   });
 
-  should('PBKDF2(ripemd160) generator', async () => {
-    const cases = genl({
-      c: integer(1, 1024),
-      dkLen: integer(0, 1024),
-      pwd: bytes(0, 1024),
-      salt: bytes(0, 1024),
-    });
-    for (let c of cases) {
-      const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
-      const opt = { c: c.c, dkLen: c.dkLen };
-      assert.deepStrictEqual(
-        pbkdf2(ripemd160, c.pwd, c.salt, opt),
-        exp,
-        `pbkdf2(ripemd160, ${opt})`
-      );
-      assert.deepStrictEqual(
-        await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
-        exp,
-        `pbkdf2Async(ripemd160, ${opt})`
-      );
-    }
-  });
+  // Disable because openssl 3 deprecated ripemd
+  // should('PBKDF2(ripemd160) generator', async () => {
+  //   const cases = genl({
+  //     c: integer(1, 1024),
+  //     dkLen: integer(0, 1024),
+  //     pwd: bytes(0, 1024),
+  //     salt: bytes(0, 1024),
+  //   });
+  //   for (let c of cases) {
+  //     const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
+  //     const opt = { c: c.c, dkLen: c.dkLen };
+  //     assert.deepStrictEqual(
+  //       pbkdf2(ripemd160, c.pwd, c.salt, opt),
+  //       exp,
+  //       `pbkdf2(ripemd160, ${opt})`
+  //     );
+  //     assert.deepStrictEqual(
+  //       await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
+  //       exp,
+  //       `pbkdf2Async(ripemd160, ${opt})`
+  //     );
+  //   }
+  // });
 
   should('PBKDF2(blake2s) generator', async () => {
     const cases = genl({
