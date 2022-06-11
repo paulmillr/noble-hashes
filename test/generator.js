@@ -6,7 +6,6 @@ const { sha512 } = require('../sha512');
 const { blake2s } = require('../blake2s');
 const { blake2b } = require('../blake2b');
 const { sha3_256, sha3_512 } = require('../sha3');
-const { ripemd160 } = require('../ripemd160');
 const { hkdf } = require('../hkdf');
 const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
 const { concatBytes } = require('./utils');
