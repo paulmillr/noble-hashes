@@ -124,8 +124,7 @@ function modReduceKey(key: Uint8Array, modulus: bigint): Uint8Array {
   const num = bytesToNumber(key);
   const _1 = BigInt(1);
   const reduced = (num % (modulus - _1)) + _1;
-  const bytes = numberToBytes(reduced, key.length - 8); // .reverse() for LE
-  return bytes;
+  return numberToBytes(reduced, key.length - 8); // .reverse() for LE
 }
 
 // We are not using classes because constructor cannot be async
