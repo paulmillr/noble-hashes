@@ -53,6 +53,10 @@
       "import": "./esm/crypto.js",
       "default": "./crypto.js"
     },
+    "./_assert": {
+      "import": "./esm/_assert.js",
+      "default": "./_assert.js"
+    },
     "./_sha2": {
       "import": "./esm/_sha2.js",
       "default": "./_sha2.js"
