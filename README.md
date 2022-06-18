@@ -70,6 +70,9 @@ const { hkdf } = require('@noble/hashes/hkdf');
 const { pbkdf2, pbkdf2Async } = require('@noble/hashes/pbkdf2');
 const { scrypt, scryptAsync } = require('@noble/hashes/scrypt');
 
+// legacy, still relevant for HMAC
+const { sha1 } = require('@noble/hashes/sha1');
+
 // small utility method that converts bytes to hex
 const { bytesToHex as toHex } = require('@noble/hashes/utils');
 console.log(toHex(sha256('abc')));
@@ -117,6 +120,7 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - [RIPEMD-160](#ripemd-160)
 - [BLAKE2b, BLAKE2s](#blake2b-blake2s)
 - [BLAKE3](#blake3)
+- [SHA1 (legacy)](#sha1-legacy)
 - [HMAC](#hmac)
 - [HKDF](#hkdf)
 - [PBKDF2](#pbkdf2)
@@ -266,6 +270,20 @@ import { blake3 } from '@noble/hashes/blake3';
 const h11 = blake3('abc', { dkLen: 256, key: 'def', context: 'fji' });
 ```
 
+##### SHA1 (legacy)
+
+SHA1 was cryptographically broken, however, it was not broken for cases like HMAC.
+
+See [RFC4226 B.2](https://datatracker.ietf.org/doc/html/rfc4226#appendix-B.2).
+
+Don't use it for a new protocol.
+
+```typescript
+import { sha1 } from '@noble/hashes/sha1';
+// All params are optional
+const h12 = sha1('def');
+```
+
 See [Website](https://blake3.io).
 
 ##### HMAC
@@ -392,7 +410,7 @@ console.log(toHex(randomBytes(32)));
 
 Noble is production-ready.
 
-1. The library has been audited on Jan 5, 2022 by an independent security firm cure53: [PDF](https://cure53.de/pentest-report_hashing-libs.pdf). No vulnerabilities have been found. The audit has been funded by Ethereum Foundation with help of [Nomic Labs](https://nomiclabs.io). Modules `blake3` and `sha3-addons` have not been audited. See [changes since audit](https://github.com/paulmillr/noble-hashes/compare/1.0.0..main).
+1. The library has been audited on Jan 5, 2022 by an independent security firm cure53: [PDF](https://cure53.de/pentest-report_hashing-libs.pdf). No vulnerabilities have been found. The audit has been funded by Ethereum Foundation with help of [Nomic Labs](https://nomiclabs.io). Modules `blake3`, `sha3-addons` and `sha1` have not been audited. See [changes since audit](https://github.com/paulmillr/noble-hashes/compare/1.0.0..main).
 2. The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz). You can run the fuzzer by yourself to check it.
 3. [Timing attack](https://en.wikipedia.org/wiki/Timing_attack) considerations: _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to achieve in a scripting language. Which means _any other JS library can't have constant-timeness_. Even statically typed Rust, a language without GC, [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security) for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones. Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
 4. Memory dump considerations: the library shares state buffers between hash function calls. The buffers are zeroed-out after each call. However, if an attacker can read application memory, you are doomed in any case:

@@ -12,6 +12,7 @@ const {
   shake128,
   shake256,
 } = require('../sha3');
+const { sha1 } = require('../sha1');
 const { k12 } = require('../sha3-addons');
 const { blake2b } = require('../blake2b');
 const { blake2s } = require('../blake2s');
@@ -49,6 +50,20 @@ const testBuf = new Uint8Array(4096);
 for (let i = 0; i < testBuf.length; i++) testBuf[i] = i;
 
 const HASHES = {
+  SHA1: {
+    fn: sha1,
+    obj: sha1.create,
+    node: (buf) => Uint8Array.from(crypto.createHash('sha1').update(buf).digest()),
+    node_obj: () => crypto.createHash('sha1'),
+    nist: [
+      'a9993e36 4706816a ba3e2571 7850c26c 9cd0d89d',
+      'da39a3ee 5e6b4b0d 3255bfef 95601890 afd80709',
+      '84983e44 1c3bd26e baae4aa1 f95129e5 e54670f1',
+      'a49b2446 a02c645b f419f995 b6709125 3a04a259',
+      '34aa973c d4c4daa4 f61eeb2b dbad2731 6534016f',
+      '7789f0c9 ef7bfc40 d9331114 3dfbe69e 2017f592',
+    ],
+  },
   SHA256: {
     fn: sha256,
     obj: sha256.create,
