@@ -1,6 +1,6 @@
 {
   "name": "@noble/hashes",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Audited & minimal 0-dependency JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2, Scrypt",
   "files": [
     "/*.js",
@@ -106,6 +106,11 @@
       "default": "./scrypt.js"
     },
     "./scrypt.d.ts": "scrypt.d.ts",
+    "./sha1": {
+      "import": "./esm/sha1.js",
+      "default": "./sha1.js"
+    },
+    "./sha1.d.ts": "sha1.d.ts",
     "./sha3-addons": {
       "import": "./esm/sha3-addons.js",
       "default": "./sha3-addons.js"
