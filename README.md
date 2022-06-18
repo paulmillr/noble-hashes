@@ -280,11 +280,8 @@ Don't use it for a new protocol.
 
 ```typescript
 import { sha1 } from '@noble/hashes/sha1';
-// All params are optional
 const h12 = sha1('def');
 ```
-
-See [Website](https://blake3.io).
 
 ##### HMAC
 
