@@ -289,7 +289,7 @@ const h12 = sha1('def');
 import { hmac } from '@noble/hashes/hmac';
 import { sha256 } from '@noble/hashes/sha256';
 const mac1 = hmac(sha256, 'key', 'message');
-const mac2 = hmac.create(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.from([4, 5, 6]).digest();
+const mac2 = hmac.create(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.from([4, 5, 6])).digest();
 ```
 
 Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
