@@ -47,6 +47,7 @@
       "default": "./index.js"
     },
     "./crypto": {
+      "types": "./crypto.d.ts",
       "browser": {
         "import": "./esm/cryptoBrowser.js",
         "default": "./cryptoBrowser.js"
@@ -55,10 +56,12 @@
       "default": "./crypto.js"
     },
     "./_assert": {
+      "types": "./_assert.d.ts",
       "import": "./esm/_assert.js",
       "default": "./_assert.js"
     },
     "./_sha2": {
+      "types": "./_sha2.d.ts",
       "import": "./esm/_sha2.js",
       "default": "./_sha2.js"
     },
