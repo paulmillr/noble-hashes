@@ -41,7 +41,8 @@
     "typescript": "4.7.3"
   },
   "exports": {
-    "./index": {
+    ".": {
+      "types": "./index.d.ts",
       "import": "./esm/index.js",
       "default": "./index.js"
     },
@@ -62,80 +63,80 @@
       "default": "./_sha2.js"
     },
     "./blake2b": {
+      "types": "./blake2b.d.ts",
       "import": "./esm/blake2b.js",
       "default": "./blake2b.js"
     },
-    "./blake2b.d.ts": "blake2b.d.ts",
     "./blake2s": {
+      "types": "./blake2s.d.ts",
       "import": "./esm/blake2s.js",
       "default": "./blake2s.js"
     },
-    "./blake2s.d.ts": "blake2s.d.ts",
     "./blake3": {
+      "types": "./blake3.d.ts",
       "import": "./esm/blake3.js",
       "default": "./blake3.js"
     },
-    "./blake3.d.ts": "blake3.d.ts",
     "./eskdf": {
+      "types": "./eskdf.d.ts",
       "import": "./esm/eskdf.js",
       "default": "./eskdf.js"
     },
-    "./eskdf.d.ts": "eskdf.d.ts",
     "./hkdf": {
+      "types": "./hkdf.d.ts",
       "import": "./esm/hkdf.js",
       "default": "./hkdf.js"
     },
-    "./hkdf.d.ts": "hkdf.d.ts",
     "./hmac": {
+      "types": "./hmac.d.ts",
       "import": "./esm/hmac.js",
       "default": "./hmac.js"
     },
-    "./hmac.d.ts": "hmac.d.ts",
     "./pbkdf2": {
+      "types": "./pbkdf2.d.ts",
       "import": "./esm/pbkdf2.js",
       "default": "./pbkdf2.js"
     },
-    "./pbkdf2.d.ts": "pbkdf2.d.ts",
     "./ripemd160": {
+      "types": "./ripemd160.d.ts",
       "import": "./esm/ripemd160.js",
       "default": "./ripemd160.js"
     },
-    "./ripemd160.d.ts": "ripemd160.d.ts",
     "./scrypt": {
+      "types": "./scrypt.d.ts",
       "import": "./esm/scrypt.js",
       "default": "./scrypt.js"
     },
-    "./scrypt.d.ts": "scrypt.d.ts",
     "./sha1": {
+      "types": "./sha1.d.ts",
       "import": "./esm/sha1.js",
       "default": "./sha1.js"
     },
-    "./sha1.d.ts": "sha1.d.ts",
     "./sha3-addons": {
+      "types": "./sha3-addons.d.ts",
       "import": "./esm/sha3-addons.js",
       "default": "./sha3-addons.js"
     },
-    "./sha3-addons.d.ts": "sha3-addons.d.ts",
     "./sha3": {
+      "types": "./sha3.d.ts",
       "import": "./esm/sha3.js",
       "default": "./sha3.js"
     },
-    "./sha3.d.ts": "sha3.d.ts",
     "./sha256": {
+      "types": "./sha256.d.ts",
       "import": "./esm/sha256.js",
       "default": "./sha256.js"
     },
-    "./sha256.d.ts": "sha256.d.ts",
     "./sha512": {
+      "types": "./sha512.d.ts",
       "import": "./esm/sha512.js",
       "default": "./sha512.js"
     },
-    "./sha512.d.ts": "sha512.d.ts",
     "./utils": {
+      "types": "./utils.d.ts",
       "import": "./esm/utils.js",
       "default": "./utils.js"
-    },
-    "./utils.d.ts": "utils.d.ts"
+    }
   },
   "keywords": [
     "sha",
