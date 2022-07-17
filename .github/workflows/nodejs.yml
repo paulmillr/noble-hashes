@@ -1,24 +1,17 @@
 name: Node CI
 
-on: [push]
-env:
-  FORCE_COLOR: 2
+on: [push, pull_request]
 jobs:
   test:
-    name: v${{ matrix.node }} @ ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        node: [14.x, 16.x, 18.x]
-        os: [ubuntu-latest]
+    name: v18 @ ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node }}
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node }}
+        node-version: 18
     - run: npm install
-    - name: Build and run tests
-      run: |
-        npm run build --if-present
-        npm test
+    - run: npm run build --if-present
+    - run: npm test
+    - run: npm run lint --if-present
