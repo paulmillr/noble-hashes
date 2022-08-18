@@ -31,17 +31,6 @@ function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
   return arr;
 }
 
-function bytesToNumber(bytes: Uint8Array): bigint {
-  return BigInt('0x' + bytesToHex(bytes));
-}
-
-function numberToBytes(num: bigint, byteLength: number): Uint8Array {
-  if (num < BigInt(0)) throw new Error('expected positive number');
-  const res = hexToBytes(num.toString(16).padStart(byteLength * 2, '0'));
-  if (res.length !== byteLength) throw new Error('invalid length of result key');
-  return res;
-}
-
 function strHasLength(str: string, min: number, max: number): boolean {
   return typeof str === 'string' && str.length >= min && str.length <= max;
 }
@@ -121,10 +110,15 @@ function getKeyLength(options: KeyOpts): number {
  * Implements FIPS 186 B.4.1, which removes 0 and modulo bias from output.
  */
 function modReduceKey(key: Uint8Array, modulus: bigint): Uint8Array {
-  const num = bytesToNumber(key);
   const _1 = BigInt(1);
-  const reduced = (num % (modulus - _1)) + _1;
-  return numberToBytes(reduced, key.length - 8); // .reverse() for LE
+  const num = BigInt('0x' + bytesToHex(key)); // check for ui8a, then bytesToNumber()
+  const res = (num % (modulus - _1)) + _1; // Remove 0 from output
+  if (res < _1) throw new Error('expected positive number'); // Guard against bad values
+  const len = key.length - 8; // FIPS requires 64 more bits = 8 bytes
+  const hex = res.toString(16).padStart(len * 2, '0'); // numberToHex()
+  const bytes = hexToBytes(hex);
+  if (bytes.length !== len) throw new Error('invalid length of result key');
+  return bytes;
 }
 
 // We are not using classes because constructor cannot be async
