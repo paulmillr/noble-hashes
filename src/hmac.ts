@@ -14,13 +14,14 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     assert.hash(hash);
     const key = toBytes(_key);
     this.iHash = hash.create() as T;
-    if (!(this.iHash instanceof Hash))
+    if (typeof this.iHash.update !== 'function')
       throw new TypeError('Expected instance of class which extends utils.Hash');
-    const blockLen = (this.blockLen = this.iHash.blockLen);
+    this.blockLen = this.iHash.blockLen;
     this.outputLen = this.iHash.outputLen;
+    const blockLen = this.blockLen;
     const pad = new Uint8Array(blockLen);
     // blockLen can be bigger than outputLen
-    pad.set(key.length > this.iHash.blockLen ? hash.create().update(key).digest() : key);
+    pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
     for (let i = 0; i < pad.length; i++) pad[i] ^= 0x36;
     this.iHash.update(pad);
     // By doing update (processing of first block) of outer hash here we can re-use it between multiple calls via clone
