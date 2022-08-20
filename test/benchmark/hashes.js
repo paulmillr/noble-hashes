@@ -94,7 +94,7 @@ const HASHES = {
 
 // buffer title, sample count, data
 const buffers = {
-  '32B': [200000, new Uint8Array(32).fill(1)],
+  '32B': [500000, new Uint8Array(32).fill(1)],
   // '64B': [200000, new Uint8Array(64).fill(1)],
   // '1KB': [50000, new Uint8Array(1024).fill(2)],
   // '8KB': [6250, new Uint8Array(1024 * 8).fill(3)],
