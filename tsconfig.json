@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "strict": true,
+        "declaration": true,
         "outDir": ".",
         "target": "es2020",
         "lib": ["es2020"], // Set explicitly to remove DOM
@@ -14,6 +15,7 @@
     },
     "include": ["src"],
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "*.d.ts"
     ],
 }
