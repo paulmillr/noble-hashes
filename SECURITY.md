@@ -12,7 +12,7 @@
 Use maintainer's email specified at https://paulmillr.com
 
 It's preferred that you use
-PGP key from [pgp proof](https://paulmillr.com/pgp_proof.txt) (current is [46BEEF337A641ABB](https://paulmillr.com/pgp_proof.txt)).
+PGP key from [pgp proof](https://paulmillr.com/pgp_proof.txt) (current is [697079DA6878B89B](https://paulmillr.com/pgp_proof.txt)).
 Ensure the pgp proof page has maintainer's site/github specified.
 
 You will get an update as soon as the email is read; a "Security vulnerability" phrase in email's title would help.
