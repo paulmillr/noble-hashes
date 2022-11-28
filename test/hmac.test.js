@@ -1,17 +1,19 @@
 const assert = require('assert');
 const { should } = require('micro-should');
 const { sha256 } = require('../sha256');
-const { sha512 } = require('../sha512');
+const { sha512, sha384 } = require('../sha512');
 const { hmac } = require('../hmac');
 const {
   utf8ToBytes,
   hexToBytes,
+  bytesToHex,
   truncate,
   concatBytes,
   TYPE_TEST,
   SPACE,
   EMPTY,
 } = require('./utils');
+const { deepStrictEqual } = require('assert');
 
 // HMAC test vectors from RFC 4231
 const HMAC_VECTORS = [
@@ -194,6 +196,30 @@ should('HMAC types', () => {
     hmac(sha512, SPACE.str, SPACE.str),
     hmac.create(sha512, SPACE.str).update(SPACE.str).digest(),
     'hmac.SPACE (full form stingr)'
+  );
+});
+
+should('Sha512/384 issue', () => {
+  const h = hmac.create(
+    sha384,
+    hexToBytes(
+      '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+    )
+  );
+  h.update(
+    hexToBytes(
+      '010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101'
+    )
+  );
+  h.update(hexToBytes('00'));
+  h.update(
+    hexToBytes(
+      '6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf59a9083505bc92276aec4be312696ef7bf3bf603f4bbd381196a029f340585312313bca4a9b5b890efee42c77b1ee25fe'
+    )
+  );
+  deepStrictEqual(
+    bytesToHex(h.digest()),
+    'a1ae63339c4fac449464e302c61e8ceb5b28c04d108e022179ce6dabb2d3e310cb3bf41cd6013b3006f33c037e6b7fa8'
   );
 });
 

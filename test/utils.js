@@ -3,6 +3,7 @@ const zlib = require('zlib');
 const utf8ToBytes = (str) => new TextEncoder().encode(str);
 const hexToBytes = (str) => Uint8Array.from(Buffer.from(str, 'hex'));
 const truncate = (buf, length) => (length ? buf.slice(0, length) : buf);
+const bytesToHex = (buf) => Buffer.from(buf).toString('hex');
 
 const repeat = (buf, len) => {
   // too slow: Uint8Array.from({ length: len * buf.length }, (_, i) => buf[i % buf.length]);
@@ -111,6 +112,7 @@ const jsonGZ = (path) => JSON.parse(zlib.gunzipSync(fs.readFileSync(`${__dirname
 module.exports = {
   utf8ToBytes,
   hexToBytes,
+  bytesToHex,
   truncate,
   repeat,
   concatBytes,
