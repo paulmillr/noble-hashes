@@ -89,10 +89,10 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
     this.process(view, 0);
     const oview = createView(out);
-    const oLen = this.outputLen;
-    if (oLen % 4) throw new Error('_sha2: outputLen should be aligned to 32bit');
-    const outLen = oLen / 4;
+    const len = this.outputLen;
+    if (len % 4) throw new Error('_sha2: outputLen should be aligned to 32bit');
     const state = this.get();
+    const outLen = len / 4;
     if (outLen > state.length) throw new Error('_sha2: outputLen bigger than state');
     for (let i = 0; i < outLen; i++) oview.setUint32(4 * i, state[i], isLE);
   }
