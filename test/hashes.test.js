@@ -1,8 +1,8 @@
 const assert = require('assert');
 const { should } = require('micro-should');
 const crypto = require('crypto');
-const { sha256 } = require('../sha256');
-const { sha384, sha512, sha512_256 } = require('../sha512');
+const { sha224, sha256 } = require('../sha256');
+const { sha384, sha512, sha512_224, sha512_256 } = require('../sha512');
 const {
   sha3_224,
   sha3_256,
@@ -64,6 +64,20 @@ const HASHES = {
       '7789f0c9 ef7bfc40 d9331114 3dfbe69e 2017f592',
     ],
   },
+  SHA224: {
+    fn: sha224,
+    obj: sha224.create,
+    node: (buf) => Uint8Array.from(crypto.createHash('sha224').update(buf).digest()),
+    node_obj: () => crypto.createHash('sha224'),
+    nist: [
+      '23097d22 3405d822 8642a477 bda255b3 2aadbce4 bda0b3f7 e36c9da7',
+      'd14a028c 2a3a2bc9 476102bb 288234c4 15a2b01f 828ea62a c5b3e42f',
+      '75388b16 512776cc 5dba5da1 fd890150 b0c6455c b4f58b19 52522525',
+      'c97ca9a5 59850ce9 7a04a96d ef6d99a9 e0e0e2ab 14e6b8df 265fc0b3',
+      '20794655 980c91d8 bbb4c1ea 97618a4b f03f4258 1948b2ee 4ee7ad67',
+      'b5989713 ca4fe47a 009f8621 980b34e6 d63ed306 3b2a0a2c 867d8a85',
+    ],
+  },
   SHA256: {
     fn: sha256,
     obj: sha256.create,
@@ -118,6 +132,21 @@ const HASHES = {
       '09330c33f71147e8 3d192fc782cd1b47 53111b173b3b05d2 2fa08086e3b0f712 fcc7c71a557e2db9 66c3e9fa91746039',
       '9d0e1809716474cb 086e834e310a4a1c ed149e9c00f24852 7972cec5704c2a5b 07b8b3dc38ecc4eb ae97ddd87f3d8985',
       '5441235cc0235341 ed806a64fb354742 b5e5c02a3c5cb71b 5f63fb793458d8fd ae599c8cd8884943 c04f11b31b89f023',
+    ],
+  },
+  SHA512_224: {
+    fn: sha512_224,
+    obj: sha512_224.create,
+    node: (buf) => Uint8Array.from(crypto.createHash('sha512-224').update(buf).digest()),
+    node_obj: () => crypto.createHash('sha512-224'),
+    // There is no official vectors, so we created them via:
+    // > NIST_VECTORS.map((i) => crypto.createHash('sha512-256').update(i[2]).digest('hex'))
+    nist: [
+      '4634270f707b6a54daae7530460842e20e37ed265ceee9a43e8924aa',
+      '6ed0dd02806fa89e25de060c19d3ac86cabb87d6a0ddd05c333b84f4',
+      'e5302d6d54bb242275d1e7622d68df6eb02dedd13f564c13dbda2174',
+      '23fec5bb94d60b23308192640b0c453335d664734fe40e7268674af9',
+      '37ab331d76f0d36de422bd0edeb22a28accd487b7a8453ae965dd287',
     ],
   },
   SHA512_256: {

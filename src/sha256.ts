@@ -32,14 +32,14 @@ const SHA256_W = new Uint32Array(64);
 class SHA256 extends SHA2<SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
-  private A = IV[0] | 0;
-  private B = IV[1] | 0;
-  private C = IV[2] | 0;
-  private D = IV[3] | 0;
-  private E = IV[4] | 0;
-  private F = IV[5] | 0;
-  private G = IV[6] | 0;
-  private H = IV[7] | 0;
+  A = IV[0] | 0;
+  B = IV[1] | 0;
+  C = IV[2] | 0;
+  D = IV[3] | 0;
+  E = IV[4] | 0;
+  F = IV[5] | 0;
+  G = IV[6] | 0;
+  H = IV[7] | 0;
 
   constructor() {
     super(64, 32, 8, false);
@@ -106,9 +106,25 @@ class SHA256 extends SHA2<SHA256> {
     this.buffer.fill(0);
   }
 }
+// Constants from https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+class SHA224 extends SHA256 {
+  A = 0xc1059ed8 | 0;
+  B = 0x367cd507 | 0;
+  C = 0x3070dd17 | 0;
+  D = 0xf70e5939 | 0;
+  E = 0xffc00b31 | 0;
+  F = 0x68581511 | 0;
+  G = 0x64f98fa7 | 0;
+  H = 0xbefa4fa4 | 0;
+  constructor() {
+    super();
+    this.outputLen = 28;
+  }
+}
 
 /**
  * SHA2-256 hash function
  * @param message - data that would be hashed
  */
 export const sha256 = wrapConstructor(() => new SHA256());
+export const sha224 = wrapConstructor(() => new SHA224());

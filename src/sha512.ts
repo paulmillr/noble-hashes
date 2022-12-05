@@ -166,6 +166,31 @@ export class SHA512 extends SHA2<SHA512> {
   }
 }
 
+class SHA512_224 extends SHA512 {
+  // h -- high 32 bits, l -- low 32 bits
+  Ah = 0x8c3d37c8 | 0;
+  Al = 0x19544da2 | 0;
+  Bh = 0x73e19966 | 0;
+  Bl = 0x89dcd4d6 | 0;
+  Ch = 0x1dfab7ae | 0;
+  Cl = 0x32ff9c82 | 0;
+  Dh = 0x679dd514 | 0;
+  Dl = 0x582f9fcf | 0;
+  Eh = 0x0f6d2b69 | 0;
+  El = 0x7bd44da8 | 0;
+  Fh = 0x77e36f73 | 0;
+  Fl = 0x04c48942 | 0;
+  Gh = 0x3f9d85a8 | 0;
+  Gl = 0x6a1d36c8 | 0;
+  Hh = 0x1112e6ad | 0;
+  Hl = 0x91d692a1 | 0;
+
+  constructor() {
+    super();
+    this.outputLen = 28;
+  }
+}
+
 class SHA512_256 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
   Ah = 0x22312194 | 0;
@@ -217,5 +242,6 @@ class SHA384 extends SHA512 {
 }
 
 export const sha512 = wrapConstructor(() => new SHA512());
+export const sha512_224 = wrapConstructor(() => new SHA512_224());
 export const sha512_256 = wrapConstructor(() => new SHA512_256());
 export const sha384 = wrapConstructor(() => new SHA384());
