@@ -1,8 +1,8 @@
 import { SHA2 } from './_sha2.js';
 import { wrapConstructor } from './utils.js';
 
-// SHA1 was cryptographically broken, however, it was not broken for cases like HMAC.
-// Don't use it for a new protocol.
+// SHA1 was cryptographically broken.
+// It is still widely used in legacy apps. Don't use it for a new protocol.
 
 // RFC 3174
 const rotl = (word: number, shift: number) => (word << shift) | ((word >>> (32 - shift)) >>> 0);
