@@ -473,7 +473,7 @@ The current performance is good enough when compared to other projects; SHA256 t
 
 ## Contributing & testing
 
-1. Clone the repository.
+1. Clone the repository
 2. `npm install` to install build dependencies like TypeScript
 3. `npm run build` to compile TypeScript code
 4. `npm run test` will execute all main tests. See [our approach to testing](./test/README.md)
