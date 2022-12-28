@@ -4,7 +4,7 @@ Audited & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF,
 
 - **noble** family, zero dependencies
 - 🔒 [**Audited**](#security) by an independent security firm: no vulnerabilities have been found
-- 🔻 Helps JS bundlers with lack of entry point, ensures small size of your app
+- 🔻 Tree-shaking-friendly: there is no entry point, which ensures small size of your app
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🏎 Ultra-fast, hand-optimized for caveats of JS engines
 - 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests
@@ -24,9 +24,9 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 - Supported in all major browsers and stable node.js versions
 - All releases are signed with PGP keys
 - Check out [homepage](https://paulmillr.com/noble/) & all libraries:
-  [secp256k1](https://github.com/paulmillr/noble-secp256k1),
+  [curves](https://github.com/paulmillr/noble-curves) ([secp256k1](https://github.com/paulmillr/noble-secp256k1),
   [ed25519](https://github.com/paulmillr/noble-ed25519),
-  [bls12-381](https://github.com/paulmillr/noble-bls12-381),
+  [bls12-381](https://github.com/paulmillr/noble-bls12-381)),
   [hashes](https://github.com/paulmillr/noble-hashes)
 
 ## Usage
