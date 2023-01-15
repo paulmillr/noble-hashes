@@ -7,6 +7,8 @@
         "lib": ["es2020"], // Set explicitly to remove DOM
         "module": "commonjs",
         "moduleResolution": "node",
+        "sourceMap": true,
+        "inlineSources": true,
         "noUnusedLocals": true,
         "baseUrl": ".",
         "paths": {
