@@ -5,6 +5,7 @@
   "files": [
     "/*.js",
     "/*.d.ts",
+    "/*.js.map",
     "esm",
     "!rollup.config.js",
     "!rollup.js"
