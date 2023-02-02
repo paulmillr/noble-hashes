@@ -11,7 +11,7 @@ Audited & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF,
 - 🧪 Differential fuzzing ensures even more correctness with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
 - 🐢 Scrypt supports `N: 2**22`, while other implementations are limited to `2**20`
 - 🦘 SHA3 supports Keccak, TupleHash, KangarooTwelve and MarsupilamiFourteen
-- 🪶 Just 2.3k lines / 14KB gzipped. SHA256-only is 240 lines / 3KB gzipped
+- 🪶 Just 3.4k lines / 17KB gzipped. SHA256-only is 240 lines / 3KB gzipped
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
@@ -41,42 +41,38 @@ The library does not have an entry point. It allows you to select specific primi
 ```js
 // Common.js and ECMAScript Modules (ESM)
 import { sha256 } from '@noble/hashes/sha256';
-console.log(sha256(new Uint8Array([1, 2, 3])));
-// Uint8Array(32) [3, 144,  88, 198, 242, 192, 203,  73, ...]
-
+console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
 // you could also pass strings that will be UTF8-encoded to Uint8Array
-console.log(sha256('abc'))); // == sha256(new TextEncoder().encode('abc'))
+console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 
 // sha384 is here, because it uses same internals as sha512
-const { sha512, sha512_256, sha384 } = require('@noble/hashes/sha512');
+import { sha512, sha512_256, sha384 } from '@noble/hashes/sha512';
 // prettier-ignore
-const {
+import {
   sha3_224, sha3_256, sha3_384, sha3_512,
   keccak_224, keccak_256, keccak_384, keccak_512,
   shake128, shake256
-} = require('@noble/hashes/sha3');
+} from '@noble/hashes/sha3';
 // prettier-ignore
-const {
+import {
   cshake128, cshake256, kmac128, kmac256,
   k12, m14,
   tuplehash256, parallelhash256, keccakprg
-} = require('@noble/hashes/sha3-addons');
-const { ripemd160 } = require('@noble/hashes/ripemd160');
-const { blake3 } = require('@noble/hashes/blake3');
-const { blake2b } = require('@noble/hashes/blake2b');
-const { blake2s } = require('@noble/hashes/blake2s');
-const { hmac } = require('@noble/hashes/hmac');
-const { hkdf } = require('@noble/hashes/hkdf');
-const { pbkdf2, pbkdf2Async } = require('@noble/hashes/pbkdf2');
-const { scrypt, scryptAsync } = require('@noble/hashes/scrypt');
+} from '@noble/hashes/sha3-addons';
+import { ripemd160 } from '@noble/hashes/ripemd160';
+import { blake3 } from '@noble/hashes/blake3';
+import { blake2b } from '@noble/hashes/blake2b';
+import { blake2s } from '@noble/hashes/blake2s';
+import { hmac } from '@noble/hashes/hmac';
+import { hkdf } from '@noble/hashes/hkdf';
+import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
+import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
 
-// legacy, still relevant for HMAC
-const { sha1 } = require('@noble/hashes/sha1');
+import { sha1 } from '@noble/hashes/sha1'; // legacy
 
 // small utility method that converts bytes to hex
-const { bytesToHex as toHex } = require('@noble/hashes/utils');
-console.log(toHex(sha256('abc')));
-// ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+import { bytesToHex as toHex } from '@noble/hashes/utils';
+console.log(toHex(sha256('abc'))); // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
 ```
 
 ## API
