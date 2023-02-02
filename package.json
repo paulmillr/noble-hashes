@@ -6,17 +6,15 @@
     "/*.js",
     "/*.d.ts",
     "/*.js.map",
-    "esm",
-    "!rollup.config.js",
-    "!rollup.js"
+    "esm"
   ],
   "scripts": {
     "bench": "node test/benchmark/index.js noble",
     "bench:all": "node test/benchmark/index.js",
     "bench:install": "cd test/benchmark && npm install && cd ../../",
     "build": "tsc && tsc -p tsconfig.esm.json",
-    "build:release": "rollup -c rollup.config.js",
-    "build:clean": "rm *.d.ts *.js",
+    "build:release": "rollup -c build/rollup.config.js",
+    "build:clean": "rm *.d.ts *.js *.js.map esm/*.js esm/*.js.map",
     "lint": "prettier --check 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "test": "node test/index.js",

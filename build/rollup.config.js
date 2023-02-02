@@ -1,7 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve';
 
 export default {
-  input: 'rollup.js',
+  input: './build/rollup-spec.js',
   output: {
     file: 'build/noble-hashes.js',
     format: 'umd',
