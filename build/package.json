@@ -1,0 +1,18 @@
+{
+  "name": "build",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The directory is used to build a single file `noble-hashes.js` which contains everything.",
+  "main": "noble-hashes.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "rollup": "2.75.5",
+    "@rollup/plugin-node-resolve": "13.3.0",
+    "@noble/hashes": ".."
+  }
+}

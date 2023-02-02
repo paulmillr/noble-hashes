@@ -1,9 +1,9 @@
 import resolve from '@rollup/plugin-node-resolve';
 
 export default {
-  input: './build/rollup-spec.js',
+  input: './rollup-spec.js',
   output: {
-    file: 'build/noble-hashes.js',
+    file: './noble-hashes.js',
     format: 'umd',
     name: 'nobleHashes',
     exports: 'named',
