@@ -5,7 +5,9 @@ import { pbkdf2 as _pbkdf2 } from './pbkdf2.js';
 import { scrypt as _scrypt } from './scrypt.js';
 import { bytesToHex, createView, hexToBytes, toBytes } from './utils.js';
 
-// A tiny KDF for various applications like AES key-gen
+// A tiny KDF for various applications like AES key-gen.
+// Uses HKDF in a non-standard way, so it's not "KDF-secure", only "PRF-secure".
+// Which is good enough: assume sha2-256 retained preimage resistance.
 
 const SCRYPT_FACTOR = 2 ** 19;
 const PBKDF2_FACTOR = 2 ** 17;
@@ -162,10 +164,8 @@ export async function eskdf(username: string, password: string): ESKDF {
 
   function deriveCK(protocol: string, accountId: AccountID = 0, options?: KeyOpts): Uint8Array {
     assertBytes(seed, 32);
-    // Validates protocol & accountId
-    const { salt, info } = getSaltInfo(protocol, accountId);
-    // Validates options
-    const keyLength = getKeyLength(options);
+    const { salt, info } = getSaltInfo(protocol, accountId); // validate protocol & accountId
+    const keyLength = getKeyLength(options); // validate options
     const key = hkdf(sha256, seed!, salt, info, keyLength);
     // Modulus has already been validated
     return options && 'modulus' in options ? modReduceKey(key, options.modulus) : key;
