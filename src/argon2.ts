@@ -1,6 +1,6 @@
 import assert from './_assert.js';
-import { Input, toBytes, u8, u32 } from './utils';
-import { blake2b } from './blake2b';
+import { Input, toBytes, u8, u32 } from './utils.js';
+import { blake2b } from './blake2b.js';
 import u64 from './_u64.js';
 
 // Experimental implementation of argon2.
