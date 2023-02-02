@@ -155,7 +155,7 @@ const main = () =>
       }
     }
     // Log current RAM
-    bench.logMem();
+    bench.utils.logMem();
   });
 
 module.exports = { main };
