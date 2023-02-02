@@ -13,7 +13,7 @@
     "bench": "node test/benchmark/index.js noble",
     "bench:all": "node test/benchmark/index.js",
     "bench:install": "cd test/benchmark && npm install && cd ../../",
-    "build": "tsc && tsc -p tsconfig.esm.json",
+    "build": "npm run build:clean; tsc && tsc -p tsconfig.esm.json",
     "build:release": "rollup -c build/rollup.config.js",
     "build:clean": "rm *.{js,d.ts,js.map} esm/*.{js,js.map}",
     "lint": "prettier --check 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
