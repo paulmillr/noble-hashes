@@ -5,6 +5,7 @@
   "files": [
     "/*.js",
     "/*.d.ts",
+    "/*.js.map",
     "esm",
     "!rollup.config.js",
     "!rollup.js"
@@ -65,6 +66,11 @@
       "types": "./_sha2.d.ts",
       "import": "./esm/_sha2.js",
       "default": "./_sha2.js"
+    },
+    "./argon2": {
+      "types": "./argon2.d.ts",
+      "import": "./esm/argon2.js",
+      "default": "./argon2.js"
     },
     "./blake2b": {
       "types": "./blake2b.d.ts",
