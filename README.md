@@ -363,6 +363,17 @@ _Note:_ noble supports `2**22` (4GB RAM) which is the highest amount amongst JS 
 We cannot support `2**23`, because there is a limitation in JS engines that makes allocating
 arrays bigger than 4GB impossible, but we're looking into other possible solutions.
 
+##### Argon2
+
+There's experimental argon2 RFC 9106 implementation. It may be removed at any time.
+
+```ts
+import { argon2d, argon2i, argon2id } from '@noble/hashes/scrypt';
+const password = 'password';
+const salt = 'salt';
+const result = argon2id(password, salt, { t: 2, m: 65536, p: 1 });
+```
+
 ##### ESKDF
 
 A tiny stretched KDF for various applications like AES key-gen. Takes >= 2 seconds to execute.
@@ -387,9 +398,9 @@ Takes username and password, then takes protocol name and account id.
 import { eskdf } from '@noble/hashes/eskdf';
 const kdf = await eskdf('example@university', 'beginning-new-example');
 console.log(kdf.fingerprint);
-const key = kdf.deriveChildKey('aes', 0);
-const key = kdf.deriveChildKey('aes', 0, { keyLength: 16 });
-const ecc = kdf.deriveChildKey('ecc', 0, { modulus: 2n ** 252n - 27742317777372353535851937790883648493n })
+const key1 = kdf.deriveChildKey('aes', 0);
+const key2 = kdf.deriveChildKey('aes', 0, { keyLength: 16 });
+const ecc1 = kdf.deriveChildKey('ecc', 0, { modulus: 2n ** 252n - 27742317777372353535851937790883648493n })
 kdf.expire();
 ```
 
