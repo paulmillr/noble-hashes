@@ -36,6 +36,8 @@ Use NPM in node.js / browser, or include single file from
 
 > npm install @noble/hashes
 
+For [Deno](https://deno.land), use it with npm specifier: `import { sha256 } from 'npm:@noble/hashes@1.2.0/sha256';`
+
 The library does not have an entry point. It allows you to select specific primitives and drop everything else. If you only want to use sha256, just use the library with rollup or other bundlers. This is done to make your bundles tiny.
 
 ```js
