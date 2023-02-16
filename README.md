@@ -31,18 +31,18 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 
 ## Usage
 
-Use NPM in node.js / browser, or include single file from
-[GitHub's releases page](https://github.com/paulmillr/noble-hashes/releases):
+Use NPM for browser / node.js:
 
 > npm install @noble/hashes
 
-For [Deno](https://deno.land), use it with npm specifier: `import { sha256 } from 'npm:@noble/hashes@1.2.0/sha256';`
+For [Deno](https://deno.land), use it with npm specifier. In browser, you could also include the single file from
+[GitHub's releases page](https://github.com/paulmillr/noble-hashes/releases).
 
 The library does not have an entry point. It allows you to select specific primitives and drop everything else. If you only want to use sha256, just use the library with rollup or other bundlers. This is done to make your bundles tiny.
 
 ```js
-// Common.js and ECMAScript Modules (ESM)
-import { sha256 } from '@noble/hashes/sha256';
+import { sha256 } from '@noble/hashes/sha256'; // ECMAScript modules (ESM) and Common.js
+// import { sha256 } from 'npm:@noble/hashes@1.2.0/sha256'; // Deno
 console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
 // you could also pass strings that will be UTF8-encoded to Uint8Array
 console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
