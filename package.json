@@ -31,7 +31,7 @@
   "license": "MIT",
   "browser": {
     "crypto": false,
-    "./crypto": "./cryptoBrowser.js"
+    "./crypto": "./crypto.js"
   },
   "devDependencies": {
     "@types/node": "18.11.18",
@@ -48,9 +48,9 @@
     },
     "./crypto": {
       "types": "./crypto.d.ts",
-      "browser": {
-        "import": "./esm/cryptoBrowser.js",
-        "default": "./cryptoBrowser.js"
+      "node": {
+        "import": "./esm/cryptoNode.js",
+        "default": "./cryptoNode.js"
       },
       "import": "./esm/crypto.js",
       "default": "./crypto.js"
