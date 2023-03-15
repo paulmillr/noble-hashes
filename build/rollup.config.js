@@ -7,7 +7,9 @@ export default {
     format: 'umd',
     name: 'nobleHashes',
     exports: 'named',
-    preferConst: true,
+    generatedCode: {
+      preset: 'es2015'
+    }
   },
   plugins: [resolve({ browser: true })],
 };
