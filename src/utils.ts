@@ -199,5 +199,5 @@ export function randomBytes(bytesLength = 32): Uint8Array {
   if (crypto && typeof crypto.getRandomValues === 'function') {
     return crypto.getRandomValues(new Uint8Array(bytesLength));
   }
-  throw new Error("globalThis.crypto.getRandomValues() must be defined");
+  throw new Error('globalThis.crypto.getRandomValues() must be defined');
 }

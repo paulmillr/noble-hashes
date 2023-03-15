@@ -48,8 +48,7 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     assert.number(blockLen);
     assert.number(outputLen);
     assert.number(keyLen);
-    if (outputLen < 0 || outputLen > keyLen)
-      throw new Error('outputLen bigger than keyLen');
+    if (outputLen < 0 || outputLen > keyLen) throw new Error('outputLen bigger than keyLen');
     if (opts.key !== undefined && (opts.key.length < 1 || opts.key.length > keyLen))
       throw new Error(`key must be up 1..${keyLen} byte long or undefined`);
     if (opts.salt !== undefined && opts.salt.length !== saltLen)
