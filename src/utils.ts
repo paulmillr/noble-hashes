@@ -1,7 +1,10 @@
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 
-// The import here is via the package name. This is to ensure
-// that exports mapping/resolution does fall into place.
+// We use `globalThis.crypto`, but node.js versions earlier than v19 don't
+// declare it in global scope. For node.js, package.json#exports field mapping
+// rewrites import from `crypto` to `cryptoNode`, which imports native module.
+// Makes the utils un-importable in browsers without a bundler.
+// Once node.js 18 is deprecated, we can just drop the import.
 import { crypto } from '@noble/hashes/crypto';
 
 // prettier-ignore
@@ -20,14 +23,14 @@ export const createView = (arr: TypedArray) =>
 // The rotate right (circular right shift) operation for uint32
 export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (word >>> shift);
 
+// big-endian hardware is rare. Just in case someone still decides to run hashes:
+// early-throw an error because we don't support BE yet.
 export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
-// There is almost no big endian hardware, but js typed arrays uses platform specific endianness.
-// So, just to be sure not to corrupt anything.
 if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
 const hexes = Array.from({ length: 256 }, (v, i) => i.toString(16).padStart(2, '0'));
 /**
- * @example bytesToHex(Uint8Array.from([0xde, 0xad, 0xbe, 0xef]))
+ * @example bytesToHex(Uint8Array.from([0xde, 0xad, 0xbe, 0xef])) // 'deadbeef'
  */
 export function bytesToHex(uint8a: Uint8Array): string {
   // pre-caching improves the speed 6x
@@ -40,7 +43,7 @@ export function bytesToHex(uint8a: Uint8Array): string {
 }
 
 /**
- * @example hexToBytes('deadbeef')
+ * @example hexToBytes('deadbeef') // Uint8Array.from([0xde, 0xad, 0xbe, 0xef])
  */
 export function hexToBytes(hex: string): Uint8Array {
   if (typeof hex !== 'string') {
@@ -58,8 +61,9 @@ export function hexToBytes(hex: string): Uint8Array {
   return array;
 }
 
-// There is no setImmediate in browser and setTimeout is slow. However, call to async function will return Promise
-// which will be fullfiled only on next scheduler queue processing step and this is exactly what we need.
+// There is no setImmediate in browser and setTimeout is slow.
+// call of async fn will return Promise, which will be fullfiled only on
+// next scheduler queue processing step and this is exactly what we need.
 export const nextTick = async () => {};
 
 // Returns control to thread each 'tick' ms to avoid blocking
@@ -120,14 +124,19 @@ export abstract class Hash<T extends Hash<T>> {
   // Writes digest into buf
   abstract digestInto(buf: Uint8Array): void;
   abstract digest(): Uint8Array;
-  // Cleanup internal state. Not '.clean' because instance is not usable after that.
-  // Clean usually resets instance to initial state, but it is not possible for keyed hashes if key is consumed into state.
-  // NOTE: if digest is not consumed by user, user need manually call '.destroy' if zeroing is required
+  /**
+   * Resets internal state. Makes Hash instance unusable.
+   * Reset is impossible for keyed hashes if key is consumed into state. If digest is not consumed
+   * by user, they will need to manually call `destroy()` when zeroing is necessary.
+   */
   abstract destroy(): void;
-  // Unsafe because doesn't check if "to" is correct. Can be used as clone() if no opts passed.
-  // Why cloneInto instead of clone? Mostly performance (same as _digestInto), but also has nice property: it reuses instance
-  // which means all internal buffers is overwritten, which also causes overwrite buffer which used for digest (in some cases).
-  // We don't provide any guarantees about cleanup (it is impossible to!), so should be enough for now.
+  /**
+   * Clones hash instance. Unsafe: doesn't check whether `to` is valid. Can be used as `clone()`
+   * when no options are passed.
+   * Reasons to use `_cloneInto` instead of clone: 1) performance 2) reuse instance => all internal
+   * buffers are overwritten => causes buffer overwrite which is used for digest in some cases.
+   * There are no guarantees for clean-up because it's impossible in JS.
+   */
   abstract _cloneInto(to?: T): T;
   // Safe version that clones internal state
   clone(): T {
@@ -138,7 +147,8 @@ export abstract class Hash<T extends Hash<T>> {
 /**
  * XOF: streaming API to read digest in chunks.
  * Same as 'squeeze' in keccak/k12 and 'seek' in blake3, but more generic name.
- * When hash used in XOF mode it is up to user to call '.destroy' afterwards, since we cannot destroy state, next call can require more bytes.
+ * When hash used in XOF mode it is up to user to call '.destroy' afterwards, since we cannot
+ * destroy state, next call can require more bytes.
  */
 export type HashXOF<T extends Hash<T>> = Hash<T> & {
   xof(bytes: number): Uint8Array; // Read 'bytes' bytes from digest stream
@@ -183,11 +193,11 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
 }
 
 /**
- * Secure PRNG
+ * Secure PRNG. Uses `globalThis.crypto` or node.js crypto module.
  */
 export function randomBytes(bytesLength = 32): Uint8Array {
   if (crypto && typeof crypto.getRandomValues === 'function') {
     return crypto.getRandomValues(new Uint8Array(bytesLength));
   }
-  throw new Error("The environment doesn't have randomBytes function");
+  throw new Error("globalThis.crypto.getRandomValues() must be defined");
 }

@@ -1,5 +1,6 @@
 import assert from './_assert.js';
 import { Hash, Input, toBytes, u32 } from './utils.js';
+// For BLAKE2b, the two extra permutations for rounds 10 and 11 are SIGMA[10..11] = SIGMA[0..1].
 // prettier-ignore
 export const SIGMA = new Uint8Array([
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -12,7 +13,6 @@ export const SIGMA = new Uint8Array([
   13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10,
   6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5,
   10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0,
-  // For BLAKE2b, the two extra permutations for rounds 10 and 11 are SIGMA[10..11] = SIGMA[0..1].
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
   14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
 ]);
@@ -49,13 +49,13 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     assert.number(outputLen);
     assert.number(keyLen);
     if (outputLen < 0 || outputLen > keyLen)
-      throw new Error('Blake2: outputLen bigger than keyLen');
+      throw new Error('outputLen bigger than keyLen');
     if (opts.key !== undefined && (opts.key.length < 1 || opts.key.length > keyLen))
-      throw new Error(`Key should be up 1..${keyLen} byte long or undefined`);
+      throw new Error(`key must be up 1..${keyLen} byte long or undefined`);
     if (opts.salt !== undefined && opts.salt.length !== saltLen)
-      throw new Error(`Salt should be ${saltLen} byte long or undefined`);
+      throw new Error(`salt must be ${saltLen} byte long or undefined`);
     if (opts.personalization !== undefined && opts.personalization.length !== persLen)
-      throw new Error(`Personalization should be ${persLen} byte long or undefined`);
+      throw new Error(`personalization must be ${persLen} byte long or undefined`);
     this.buffer32 = u32((this.buffer = new Uint8Array(blockLen)));
   }
   update(data: Input) {
