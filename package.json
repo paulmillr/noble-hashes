@@ -30,7 +30,7 @@
   },
   "license": "MIT",
   "browser": {
-    "crypto": false,
+    "node:crypto": false,
     "./crypto": "./crypto.js"
   },
   "devDependencies": {

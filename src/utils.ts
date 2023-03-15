@@ -186,11 +186,8 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
  * Secure PRNG
  */
 export function randomBytes(bytesLength = 32): Uint8Array {
-  if (crypto.web) {
-    return crypto.web.getRandomValues(new Uint8Array(bytesLength));
-  } else if (crypto.node) {
-    return new Uint8Array(crypto.node.randomBytes(bytesLength).buffer);
-  } else {
-    throw new Error("The environment doesn't have randomBytes function");
+  if (crypto && typeof crypto.getRandomValues === 'function') {
+    return crypto.getRandomValues(new Uint8Array(bytesLength));
   }
+  throw new Error("The environment doesn't have randomBytes function");
 }
