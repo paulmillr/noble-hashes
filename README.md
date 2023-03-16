@@ -31,18 +31,21 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 
 ## Usage
 
-Use NPM for browser / node.js:
+Browser, deno and node.js are supported:
 
 > npm install @noble/hashes
 
-For [Deno](https://deno.land), use it with npm specifier. In browser, you could also include the single file from
+For [Deno](https://deno.land), use it with npm specifier.
+In browser, you could also include the single file from
 [GitHub's releases page](https://github.com/paulmillr/noble-hashes/releases).
 
-The library does not have an entry point. It allows you to select specific primitives and drop everything else. If you only want to use sha256, just use the library with rollup or other bundlers. This is done to make your bundles tiny.
+The library does not have an entry point. It allows you to select specific
+primitives and drop everything else. If you only want to use sha256, just use the
+library with rollup or other bundlers. This is done to make your bundles tiny.
 
 ```js
 import { sha256 } from '@noble/hashes/sha256'; // ECMAScript modules (ESM) and Common.js
-// import { sha256 } from 'npm:@noble/hashes@1.2.0/sha256'; // Deno
+// import { sha256 } from 'npm:@noble/hashes@1.3.0/sha256'; // Deno
 console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
 // you could also pass strings that will be UTF8-encoded to Uint8Array
 console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
@@ -162,7 +165,8 @@ const h4b = sha384
   .digest();
 ```
 
-See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and [the paper on SHA512/256](https://eprint.iacr.org/2010/548.pdf).
+See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
+[the paper on SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
 ##### SHA3 (FIPS, SHAKE, Keccak)
 
@@ -189,7 +193,8 @@ const h7a = shake128('abc', { dkLen: 512 });
 const h7b = shake256('abc', { dkLen: 512 });
 ```
 
-See ([FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf), [Website](https://keccak.team/keccak.html)).
+See [FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
+[Website](https://keccak.team/keccak.html).
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
@@ -226,8 +231,12 @@ p.feed('test');
 const rand1b = p.fetch(1);
 ```
 
-- Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
-- 🦘 K12 ([KangarooTwelve Paper](https://keccak.team/files/KangarooTwelve.pdf), [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt)) and M14 aka MarsupilamiFourteen are basically parallel versions of Keccak with reduced number of rounds (same as Blake3 and ParallelHash).
+- Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
+  cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
+- 🦘 K12 ([KangarooTwelve Paper](https://keccak.team/files/KangarooTwelve.pdf),
+  [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt))
+  and M14 aka MarsupilamiFourteen are basically parallel versions of Keccak with
+  reduced number of rounds (same as Blake3 and ParallelHash).
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
 
 ##### RIPEMD-160
@@ -242,7 +251,8 @@ const hash9 = ripemd160()
   .digest();
 ```
 
-See [RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286), [Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
+See [RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286),
+[Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
 
 ##### BLAKE2b, BLAKE2s
 
@@ -346,19 +356,23 @@ const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5
 });
 ```
 
-Matches [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914), [Website](https://www.tarsnap.com/scrypt.html)
+Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
+[Website](https://www.tarsnap.com/scrypt.html)
 
 - `N, r, p` are work factors. To understand them, see [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
 - `dkLen` is the length of output bytes
 - It is common to use N from `2**10` to `2**22` and `{r: 8, p: 1, dkLen: 32}`
 - `onProgress` can be used with async version of the function to report progress to a user.
 
-Memory usage of scrypt is calculated with the formula `N * r * p * 128 + (128 * r * p)`, which means
-`{N: 2 ** 22, r: 8, p: 1}` will use 4GB + 1KB of memory. To prevent DoS, we limit scrypt to `1GB + 1KB` of RAM used,
-which corresponds to `{N: 2 ** 20, r: 8, p: 1}`. If you want to use higher values, increase `maxmem` using the formula above.
+Memory usage of scrypt is calculated with the formula `N * r * p * 128 + (128 * r * p)`,
+which means `{N: 2 ** 22, r: 8, p: 1}` will use 4GB + 1KB of memory. To prevent
+DoS, we limit scrypt to `1GB + 1KB` of RAM used, which corresponds to
+`{N: 2 ** 20, r: 8, p: 1}`. If you want to use higher values, increase
+`maxmem` using the formula above.
 
-_Note:_ noble supports `2**22` (4GB RAM) which is the highest amount amongst JS libs. Many other implementations don't support it.
-We cannot support `2**23`, because there is a limitation in JS engines that makes allocating
+_Note:_ noble supports `2**22` (4GB RAM) which is the highest amount amongst JS
+libs. Many other implementations don't support it. We cannot support `2**23`,
+because there is a limitation in JS engines that makes allocating
 arrays bigger than 4GB impossible, but we're looking into other possible solutions.
 
 ##### Argon2
@@ -416,17 +430,44 @@ console.log(toHex(randomBytes(32)));
 
 Noble is production-ready.
 
-1. The library has been audited on Jan 5, 2022 by an independent security firm cure53: [PDF](https://cure53.de/pentest-report_hashing-libs.pdf). No vulnerabilities have been found. The audit has been funded by Ethereum Foundation with help of [Nomic Labs](https://nomiclabs.io). Modules `blake3`, `sha3-addons`, `sha1` and `argon2` have not been audited. See [changes since audit](https://github.com/paulmillr/noble-hashes/compare/1.0.0..main).
-2. The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz). You can run the fuzzer by yourself to check it.
-3. [Timing attack](https://en.wikipedia.org/wiki/Timing_attack) considerations: _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to achieve in a scripting language. Which means _any other JS library can't have constant-timeness_. Even statically typed Rust, a language without GC, [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security) for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones. Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
-4. Memory dump considerations: the library shares state buffers between hash function calls. The buffers are zeroed-out after each call. However, if an attacker can read application memory, you are doomed in any case:
-    - At some point, input will be a string and strings are immutable in JS: there is no way to overwrite them with zeros. For example: deriving key from `scrypt(password, salt)` where password and salt are strings
+1. The library has been audited in Jan 2022 by an independent security firm
+   cure53: [PDF](https://cure53.de/pentest-report_hashing-libs.pdf).
+   No vulnerabilities have been found. The audit has been funded by
+   [Ethereum Foundation](https://ethereum.org/en/) with help of [Nomic Labs](https://nomiclabs.io).
+   Modules `blake3`, `sha3-addons`, `sha1` and `argon2` have not been audited.
+   See [changes since audit](https://github.com/paulmillr/noble-hashes/compare/1.0.0..main).
+2. The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz).
+   You can run the fuzzer by yourself to check it.
+3. [Timing attack](https://en.wikipedia.org/wiki/Timing_attack) considerations:
+   _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to
+   achieve in a scripting language. Which means _any other JS library can't have constant-timeness_.
+   Even statically typed Rust, a language without GC,
+   [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security)
+   for some cases. If your goal is absolute security, don't use any JS lib — including
+   bindings to native ones. Use low-level libraries & languages. Nonetheless we're
+   targetting algorithmic constant time.
+4. Memory dump considerations: the library shares state buffers between hash
+   function calls. The buffers are zeroed-out after each call. However, if an attacker
+   can read application memory, you are doomed in any case:
+    - At some point, input will be a string and strings are immutable in JS:
+      there is no way to overwrite them with zeros. For example: deriving
+      key from `scrypt(password, salt)` where password and salt are strings
     - Input from a file will stay in file buffers
-    - Input / output will be re-used multiple times in application which means it could stay in memory
-    - `await anything()` will always write all internal variables (including numbers) to memory. With async functions / Promises there are no guarantees when the code chunk would be executed. Which means attacker can have plenty of time to read data from memory
-    - There is no way to guarantee anything about zeroing sensitive data without complex tests-suite which will dump process memory and verify that there is no sensitive data left. For JS it means testing all browsers (incl. mobile), which is complex. And of course it will be useless without using the same test-suite in the actual application that consumes the library
+    - Input / output will be re-used multiple times in application which means
+      it could stay in memory
+    - `await anything()` will always write all internal variables (including numbers)
+    to memory. With async functions / Promises there are no guarantees when the code
+    chunk would be executed. Which means attacker can have plenty of time to read data from memory
+    - There is no way to guarantee anything about zeroing sensitive data without
+      complex tests-suite which will dump process memory and verify that there is
+      no sensitive data left. For JS it means testing all browsers (incl. mobile),
+      which is complex. And of course it will be useless without using the same
+      test-suite in the actual application that consumes the library
 
-We consider infrastructure attacks like rogue NPM modules very important; that's why it's crucial to minimize the amount of 3rd-party dependencies & native bindings. If your app uses 500 dependencies, any dep could get hacked and you'll be downloading malware with every `npm install`. Our goal is to minimize this attack vector.
+We consider infrastructure attacks like rogue NPM modules very important; that's
+why it's crucial to minimize the amount of 3rd-party dependencies & native bindings.
+If your app uses 500 dependencies, any dep could get hacked and you'll be downloading
+malware with every `npm install`. Our goal is to minimize this attack vector.
 
 ## Speed
 
