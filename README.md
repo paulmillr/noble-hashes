@@ -1,10 +1,9 @@
-# noble-hashes ![Node CI](https://github.com/paulmillr/noble-hashes/workflows/Node%20CI/badge.svg) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+# noble-hashes
 
 Audited & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2 & Scrypt.
 
-- **noble** family, zero dependencies
 - 🔒 [**Audited**](#security) by an independent security firm: no vulnerabilities have been found
-- 🔻 Tree-shaking-friendly: there is no entry point, which ensures small size of your app
+- 🔻 Tree-shaking-friendly: use only what's necessary, other code won't be included
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🏎 Ultra-fast, hand-optimized for caveats of JS engines
 - 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests
@@ -19,7 +18,7 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 
 > **noble-crypto** — high-security, easily auditable set of contained cryptographic libraries and tools.
 
-- No dependencies
+- No dependencies, protection against supply chain attacks
 - Easily auditable TypeScript/JS code
 - Supported in all major browsers and stable node.js versions
 - All releases are signed with PGP keys
