@@ -19,7 +19,7 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 > **noble-crypto** — high-security, easily auditable set of contained cryptographic libraries and tools.
 
 - No dependencies, protection against supply chain attacks
-- Easily auditable TypeScript/JS code
+- Auditable TypeScript / JS code
 - Supported in all major browsers and stable node.js versions
 - All releases are signed with PGP keys
 - Check out [homepage](https://paulmillr.com/noble/) & all libraries:
