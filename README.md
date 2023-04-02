@@ -418,7 +418,7 @@ kdf.expire();
 ##### utils
 
 ```typescript
-import { bytesToHex as toHex, randomBytes } from '@noble/hashes/scrypt';
+import { bytesToHex as toHex, randomBytes } from '@noble/hashes/utils';
 console.log(toHex(randomBytes(32)));
 ```
 
