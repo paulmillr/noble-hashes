@@ -2,12 +2,11 @@
 
 Audited & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2 & Scrypt.
 
-- 🔒 [**Audited**](#security) by an independent security firm: no vulnerabilities have been found
+- 🔒 [**Audited**](#security) by an independent security firm
 - 🔻 Tree-shaking-friendly: use only what's necessary, other code won't be included
-- 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🏎 Ultra-fast, hand-optimized for caveats of JS engines
-- 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests
-- 🧪 Differential fuzzing ensures even more correctness with [cryptofuzz](https://github.com/guidovranken/cryptofuzz)
+- 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests, fuzzing
+- 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🐢 Scrypt supports `N: 2**22`, while other implementations are limited to `2**20`
 - 🦘 SHA3 supports Keccak, TupleHash, KangarooTwelve and MarsupilamiFourteen
 - 🪶 Just 3.4k lines / 17KB gzipped. SHA256-only is 240 lines / 3KB gzipped
