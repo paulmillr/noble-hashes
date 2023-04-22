@@ -34,7 +34,6 @@
     "./crypto": "./crypto.js"
   },
   "devDependencies": {
-    "@types/node": "18.11.18",
     "micro-bmark": "0.3.0",
     "micro-should": "0.4.0",
     "prettier": "2.8.4",
