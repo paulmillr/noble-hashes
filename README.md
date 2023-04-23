@@ -474,17 +474,18 @@ Note that PBKDF2 and Scrypt are tested with extremely high work factor.
 To run benchmarks, execute `npm run bench:install` and then `npm run bench`
 
 ```
-SHA256 32B x 1,126,126 ops/sec @ 888ns/op
-SHA384 32B x 463,606 ops/sec @ 2μs/op
-SHA512 32B x 467,945 ops/sec @ 2μs/op
-SHA3-256, keccak256, shake256 32B x 192,049 ops/sec @ 5μs/op
-Kangaroo12 32B x 318,066 ops/sec @ 3μs/op
-Marsupilami14 32B x 283,929 ops/sec @ 3μs/op
-BLAKE2b 32B x 352,112 ops/sec @ 2μs/op
-BLAKE2s 32B x 511,770 ops/sec @ 1μs/op
-BLAKE3 32B x 582,072 ops/sec @ 1μs/op
-RIPEMD160 32B x 1,230,012 ops/sec @ 813ns/op
-HMAC-SHA256 32B x 238,663 ops/sec @ 4μs/op
+SHA256 32B x 1,219,512 ops/sec @ 820ns/op ± 2.58% (min: 625ns, max: 4ms)
+SHA384 32B x 512,032 ops/sec @ 1μs/op
+SHA512 32B x 509,943 ops/sec @ 1μs/op
+SHA3-256, keccak256, shake256 32B x 199,600 ops/sec @ 5μs/op
+Kangaroo12 32B x 336,360 ops/sec @ 2μs/op
+Marsupilami14 32B x 298,418 ops/sec @ 3μs/op
+BLAKE2b 32B x 379,794 ops/sec @ 2μs/op
+BLAKE2s 32B x 515,995 ops/sec @ 1μs/op ± 1.07% (min: 1μs, max: 4ms)
+BLAKE3 32B x 588,235 ops/sec @ 1μs/op ± 1.36% (min: 1μs, max: 5ms)
+RIPEMD160 32B x 1,140,250 ops/sec @ 877ns/op ± 3.12% (min: 708ns, max: 6ms)
+HMAC-SHA256 32B x 377,358 ops/sec @ 2μs/op
+
 HKDF-SHA256 32B x 108,377 ops/sec @ 9μs/op
 PBKDF2-HMAC-SHA256 262144 x 3 ops/sec @ 326ms/op
 PBKDF2-HMAC-SHA512 262144 x 1 ops/sec @ 970ms/op
@@ -494,20 +495,20 @@ Scrypt r: 8, p: 1, n: 262144 x 1 ops/sec @ 616ms/op
 Compare to native node.js implementation that uses C bindings instead of pure-js code:
 
 ```
-SHA256 32B native x 1,164,144 ops/sec @ 859ns/op
-SHA384 32B native x 938,086 ops/sec @ 1μs/op
-SHA512 32B native x 946,969 ops/sec @ 1μs/op
-SHA3 32B native x 879,507 ops/sec @ 1μs/op
+SHA256 32B node x 1,302,083 ops/sec @ 768ns/op ± 10.54% (min: 416ns, max: 7ms)
+SHA384 32B node x 975,609 ops/sec @ 1μs/op ± 11.32% (min: 625ns, max: 8ms)
+SHA512 32B node x 983,284 ops/sec @ 1μs/op ± 11.24% (min: 625ns, max: 8ms)
+SHA3-256 32B node x 910,746 ops/sec @ 1μs/op ± 12.19% (min: 666ns, max: 10ms)
 keccak, k12, m14 are not implemented
-BLAKE2b 32B native x 879,507 ops/sec @ 1μs/op
-BLAKE2s 32B native x 977,517 ops/sec @ 1μs/op
+BLAKE2b 32B node x 967,117 ops/sec @ 1μs/op ± 11.26% (min: 625ns, max: 9ms)
+BLAKE2s 32B node x 1,055,966 ops/sec @ 947ns/op ± 11.07% (min: 583ns, max: 7ms)
 BLAKE3 is not implemented
-RIPEMD160 32B native x 913,242 ops/sec @ 1μs/op
-HMAC-SHA256 32B native x 755,287 ops/sec @ 1μs/op
-HKDF-SHA256 32B native x 207,856 ops/sec @ 4μs/op
-PBKDF2-HMAC-SHA256 262144 native x 23 ops/sec @ 42ms/op
-Scrypt 262144 native x 1 ops/sec @ 564ms/op
-Scrypt 262144 scrypt.js x 0 ops/sec @ 1678ms/op
+RIPEMD160 32B node x 1,002,004 ops/sec @ 998ns/op ± 10.66% (min: 625ns, max: 7ms)
+HMAC-SHA256 32B node x 919,963 ops/sec @ 1μs/op ± 6.13% (min: 833ns, max: 5ms)
+HKDF-SHA256 32 node x 369,276 ops/sec @ 2μs/op ± 13.59% (min: 1μs, max: 9ms)
+PBKDF2-HMAC-SHA256 262144 node x 25 ops/sec @ 39ms/op
+PBKDF2-HMAC-SHA512 262144 node x 7 ops/sec @ 132ms/op
+Scrypt r: 8, p: 1, n: 262144 node x 1 ops/sec @ 523ms/op
 ```
 
 It is possible to [make this library 4x+ faster](./test/benchmark/README.md) by
