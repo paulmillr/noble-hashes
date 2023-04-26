@@ -70,9 +70,10 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
       this.IV = u32(context_key);
       this.flags = flags | Flags.DERIVE_KEY_MATERIAL;
     } else {
-      this.IV = IV.slice();
+      this.IV = IV;
       this.flags = flags;
     }
+    this.IV = this.IV.slice();
     this.state = this.IV.slice();
     this.bufferOut = u8(this.bufferOut32);
   }
