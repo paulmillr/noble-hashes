@@ -119,4 +119,47 @@ should('Blake3 XOF', () => {
   assert.deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size');
 });
 
+should('BLAKE2b inputs are immuatable', () => {
+  const msg = new Uint8Array([1, 2, 3, 4]);
+  const key = new Uint8Array([1, 2, 3, 4]);
+  const pers = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
+  const salt = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
+  blake2b(msg, { key, salt, personalization: pers });
+  assert.deepStrictEqual(msg, new Uint8Array([1, 2, 3, 4]));
+  assert.deepStrictEqual(key, new Uint8Array([1, 2, 3, 4]));
+  assert.deepStrictEqual(pers, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]));
+  assert.deepStrictEqual(salt, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]));
+});
+
+should('BLAKE2s inputs are immuatable', () => {
+  const msg = new Uint8Array([1, 2, 3, 4]);
+  const key = new Uint8Array([1, 2, 3, 4]);
+  const pers = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+  const salt = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+  blake2s(msg, { key, salt, personalization: pers });
+  assert.deepStrictEqual(msg, new Uint8Array([1, 2, 3, 4]));
+  assert.deepStrictEqual(key, new Uint8Array([1, 2, 3, 4]));
+  assert.deepStrictEqual(pers, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
+  assert.deepStrictEqual(salt, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
+});
+
+should('BLAKE3 inputs are immuatable', () => {
+  const msg = new Uint8Array([1, 2, 3, 4]);
+  const ctx = new Uint8Array([1, 2, 3, 4]);
+  const key = new Uint8Array([
+    1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8,
+  ]);
+  blake3(msg, { key });
+  blake3(msg, { context: ctx });
+  assert.deepStrictEqual(msg, new Uint8Array([1, 2, 3, 4]));
+  assert.deepStrictEqual(ctx, new Uint8Array([1, 2, 3, 4]));
+  assert.deepStrictEqual(
+    key,
+    new Uint8Array([
+      1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7,
+      8,
+    ])
+  );
+});
+
 if (require.main === module) should.run();
