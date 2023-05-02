@@ -9,6 +9,9 @@
     "esm",
     "src/*.ts"
   ],
+  "engines": {
+    "node": "16.x || >= 18.0.0"
+  },
   "scripts": {
     "bench": "node test/benchmark/index.js noble",
     "bench:all": "node test/benchmark/index.js",
