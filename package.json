@@ -39,6 +39,9 @@
     "prettier": "2.8.4",
     "typescript": "5.0.2"
   },
+  "engines": {
+    "node": "16.x || >= 18"
+  },
   "exports": {
     ".": {
       "types": "./index.d.ts",
