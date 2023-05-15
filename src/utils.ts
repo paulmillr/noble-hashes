@@ -89,7 +89,7 @@ export function utf8ToBytes(str: string): Uint8Array {
   if (typeof str !== 'string') {
     throw new TypeError(`utf8ToBytes expected string, got ${typeof str}`);
   }
-  return new TextEncoder().encode(str);
+  return new Uint8Array(new TextEncoder().encode(str));
 }
 
 export type Input = Uint8Array | string;
