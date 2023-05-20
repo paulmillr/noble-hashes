@@ -29,17 +29,16 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 
 ## Usage
 
-Browser, deno and node.js are supported:
-
 > npm install @noble/hashes
 
-For [Deno](https://deno.land), use it with npm specifier.
-In browser, you could also include the single file from
-[GitHub's releases page](https://github.com/paulmillr/noble-hashes/releases).
+We support all major platforms and runtimes.
+For [Deno](https://deno.land), ensure to use [npm specifier](https://deno.land/manual@v1.28.0/node/npm_specifiers).
+For React Native, you may need a [polyfill for getRandomValues](https://github.com/LinusU/react-native-get-random-values).
+If you don't like NPM, a standalone [noble-hashes.js](https://github.com/paulmillr/noble-hashes/releases) is also available.
 
-The library does not have an entry point. It allows you to select specific
-primitives and drop everything else. If you only want to use sha256, just use the
-library with rollup or other bundlers. This is done to make your bundles tiny.
+The library is tree-shaking-friendly and does not expose root entry point as
+`@noble/hashes`. Instead, you need to import specific primitives.
+This is done to ensure small size of your apps.
 
 ```js
 import { sha256 } from '@noble/hashes/sha256'; // ECMAScript modules (ESM) and Common.js
