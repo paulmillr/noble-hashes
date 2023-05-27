@@ -59,7 +59,7 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     if (opts.key !== undefined && opts.context !== undefined)
       throw new Error('Blake3: only key or context can be specified at same time');
     else if (opts.key !== undefined) {
-      const key = toBytes(opts.key);
+      const key = toBytes(opts.key).slice();
       if (key.length !== 32) throw new Error('Blake3: key should be 32 byte');
       this.IV = u32(key);
       this.flags = flags | Flags.KEYED_HASH;
@@ -70,10 +70,9 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
       this.IV = u32(context_key);
       this.flags = flags | Flags.DERIVE_KEY_MATERIAL;
     } else {
-      this.IV = IV;
+      this.IV = IV.slice();
       this.flags = flags;
     }
-    this.IV = this.IV.slice();
     this.state = this.IV.slice();
     this.bufferOut = u8(this.bufferOut32);
   }
