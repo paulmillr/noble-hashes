@@ -12,6 +12,7 @@ import { crypto } from '@noble/hashes/crypto';
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
 
+const u8a = (a: any): a is Uint8Array => a instanceof Uint8Array;
 // Cast array to different type
 export const u8 = (arr: TypedArray) => new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
 export const u32 = (arr: TypedArray) =>
@@ -31,27 +32,26 @@ if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
 const hexes = Array.from({ length: 256 }, (v, i) => i.toString(16).padStart(2, '0'));
 /**
- * @example bytesToHex(Uint8Array.from([0xde, 0xad, 0xbe, 0xef])) // 'deadbeef'
+ * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
  */
-export function bytesToHex(uint8a: Uint8Array): string {
+export function bytesToHex(bytes: Uint8Array): string {
+  if (!u8a(bytes)) throw new Error('Uint8Array expected');
   // pre-caching improves the speed 6x
-  if (!(uint8a instanceof Uint8Array)) throw new Error('Uint8Array expected');
   let hex = '';
-  for (let i = 0; i < uint8a.length; i++) {
-    hex += hexes[uint8a[i]];
+  for (let i = 0; i < bytes.length; i++) {
+    hex += hexes[bytes[i]];
   }
   return hex;
 }
 
 /**
- * @example hexToBytes('deadbeef') // Uint8Array.from([0xde, 0xad, 0xbe, 0xef])
+ * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
  */
 export function hexToBytes(hex: string): Uint8Array {
-  if (typeof hex !== 'string') {
-    throw new TypeError('hexToBytes: expected string, got ' + typeof hex);
-  }
-  if (hex.length % 2) throw new Error('hexToBytes: received invalid unpadded hex');
-  const array = new Uint8Array(hex.length / 2);
+  if (typeof hex !== 'string') throw new Error('hex string expected, got ' + typeof hex);
+  const len = hex.length;
+  if (len % 2) throw new Error('padded hex string expected, got unpadded hex of length ' + len);
+  const array = new Uint8Array(len / 2);
   for (let i = 0; i < array.length; i++) {
     const j = i * 2;
     const hexByte = hex.slice(j, j + 2);
@@ -83,12 +83,12 @@ export async function asyncLoop(iters: number, tick: number, cb: (i: number) => 
 // Global symbols in both browsers and Node.js since v11
 // See https://github.com/microsoft/TypeScript/issues/31535
 declare const TextEncoder: any;
-declare const TextDecoder: any;
 
+/**
+ * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
+ */
 export function utf8ToBytes(str: string): Uint8Array {
-  if (typeof str !== 'string') {
-    throw new TypeError(`utf8ToBytes expected string, got ${typeof str}`);
-  }
+  if (typeof str !== 'string') throw new Error(`utf8ToBytes expected string, got ${typeof str}`);
   return new TextEncoder().encode(str);
 }
 
@@ -101,20 +101,17 @@ export function toBytes(data: Input): Uint8Array {
 }
 
 /**
- * Concats Uint8Array-s into one; like `Buffer.concat([buf1, buf2])`
- * @example concatBytes(buf1, buf2)
+ * Copies several Uint8Arrays into one.
  */
 export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
-  if (!arrays.every((a) => a instanceof Uint8Array)) throw new Error('Uint8Array list expected');
-  if (arrays.length === 1) return arrays[0];
-  const length = arrays.reduce((a, arr) => a + arr.length, 0);
-  const result = new Uint8Array(length);
-  for (let i = 0, pad = 0; i < arrays.length; i++) {
-    const arr = arrays[i];
-    result.set(arr, pad);
-    pad += arr.length;
-  }
-  return result;
+  const r = new Uint8Array(arrays.reduce((sum, a) => sum + a.length, 0));
+  let pad = 0; // walk through each item, ensure they have proper type
+  arrays.forEach((a) => {
+    if (!u8a(a)) throw new Error('Uint8Array expected');
+    r.set(a, pad);
+    pad += a.length;
+  });
+  return r;
 }
 
 // For runtime check if class implements interface
@@ -194,7 +191,7 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
 }
 
 /**
- * Secure PRNG. Uses `globalThis.crypto` or node.js crypto module.
+ * Secure PRNG. Uses `crypto.getRandomValues`, which defers to OS.
  */
 export function randomBytes(bytesLength = 32): Uint8Array {
   if (crypto && typeof crypto.getRandomValues === 'function') {

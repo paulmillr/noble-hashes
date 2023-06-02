@@ -3,10 +3,7 @@ import { Input, toBytes, u8, u32 } from './utils.js';
 import { blake2b } from './blake2b.js';
 import u64 from './_u64.js';
 
-// Experimental implementation of argon2.
-// Could be broken & slow. May be removed at a later time.
-// RFC 9106
-
+// Experimental Argon2 RFC 9106 implementation. It may be removed at any time.
 enum Types {
   Argond2d = 0,
   Argon2i = 1,

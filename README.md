@@ -374,13 +374,11 @@ arrays bigger than 4GB impossible, but we're looking into other possible solutio
 
 ##### Argon2
 
-There's experimental argon2 RFC 9106 implementation. It may be removed at any time.
+Experimental Argon2 RFC 9106 implementation. It may be removed at any time.
 
 ```ts
-import { argon2d, argon2i, argon2id } from '@noble/hashes/scrypt';
-const password = 'password';
-const salt = 'salt';
-const result = argon2id(password, salt, { t: 2, m: 65536, p: 1 });
+import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2';
+const result = argon2id('password', 'salt', { t: 2, m: 65536, p: 1 });
 ```
 
 ##### ESKDF
