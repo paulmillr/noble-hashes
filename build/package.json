@@ -2,18 +2,17 @@
   "name": "build",
   "private": true,
   "version": "1.0.0",
-  "description": "Used to build a single file `noble-hashes.js`",
-  "main": "noble-hashes.js",
+  "description": "Used to build a single file",
+  "main": "input.js",
   "keywords": [],
   "type": "module",
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "rollup": "3.19.1",
-    "@rollup/plugin-node-resolve": "15.0.1",
-    "@noble/hashes": ".."
+    "@noble/hashes": "..",
+    "esbuild": "0.17.19"
   },
   "scripts": {
-    "build": "rollup -c rollup.config.js"
+    "build": "npx esbuild --bundle input.js --outfile=noble-hashes.js --global-name=nobleHashes"
   }
 }

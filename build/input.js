@@ -23,6 +23,8 @@ export {
 export {
   cshake128, cshake256, kmac128, kmac256, k12, m14
 } from '@noble/hashes/sha3-addons';
+export { sha1 } from '@noble/hashes/sha1';
+export { argon2id } from '@noble/hashes/argon2';
 export { eskdf } from '@noble/hashes/eskdf';
 
 export const utils = { bytesToHex, randomBytes };
