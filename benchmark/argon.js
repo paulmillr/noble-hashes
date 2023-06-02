@@ -2,7 +2,7 @@ const bench = require('micro-bmark');
 const { run, mark } = bench; // or bench.mark
 const crypto = require('crypto');
 // Noble
-const { argon2i, argon2id, argon2d } = require('../../argon2');
+const { argon2i, argon2id, argon2d } = require('../argon2');
 const wasm = require('hash-wasm');
 const sodium = require('libsodium-wrappers');
 

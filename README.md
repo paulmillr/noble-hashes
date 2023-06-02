@@ -508,7 +508,7 @@ PBKDF2-HMAC-SHA512 262144 node x 7 ops/sec @ 132ms/op
 Scrypt r: 8, p: 1, n: 262144 node x 1 ops/sec @ 523ms/op
 ```
 
-It is possible to [make this library 4x+ faster](./test/benchmark/README.md) by
+It is possible to [make this library 4x+ faster](./benchmark/README.md) by
 _doing code generation of full loop unrolls_. We've decided against it. Reasons:
 
 - the library must be auditable, with minimum amount of code, and zero dependencies
