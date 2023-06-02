@@ -174,17 +174,28 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
 
 export type CHash = ReturnType<typeof wrapConstructor>;
 
-export function wrapConstructor<T extends Hash<T>>(hashConstructor: () => Hash<T>) {
-  const hashC = (message: Input): Uint8Array => hashConstructor().update(toBytes(message)).digest();
-  const tmp = hashConstructor();
+export function wrapConstructor<T extends Hash<T>>(hashCons: () => Hash<T>) {
+  const hashC = (msg: Input): Uint8Array => hashCons().update(toBytes(msg)).digest();
+  const tmp = hashCons();
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
-  hashC.create = () => hashConstructor();
+  hashC.create = () => hashCons();
   return hashC;
 }
 
 export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   hashCons: (opts?: T) => Hash<H>
+) {
+  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const tmp = hashCons({} as T);
+  hashC.outputLen = tmp.outputLen;
+  hashC.blockLen = tmp.blockLen;
+  hashC.create = (opts: T) => hashCons(opts);
+  return hashC;
+}
+
+export function wrapXOFConstructorWithOpts<H extends HashXOF<H>, T extends Object>(
+  hashCons: (opts?: T) => HashXOF<H>
 ) {
   const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({} as T);

@@ -6,7 +6,7 @@ import {
   Input,
   toBytes,
   wrapConstructor,
-  wrapConstructorWithOpts,
+  wrapXOFConstructorWithOpts,
   HashXOF,
 } from './utils.js';
 
@@ -213,7 +213,7 @@ export const keccak_512 = gen(0x01, 72, 512 / 8);
 export type ShakeOpts = { dkLen?: number };
 
 const genShake = (suffix: number, blockLen: number, outputLen: number) =>
-  wrapConstructorWithOpts<Keccak, ShakeOpts>(
+  wrapXOFConstructorWithOpts<HashXOF<Keccak>, ShakeOpts>(
     (opts: ShakeOpts = {}) =>
       new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true)
   );

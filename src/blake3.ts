@@ -2,7 +2,7 @@ import assert from './_assert.js';
 import u64 from './_u64.js';
 import { BLAKE2 } from './_blake2.js';
 import { compress, IV } from './blake2s.js';
-import { Input, u8, u32, toBytes, wrapConstructorWithOpts, HashXOF } from './utils.js';
+import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts } from './utils.js';
 
 // Flag bitset
 enum Flags {
@@ -243,4 +243,4 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, context
  */
-export const blake3 = wrapConstructorWithOpts<BLAKE3, Blake3Opts>((opts) => new BLAKE3(opts));
+export const blake3 = wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>((opts) => new BLAKE3(opts));
