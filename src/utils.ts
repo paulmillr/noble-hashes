@@ -93,10 +93,14 @@ export function utf8ToBytes(str: string): Uint8Array {
 }
 
 export type Input = Uint8Array | string;
+/**
+ * Normalizes (non-hex) string or Uint8Array to Uint8Array.
+ * Warning: when Uint8Array is passed, it would NOT get copied.
+ * Keep in mind for future mutable operations.
+ */
 export function toBytes(data: Input): Uint8Array {
   if (typeof data === 'string') data = utf8ToBytes(data);
-  if (!(data instanceof Uint8Array))
-    throw new TypeError(`Expected input type is Uint8Array (got ${typeof data})`);
+  if (!u8a(data)) throw new Error(`expected Uint8Array, got ${typeof data}`);
   return data;
 }
 
@@ -163,7 +167,7 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   opts?: T2
 ): T1 & T2 {
   if (opts !== undefined && (typeof opts !== 'object' || !isPlainObject(opts)))
-    throw new TypeError('Options should be object or undefined');
+    throw new Error('Options should be object or undefined');
   const merged = Object.assign(defaults, opts);
   return merged as T1 & T2;
 }

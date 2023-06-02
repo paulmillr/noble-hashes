@@ -66,6 +66,8 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     const { blockLen, buffer, buffer32 } = this;
     data = toBytes(data);
     const len = data.length;
+    const offset = data.byteOffset;
+    const buf = data.buffer;
     for (let pos = 0; pos < len; ) {
       // If buffer is full and we still have input (don't process last block, same as blake2s)
       if (this.pos === blockLen) {
@@ -73,10 +75,10 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
         this.pos = 0;
       }
       const take = Math.min(blockLen - this.pos, len - pos);
-      const dataOffset = data.byteOffset + pos;
+      const dataOffset = offset + pos;
       // full block && aligned to 4 bytes && not last in input
       if (take === blockLen && !(dataOffset % 4) && pos + take < len) {
-        const data32 = new Uint32Array(data.buffer, dataOffset, Math.floor((len - pos) / 4));
+        const data32 = new Uint32Array(buf, dataOffset, Math.floor((len - pos) / 4));
         for (let pos32 = 0; pos + blockLen < len; pos32 += buffer32.length, pos += blockLen) {
           this.length += blockLen;
           this.compress(data32, pos32, false);

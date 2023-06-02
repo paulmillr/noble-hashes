@@ -7,9 +7,9 @@ export function bool(b: boolean) {
 }
 
 export function bytes(b: Uint8Array | undefined, ...lengths: number[]) {
-  if (!(b instanceof Uint8Array)) throw new TypeError('Expected Uint8Array');
+  if (!(b instanceof Uint8Array)) throw new Error('Expected Uint8Array');
   if (lengths.length > 0 && !lengths.includes(b.length))
-    throw new TypeError(`Expected Uint8Array of length ${lengths}, not of length=${b.length}`);
+    throw new Error(`Expected Uint8Array of length ${lengths}, not of length=${b.length}`);
 }
 
 type Hash = {

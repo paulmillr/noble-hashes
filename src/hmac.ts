@@ -15,7 +15,7 @@ class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     const key = toBytes(_key);
     this.iHash = hash.create() as T;
     if (typeof this.iHash.update !== 'function')
-      throw new TypeError('Expected instance of class which extends utils.Hash');
+      throw new Error('Expected instance of class which extends utils.Hash');
     this.blockLen = this.iHash.blockLen;
     this.outputLen = this.iHash.outputLen;
     const blockLen = this.blockLen;
