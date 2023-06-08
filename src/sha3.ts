@@ -1,5 +1,5 @@
 import * as assert from './_assert.js';
-import u64 from './_u64.js';
+import * as u64 from './_u64.js';
 import {
   Hash,
   u32,

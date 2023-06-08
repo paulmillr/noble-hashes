@@ -2,12 +2,12 @@ const U32_MASK64 = /*#__PURE__*/ BigInt(2 ** 32 - 1);
 const _32n = /*#__PURE__*/ BigInt(32);
 
 // We are not using BigUint64Array, because they are extremely slow as per 2022
-export function fromBig(n: bigint, le = false) {
+function fromBig(n: bigint, le = false) {
   if (le) return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
   return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
 }
 
-export function split(lst: bigint[], le = false) {
+function split(lst: bigint[], le = false) {
   let Ah = new Uint32Array(lst.length);
   let Al = new Uint32Array(lst.length);
   for (let i = 0; i < lst.length; i++) {
@@ -17,7 +17,7 @@ export function split(lst: bigint[], le = false) {
   return [Ah, Al];
 }
 
-export const toBig = (h: number, l: number) => (BigInt(h >>> 0) << _32n) | BigInt(l >>> 0);
+const toBig = (h: number, l: number) => (BigInt(h >>> 0) << _32n) | BigInt(l >>> 0);
 // for Shift in [0, 32)
 const shrSH = (h: number, l: number, s: number) => h >>> s;
 const shrSL = (h: number, l: number, s: number) => (h << (32 - s)) | (l >>> s);
@@ -40,7 +40,7 @@ const rotlBL = (h: number, l: number, s: number) => (h << (s - 32)) | (l >>> (64
 // JS uses 32-bit signed integers for bitwise operations which means we cannot
 // simple take carry out of low bit sum by shift, we need to use division.
 // Removing "export" has 5% perf penalty -_-
-export function add(Ah: number, Al: number, Bh: number, Bl: number) {
+function add(Ah: number, Al: number, Bh: number, Bl: number) {
   const l = (Al >>> 0) + (Bl >>> 0);
   return { h: (Ah + Bh + ((l / 2 ** 32) | 0)) | 0, l: l | 0 };
 }
@@ -58,7 +58,7 @@ const add5H = (low: number, Ah: number, Bh: number, Ch: number, Dh: number, Eh: 
   (Ah + Bh + Ch + Dh + Eh + ((low / 2 ** 32) | 0)) | 0;
 
 // prettier-ignore
-const u64 = {
+export {
   fromBig, split, toBig,
   shrSH, shrSL,
   rotrSH, rotrSL, rotrBH, rotrBL,
@@ -66,4 +66,3 @@ const u64 = {
   rotlSH, rotlSL, rotlBH, rotlBL,
   add, add3L, add3H, add4L, add4H, add5H, add5L,
 };
-export default u64;

@@ -1,5 +1,5 @@
 import * as assert from './_assert.js';
-import u64 from './_u64.js';
+import * as u64 from './_u64.js';
 import { BLAKE2 } from './_blake2.js';
 import { compress, IV } from './blake2s.js';
 import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts } from './utils.js';

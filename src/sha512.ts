@@ -1,5 +1,5 @@
 import { SHA2 } from './_sha2.js';
-import u64 from './_u64.js';
+import * as u64 from './_u64.js';
 import { wrapConstructor } from './utils.js';
 
 // Round contants (first 32 bits of the fractional parts of the cube roots of the first 80 primes 2..409):
