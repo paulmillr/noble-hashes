@@ -1,4 +1,4 @@
-import assert from './_assert.js';
+import * as assert from './_assert.js';
 import { Hash, Input, toBytes, u32 } from './utils.js';
 // For BLAKE2b, the two extra permutations for rounds 10 and 11 are SIGMA[10..11] = SIGMA[0..1].
 // prettier-ignore

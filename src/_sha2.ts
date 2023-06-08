@@ -1,4 +1,4 @@
-import assert from './_assert.js';
+import * as assert from './_assert.js';
 import { Hash, createView, Input, toBytes } from './utils.js';
 
 // Polyfill for Safari 14
