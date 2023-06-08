@@ -1,0 +1,18 @@
+{
+  "name": "size-limit",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Used to check library size",
+  "main": "input.js",
+  "keywords": [],
+  "type": "module",
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@size-limit/preset-big-lib": "^8.2.4",
+    "size-limit": "^8.2.4"
+  },
+  "scripts": {
+    "size": "size-limit"
+  }
+}
