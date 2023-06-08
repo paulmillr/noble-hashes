@@ -1,4 +1,4 @@
-import assert from './_assert.js';
+import * as assert from './_assert.js';
 import { hmac } from './hmac.js';
 import { Hash, CHash, Input, createView, toBytes, checkOpts, asyncLoop } from './utils.js';
 
