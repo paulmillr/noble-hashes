@@ -37,11 +37,7 @@ function output(out: any, instance: any) {
   }
 }
 
-export {
-  number,
-  bool,
-  bytes,
-  hash,
-  exists,
-  output,
-};
+export { number, bool, bytes, hash, exists, output };
+
+const assert = { number, bool, bytes, hash, exists, output };
+export default assert;
