@@ -1,3 +1,4 @@
+import './_big-endian-check.js'
 import * as assert from './_assert.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2 } from './pbkdf2.js';

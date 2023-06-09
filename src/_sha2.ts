@@ -1,3 +1,4 @@
+import './_big-endian-check.js'
 import * as assert from './_assert.js';
 import { Hash, createView, Input, toBytes } from './utils.js';
 

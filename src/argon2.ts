@@ -1,3 +1,4 @@
+import './_big-endian-check.js'
 import * as assert from './_assert.js';
 import { Input, toBytes, u8, u32 } from './utils.js';
 import { blake2b } from './blake2b.js';

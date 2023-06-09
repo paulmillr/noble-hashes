@@ -1,3 +1,4 @@
+import './_big-endian-check.js'
 import { number as assertNumber } from './_assert.js';
 import { Input, toBytes, wrapConstructorWithOpts, u32, Hash, HashXOF } from './utils.js';
 import { Keccak, ShakeOpts } from './sha3.js';

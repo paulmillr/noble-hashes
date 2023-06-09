@@ -1,3 +1,4 @@
+import './_big-endian-check.js'
 import { SHA2 } from './_sha2.js';
 import { rotr, wrapConstructor } from './utils.js';
 

@@ -25,11 +25,8 @@ export const createView = (arr: TypedArray) =>
 // The rotate right (circular right shift) operation for uint32
 export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (word >>> shift);
 
-// big-endian hardware is rare. Just in case someone still decides to run hashes:
-// early-throw an error because we don't support BE yet.
 export const isLE =
   /*#__PURE__*/ new Uint8Array(/*#__PURE__*/ new Uint32Array([0x11223344]).buffer)[0] === 0x44;
-if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
 const hexes = /*#__PURE__*/ Array.from({ length: 256 }, (v, i) => i.toString(16).padStart(2, '0'));
 /**

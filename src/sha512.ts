@@ -1,3 +1,4 @@
+import './_big-endian-check.js'
 import { SHA2 } from './_sha2.js';
 import * as u64 from './_u64.js';
 import { wrapConstructor } from './utils.js';

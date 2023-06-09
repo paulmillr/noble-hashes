@@ -42,7 +42,7 @@
   "engines": {
     "node": ">= 16"
   },
-  "sideEffects": false,
+  "sideEffects": ["./esm/_big-endian-check.js"],
   "exports": {
     ".": {
       "types": "./index.d.ts",

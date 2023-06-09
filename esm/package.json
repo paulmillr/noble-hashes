@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": ["./_big-endian-check.js"],
   "browser": {
     "node:crypto": false
   },

@@ -1,3 +1,4 @@
+import './_big-endian-check.js'
 import { bytes as assertBytes } from './_assert.js';
 import { hkdf } from './hkdf.js';
 import { sha256 } from './sha256.js';

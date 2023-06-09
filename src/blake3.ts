@@ -1,3 +1,4 @@
+import './_big-endian-check.js'
 import * as assert from './_assert.js';
 import * as u64 from './_u64.js';
 import { BLAKE2 } from './_blake2.js';
