@@ -9,6 +9,7 @@
     "esm",
     "src/*.ts"
   ],
+  "sideEffects": false,
   "scripts": {
     "bench": "node benchmark/index.js noble",
     "bench:all": "node benchmark/index.js",
