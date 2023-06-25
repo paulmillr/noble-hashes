@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": ["./utils.js"],
   "browser": {
     "node:crypto": false
   },
