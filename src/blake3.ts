@@ -5,7 +5,7 @@ import { compress, IV } from './blake2s.js';
 import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts } from './utils.js';
 
 // Flag bitset
-enum Flags {
+const enum Flags {
   CHUNK_START = 1 << 0,
   CHUNK_END = 1 << 1,
   PARENT = 1 << 2,
