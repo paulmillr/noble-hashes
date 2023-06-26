@@ -6,9 +6,7 @@ import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils.js';
 // first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19)
 // same as SHA-256
 // prettier-ignore
-export const IV = new Uint32Array([
-  0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-]);
+export const IV = /* @__PURE__ */new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
 
 // Mixing function G splitted in two halfs
 function G1(a: number, b: number, c: number, d: number, x: number) {
@@ -133,4 +131,6 @@ class BLAKE2s extends BLAKE2<BLAKE2s> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, salt, personalization
  */
-export const blake2s = wrapConstructorWithOpts<BLAKE2s, BlakeOpts>((opts) => new BLAKE2s(opts));
+export const blake2s = /* @__PURE__ */ wrapConstructorWithOpts<BLAKE2s, BlakeOpts>(
+  (opts) => new BLAKE2s(opts)
+);

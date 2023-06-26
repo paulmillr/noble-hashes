@@ -1,5 +1,5 @@
-const U32_MASK64 = BigInt(2 ** 32 - 1);
-const _32n = BigInt(32);
+const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
+const _32n = /* @__PURE__ */ BigInt(32);
 
 // We are not using BigUint64Array, because they are extremely slow as per 2022
 export function fromBig(n: bigint, le = false) {
