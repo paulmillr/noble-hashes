@@ -4,7 +4,7 @@ import { wrapConstructor } from './utils.js';
 
 // Round contants (first 32 bits of the fractional parts of the cube roots of the first 80 primes 2..409):
 // prettier-ignore
-const [SHA512_Kh, SHA512_Kl] = /*#__PURE__*/u64.split( /*#__PURE__*/[
+const [SHA512_Kh, SHA512_Kl] = /* @__PURE__ */u64.split( /* @__PURE__ */[
   '0x428a2f98d728ae22', '0x7137449123ef65cd', '0xb5c0fbcfec4d3b2f', '0xe9b5dba58189dbbc',
   '0x3956c25bf348b538', '0x59f111f1b605d019', '0x923f82a4af194f9b', '0xab1c5ed5da6d8118',
   '0xd807aa98a3030242', '0x12835b0145706fbe', '0x243185be4ee4b28c', '0x550c7dc3d5ffb4e2',
@@ -28,8 +28,8 @@ const [SHA512_Kh, SHA512_Kl] = /*#__PURE__*/u64.split( /*#__PURE__*/[
 ].map(n => BigInt(n)));
 
 // Temporary buffer, not used to store anything between runs
-const SHA512_W_H = /*#__PURE__*/ new Uint32Array(80);
-const SHA512_W_L = /*#__PURE__*/ new Uint32Array(80);
+const SHA512_W_H = /* @__PURE__ */ new Uint32Array(80);
+const SHA512_W_L = /* @__PURE__ */ new Uint32Array(80);
 export class SHA512 extends SHA2<SHA512> {
   // We cannot use array here since array allows indexing by variable which means optimizer/compiler cannot use registers.
   // Also looks cleaner and easier to verify with spec.
@@ -240,7 +240,7 @@ class SHA384 extends SHA512 {
   }
 }
 
-export const sha512 = /*#__PURE__*/ wrapConstructor(() => new SHA512());
-export const sha512_224 = /*#__PURE__*/ wrapConstructor(() => new SHA512_224());
-export const sha512_256 = /*#__PURE__*/ wrapConstructor(() => new SHA512_256());
-export const sha384 = /*#__PURE__*/ wrapConstructor(() => new SHA384());
+export const sha512 = /* @__PURE__ */ wrapConstructor(() => new SHA512());
+export const sha512_224 = /* @__PURE__ */ wrapConstructor(() => new SHA512_224());
+export const sha512_256 = /* @__PURE__ */ wrapConstructor(() => new SHA512_256());
+export const sha384 = /* @__PURE__ */ wrapConstructor(() => new SHA384());

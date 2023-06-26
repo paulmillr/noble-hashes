@@ -15,12 +15,12 @@ enum Flags {
   DERIVE_KEY_MATERIAL = 1 << 6,
 }
 
-const SIGMA: Uint8Array = /*#__PURE__*/ (() => {
-  const Id = /*#__PURE__*/ Array.from({ length: 16 }, (_, i) => i);
+const SIGMA: Uint8Array = /* @__PURE__ */ (() => {
+  const Id = /* @__PURE__ */ Array.from({ length: 16 }, (_, i) => i);
   const permute = (arr: number[]) =>
     [2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8].map((i) => arr[i]);
   const res: number[] = [];
-  for (let i = 0, v = Id; i < 7; i++, v = /*#__PURE__*/ permute(v)) res.push(...v);
+  for (let i = 0, v = Id; i < 7; i++, v = /* @__PURE__ */ permute(v)) res.push(...v);
   return Uint8Array.from(res);
 })();
 
@@ -243,6 +243,6 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, context
  */
-export const blake3 = /*#__PURE__*/ wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>(
+export const blake3 = /* @__PURE__ */ wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>(
   (opts) => new BLAKE3(opts)
 );
