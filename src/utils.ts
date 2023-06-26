@@ -27,8 +27,7 @@ export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (w
 
 // big-endian hardware is rare. Just in case someone still decides to run hashes:
 // early-throw an error because we don't support BE yet.
-export const isLE =
-  /* @__PURE__ */ new Uint8Array(/* @__PURE__ */ new Uint32Array([0x11223344]).buffer)[0] === 0x44;
+export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
 if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
 const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (v, i) =>
