@@ -37,11 +37,9 @@ For [Deno](https://deno.land), ensure to use [npm specifier](https://deno.land/m
 For React Native, you may need a [polyfill for getRandomValues](https://github.com/LinusU/react-native-get-random-values).
 If you don't like NPM, a standalone [noble-hashes.js](https://github.com/paulmillr/noble-hashes/releases) is also available.
 
-The library is tree-shaking-friendly and does not expose root entry point as
-`@noble/hashes`. Instead, you need to import specific primitives.
-This is done to ensure small size of your apps.
-
 ```js
+// import * from '@noble/hashes'; // Error
+// Use sub-imports for tree-shaking, to ensure small size of your apps
 import { sha256 } from '@noble/hashes/sha256'; // ECMAScript modules (ESM) and Common.js
 // import { sha256 } from 'npm:@noble/hashes@1.3.0/sha256'; // Deno
 console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
