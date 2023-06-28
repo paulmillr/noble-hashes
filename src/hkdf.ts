@@ -23,8 +23,8 @@ export function extract(hash: CHash, ikm: Input, salt?: Input) {
 }
 
 // HKDF-Expand(PRK, info, L) -> OKM
-const HKDF_COUNTER = new Uint8Array([0]);
-const EMPTY_BUFFER = new Uint8Array();
+const HKDF_COUNTER = /* @__PURE__ */ new Uint8Array([0]);
+const EMPTY_BUFFER = /* @__PURE__ */ new Uint8Array();
 
 /**
  * HKDF-expand from the spec.

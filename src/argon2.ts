@@ -4,7 +4,7 @@ import { blake2b } from './blake2b.js';
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
 
 // Experimental Argon2 RFC 9106 implementation. It may be removed at any time.
-enum Types {
+const enum Types {
   Argond2d = 0,
   Argon2i = 1,
   Argon2id = 2,

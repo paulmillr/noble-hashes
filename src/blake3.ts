@@ -5,7 +5,7 @@ import { compress, IV } from './blake2s.js';
 import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts } from './utils.js';
 
 // Flag bitset
-enum Flags {
+const enum Flags {
   CHUNK_START = 1 << 0,
   CHUNK_END = 1 << 1,
   PARENT = 1 << 2,
@@ -15,7 +15,7 @@ enum Flags {
   DERIVE_KEY_MATERIAL = 1 << 6,
 }
 
-const SIGMA: Uint8Array = (() => {
+const SIGMA: Uint8Array = /* @__PURE__ */ (() => {
   const Id = Array.from({ length: 16 }, (_, i) => i);
   const permute = (arr: number[]) =>
     [2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8].map((i) => arr[i]);
@@ -243,4 +243,6 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, context
  */
-export const blake3 = wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>((opts) => new BLAKE3(opts));
+export const blake3 = /* @__PURE__ */ wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>(
+  (opts) => new BLAKE3(opts)
+);
