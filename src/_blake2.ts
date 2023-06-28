@@ -1,5 +1,8 @@
 import { number, exists, output } from './_assert.js';
 import { Hash, Input, toBytes, u32 } from './utils.js';
+
+// Blake is based on ChaCha permutation.
+
 // For BLAKE2b, the two extra permutations for rounds 10 and 11 are SIGMA[10..11] = SIGMA[0..1].
 // prettier-ignore
 export const SIGMA = /* @__PURE__ */ new Uint8Array([

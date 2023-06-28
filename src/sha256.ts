@@ -1,6 +1,9 @@
 import { SHA2 } from './_sha2.js';
 import { rotr, wrapConstructor } from './utils.js';
 
+// SHA2-256 need to try 2^128 hashes to execute birthday attack.
+// BTC network is doing 2^67 hashes/sec as per early 2023.
+
 // Choice: a ? b : c
 const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);
 // Majority function, true if any two inpust is true

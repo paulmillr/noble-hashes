@@ -4,6 +4,8 @@ import { BLAKE2 } from './_blake2.js';
 import { compress, IV } from './blake2s.js';
 import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts } from './utils.js';
 
+// Blake3 is single-option Blake2 with reduced security (round count).
+
 // Flag bitset
 const enum Flags {
   CHUNK_START = 1 << 0,

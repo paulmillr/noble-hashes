@@ -10,6 +10,9 @@ import {
   HashXOF,
 } from './utils.js';
 
+// SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
+// It's called a sponge function.
+
 // Various per round constants calculations
 const [SHA3_PI, SHA3_ROTL, _SHA3_IOTA]: [number[], number[], bigint[]] = [[], [], []];
 const _0n = /* @__PURE__ */ BigInt(0);
