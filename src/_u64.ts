@@ -39,7 +39,6 @@ const rotlBL = (h: number, l: number, s: number) => (h << (s - 32)) | (l >>> (64
 
 // JS uses 32-bit signed integers for bitwise operations which means we cannot
 // simple take carry out of low bit sum by shift, we need to use division.
-// Removing "export" has 5% perf penalty -_-
 function add(Ah: number, Al: number, Bh: number, Bl: number) {
   const l = (Al >>> 0) + (Bl >>> 0);
   return { h: (Ah + Bh + ((l / 2 ** 32) | 0)) | 0, l: l | 0 };
@@ -66,3 +65,13 @@ export {
   rotlSH, rotlSL, rotlBH, rotlBL,
   add, add3L, add3H, add4L, add4H, add5H, add5L,
 };
+// prettier-ignore
+const u64 = {
+  fromBig, split, toBig,
+  shrSH, shrSL,
+  rotrSH, rotrSL, rotrBH, rotrBL,
+  rotr32H, rotr32L,
+  rotlSH, rotlSL, rotlBH, rotlBL,
+  add, add3L, add3H, add4L, add4H, add5H, add5L,
+};
+export default u64;

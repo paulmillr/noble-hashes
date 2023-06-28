@@ -1,4 +1,4 @@
-import * as assert from './_assert.js';
+import { hash as assertHash, number as assertNumber } from './_assert.js';
 import { CHash, Input, toBytes } from './utils.js';
 import { hmac } from './hmac.js';
 
@@ -14,7 +14,7 @@ import { hmac } from './hmac.js';
  * @returns
  */
 export function extract(hash: CHash, ikm: Input, salt?: Input) {
-  assert.hash(hash);
+  assertHash(hash);
   // NOTE: some libraries treat zero-length array as 'not provided';
   // we don't, since we have undefined as 'not provided'
   // https://github.com/RustCrypto/KDFs/issues/15
@@ -33,8 +33,8 @@ const EMPTY_BUFFER = new Uint8Array();
  * @param length - length of output keying material in octets
  */
 export function expand(hash: CHash, prk: Input, info?: Input, length: number = 32) {
-  assert.hash(hash);
-  assert.number(length);
+  assertHash(hash);
+  assertNumber(length);
   if (length > 255 * hash.outputLen) throw new Error('Length should be <= 255*HashLen');
   const blocks = Math.ceil(length / hash.outputLen);
   if (info === undefined) info = EMPTY_BUFFER;

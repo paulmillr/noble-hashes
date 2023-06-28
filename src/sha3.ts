@@ -1,5 +1,5 @@
-import * as assert from './_assert.js';
-import * as u64 from './_u64.js';
+import { bytes, exists, number, output } from './_assert.js';
+import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.js';
 import {
   Hash,
   u32,
@@ -32,13 +32,13 @@ for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
   }
   _SHA3_IOTA.push(t);
 }
-const [SHA3_IOTA_H, SHA3_IOTA_L] = u64.split(_SHA3_IOTA, true);
+const [SHA3_IOTA_H, SHA3_IOTA_L] = split(_SHA3_IOTA, true);
 
 // Left rotation (without 0, 32, 64)
 const rotlH = (h: number, l: number, s: number) =>
-  s > 32 ? u64.rotlBH(h, l, s) : u64.rotlSH(h, l, s);
+  s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s);
 const rotlL = (h: number, l: number, s: number) =>
-  s > 32 ? u64.rotlBL(h, l, s) : u64.rotlSL(h, l, s);
+  s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s);
 
 // Same as keccakf1600, but allows to skip some rounds
 export function keccakP(s: Uint32Array, rounds: number = 24) {
@@ -101,7 +101,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
   ) {
     super();
     // Can be passed from user as dkLen
-    assert.number(outputLen);
+    number(outputLen);
     // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
     if (0 >= this.blockLen || this.blockLen >= 200)
       throw new Error('Sha3 supports only keccak-f1600 function');
@@ -114,7 +114,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.pos = 0;
   }
   update(data: Input) {
-    assert.exists(this);
+    exists(this);
     const { blockLen, state } = this;
     data = toBytes(data);
     const len = data.length;
@@ -136,8 +136,8 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.keccak();
   }
   protected writeInto(out: Uint8Array): Uint8Array {
-    assert.exists(this, false);
-    assert.bytes(out);
+    exists(this, false);
+    bytes(out);
     this.finish();
     const bufferOut = this.state;
     const { blockLen } = this;
@@ -156,11 +156,11 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     return this.writeInto(out);
   }
   xof(bytes: number): Uint8Array {
-    assert.number(bytes);
+    number(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
-    assert.output(out, this);
+    output(out, this);
     if (this.finished) throw new Error('digest() was already called');
     this.writeInto(out);
     this.destroy();

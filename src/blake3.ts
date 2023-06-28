@@ -1,5 +1,5 @@
-import * as assert from './_assert.js';
-import * as u64 from './_u64.js';
+import { bytes, exists, number, output } from './_assert.js';
+import { fromBig } from './_u64.js';
 import { BLAKE2 } from './_blake2.js';
 import { compress, IV } from './blake2s.js';
 import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts } from './utils.js';
@@ -55,7 +55,7 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   constructor(opts: Blake3Opts = {}, flags = 0) {
     super(64, opts.dkLen === undefined ? 32 : opts.dkLen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
     this.outputLen = opts.dkLen === undefined ? 32 : opts.dkLen;
-    assert.number(this.outputLen);
+    number(this.outputLen);
     if (opts.key !== undefined && opts.context !== undefined)
       throw new Error('Blake3: only key or context can be specified at same time');
     else if (opts.key !== undefined) {
@@ -83,7 +83,7 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   protected set() {}
   private b2Compress(counter: number, flags: number, buf: Uint32Array, bufPos: number = 0) {
     const { state: s, pos } = this;
-    const { h, l } = u64.fromBig(BigInt(counter), true);
+    const { h, l } = fromBig(BigInt(counter), true);
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
@@ -159,7 +159,7 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   // Same as b2Compress, but doesn't modify state and returns 16 u32 array (instead of 8)
   private b2CompressOut() {
     const { state: s, pos, flags, buffer32, bufferOut32: out32 } = this;
-    const { h, l } = u64.fromBig(BigInt(this.chunkOut++));
+    const { h, l } = fromBig(BigInt(this.chunkOut++));
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
@@ -204,8 +204,8 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     this.b2CompressOut();
   }
   private writeInto(out: Uint8Array) {
-    assert.exists(this, false);
-    assert.bytes(out);
+    exists(this, false);
+    bytes(out);
     this.finish();
     const { blockLen, bufferOut } = this;
     for (let pos = 0, len = out.length; pos < len; ) {
@@ -222,11 +222,11 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     return this.writeInto(out);
   }
   xof(bytes: number): Uint8Array {
-    assert.number(bytes);
+    number(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
-    assert.output(out, this);
+    output(out, this);
     if (this.finished) throw new Error('digest() was already called');
     this.enableXOF = false;
     this.writeInto(out);
