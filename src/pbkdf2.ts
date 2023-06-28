@@ -1,4 +1,4 @@
-import assert from './_assert.js';
+import { hash as assertHash, number as assertNumber } from './_assert.js';
 import { hmac } from './hmac.js';
 import { Hash, CHash, Input, createView, toBytes, checkOpts, asyncLoop } from './utils.js';
 
@@ -10,12 +10,12 @@ export type Pbkdf2Opt = {
 };
 // Common prologue and epilogue for sync/async functions
 function pbkdf2Init(hash: CHash, _password: Input, _salt: Input, _opts: Pbkdf2Opt) {
-  assert.hash(hash);
+  assertHash(hash);
   const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);
   const { c, dkLen, asyncTick } = opts;
-  assert.number(c);
-  assert.number(dkLen);
-  assert.number(asyncTick);
+  assertNumber(c);
+  assertNumber(dkLen);
+  assertNumber(asyncTick);
   if (c < 1) throw new Error('PBKDF2: iterations (c) should be >= 1');
   const password = toBytes(_password);
   const salt = toBytes(_salt);

@@ -1,5 +1,5 @@
 import { BLAKE2, BlakeOpts, SIGMA } from './_blake2.js';
-import u64 from './_u64.js';
+import { fromBig } from './_u64.js';
 import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils.js';
 
 // Initial state:
@@ -102,7 +102,7 @@ class BLAKE2s extends BLAKE2<BLAKE2s> {
     this.v7 = v7 | 0;
   }
   protected compress(msg: Uint32Array, offset: number, isLast: boolean) {
-    const { h, l } = u64.fromBig(BigInt(this.length));
+    const { h, l } = fromBig(BigInt(this.length));
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
