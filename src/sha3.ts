@@ -35,10 +35,8 @@ for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
 const [SHA3_IOTA_H, SHA3_IOTA_L] = /* @__PURE__ */ split(_SHA3_IOTA, true);
 
 // Left rotation (without 0, 32, 64)
-const rotlH = (h: number, l: number, s: number) =>
-  s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s);
-const rotlL = (h: number, l: number, s: number) =>
-  s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s);
+const rotlH = (h: number, l: number, s: number) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
+const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
 
 // Same as keccakf1600, but allows to skip some rounds
 export function keccakP(s: Uint32Array, rounds: number = 24) {
