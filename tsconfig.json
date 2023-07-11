@@ -6,13 +6,12 @@
         "target": "es2020",
         "lib": ["es2020"], // Set explicitly to remove DOM
         "module": "commonjs",
-        "moduleResolution": "node",
         "sourceMap": true,
         "inlineSources": false,
         "noUnusedLocals": true,
         "baseUrl": ".",
         "paths": {
-            "@noble/hashes/crypto": [ "src/crypto" ]
+            "@noble/hashes/crypto": [ "*", "src/crypto" ]
         },
     },
     "include": ["src"],

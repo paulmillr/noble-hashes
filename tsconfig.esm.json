@@ -4,7 +4,6 @@
         "outDir": "esm",
         "target": "es2020",
         "module": "es6",
-        "moduleResolution": "node",
         "sourceMap": true,
         "inlineSources": false,
         "noUnusedLocals": true,
