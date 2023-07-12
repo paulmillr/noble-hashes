@@ -222,13 +222,13 @@ export async function scryptAsync(password: Input, salt: Input, opts: ScryptOpts
     const Pi = blockSize32 * pi;
     for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
     let pos = 0;
-    await asyncLoop(N - 1, asyncTick, (i) => {
+    await asyncLoop(N - 1, asyncTick, () => {
       BlockMix(V, pos, V, (pos += blockSize32), r); // V[i] = BlockMix(V[i-1]);
       blockMixCb();
     });
     BlockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
     blockMixCb();
-    await asyncLoop(N, asyncTick, (i) => {
+    await asyncLoop(N, asyncTick, () => {
       // First u32 of the last 64-byte block (u32 is LE)
       const j = B32[Pi + blockSize32 - 16] % N; // j = Integrify(X) % iterations
       for (let k = 0; k < blockSize32; k++) tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k]; // tmp = B ^ V[j]

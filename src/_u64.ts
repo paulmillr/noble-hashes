@@ -19,7 +19,7 @@ function split(lst: bigint[], le = false) {
 
 const toBig = (h: number, l: number) => (BigInt(h >>> 0) << _32n) | BigInt(l >>> 0);
 // for Shift in [0, 32)
-const shrSH = (h: number, l: number, s: number) => h >>> s;
+const shrSH = (h: number, _l: number, s: number) => h >>> s;
 const shrSL = (h: number, l: number, s: number) => (h << (32 - s)) | (l >>> s);
 // Right rotate for Shift in [1, 32)
 const rotrSH = (h: number, l: number, s: number) => (h >>> s) | (l << (32 - s));
@@ -28,8 +28,8 @@ const rotrSL = (h: number, l: number, s: number) => (h << (32 - s)) | (l >>> s);
 const rotrBH = (h: number, l: number, s: number) => (h << (64 - s)) | (l >>> (s - 32));
 const rotrBL = (h: number, l: number, s: number) => (h >>> (s - 32)) | (l << (64 - s));
 // Right rotate for shift===32 (just swaps l&h)
-const rotr32H = (h: number, l: number) => l;
-const rotr32L = (h: number, l: number) => h;
+const rotr32H = (_h: number, l: number) => l;
+const rotr32L = (h: number, _l: number) => h;
 // Left rotate for Shift in [1, 32)
 const rotlSH = (h: number, l: number, s: number) => (h << s) | (l >>> (32 - s));
 const rotlSL = (h: number, l: number, s: number) => (l << s) | (h >>> (32 - s));

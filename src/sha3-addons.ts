@@ -368,7 +368,7 @@ class KeccakPRG extends Keccak {
     return this.update(data);
   }
   protected finish() {}
-  digestInto(out: Uint8Array): Uint8Array {
+  digestInto(_out: Uint8Array): Uint8Array {
     throw new Error('KeccakPRG: digest is not allowed, please use .fetch instead.');
   }
   fetch(bytes: number): Uint8Array {

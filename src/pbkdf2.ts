@@ -87,7 +87,7 @@ export async function pbkdf2Async(hash: CHash, password: Input, salt: Input, opt
     // U1 = PRF(Password, Salt + INT_32_BE(i))
     (prfW = PRFSalt._cloneInto(prfW)).update(arr).digestInto(u);
     Ti.set(u.subarray(0, Ti.length));
-    await asyncLoop(c - 1, asyncTick, (i) => {
+    await asyncLoop(c - 1, asyncTick, () => {
       // Uc = PRF(Password, Uc−1)
       PRF._cloneInto(prfW).update(u).digestInto(u);
       for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
