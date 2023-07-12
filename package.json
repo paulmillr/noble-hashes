@@ -29,6 +29,7 @@
     "url": "https://github.com/paulmillr/noble-hashes.git"
   },
   "license": "MIT",
+  "sideEffects": false,
   "browser": {
     "node:crypto": false,
     "./crypto": "./crypto.js"
