@@ -1,22 +1,26 @@
 {
-    "compilerOptions": {
-        "strict": true,
-        "declaration": true,
-        "outDir": ".",
-        "target": "es2020",
-        "lib": ["es2020"], // Set explicitly to remove DOM
-        "module": "commonjs",
-        "sourceMap": true,
-        "inlineSources": false,
-        "noUnusedLocals": true,
-        "baseUrl": ".",
-        "paths": {
-            "@noble/hashes/crypto": [ "*", "src/crypto" ]
-        },
+  "compilerOptions": {
+    "outDir": ".",
+    "target": "es2020",
+    "lib": ["es2020"], // Set explicitly to remove DOM
+    "module": "commonjs",
+    "baseUrl": ".",
+    "paths": {
+      "@noble/hashes/crypto": ["*", "src/crypto"]
     },
-    "include": ["src"],
-    "exclude": [
-        "node_modules",
-        "*.d.ts"
-    ],
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": false,
+    "strict": true,
+    "allowSyntheticDefaultImports": false,
+    "allowUnreachableCode": false,
+    "esModuleInterop": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "*.d.ts"]
 }
