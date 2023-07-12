@@ -190,8 +190,8 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
   assertNumber(t);
   assertNumber(version);
   if (dkLen < 4 || dkLen >= 2 ** 32) throw new Error('Argon2: dkLen should be at least 4 bytes');
-  if (dkLen < 1 || p >= 2 ** 32) throw new Error('Argon2: p (paralllelism) should be at least 1');
-  if (dkLen < 1 || p >= 2 ** 32) throw new Error('Argon2: t (iterations) should be at least 1');
+  if (p < 1 || p >= 2 ** 32) throw new Error('Argon2: p (parallelism) should be at least 1');
+  if (t < 1 || t >= 2 ** 32) throw new Error('Argon2: t (iterations) should be at least 1');
   if (m < 8 * p) throw new Error(`Argon2: memory should be at least 8*p bytes`);
   if (version !== 16 && version !== 19) throw new Error(`Argon2: unknown version=${version}`);
   password = toBytes(password);
