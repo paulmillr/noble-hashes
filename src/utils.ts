@@ -160,8 +160,7 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
 };
 
 // Check if object doens't have custom constructor (like Uint8Array/Array)
-const isPlainObject = (obj: any) =>
-  Object.prototype.toString.call(obj) === '[object Object]' && obj.constructor === Object;
+const isPlainObject = (obj: any) => Object.prototype.toString.call(obj) === '[object Object]';
 
 type EmptyObj = {};
 export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
