@@ -159,15 +159,13 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
   xofInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
 };
 
-// Check if object doens't have custom constructor (like Uint8Array/Array)
-const isPlainObject = (obj: any) => Object.prototype.toString.call(obj) === '[object Object]';
-
+const toStr = {}.toString;
 type EmptyObj = {};
 export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   defaults: T1,
   opts?: T2
 ): T1 & T2 {
-  if (opts !== undefined && (typeof opts !== 'object' || !isPlainObject(opts)))
+  if (opts !== undefined && toStr.call(opts) !== '[object Object]')
     throw new Error('Options should be object or undefined');
   const merged = Object.assign(defaults, opts);
   return merged as T1 & T2;
