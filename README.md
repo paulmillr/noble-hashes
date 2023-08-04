@@ -38,8 +38,7 @@ For React Native, you may need a [polyfill for getRandomValues](https://github.c
 If you don't like NPM, a standalone [noble-hashes.js](https://github.com/paulmillr/noble-hashes/releases) is also available.
 
 ```js
-// import * from '@noble/hashes'; // Error
-// Use sub-imports for tree-shaking, to ensure small size of your apps
+// import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
 import { sha256 } from '@noble/hashes/sha256'; // ECMAScript modules (ESM) and Common.js
 // import { sha256 } from 'npm:@noble/hashes@1.3.0/sha256'; // Deno
 console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
