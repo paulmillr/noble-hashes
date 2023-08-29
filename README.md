@@ -66,6 +66,8 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 - [Contributing & testing](#contributing--testing)
 - [License](#license)
 
+### Modules
+
 ```js
 // sha384 is here, because it uses same internals as sha512
 import { sha512, sha512_256, sha384 } from '@noble/hashes/sha512';
@@ -96,8 +98,6 @@ import { sha1 } from '@noble/hashes/sha1'; // legacy
 import { bytesToHex as toHex } from '@noble/hashes/utils';
 console.log(toHex(sha256('abc'))); // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
 ```
-
-### Modules
 
 ##### API
 
