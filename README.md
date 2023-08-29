@@ -447,20 +447,25 @@ constant-timeness_. Even statically typed Rust, a language without GC,
 for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones.
 Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
 
-### Memory dumps
+### Memory dumping
 
 The library shares state buffers between hash
 function calls. The buffers are zeroed-out after each call. However, if an attacker
-can read application memory, you are doomed in any case: - At some point, input will be a string and strings are immutable in JS:
-there is no way to overwrite them with zeros. For example: deriving
-key from `scrypt(password, salt)` where password and salt are strings - Input from a file will stay in file buffers - Input / output will be re-used multiple times in application which means
-it could stay in memory - `await anything()` will always write all internal variables (including numbers)
-to memory. With async functions / Promises there are no guarantees when the code
-chunk would be executed. Which means attacker can have plenty of time to read data from memory - There is no way to guarantee anything about zeroing sensitive data without
-complex tests-suite which will dump process memory and verify that there is
-no sensitive data left. For JS it means testing all browsers (incl. mobile),
-which is complex. And of course it will be useless without using the same
-test-suite in the actual application that consumes the library
+can read application memory, you are doomed in any case:
+
+- At some point, input will be a string and strings are immutable in JS:
+  there is no way to overwrite them with zeros. For example: deriving
+  key from `scrypt(password, salt)` where password and salt are strings
+- Input from a file will stay in file buffers
+- Input / output will be re-used multiple times in application which means it could stay in memory
+- `await anything()` will always write all internal variables (including numbers)
+  to memory. With async functions / Promises there are no guarantees when the code
+  chunk would be executed. Which means attacker can have plenty of time to read data from memory
+- There is no way to guarantee anything about zeroing sensitive data without
+  complex tests-suite which will dump process memory and verify that there is
+  no sensitive data left. For JS it means testing all browsers (incl. mobile),
+  which is complex. And of course it will be useless without using the same
+  test-suite in the actual application that consumes the library
 
 ### Supply chain security
 
@@ -471,7 +476,6 @@ test-suite in the actual application that consumes the library
 4. **Dependencies** are minimal:
    - All deps are prevented from automatic updates and have locked-down version ranges. Every update is checked with `npm-diff`
    - Updates themselves are rare, to ensure rogue updates are not catched accidentally
-   - One dependency [noble-hashes](https://github.com/paulmillr/noble-hashes) is used, by the same author, to provide hashing functionality
 5. devDependencies are only used if you want to contribute to the repo. They are disabled for end-users:
    - scure-base, scure-bip32, scure-bip39, micro-bmark and micro-should are developed by the same author and follow identical security practices
    - prettier (linter), fast-check (property-based testing) and typescript are used for code quality, vector generation and ts compilation. The packages are big, which makes it hard to audit their source code thoroughly and fully
