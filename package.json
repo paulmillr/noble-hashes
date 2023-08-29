@@ -123,6 +123,11 @@
       "import": "./esm/sha1.js",
       "default": "./sha1.js"
     },
+    "./sha2": {
+      "types": "./sha2.d.ts",
+      "import": "./esm/sha2.js",
+      "default": "./sha2.js"
+    },
     "./sha3-addons": {
       "types": "./sha3-addons.d.ts",
       "import": "./esm/sha3-addons.js",
