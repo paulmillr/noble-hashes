@@ -292,7 +292,10 @@ const h12 = sha1('def');
 import { hmac } from '@noble/hashes/hmac';
 import { sha256 } from '@noble/hashes/sha256';
 const mac1 = hmac(sha256, 'key', 'message');
-const mac2 = hmac.create(sha256, Uint8Array.from([1, 2, 3])).update(Uint8Array.from([4, 5, 6])).digest();
+const mac2 = hmac
+  .create(sha256, Uint8Array.from([1, 2, 3]))
+  .update(Uint8Array.from([4, 5, 6]))
+  .digest();
 ```
 
 Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
@@ -405,7 +408,9 @@ const kdf = await eskdf('example@university', 'beginning-new-example');
 console.log(kdf.fingerprint);
 const key1 = kdf.deriveChildKey('aes', 0);
 const key2 = kdf.deriveChildKey('aes', 0, { keyLength: 16 });
-const ecc1 = kdf.deriveChildKey('ecc', 0, { modulus: 2n ** 252n - 27742317777372353535851937790883648493n })
+const ecc1 = kdf.deriveChildKey('ecc', 0, {
+  modulus: 2n ** 252n - 27742317777372353535851937790883648493n,
+});
 kdf.expire();
 ```
 
@@ -421,46 +426,70 @@ console.log(toHex(randomBytes(32)));
 
 ## Security
 
-Noble is production-ready.
+The library has been independently audited:
 
-1. The library has been audited in Jan 2022 by an independent security firm
-   cure53: [PDF](https://cure53.de/pentest-report_hashing-libs.pdf).
-   No vulnerabilities have been found. The audit has been funded by
-   [Ethereum Foundation](https://ethereum.org/en/) with help of [Nomic Labs](https://nomiclabs.io).
-   Modules `blake3`, `sha3-addons`, `sha1` and `argon2` have not been audited.
-   See [changes since audit](https://github.com/paulmillr/noble-hashes/compare/1.0.0..main).
-2. The library has been fuzzed by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz).
-   You can run the fuzzer by yourself to check it.
-3. [Timing attack](https://en.wikipedia.org/wiki/Timing_attack) considerations:
-   _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to
-   achieve in a scripting language. Which means _any other JS library can't have constant-timeness_.
-   Even statically typed Rust, a language without GC,
-   [makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security)
-   for some cases. If your goal is absolute security, don't use any JS lib — including
-   bindings to native ones. Use low-level libraries & languages. Nonetheless we're
-   targetting algorithmic constant time.
-4. Memory dump considerations: the library shares state buffers between hash
-   function calls. The buffers are zeroed-out after each call. However, if an attacker
-   can read application memory, you are doomed in any case:
-    - At some point, input will be a string and strings are immutable in JS:
-      there is no way to overwrite them with zeros. For example: deriving
-      key from `scrypt(password, salt)` where password and salt are strings
-    - Input from a file will stay in file buffers
-    - Input / output will be re-used multiple times in application which means
-      it could stay in memory
-    - `await anything()` will always write all internal variables (including numbers)
-    to memory. With async functions / Promises there are no guarantees when the code
-    chunk would be executed. Which means attacker can have plenty of time to read data from memory
-    - There is no way to guarantee anything about zeroing sensitive data without
-      complex tests-suite which will dump process memory and verify that there is
-      no sensitive data left. For JS it means testing all browsers (incl. mobile),
-      which is complex. And of course it will be useless without using the same
-      test-suite in the actual application that consumes the library
+- in Jan 2022, by [cure53](https://cure53.de). See [PDF](https://cure53.de/pentest-report_hashing-libs.pdf) and
+  [changes since audited v1.0.0](https://github.com/paulmillr/noble-hashes/compare/1.0.0..main).
+  - Scope: everything, besides `blake3`, `sha3-addons`, `sha1` and `argon2`, which have not been audited
+  - No vulnerabilities have been found
+  - The audit has been funded by [Ethereum Foundation](https://ethereum.org/en/) with help of [Nomic Labs](https://nomiclabs.io)
 
-We consider infrastructure attacks like rogue NPM modules very important; that's
-why it's crucial to minimize the amount of 3rd-party dependencies & native bindings.
-If your app uses 500 dependencies, any dep could get hacked and you'll be downloading
-malware with every `npm install`. Our goal is to minimize this attack vector.
+It is tested against property-based, cross-library and Wycheproof vectors,
+and has fuzzing by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz).
+
+### Constant-timeness
+
+_JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to
+achieve [timing attack](https://en.wikipedia.org/wiki/Timing_attack) resistance
+in a scripting language. Which means _any other JS library can't have
+constant-timeness_. Even statically typed Rust, a language without GC,
+[makes it harder to achieve constant-time](https://www.chosenplaintext.ca/open-source/rust-timing-shield/security)
+for some cases. If your goal is absolute security, don't use any JS lib — including bindings to native ones.
+Use low-level libraries & languages. Nonetheless we're targetting algorithmic constant time.
+
+### Memory dumps
+
+The library shares state buffers between hash
+function calls. The buffers are zeroed-out after each call. However, if an attacker
+can read application memory, you are doomed in any case: - At some point, input will be a string and strings are immutable in JS:
+there is no way to overwrite them with zeros. For example: deriving
+key from `scrypt(password, salt)` where password and salt are strings - Input from a file will stay in file buffers - Input / output will be re-used multiple times in application which means
+it could stay in memory - `await anything()` will always write all internal variables (including numbers)
+to memory. With async functions / Promises there are no guarantees when the code
+chunk would be executed. Which means attacker can have plenty of time to read data from memory - There is no way to guarantee anything about zeroing sensitive data without
+complex tests-suite which will dump process memory and verify that there is
+no sensitive data left. For JS it means testing all browsers (incl. mobile),
+which is complex. And of course it will be useless without using the same
+test-suite in the actual application that consumes the library
+
+### Supply chain security
+
+1. **Commits** are signed with PGP keys, to prevent forgery. Make sure to verify commit signatures.
+2. **Releases** are transparent and built on GitHub CI. Make sure to verify [provenance](https://docs.npmjs.com/generating-provenance-statements) logs
+3. **Rare releasing** is followed.
+   The less often it is done, the less code dependents would need to audit
+4. **Dependencies** are minimal:
+   - All deps are prevented from automatic updates and have locked-down version ranges. Every update is checked with `npm-diff`
+   - Updates themselves are rare, to ensure rogue updates are not catched accidentally
+   - One dependency [noble-hashes](https://github.com/paulmillr/noble-hashes) is used, by the same author, to provide hashing functionality
+5. devDependencies are only used if you want to contribute to the repo. They are disabled for end-users:
+   - scure-base, scure-bip32, scure-bip39, micro-bmark and micro-should are developed by the same author and follow identical security practices
+   - prettier (linter), fast-check (property-based testing) and typescript are used for code quality, vector generation and ts compilation. The packages are big, which makes it hard to audit their source code thoroughly and fully
+
+We consider infrastructure attacks like rogue NPM modules very important;
+that's why it's crucial to minimize the amount of 3rd-party dependencies & native bindings.
+If your app uses 500 dependencies, any dep could get hacked and you'll be
+downloading malware with every install. Our goal is to minimize this attack vector.
+
+If you see anything unusual: investigate and report.
+
+### Randomness
+
+We're deferring to built-in
+[crypto.getRandomValues](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues)
+which is considered cryptographically secure (CSPRNG).
+
+In the past, browsers had bugs that made it weak: it may happen again.
 
 ## Speed
 
