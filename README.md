@@ -44,7 +44,29 @@ import { sha256 } from '@noble/hashes/sha256'; // ECMAScript modules (ESM) and C
 console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
 // you could also pass strings that will be UTF8-encoded to Uint8Array
 console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
+```
 
+- [Modules](#modules)
+  - [API](#api)
+  - [SHA2 (sha256, sha384, sha512, sha512_256)](#sha2-sha256-sha384-sha512-sha512_256)
+  - [SHA3 (FIPS, SHAKE, Keccak)](#sha3-fips-shake-keccak)
+  - [SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)](#sha3-addons-cshake-kmac-tuplehash-parallelhash-kangarootwelve-marsupilamifourteen)
+  - [RIPEMD-160](#ripemd-160)
+  - [BLAKE2b, BLAKE2s](#blake2b-blake2s)
+  - [BLAKE3](#blake3)
+  - [SHA1 (legacy)](#sha1-legacy)
+  - [HMAC](#hmac)
+  - [HKDF](#hkdf)
+  - [PBKDF2](#pbkdf2)
+  - [Scrypt](#scrypt)
+  - [Argon2](#argon2)
+  - [utils](#utils)
+- [Security](#security)
+- [Speed](#speed)
+- [Contributing & testing](#contributing--testing)
+- [License](#license)
+
+```js
 // sha384 is here, because it uses same internals as sha512
 import { sha512, sha512_256, sha384 } from '@noble/hashes/sha512';
 // prettier-ignore
@@ -75,7 +97,9 @@ import { bytesToHex as toHex } from '@noble/hashes/utils';
 console.log(toHex(sha256('abc'))); // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
 ```
 
-## API
+### Modules
+
+##### API
 
 All hash functions:
 
@@ -107,22 +131,6 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 
 - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
 - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
-
-## Modules
-
-- [SHA2 (sha256, sha384, sha512, sha512_256)](#sha2-sha256-sha384-sha512-sha512_256)
-- [SHA3 (FIPS, SHAKE, Keccak)](#sha3-fips-shake-keccak)
-- [SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)](#sha3-addons-cshake-kmac-tuplehash-parallelhash-kangarootwelve-marsupilamifourteen)
-- [RIPEMD-160](#ripemd-160)
-- [BLAKE2b, BLAKE2s](#blake2b-blake2s)
-- [BLAKE3](#blake3)
-- [SHA1 (legacy)](#sha1-legacy)
-- [HMAC](#hmac)
-- [HKDF](#hkdf)
-- [PBKDF2](#pbkdf2)
-- [Scrypt](#scrypt)
-- [ESKDF](#eskdf)
-- [utils](#utils)
 
 ##### SHA2 (sha256, sha384, sha512, sha512_256)
 
