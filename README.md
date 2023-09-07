@@ -1,6 +1,6 @@
 # noble-hashes
 
-Audited & minimal JS implementation of SHA2, SHA3, RIPEMD, BLAKE2/3, HMAC, HKDF, PBKDF2 & Scrypt.
+Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt.
 
 - 🔒 [**Audited**](#security) by an independent security firm
 - 🔻 Tree-shaking-friendly: use only what's necessary, other code won't be included
@@ -18,9 +18,8 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 > **noble-crypto** — high-security, easily auditable set of contained cryptographic libraries and tools.
 
 - Zero or minimal dependencies
-- Supported on all major platforms
 - Highly readable TypeScript / JS code
-- PGP-signed releases & transparent NPM builds with provenance
+- PGP-signed releases and transparent NPM builds with provenance
 - Check out [homepage](https://paulmillr.com/noble/) & all libraries:
   [ciphers](https://github.com/paulmillr/noble-ciphers),
   [curves](https://github.com/paulmillr/noble-curves),
