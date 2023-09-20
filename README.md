@@ -247,7 +247,7 @@ const rand1b = p.fetch(1);
 import { ripemd160 } from '@noble/hashes/ripemd160';
 // function ripemd160(data: Uint8Array): Uint8Array;
 const hash8 = ripemd160('abc');
-const hash9 = ripemd160()
+const hash9 = ripemd160
   .create()
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
