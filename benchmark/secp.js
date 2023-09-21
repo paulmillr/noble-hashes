@@ -1,8 +1,8 @@
 const bench = require('micro-bmark');
 const { run, mark } = bench; // or bench.mark
 const crypto = require('crypto');
-const { sha256 } = require('../../sha256');
-const { hmac } = require('../../hmac');
+const { sha256 } = require('../sha256');
+const { hmac } = require('../hmac');
 const { concatBytes } = require('../utils');
 
 const hmac256 = (key, ...msgs) => {
