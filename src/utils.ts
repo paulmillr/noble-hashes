@@ -30,6 +30,7 @@ export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (w
 export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
 if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
+// Array where index 0xf0 (240) is mapped to string 'f0'
 const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
   i.toString(16).padStart(2, '0')
 );
@@ -46,21 +47,13 @@ export function bytesToHex(bytes: Uint8Array): string {
   return hex;
 }
 
-// We use very optimized technique to convert hex string to byte array
-const enum HexC {
-  ZERO = 48, // 0
-  NINE = 57, // 9
-  A_UP = 65, // A
-  F_UP = 70, // F
-  A_LO = 97, // a
-  F_LO = 102, // f
-}
-
-function charCodeToBase16(char: number) {
-  if (char >= HexC.ZERO && char <= HexC.NINE) return char - HexC.ZERO;
-  else if (char >= HexC.A_UP && char <= HexC.F_UP) return char - (HexC.A_UP - 10);
-  else if (char >= HexC.A_LO && char <= HexC.F_LO) return char - (HexC.A_LO - 10);
-  throw new Error('Invalid byte sequence');
+// We use optimized technique to convert hex string to byte array
+const asciis = { _0: 48, _9: 57, _A: 65, _F: 70, _a: 97, _f: 102 } as const;
+function asciiToBase16(char: number): number | undefined {
+  if (char >= asciis._0 && char <= asciis._9) return char - asciis._0;
+  if (char >= asciis._A && char <= asciis._F) return char - (asciis._A - 10);
+  if (char >= asciis._a && char <= asciis._f) return char - (asciis._a - 10);
+  return;
 }
 
 /**
@@ -73,8 +66,13 @@ export function hexToBytes(hex: string): Uint8Array {
   const al = len / 2;
   const array = new Uint8Array(al);
   for (let i = 0, j = 0; i < al; i++) {
-    const n1 = charCodeToBase16(hex.charCodeAt(j++));
-    const n2 = charCodeToBase16(hex.charCodeAt(j++));
+    const n1 = asciiToBase16(hex.charCodeAt(j++));
+    const n2 = asciiToBase16(hex.charCodeAt(j++));
+    if (n1 === undefined || n2 === undefined) {
+      const index = j - 2;
+      const chr = hex[index] + hex[index + 1];
+      throw new Error('hex string expected, got non-hex character "' + chr + '" at index ' + index);
+    }
     array[i] = n1 * 16 + n2;
   }
   return array;
