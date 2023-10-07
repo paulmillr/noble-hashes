@@ -1,6 +1,6 @@
 # noble-hashes
 
-Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt.
+Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt & Argon2.
 
 - 🔒 [**Audited**](#security) by an independent security firm
 - 🔻 Tree-shaking-friendly: use only what's necessary, other code won't be included
@@ -20,12 +20,14 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 - Zero or minimal dependencies
 - Highly readable TypeScript / JS code
 - PGP-signed releases and transparent NPM builds with provenance
-- Check out [homepage](https://paulmillr.com/noble/) & all libraries:
+- All libraries:
   [ciphers](https://github.com/paulmillr/noble-ciphers),
   [curves](https://github.com/paulmillr/noble-curves),
   [hashes](https://github.com/paulmillr/noble-hashes),
   4kb [secp256k1](https://github.com/paulmillr/noble-secp256k1) /
   [ed25519](https://github.com/paulmillr/noble-ed25519)
+- [Check out homepage](https://paulmillr.com/noble/)
+  for reading resources, documentation and apps built with noble
 
 ## Usage
 
@@ -34,7 +36,7 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 We support all major platforms and runtimes.
 For [Deno](https://deno.land), ensure to use [npm specifier](https://deno.land/manual@v1.28.0/node/npm_specifiers).
 For React Native, you may need a [polyfill for getRandomValues](https://github.com/LinusU/react-native-get-random-values).
-If you don't like NPM, a standalone [noble-hashes.js](https://github.com/paulmillr/noble-hashes/releases) is also available.
+A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/releases) is also available.
 
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
@@ -45,60 +47,26 @@ console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 1
 console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 ```
 
-- [Modules](#modules)
-  - [API](#api)
-  - [SHA2 (sha256, sha384, sha512, sha512_256)](#sha2-sha256-sha384-sha512-sha512_256)
-  - [SHA3 (FIPS, SHAKE, Keccak)](#sha3-fips-shake-keccak)
-  - [SHA3 Addons (cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen)](#sha3-addons-cshake-kmac-tuplehash-parallelhash-kangarootwelve-marsupilamifourteen)
-  - [RIPEMD-160](#ripemd-160)
-  - [BLAKE2b, BLAKE2s](#blake2b-blake2s)
-  - [BLAKE3](#blake3)
-  - [SHA1 (legacy)](#sha1-legacy)
-  - [HMAC](#hmac)
-  - [HKDF](#hkdf)
-  - [PBKDF2](#pbkdf2)
-  - [Scrypt](#scrypt)
-  - [Argon2](#argon2)
+- [Implementations](#implementations)
+  - [sha256, sha512](#sha2-sha256-sha384-sha512-sha512_256)
+  - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
+  - [sha3-addons: cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen](#sha3-addons-cshake-kmac-tuplehash-parallelhash-kangarootwelve-marsupilamifourteen)
+  - [ripemd160](#ripemd-160)
+  - [blake2b, blake2s](#blake2b-blake2s)
+  - [blake3](#blake3)
+  - [sha1: legacy hash](#sha1-legacy)
+  - [hmac](#hmac)
+  - [hkdf](#hkdf)
+  - [pbkdf2](#pbkdf2)
+  - [scrypt](#scrypt)
+  - [argon2](#argon2)
   - [utils](#utils)
 - [Security](#security)
 - [Speed](#speed)
 - [Contributing & testing](#contributing--testing)
 - [Resources](#resources)
 
-### Modules
-
-```js
-// sha384 is here, because it uses same internals as sha512
-import { sha512, sha512_256, sha384 } from '@noble/hashes/sha512';
-// prettier-ignore
-import {
-  sha3_224, sha3_256, sha3_384, sha3_512,
-  keccak_224, keccak_256, keccak_384, keccak_512,
-  shake128, shake256
-} from '@noble/hashes/sha3';
-// prettier-ignore
-import {
-  cshake128, cshake256, kmac128, kmac256,
-  k12, m14,
-  tuplehash256, parallelhash256, keccakprg
-} from '@noble/hashes/sha3-addons';
-import { ripemd160 } from '@noble/hashes/ripemd160';
-import { blake3 } from '@noble/hashes/blake3';
-import { blake2b } from '@noble/hashes/blake2b';
-import { blake2s } from '@noble/hashes/blake2s';
-import { hmac } from '@noble/hashes/hmac';
-import { hkdf } from '@noble/hashes/hkdf';
-import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
-import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
-
-import { sha1 } from '@noble/hashes/sha1'; // legacy
-
-// small utility method that converts bytes to hex
-import { bytesToHex as toHex } from '@noble/hashes/utils';
-console.log(toHex(sha256('abc'))); // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
-```
-
-##### API
+### Implementations
 
 All hash functions:
 
@@ -389,38 +357,6 @@ import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2';
 const result = argon2id('password', 'salt', { t: 2, m: 65536, p: 1 });
 ```
 
-##### ESKDF
-
-A tiny stretched KDF for various applications like AES key-gen. Takes >= 2 seconds to execute.
-
-Takes following params:
-
-- `username` - username, email, or identifier, min: 8 characters, should have enough entropy
-- `password` - min: 8 characters, should have enough entropy
-
-Produces ESKDF instance that has `deriveChildKey(protocol, accountId[, options])` function.
-
-- `protocol` - 3-15 character protocol name
-- `accountId` - numeric identifier of account
-- `options` - `keyLength: 32` with specified key length (default is 32),
-  or `modulus: 2n ** 221n - 17n` with specified modulus. It will fetch modulus + 64 bits of
-  data, execute modular division. The result will have negligible bias as per FIPS 186 B.4.1.
-  Can be used to generate, for example, elliptic curve keys.
-
-Takes username and password, then takes protocol name and account id.
-
-```typescript
-import { eskdf } from '@noble/hashes/eskdf';
-const kdf = await eskdf('example@university', 'beginning-new-example');
-console.log(kdf.fingerprint);
-const key1 = kdf.deriveChildKey('aes', 0);
-const key2 = kdf.deriveChildKey('aes', 0, { keyLength: 16 });
-const ecc1 = kdf.deriveChildKey('ecc', 0, {
-  modulus: 2n ** 252n - 27742317777372353535851937790883648493n,
-});
-kdf.expire();
-```
-
 ##### utils
 
 ```typescript
@@ -430,6 +366,39 @@ console.log(toHex(randomBytes(32)));
 
 - `bytesToHex` will convert `Uint8Array` to a hex string
 - `randomBytes(bytes)` will produce cryptographically secure random `Uint8Array` of length `bytes`
+
+##### All available imports
+
+```js
+// sha384 is here, because it uses same internals as sha512
+import { sha512, sha512_256, sha384 } from '@noble/hashes/sha512';
+// prettier-ignore
+import {
+  sha3_224, sha3_256, sha3_384, sha3_512,
+  keccak_224, keccak_256, keccak_384, keccak_512,
+  shake128, shake256
+} from '@noble/hashes/sha3';
+// prettier-ignore
+import {
+  cshake128, cshake256, kmac128, kmac256,
+  k12, m14,
+  tuplehash256, parallelhash256, keccakprg
+} from '@noble/hashes/sha3-addons';
+import { ripemd160 } from '@noble/hashes/ripemd160';
+import { blake3 } from '@noble/hashes/blake3';
+import { blake2b } from '@noble/hashes/blake2b';
+import { blake2s } from '@noble/hashes/blake2s';
+import { hmac } from '@noble/hashes/hmac';
+import { hkdf } from '@noble/hashes/hkdf';
+import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
+import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
+
+import { sha1 } from '@noble/hashes/sha1'; // legacy
+
+// small utility method that converts bytes to hex
+import { bytesToHex as toHex } from '@noble/hashes/utils';
+console.log(toHex(sha256('abc'))); // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+```
 
 ## Security
 
