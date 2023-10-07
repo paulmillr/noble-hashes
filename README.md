@@ -63,7 +63,7 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 - [Security](#security)
 - [Speed](#speed)
 - [Contributing & testing](#contributing--testing)
-- [License](#license)
+- [Resources](#resources)
 
 ### Modules
 
@@ -444,6 +444,8 @@ The library has been independently audited:
 It is tested against property-based, cross-library and Wycheproof vectors,
 and has fuzzing by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz).
 
+If you see anything unusual: investigate and report.
+
 ### Constant-timeness
 
 _JIT-compiler_ and _Garbage Collector_ make "constant time" extremely hard to
@@ -476,30 +478,25 @@ can read application memory, you are doomed in any case:
 
 ### Supply chain security
 
-1. **Commits** are signed with PGP keys, to prevent forgery. Make sure to verify commit signatures.
-2. **Releases** are transparent and built on GitHub CI. Make sure to verify [provenance](https://docs.npmjs.com/generating-provenance-statements) logs
-3. **Rare releasing** is followed.
-   The less often it is done, the less code dependents would need to audit
-4. **Dependencies** are minimal:
+* **Commits** are signed with PGP keys, to prevent forgery. Make sure to verify commit signatures.
+* **Releases** are transparent and built on GitHub CI. Make sure to verify [provenance](https://docs.npmjs.com/generating-provenance-statements) logs
+* **Rare releasing** is followed to ensure less re-audit need for end-users
+* **Dependencies** are minimal:
    - All deps are prevented from automatic updates and have locked-down version ranges. Every update is checked with `npm-diff`
    - Updates themselves are rare, to ensure rogue updates are not catched accidentally
-5. devDependencies are only used if you want to contribute to the repo. They are disabled for end-users:
+* **Dev Dependencies** are only used if you want to contribute to the repo. They are disabled for end-users:
    - scure-base, scure-bip32, scure-bip39, micro-bmark and micro-should are developed by the same author and follow identical security practices
    - prettier (linter), fast-check (property-based testing) and typescript are used for code quality, vector generation and ts compilation. The packages are big, which makes it hard to audit their source code thoroughly and fully
 
-We consider infrastructure attacks like rogue NPM modules very important;
-that's why it's crucial to minimize the amount of 3rd-party dependencies & native bindings.
+Our goal is to minimize the amount of 3rd-party dependencies & native bindings.
 If your app uses 500 dependencies, any dep could get hacked and you'll be
-downloading malware with every install. Our goal is to minimize this attack vector.
-
-If you see anything unusual: investigate and report.
+downloading malware with every install.
 
 ### Randomness
 
 We're deferring to built-in
 [crypto.getRandomValues](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues)
 which is considered cryptographically secure (CSPRNG).
-
 In the past, browsers had bugs that made it weak: it may happen again.
 
 ## Speed
@@ -564,6 +561,12 @@ The current performance is good enough when compared to other projects; SHA256 t
 5. `npm run test:dos` will test against DoS; by measuring function complexity. **Takes ~20 minutes**
 6. `npm run test:big` will execute hashing on 4GB inputs,
    scrypt with 1024 different `N, r, p` combinations, etc. **Takes several hours**. Using 8-32+ core CPU helps.
+
+## Resources
+
+Check out [paulmillr.com/noble](https://paulmillr.com/noble/)
+for useful resources, articles, documentation and demos
+related to the library.
 
 ## License
 
