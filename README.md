@@ -8,7 +8,7 @@ Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Sc
 - 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests, fuzzing
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🐢 Scrypt supports `N: 2**22`, while other implementations are limited to `2**20`
-- 🦘 SHA3 supports Keccak, TupleHash, KangarooTwelve and MarsupilamiFourteen
+- 🦘 SHA3 supports Keccak, TupleHash, KangarooTwelve, MarsupilamiFourteen and TurboSHAKE
 - 🪶 Just 3.4k lines / 17KB gzipped. SHA256-only is 240 lines / 3KB gzipped
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
@@ -48,23 +48,28 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 ```
 
 - [Implementations](#implementations)
-  - [sha256, sha512](#sha2-sha256-sha384-sha512-sha512_256)
+  - [sha2: sha256, sha384, sha512, sha512_256](#sha2-sha256-sha384-sha512-sha512_256)
   - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
-  - [sha3-addons: cSHAKE, KMAC, KangarooTwelve, MarsupilamiFourteen](#sha3-addons-cshake-kmac-tuplehash-parallelhash-kangarootwelve-marsupilamifourteen)
-  - [ripemd160](#ripemd-160)
-  - [blake2b, blake2s](#blake2b-blake2s)
-  - [blake3](#blake3)
-  - [sha1: legacy hash](#sha1-legacy)
+  - [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
+  - [ripemd160](#ripemd160)
+  - [blake2b, blake2s, blake3](#blake2b-blake2s-blake3)
+  - [sha1: legacy hash](#sha1-legacy-hash)
   - [hmac](#hmac)
   - [hkdf](#hkdf)
   - [pbkdf2](#pbkdf2)
   - [scrypt](#scrypt)
   - [argon2](#argon2)
   - [utils](#utils)
+  - [All available imports](#all-available-imports)
 - [Security](#security)
+  - [Constant-timeness](#constant-timeness)
+  - [Memory dumping](#memory-dumping)
+  - [Supply chain security](#supply-chain-security)
+  - [Randomness](#randomness)
 - [Speed](#speed)
 - [Contributing & testing](#contributing--testing)
 - [Resources](#resources)
+- [License](#license)
 
 ### Implementations
 
@@ -99,7 +104,7 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
 - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
 
-##### SHA2 (sha256, sha384, sha512, sha512_256)
+##### sha2: sha256, sha384, sha512, sha512_256
 
 ```typescript
 import { sha256 } from '@noble/hashes/sha256';
@@ -138,7 +143,7 @@ const h4b = sha384
 See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
 [the paper on SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
-##### SHA3 (FIPS, SHAKE, Keccak)
+##### sha3: FIPS, SHAKE, Keccak
 
 ```typescript
 import {
@@ -168,7 +173,7 @@ See [FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
-##### SHA3 Addons (cSHAKE, KMAC, TupleHash, ParallelHash, KangarooTwelve, MarsupilamiFourteen)
+##### sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE
 
 ```typescript
 import {
@@ -178,6 +183,8 @@ import {
   kmac256,
   k12,
   m14,
+  turboshake128,
+  turboshake256,
   tuplehash128,
   tuplehash256,
   parallelhash128,
@@ -190,6 +197,8 @@ const h7e = kmac128('key', 'message');
 const h7f = kmac256('key', 'message');
 const h7h = k12('abc');
 const h7g = m14('abc');
+const h7t1 = turboshake128('abc');
+const h7t2 = turboshake256('def', { D: 0x05 });
 const h7i = tuplehash128(['ab', 'c']); // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash(['abc'])
 // Same as k12/blake3, but without reduced number of rounds. Doesn't speedup anything due lack of SIMD and threading,
 // added for compatibility.
@@ -203,13 +212,13 @@ const rand1b = p.fetch(1);
 
 - Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
   cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
-- 🦘 K12 ([KangarooTwelve Paper](https://keccak.team/files/KangarooTwelve.pdf),
-  [RFC Draft](https://www.ietf.org/archive/id/draft-irtf-cfrg-kangarootwelve-06.txt))
-  and M14 aka MarsupilamiFourteen are basically parallel versions of Keccak with
-  reduced number of rounds (same as Blake3 and ParallelHash).
+- [Reduced-round Keccak](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
+    - 🦘 K12 aka KangarooTwelve
+    - M14 aka MarsupilamiFourteen
+    - TurboSHAKE
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
 
-##### RIPEMD-160
+##### ripemd160
 
 ```typescript
 import { ripemd160 } from '@noble/hashes/ripemd160';
@@ -224,7 +233,7 @@ const hash9 = ripemd160
 See [RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286),
 [Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
 
-##### BLAKE2b, BLAKE2s
+##### blake2b, blake2s, blake3
 
 ```typescript
 import { blake2b } from '@noble/hashes/blake2b';
@@ -236,19 +245,15 @@ const h10c = blake2s
   .create(b2params)
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
-```
 
-See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net).
-
-##### BLAKE3
-
-```typescript
 import { blake3 } from '@noble/hashes/blake3';
 // All params are optional
 const h11 = blake3('abc', { dkLen: 256, key: 'def', context: 'fji' });
 ```
 
-##### SHA1 (legacy)
+See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net).
+
+##### sha1: legacy hash
 
 SHA1 was cryptographically broken, however, it was not broken for cases like HMAC.
 
@@ -261,7 +266,7 @@ import { sha1 } from '@noble/hashes/sha1';
 const h12 = sha1('def');
 ```
 
-##### HMAC
+##### hmac
 
 ```typescript
 import { hmac } from '@noble/hashes/hmac';
@@ -275,7 +280,7 @@ const mac2 = hmac
 
 Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 
-##### HKDF
+##### hkdf
 
 ```typescript
 import { hkdf } from '@noble/hashes/hkdf';
@@ -296,7 +301,7 @@ const hk2 = hkdf.expand(sha256, prk, info, dkLen);
 
 Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
 
-##### PBKDF2
+##### pbkdf2
 
 ```typescript
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
@@ -311,7 +316,7 @@ const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.
 
 Matches [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898).
 
-##### Scrypt
+##### scrypt
 
 ```typescript
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
@@ -348,7 +353,7 @@ libs. Many other implementations don't support it. We cannot support `2**23`,
 because there is a limitation in JS engines that makes allocating
 arrays bigger than 4GB impossible, but we're looking into other possible solutions.
 
-##### Argon2
+##### argon2
 
 Experimental Argon2 RFC 9106 implementation. It may be removed at any time.
 
@@ -380,8 +385,10 @@ import {
 } from '@noble/hashes/sha3';
 // prettier-ignore
 import {
-  cshake128, cshake256, kmac128, kmac256,
+  cshake128, cshake256,
   k12, m14,
+  turboshake128, turboshake256,
+  kmac128, kmac256,
   tuplehash256, parallelhash256, keccakprg
 } from '@noble/hashes/sha3-addons';
 import { ripemd160 } from '@noble/hashes/ripemd160';

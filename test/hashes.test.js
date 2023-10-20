@@ -13,7 +13,7 @@ const {
   shake256,
 } = require('../sha3');
 const { sha1 } = require('../sha1');
-const { k12 } = require('../sha3-addons');
+const { turboshake128, turboshake256, k12 } = require('../sha3-addons');
 const { blake2b } = require('../blake2b');
 const { blake2s } = require('../blake2s');
 const { blake3 } = require('../blake3');
@@ -259,6 +259,28 @@ const HASHES = {
       '2793ae3461fb9fc82f149e30e229bedf126f4b07f332ebff034e514830d86a3a',
       'd63c8aec4058e7a4aa6700a2808bade5708f97770494c7edac657e51414700a4',
       'cc94c13dfb5859e99c0ad29136b059ee146f8b7bbabc833d1bba252c3579a120',
+    ],
+  },
+  TURBOSHAKE128: {
+    fn: turboshake128,
+    obj: turboshake128.create,
+    nist: [
+      'dcf1646dfe993a8eb6b782d1faaca6d82416a5dcf1de98ee3c6dbc5e1dc63018',
+      '1e415f1c5983aff2169217277d17bb538cd945a397ddec541f1ce41af2c1b74c',
+      '6a19f2c6157d1f14751b3d3c6a7fbea2b59018f59e7179c311db1053f1451afe',
+      'e72e6dfb15f0cb665a73435386efd4a78e7ab34820787bedc4a6ec4ddea9d0ef',
+      'ccb9dbd9863c069261f541eb3fc838fec225656f396e720712ef695d747ecad2',
+    ],
+  },
+  TURBOSHAKE256: {
+    fn: turboshake256,
+    obj: turboshake256.create,
+    nist: [
+      '63824b1431a7372e85edc022c9d7afdd027472fcfa33c887d6f5aaf8dc5d4db68afbcb5714b49b7ffd8dd115dd5bd5436f837236845a230d6969a4083a113617',
+      '367a329dafea871c7802ec67f905ae13c57695dc2c6663c61035f59a18f8e7db11edc0e12e91ea60eb6b32df06dd7f002fbafabb6e13ec1cc20d995547600db0',
+      '968e0649d7d6c50659a8160b6ece6745835991af33ab94b448128b35c36210de1e4acee6dceae86a57c7536bba6b80f54eee3727a8d9e6b2820f24147cc556d6',
+      '0aa038b43fc43173b2a0c89a95576640dd1e349c4fa4f1ca394e9de6b49911771bbc7c1dc7106d6c8810f1bc93911ce61d2966e8d6a80106c8b3aa247b054c20',
+      '3c7ded415bd33e955359fb9e9cfc376cf76fd1331d926030ac6926cf29b04621a8817e285cf387327e5922ef630096eed8a5187c3126a10df443deff3b6d8f49',
     ],
   },
   BLAKE2s: {

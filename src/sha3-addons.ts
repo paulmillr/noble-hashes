@@ -1,5 +1,13 @@
 import { number as assertNumber } from './_assert.js';
-import { Input, toBytes, wrapConstructorWithOpts, u32, Hash, HashXOF } from './utils.js';
+import {
+  Input,
+  toBytes,
+  wrapConstructorWithOpts,
+  u32,
+  Hash,
+  HashXOF,
+  wrapXOFConstructorWithOpts,
+} from './utils.js';
 import { Keccak, ShakeOpts } from './sha3.js';
 // cSHAKE && KMAC (NIST SP800-185)
 function leftEncode(n: number): Uint8Array {
@@ -240,6 +248,23 @@ export const parallelhash128 = /* @__PURE__ */ (() => genPrl(168, 128 / 8, cshak
 export const parallelhash256 = /* @__PURE__ */ (() => genPrl(136, 256 / 8, cshake256))();
 export const parallelhash128xof = /* @__PURE__ */ (() => genPrl(168, 128 / 8, cshake128, true))();
 export const parallelhash256xof = /* @__PURE__ */ (() => genPrl(136, 256 / 8, cshake256, true))();
+
+// Should be simple 'shake with 12 rounds', but no, we got whole new spec about Turbo SHAKE Pro MAX.
+export type TurboshakeOpts = ShakeOpts & {
+  D?: number; // Domain separation byte
+};
+
+const genTurboshake = (blockLen: number, outputLen: number) =>
+  wrapXOFConstructorWithOpts<HashXOF<Keccak>, TurboshakeOpts>((opts: TurboshakeOpts = {}) => {
+    const D = opts.D === undefined ? 0x1f : opts.D;
+    // Section 2.1 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
+    if (!Number.isSafeInteger(D) || D < 0x01 || D > 0x7f)
+      throw new Error(`turboshake: wrong domain separation byte: ${D}, should be 0x01..0x7f`);
+    return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);
+  });
+
+export const turboshake128 = /* @__PURE__ */ genTurboshake(168, 256 / 8);
+export const turboshake256 = /* @__PURE__ */ genTurboshake(136, 512 / 8);
 
 // Kangaroo
 // Same as NIST rightEncode, but returns [0] for zero string
