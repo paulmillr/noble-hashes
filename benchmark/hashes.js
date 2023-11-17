@@ -24,6 +24,7 @@ const stable3 = require('@stablelib/sha3');
 const stableb2b = require('@stablelib/blake2b');
 const stableb2s = require('@stablelib/blake2s');
 const jssha3 = require('js-sha3');
+const nobleUnrolled = require('unrolled-nbl-hashes-sha3');
 const { SHA3: _SHA3 } = require('sha3');
 const wasm_ = require('hash-wasm');
 const wasm = {};
@@ -59,6 +60,7 @@ const HASHES = {
     stablelib: (buf) => new stable3.SHA3256().update(buf).digest(),
     'js-sha3': (buf) => wrapBuf(jssha3.sha3_256.create().update(buf).arrayBuffer()),
     sha3: (buf) => new _SHA3(256).update(Buffer.from(buf)).digest(),
+    'noble (unrolled)': (buf) => nobleUnrolled.sha3_256(buf),
     noble: (buf) => sha3_256(buf),
   },
   Kangaroo12: { noble: (buf) => k12(buf) },
