@@ -12,7 +12,7 @@ import { crypto } from '@noble/hashes/crypto';
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
 
-const u8a = (a: any): a is Uint8Array => a instanceof Uint8Array;
+const u8a = (a: any): a is Uint8Array => a instanceof Uint8Array || a?.constructor?.name === 'Uint8Array';
 // Cast array to different type
 export const u8 = (arr: TypedArray) => new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
 export const u32 = (arr: TypedArray) =>
