@@ -48,7 +48,8 @@ function serializeCase(c) {
   let o = {};
   for (let k in c) {
     const v = c[k];
-    if (v instanceof Uint8Array || v?.constructor?.name === 'Uint8Array') o[k] = `Bytes(${v.length})`;
+    if (v instanceof Uint8Array || v?.constructor?.name === 'Uint8Array')
+      o[k] = `Bytes(${v.length})`;
     else o[k] = v;
   }
   return JSON.stringify(o);
