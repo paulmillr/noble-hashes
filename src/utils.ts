@@ -128,14 +128,19 @@ export function toBytes(data: Input): Uint8Array {
  * Copies several Uint8Arrays into one.
  */
 export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
-  const r = new Uint8Array(arrays.reduce((sum, a) => sum + a.length, 0));
-  let pad = 0; // walk through each item, ensure they have proper type
-  arrays.forEach((a) => {
+  let sum = 0;
+  for (let i = 0; i < arrays.length; i++) {
+    const a = arrays[i];
     if (!isBytes(a)) throw new Error('Uint8Array expected');
-    r.set(a, pad);
+    sum += a.length;
+  }
+  const res = new Uint8Array(sum);
+  for (let i = 0, pad = 0; i < arrays.length; i++) {
+    const a = arrays[i];
+    res.set(a, pad);
     pad += a.length;
-  });
-  return r;
+  }
+  return res;
 }
 
 // For runtime check if class implements interface
