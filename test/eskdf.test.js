@@ -34,8 +34,8 @@ function toHex(arr) {
       key_length != null
         ? { keyLength: key_length }
         : modulus != null
-        ? { modulus: BigInt('0x' + modulus) }
-        : undefined;
+          ? { modulus: BigInt('0x' + modulus) }
+          : undefined;
     should(`deriveChildKey ${protocol} ${output}`, () => {
       const key = e.deriveChildKey(protocol, account_id, opt);
       assert.equal(toHex(key), output);
