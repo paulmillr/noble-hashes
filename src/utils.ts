@@ -19,9 +19,8 @@ export const u32 = (arr: TypedArray) =>
 
 function isBytes(a: unknown): a is Uint8Array {
   return (
-    a != null &&
-    typeof a === 'object' &&
-    (a instanceof Uint8Array || a.constructor.name === 'Uint8Array')
+    a instanceof Uint8Array ||
+    (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array')
   );
 }
 
