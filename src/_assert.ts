@@ -6,8 +6,17 @@ function bool(b: boolean) {
   if (typeof b !== 'boolean') throw new Error(`Expected boolean, not ${b}`);
 }
 
+// copied from utils
+function isBytes(a: unknown): a is Uint8Array {
+  return (
+    a != null &&
+    typeof a === 'object' &&
+    (a instanceof Uint8Array || a.constructor.name === 'Uint8Array')
+  );
+}
+
 function bytes(b: Uint8Array | undefined, ...lengths: number[]) {
-  if (!(b instanceof Uint8Array)) throw new Error('Expected Uint8Array');
+  if (!isBytes(b)) throw new Error('Expected Uint8Array');
   if (lengths.length > 0 && !lengths.includes(b.length))
     throw new Error(`Expected Uint8Array of length ${lengths}, not of length=${b.length}`);
 }

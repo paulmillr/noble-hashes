@@ -17,8 +17,12 @@ export const u8 = (arr: TypedArray) => new Uint8Array(arr.buffer, arr.byteOffset
 export const u32 = (arr: TypedArray) =>
   new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
 
-function isBytes(a: any): a is Uint8Array {
-  return a instanceof Uint8Array || a.constructor.name === 'Uint8Array';
+function isBytes(a: unknown): a is Uint8Array {
+  return (
+    a != null &&
+    typeof a === 'object' &&
+    (a instanceof Uint8Array || a.constructor.name === 'Uint8Array')
+  );
 }
 
 // Cast array to view
