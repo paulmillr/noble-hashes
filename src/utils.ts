@@ -5,18 +5,21 @@
 // For node.js, package.json#exports field mapping rewrites import
 // from `crypto` to `cryptoNode`, which imports native module.
 // Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated, we can just drop the import.
+// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 import { crypto } from '@noble/hashes/crypto';
 
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
 
-const u8a = (a: any): a is Uint8Array => a instanceof Uint8Array;
 // Cast array to different type
 export const u8 = (arr: TypedArray) => new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
 export const u32 = (arr: TypedArray) =>
   new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
+
+function isBytes(a: any): a is Uint8Array {
+  return a instanceof Uint8Array || a.constructor.name === 'Uint8Array';
+}
 
 // Cast array to view
 export const createView = (arr: TypedArray) =>
@@ -27,6 +30,8 @@ export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (w
 
 // big-endian hardware is rare. Just in case someone still decides to run hashes:
 // early-throw an error because we don't support BE yet.
+// Other libraries would silently corrupt the data instead of throwing an error,
+// when they don't support it.
 export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
 if (!isLE) throw new Error('Non little-endian hardware is not supported');
 
@@ -38,7 +43,7 @@ const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
  */
 export function bytesToHex(bytes: Uint8Array): string {
-  if (!u8a(bytes)) throw new Error('Uint8Array expected');
+  if (!isBytes(bytes)) throw new Error('Uint8Array expected');
   // pre-caching improves the speed 6x
   let hex = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -115,7 +120,7 @@ export type Input = Uint8Array | string;
  */
 export function toBytes(data: Input): Uint8Array {
   if (typeof data === 'string') data = utf8ToBytes(data);
-  if (!u8a(data)) throw new Error(`expected Uint8Array, got ${typeof data}`);
+  if (!isBytes(data)) throw new Error(`expected Uint8Array, got ${typeof data}`);
   return data;
 }
 
@@ -126,7 +131,7 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   const r = new Uint8Array(arrays.reduce((sum, a) => sum + a.length, 0));
   let pad = 0; // walk through each item, ensure they have proper type
   arrays.forEach((a) => {
-    if (!u8a(a)) throw new Error('Uint8Array expected');
+    if (!isBytes(a)) throw new Error('Uint8Array expected');
     r.set(a, pad);
     pad += a.length;
   });
