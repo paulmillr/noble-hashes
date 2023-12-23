@@ -26,7 +26,7 @@
   "homepage": "https://paulmillr.com/noble/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/paulmillr/noble-hashes.git"
+    "url": "git+https://github.com/paulmillr/noble-hashes.git"
   },
   "license": "MIT",
   "sideEffects": false,

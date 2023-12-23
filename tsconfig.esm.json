@@ -1,14 +1,9 @@
 {
   "compilerOptions": {
-    "outDir": "esm",
     "target": "es2020",
-    "module": "es6",
-    "baseUrl": ".",
-    "paths": {
-      "@noble/hashes/crypto": ["src/crypto"]
-    },
-    "sourceMap": true,
+    "lib": ["es2020"],
     "strict": true,
+    "sourceMap": true,
     "allowSyntheticDefaultImports": false,
     "allowUnreachableCode": false,
     "esModuleInterop": false,
@@ -17,6 +12,13 @@
     "noUncheckedIndexedAccess": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "baseUrl": ".",
+    "paths": {
+      "@noble/hashes/crypto": ["src/crypto"]
+    },
+    "module": "es2020",
+    "outDir": "esm",
+    "moduleResolution": "bundler"
   },
   "include": ["src"],
   "exclude": ["node_modules", "lib"]
