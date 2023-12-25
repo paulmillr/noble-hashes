@@ -1,0 +1,12 @@
+[
+  {
+    "hash": "groestl512",
+    "in": "The great experiment continues.",
+    "out": "6cea044acf31194eab7d1adb704712c34dd4f0b6a470b0f297832addab691faa459474c651efdbebddb138a2a9adb41705e0fb75741775314ddd8e5449ace986"
+  },
+  {
+    "hash": "groestl256",
+    "in": "Groestl is an Austrian dish, usually made of leftover potatoes and pork, cut into slice.",
+    "out": "eefdf4c9d6b6fd53390049388de8974525b406206114a8885016aa3661965253"
+  }
+]

@@ -14,5 +14,6 @@ require('./async.test.js');
 require('./clone.test.js');
 require('./u64.test.js');
 require('./utils.test.js');
+require('./groestl.test');
 
 should.run();

@@ -93,6 +93,16 @@
       "import": "./esm/eskdf.js",
       "default": "./eskdf.js"
     },
+    "./groestl256": {
+      "types": "./groestl256.d.ts",
+      "import": "./esm/groestl256.js",
+      "default": "./groestl256.js"
+    },
+    "./groestl512": {
+      "types": "./groestl512.d.ts",
+      "import": "./esm/groestl512.js",
+      "default": "./groestl512.js"
+    },
     "./hkdf": {
       "types": "./hkdf.d.ts",
       "import": "./esm/hkdf.js",
