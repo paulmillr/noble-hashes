@@ -1,30 +1,22 @@
-import { SHA2 } from './_sha2.js';
-import { wrapConstructor } from './utils.js';
+import { HashMD, Chi, Maj } from './_md.js';
+import { rotl, wrapConstructor } from './utils.js';
 
-// SHA1 was cryptographically broken.
-// It is still widely used in legacy apps. Don't use it for a new protocol.
-
-// RFC 3174
-const rotl = (word: number, shift: number) => (word << shift) | ((word >>> (32 - shift)) >>> 0);
-// Choice: a ? b : c
-const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);
-// Majority function, true if any two inpust is true
-const Maj = (a: number, b: number, c: number) => (a & b) ^ (a & c) ^ (b & c);
+// SHA1 (RFC 3174) was cryptographically broken. It's still used. Don't use it for a new protocol.
 
 // Initial state
-const IV = /* @__PURE__ */ new Uint32Array([
+const SHA1_IV = /* @__PURE__ */ new Uint32Array([
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0,
 ]);
 
 // Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
 const SHA1_W = /* @__PURE__ */ new Uint32Array(80);
-class SHA1 extends SHA2<SHA1> {
-  private A = IV[0] | 0;
-  private B = IV[1] | 0;
-  private C = IV[2] | 0;
-  private D = IV[3] | 0;
-  private E = IV[4] | 0;
+class SHA1 extends HashMD<SHA1> {
+  private A = SHA1_IV[0] | 0;
+  private B = SHA1_IV[1] | 0;
+  private C = SHA1_IV[2] | 0;
+  private D = SHA1_IV[3] | 0;
+  private E = SHA1_IV[4] | 0;
 
   constructor() {
     super(64, 20, 8, false);

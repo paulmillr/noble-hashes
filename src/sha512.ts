@@ -1,4 +1,4 @@
-import { SHA2 } from './_sha2.js';
+import { HashMD } from './_md.js';
 import u64 from './_u64.js';
 import { wrapConstructor } from './utils.js';
 
@@ -30,7 +30,7 @@ const [SHA512_Kh, SHA512_Kl] = /* @__PURE__ */ (() => u64.split([
 // Temporary buffer, not used to store anything between runs
 const SHA512_W_H = /* @__PURE__ */ new Uint32Array(80);
 const SHA512_W_L = /* @__PURE__ */ new Uint32Array(80);
-export class SHA512 extends SHA2<SHA512> {
+export class SHA512 extends HashMD<SHA512> {
   // We cannot use array here since array allows indexing by variable which means optimizer/compiler cannot use registers.
   // Also looks cleaner and easier to verify with spec.
   // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):

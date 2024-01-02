@@ -63,10 +63,10 @@
       "import": "./esm/_assert.js",
       "default": "./_assert.js"
     },
-    "./_sha2": {
-      "types": "./_sha2.d.ts",
-      "import": "./esm/_sha2.js",
-      "default": "./_sha2.js"
+    "./_md": {
+      "types": "./_md.d.ts",
+      "import": "./esm/_md.js",
+      "default": "./_md.js"
     },
     "./argon2": {
       "types": "./argon2.d.ts",

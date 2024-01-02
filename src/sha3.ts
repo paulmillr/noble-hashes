@@ -14,7 +14,9 @@ import {
 // It's called a sponge function.
 
 // Various per round constants calculations
-const [SHA3_PI, SHA3_ROTL, _SHA3_IOTA]: [number[], number[], bigint[]] = [[], [], []];
+const SHA3_PI: number[] = [];
+const SHA3_ROTL: number[] = [];
+const _SHA3_IOTA: bigint[] = [];
 const _0n = /* @__PURE__ */ BigInt(0);
 const _1n = /* @__PURE__ */ BigInt(1);
 const _2n = /* @__PURE__ */ BigInt(2);

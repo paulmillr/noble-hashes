@@ -1,12 +1,9 @@
 import { number as assertNumber } from './_assert.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2 } from './pbkdf2.js';
-import { asyncLoop, checkOpts, Input, u32 } from './utils.js';
+import { rotl, asyncLoop, checkOpts, Input, u32 } from './utils.js';
 
 // RFC 7914 Scrypt KDF
-
-// Left rotate for uint32
-const rotl = (a: number, b: number) => (a << b) | (a >>> (32 - b));
 
 // The main Scrypt loop: uses Salsa extensively.
 // Six versions of the function were tried, this is the fastest one.

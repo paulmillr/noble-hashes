@@ -30,6 +30,9 @@ export const createView = (arr: TypedArray) =>
 
 // The rotate right (circular right shift) operation for uint32
 export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (word >>> shift);
+// The rotate left (circular left shift) operation for uint32
+export const rotl = (word: number, shift: number) =>
+  (word << shift) | ((word >>> (32 - shift)) >>> 0);
 
 // big-endian hardware is rare. Just in case someone still decides to run hashes:
 // early-throw an error because we don't support BE yet.

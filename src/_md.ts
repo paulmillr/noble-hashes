@@ -14,8 +14,16 @@ function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: b
   view.setUint32(byteOffset + l, wl, isLE);
 }
 
-// Base SHA2 class (RFC 6234)
-export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
+// Choice: a ? b : c
+export const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);
+// Majority function, true if any two inpust is true
+export const Maj = (a: number, b: number, c: number) => (a & b) ^ (a & c) ^ (b & c);
+
+/**
+ * Merkle-Damgard hash construction base class.
+ * Could be used to create MD5, RIPEMD, SHA1, SHA2.
+ */
+export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
   protected abstract process(buf: DataView, offset: number): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
@@ -76,7 +84,8 @@ export abstract class SHA2<T extends SHA2<T>> extends Hash<T> {
     // append the bit '1' to the message
     buffer[pos++] = 0b10000000;
     this.buffer.subarray(pos).fill(0);
-    // we have less than padOffset left in buffer, so we cannot put length in current block, need process it and pad again
+    // we have less than padOffset left in buffer, so we cannot put length in
+    // current block, need process it and pad again
     if (this.padOffset > blockLen - pos) {
       this.process(view, 0);
       pos = 0;

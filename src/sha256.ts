@@ -1,18 +1,13 @@
-import { SHA2 } from './_sha2.js';
+import { HashMD, Chi, Maj } from './_md.js';
 import { rotr, wrapConstructor } from './utils.js';
 
 // SHA2-256 need to try 2^128 hashes to execute birthday attack.
 // BTC network is doing 2^67 hashes/sec as per early 2023.
 
-// Choice: a ? b : c
-const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);
-// Majority function, true if any two inpust is true
-const Maj = (a: number, b: number, c: number) => (a & b) ^ (a & c) ^ (b & c);
-
 // Round constants:
 // first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
 // prettier-ignore
-const SHA256_K = /* @__PURE__ */new Uint32Array([
+const SHA256_K = /* @__PURE__ */ new Uint32Array([
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
   0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
   0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -23,26 +18,27 @@ const SHA256_K = /* @__PURE__ */new Uint32Array([
   0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 ]);
 
-// Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
+// Initial state:
+// first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
 // prettier-ignore
-const IV = /* @__PURE__ */new Uint32Array([
+const SHA256_IV = /* @__PURE__ */ new Uint32Array([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 ]);
 
 // Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
 const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
-class SHA256 extends SHA2<SHA256> {
+class SHA256 extends HashMD<SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
-  A = IV[0] | 0;
-  B = IV[1] | 0;
-  C = IV[2] | 0;
-  D = IV[3] | 0;
-  E = IV[4] | 0;
-  F = IV[5] | 0;
-  G = IV[6] | 0;
-  H = IV[7] | 0;
+  A = SHA256_IV[0] | 0;
+  B = SHA256_IV[1] | 0;
+  C = SHA256_IV[2] | 0;
+  D = SHA256_IV[3] | 0;
+  E = SHA256_IV[4] | 0;
+  F = SHA256_IV[5] | 0;
+  G = SHA256_IV[6] | 0;
+  H = SHA256_IV[7] | 0;
 
   constructor() {
     super(64, 32, 8, false);
