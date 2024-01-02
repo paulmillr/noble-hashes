@@ -1,24 +1,24 @@
-import { BLAKE2, BlakeOpts, SIGMA } from './_blake2.js';
+import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
 import u64 from './_u64.js';
 import { toBytes, u32, wrapConstructorWithOpts } from './utils.js';
 
 // Same as SHA-512 but LE
 // prettier-ignore
-const IV = /* @__PURE__ */ new Uint32Array([
+const B2B_IV = /* @__PURE__ */ new Uint32Array([
   0xf3bcc908, 0x6a09e667, 0x84caa73b, 0xbb67ae85, 0xfe94f82b, 0x3c6ef372, 0x5f1d36f1, 0xa54ff53a,
   0xade682d1, 0x510e527f, 0x2b3e6c1f, 0x9b05688c, 0xfb41bd6b, 0x1f83d9ab, 0x137e2179, 0x5be0cd19
 ]);
 // Temporary buffer
-const BUF = /* @__PURE__ */ new Uint32Array(32);
+const BBUF = /* @__PURE__ */ new Uint32Array(32);
 
 // Mixing function G splitted in two halfs
-function G1(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
+function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
   // NOTE: V is LE here
   const Xl = msg[x], Xh = msg[x + 1]; // prettier-ignore
-  let Al = BUF[2 * a], Ah = BUF[2 * a + 1]; // prettier-ignore
-  let Bl = BUF[2 * b], Bh = BUF[2 * b + 1]; // prettier-ignore
-  let Cl = BUF[2 * c], Ch = BUF[2 * c + 1]; // prettier-ignore
-  let Dl = BUF[2 * d], Dh = BUF[2 * d + 1]; // prettier-ignore
+  let Al = BBUF[2 * a], Ah = BBUF[2 * a + 1]; // prettier-ignore
+  let Bl = BBUF[2 * b], Bh = BBUF[2 * b + 1]; // prettier-ignore
+  let Cl = BBUF[2 * c], Ch = BBUF[2 * c + 1]; // prettier-ignore
+  let Dl = BBUF[2 * d], Dh = BBUF[2 * d + 1]; // prettier-ignore
   // v[a] = (v[a] + v[b] + x) | 0;
   let ll = u64.add3L(Al, Bl, Xl);
   Ah = u64.add3H(ll, Ah, Bh, Xh);
@@ -31,19 +31,19 @@ function G1(a: number, b: number, c: number, d: number, msg: Uint32Array, x: num
   // v[b] = rotr(v[b] ^ v[c], 24)
   ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
   ({ Bh, Bl } = { Bh: u64.rotrSH(Bh, Bl, 24), Bl: u64.rotrSL(Bh, Bl, 24) });
-  (BUF[2 * a] = Al), (BUF[2 * a + 1] = Ah);
-  (BUF[2 * b] = Bl), (BUF[2 * b + 1] = Bh);
-  (BUF[2 * c] = Cl), (BUF[2 * c + 1] = Ch);
-  (BUF[2 * d] = Dl), (BUF[2 * d + 1] = Dh);
+  (BBUF[2 * a] = Al), (BBUF[2 * a + 1] = Ah);
+  (BBUF[2 * b] = Bl), (BBUF[2 * b + 1] = Bh);
+  (BBUF[2 * c] = Cl), (BBUF[2 * c + 1] = Ch);
+  (BBUF[2 * d] = Dl), (BBUF[2 * d + 1] = Dh);
 }
 
-function G2(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
+function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
   // NOTE: V is LE here
   const Xl = msg[x], Xh = msg[x + 1]; // prettier-ignore
-  let Al = BUF[2 * a], Ah = BUF[2 * a + 1]; // prettier-ignore
-  let Bl = BUF[2 * b], Bh = BUF[2 * b + 1]; // prettier-ignore
-  let Cl = BUF[2 * c], Ch = BUF[2 * c + 1]; // prettier-ignore
-  let Dl = BUF[2 * d], Dh = BUF[2 * d + 1]; // prettier-ignore
+  let Al = BBUF[2 * a], Ah = BBUF[2 * a + 1]; // prettier-ignore
+  let Bl = BBUF[2 * b], Bh = BBUF[2 * b + 1]; // prettier-ignore
+  let Cl = BBUF[2 * c], Ch = BBUF[2 * c + 1]; // prettier-ignore
+  let Dl = BBUF[2 * d], Dh = BBUF[2 * d + 1]; // prettier-ignore
   // v[a] = (v[a] + v[b] + x) | 0;
   let ll = u64.add3L(Al, Bl, Xl);
   Ah = u64.add3H(ll, Ah, Bh, Xh);
@@ -56,30 +56,30 @@ function G2(a: number, b: number, c: number, d: number, msg: Uint32Array, x: num
   // v[b] = rotr(v[b] ^ v[c], 63)
   ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
   ({ Bh, Bl } = { Bh: u64.rotrBH(Bh, Bl, 63), Bl: u64.rotrBL(Bh, Bl, 63) });
-  (BUF[2 * a] = Al), (BUF[2 * a + 1] = Ah);
-  (BUF[2 * b] = Bl), (BUF[2 * b + 1] = Bh);
-  (BUF[2 * c] = Cl), (BUF[2 * c + 1] = Ch);
-  (BUF[2 * d] = Dl), (BUF[2 * d + 1] = Dh);
+  (BBUF[2 * a] = Al), (BBUF[2 * a + 1] = Ah);
+  (BBUF[2 * b] = Bl), (BBUF[2 * b + 1] = Bh);
+  (BBUF[2 * c] = Cl), (BBUF[2 * c + 1] = Ch);
+  (BBUF[2 * d] = Dl), (BBUF[2 * d + 1] = Dh);
 }
 
-class BLAKE2b extends BLAKE2<BLAKE2b> {
+class BLAKE2b extends BLAKE<BLAKE2b> {
   // Same as SHA-512, but LE
-  private v0l = IV[0] | 0;
-  private v0h = IV[1] | 0;
-  private v1l = IV[2] | 0;
-  private v1h = IV[3] | 0;
-  private v2l = IV[4] | 0;
-  private v2h = IV[5] | 0;
-  private v3l = IV[6] | 0;
-  private v3h = IV[7] | 0;
-  private v4l = IV[8] | 0;
-  private v4h = IV[9] | 0;
-  private v5l = IV[10] | 0;
-  private v5h = IV[11] | 0;
-  private v6l = IV[12] | 0;
-  private v6h = IV[13] | 0;
-  private v7l = IV[14] | 0;
-  private v7h = IV[15] | 0;
+  private v0l = B2B_IV[0] | 0;
+  private v0h = B2B_IV[1] | 0;
+  private v1l = B2B_IV[2] | 0;
+  private v1h = B2B_IV[3] | 0;
+  private v2l = B2B_IV[4] | 0;
+  private v2h = B2B_IV[5] | 0;
+  private v3l = B2B_IV[6] | 0;
+  private v3h = B2B_IV[7] | 0;
+  private v4l = B2B_IV[8] | 0;
+  private v4h = B2B_IV[9] | 0;
+  private v5l = B2B_IV[10] | 0;
+  private v5h = B2B_IV[11] | 0;
+  private v6l = B2B_IV[12] | 0;
+  private v6h = B2B_IV[13] | 0;
+  private v7l = B2B_IV[14] | 0;
+  private v7h = B2B_IV[15] | 0;
 
   constructor(opts: BlakeOpts = {}) {
     super(128, opts.dkLen === undefined ? 64 : opts.dkLen, opts, 64, 16, 16);
@@ -139,54 +139,54 @@ class BLAKE2b extends BLAKE2<BLAKE2b> {
     this.v7h = v7h | 0;
   }
   protected compress(msg: Uint32Array, offset: number, isLast: boolean) {
-    this.get().forEach((v, i) => (BUF[i] = v)); // First half from state.
-    BUF.set(IV, 16); // Second half from IV.
+    this.get().forEach((v, i) => (BBUF[i] = v)); // First half from state.
+    BBUF.set(B2B_IV, 16); // Second half from IV.
     let { h, l } = u64.fromBig(BigInt(this.length));
-    BUF[24] = IV[8] ^ l; // Low word of the offset.
-    BUF[25] = IV[9] ^ h; // High word.
+    BBUF[24] = B2B_IV[8] ^ l; // Low word of the offset.
+    BBUF[25] = B2B_IV[9] ^ h; // High word.
     // Invert all bits for last block
     if (isLast) {
-      BUF[28] = ~BUF[28];
-      BUF[29] = ~BUF[29];
+      BBUF[28] = ~BBUF[28];
+      BBUF[29] = ~BBUF[29];
     }
     let j = 0;
     const s = SIGMA;
     for (let i = 0; i < 12; i++) {
-      G1(0, 4, 8, 12, msg, offset + 2 * s[j++]);
-      G2(0, 4, 8, 12, msg, offset + 2 * s[j++]);
-      G1(1, 5, 9, 13, msg, offset + 2 * s[j++]);
-      G2(1, 5, 9, 13, msg, offset + 2 * s[j++]);
-      G1(2, 6, 10, 14, msg, offset + 2 * s[j++]);
-      G2(2, 6, 10, 14, msg, offset + 2 * s[j++]);
-      G1(3, 7, 11, 15, msg, offset + 2 * s[j++]);
-      G2(3, 7, 11, 15, msg, offset + 2 * s[j++]);
+      G1b(0, 4, 8, 12, msg, offset + 2 * s[j++]);
+      G2b(0, 4, 8, 12, msg, offset + 2 * s[j++]);
+      G1b(1, 5, 9, 13, msg, offset + 2 * s[j++]);
+      G2b(1, 5, 9, 13, msg, offset + 2 * s[j++]);
+      G1b(2, 6, 10, 14, msg, offset + 2 * s[j++]);
+      G2b(2, 6, 10, 14, msg, offset + 2 * s[j++]);
+      G1b(3, 7, 11, 15, msg, offset + 2 * s[j++]);
+      G2b(3, 7, 11, 15, msg, offset + 2 * s[j++]);
 
-      G1(0, 5, 10, 15, msg, offset + 2 * s[j++]);
-      G2(0, 5, 10, 15, msg, offset + 2 * s[j++]);
-      G1(1, 6, 11, 12, msg, offset + 2 * s[j++]);
-      G2(1, 6, 11, 12, msg, offset + 2 * s[j++]);
-      G1(2, 7, 8, 13, msg, offset + 2 * s[j++]);
-      G2(2, 7, 8, 13, msg, offset + 2 * s[j++]);
-      G1(3, 4, 9, 14, msg, offset + 2 * s[j++]);
-      G2(3, 4, 9, 14, msg, offset + 2 * s[j++]);
+      G1b(0, 5, 10, 15, msg, offset + 2 * s[j++]);
+      G2b(0, 5, 10, 15, msg, offset + 2 * s[j++]);
+      G1b(1, 6, 11, 12, msg, offset + 2 * s[j++]);
+      G2b(1, 6, 11, 12, msg, offset + 2 * s[j++]);
+      G1b(2, 7, 8, 13, msg, offset + 2 * s[j++]);
+      G2b(2, 7, 8, 13, msg, offset + 2 * s[j++]);
+      G1b(3, 4, 9, 14, msg, offset + 2 * s[j++]);
+      G2b(3, 4, 9, 14, msg, offset + 2 * s[j++]);
     }
-    this.v0l ^= BUF[0] ^ BUF[16];
-    this.v0h ^= BUF[1] ^ BUF[17];
-    this.v1l ^= BUF[2] ^ BUF[18];
-    this.v1h ^= BUF[3] ^ BUF[19];
-    this.v2l ^= BUF[4] ^ BUF[20];
-    this.v2h ^= BUF[5] ^ BUF[21];
-    this.v3l ^= BUF[6] ^ BUF[22];
-    this.v3h ^= BUF[7] ^ BUF[23];
-    this.v4l ^= BUF[8] ^ BUF[24];
-    this.v4h ^= BUF[9] ^ BUF[25];
-    this.v5l ^= BUF[10] ^ BUF[26];
-    this.v5h ^= BUF[11] ^ BUF[27];
-    this.v6l ^= BUF[12] ^ BUF[28];
-    this.v6h ^= BUF[13] ^ BUF[29];
-    this.v7l ^= BUF[14] ^ BUF[30];
-    this.v7h ^= BUF[15] ^ BUF[31];
-    BUF.fill(0);
+    this.v0l ^= BBUF[0] ^ BBUF[16];
+    this.v0h ^= BBUF[1] ^ BBUF[17];
+    this.v1l ^= BBUF[2] ^ BBUF[18];
+    this.v1h ^= BBUF[3] ^ BBUF[19];
+    this.v2l ^= BBUF[4] ^ BBUF[20];
+    this.v2h ^= BBUF[5] ^ BBUF[21];
+    this.v3l ^= BBUF[6] ^ BBUF[22];
+    this.v3h ^= BBUF[7] ^ BBUF[23];
+    this.v4l ^= BBUF[8] ^ BBUF[24];
+    this.v4h ^= BBUF[9] ^ BBUF[25];
+    this.v5l ^= BBUF[10] ^ BBUF[26];
+    this.v5h ^= BBUF[11] ^ BBUF[27];
+    this.v6l ^= BBUF[12] ^ BBUF[28];
+    this.v6h ^= BBUF[13] ^ BBUF[29];
+    this.v7l ^= BBUF[14] ^ BBUF[30];
+    this.v7h ^= BBUF[15] ^ BBUF[31];
+    BBUF.fill(0);
   }
   destroy() {
     this.destroyed = true;

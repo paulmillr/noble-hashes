@@ -1,13 +1,13 @@
 import { bytes, exists, number, output } from './_assert.js';
 import { fromBig } from './_u64.js';
-import { BLAKE2 } from './_blake2.js';
-import { compress, IV } from './blake2s.js';
+import { BLAKE } from './_blake.js';
+import { compress, B2S_IV } from './blake2s.js';
 import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts } from './utils.js';
 
 // Blake3 is single-option Blake2 with reduced security (round count).
 
 // Flag bitset
-const enum Flags {
+const enum B3_Flags {
   CHUNK_START = 1 << 0,
   CHUNK_END = 1 << 1,
   PARENT = 1 << 2,
@@ -40,7 +40,7 @@ export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
 //   complicated, which we are trying to avoid, since this library is intended to be used
 //   for cryptographic purposes. Also, parallelization happens only on chunk level (1024 bytes),
 //   which won't really benefit small inputs.
-class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
+class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   private IV: Uint32Array;
   private flags = 0 | 0;
   private state: Uint32Array;
@@ -64,15 +64,15 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
       const key = toBytes(opts.key).slice();
       if (key.length !== 32) throw new Error('Blake3: key should be 32 byte');
       this.IV = u32(key);
-      this.flags = flags | Flags.KEYED_HASH;
+      this.flags = flags | B3_Flags.KEYED_HASH;
     } else if (opts.context !== undefined) {
-      const context_key = new BLAKE3({ dkLen: 32 }, Flags.DERIVE_KEY_CONTEXT)
+      const context_key = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
         .update(opts.context)
         .digest();
       this.IV = u32(context_key);
-      this.flags = flags | Flags.DERIVE_KEY_MATERIAL;
+      this.flags = flags | B3_Flags.DERIVE_KEY_MATERIAL;
     } else {
-      this.IV = IV.slice();
+      this.IV = B2S_IV.slice();
       this.flags = flags;
     }
     this.state = this.IV.slice();
@@ -91,7 +91,7 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
       compress(
         SIGMA, bufPos, buf, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
-        IV[0], IV[1], IV[2], IV[3], h, l, pos, flags
+        B2S_IV[0], B2S_IV[1], B2S_IV[2], B2S_IV[3], h, l, pos, flags
       );
     s[0] = v0 ^ v8;
     s[1] = v1 ^ v9;
@@ -105,8 +105,8 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   protected compress(buf: Uint32Array, bufPos: number = 0, isLast: boolean = false) {
     // Compress last block
     let flags = this.flags;
-    if (!this.chunkPos) flags |= Flags.CHUNK_START;
-    if (this.chunkPos === 15 || isLast) flags |= Flags.CHUNK_END;
+    if (!this.chunkPos) flags |= B3_Flags.CHUNK_START;
+    if (this.chunkPos === 15 || isLast) flags |= B3_Flags.CHUNK_END;
     if (!isLast) this.pos = this.blockLen;
     this.b2Compress(this.chunksDone, flags, buf, bufPos);
     this.chunkPos += 1;
@@ -125,7 +125,7 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
         this.buffer32.set(last, 0);
         this.buffer32.set(chunk, 8);
         this.pos = this.blockLen;
-        this.b2Compress(0, this.flags | Flags.PARENT, this.buffer32, 0);
+        this.b2Compress(0, this.flags | B3_Flags.PARENT, this.buffer32, 0);
         chunk = this.state;
         this.state = this.IV.slice();
       }
@@ -167,7 +167,7 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
       compress(
         SIGMA, 0, buffer32, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
-        IV[0], IV[1], IV[2], IV[3], l, h, pos, flags
+        B2S_IV[0], B2S_IV[1], B2S_IV[2], B2S_IV[3], l, h, pos, flags
       );
     out32[0] = v0 ^ v8;
     out32[1] = v1 ^ v9;
@@ -193,14 +193,14 @@ class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     // Padding
     this.buffer.fill(0, this.pos);
     // Process last chunk
-    let flags = this.flags | Flags.ROOT;
+    let flags = this.flags | B3_Flags.ROOT;
     if (this.stack.length) {
-      flags |= Flags.PARENT;
+      flags |= B3_Flags.PARENT;
       this.compress(this.buffer32, 0, true);
       this.chunksDone = 0;
       this.pos = this.blockLen;
     } else {
-      flags |= (!this.chunkPos ? Flags.CHUNK_START : 0) | Flags.CHUNK_END;
+      flags |= (!this.chunkPos ? B3_Flags.CHUNK_START : 0) | B3_Flags.CHUNK_END;
     }
     this.flags = flags;
     this.b2CompressOut();

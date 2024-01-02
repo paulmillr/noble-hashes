@@ -27,7 +27,7 @@ export type BlakeOpts = {
   personalization?: Input;
 };
 
-export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
+export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
   protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
