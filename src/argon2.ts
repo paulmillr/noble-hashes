@@ -47,13 +47,13 @@ function blamka(Ah: number, Al: number, Bh: number, Bl: number) {
 }
 
 // Temporary block buffer
-const BUF = new Uint32Array(256);
+const A2_BUF = new Uint32Array(256);
 
 function G(a: number, b: number, c: number, d: number) {
-  let Al = BUF[2*a], Ah = BUF[2*a + 1]; // prettier-ignore
-  let Bl = BUF[2*b], Bh = BUF[2*b + 1]; // prettier-ignore
-  let Cl = BUF[2*c], Ch = BUF[2*c + 1]; // prettier-ignore
-  let Dl = BUF[2*d], Dh = BUF[2*d + 1]; // prettier-ignore
+  let Al = A2_BUF[2*a], Ah = A2_BUF[2*a + 1]; // prettier-ignore
+  let Bl = A2_BUF[2*b], Bh = A2_BUF[2*b + 1]; // prettier-ignore
+  let Cl = A2_BUF[2*c], Ch = A2_BUF[2*c + 1]; // prettier-ignore
+  let Dl = A2_BUF[2*d], Dh = A2_BUF[2*d + 1]; // prettier-ignore
 
   ({ h: Ah, l: Al } = blamka(Ah, Al, Bh, Bl));
   ({ Dh, Dl } = { Dh: Dh ^ Ah, Dl: Dl ^ Al });
@@ -71,10 +71,10 @@ function G(a: number, b: number, c: number, d: number) {
   ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
   ({ Bh, Bl } = { Bh: rotrBH(Bh, Bl, 63), Bl: rotrBL(Bh, Bl, 63) });
 
-  (BUF[2 * a] = Al), (BUF[2 * a + 1] = Ah);
-  (BUF[2 * b] = Bl), (BUF[2 * b + 1] = Bh);
-  (BUF[2 * c] = Cl), (BUF[2 * c + 1] = Ch);
-  (BUF[2 * d] = Dl), (BUF[2 * d + 1] = Dh);
+  (A2_BUF[2 * a] = Al), (A2_BUF[2 * a + 1] = Ah);
+  (A2_BUF[2 * b] = Bl), (A2_BUF[2 * b + 1] = Bh);
+  (A2_BUF[2 * c] = Cl), (A2_BUF[2 * c + 1] = Ch);
+  (A2_BUF[2 * d] = Dl), (A2_BUF[2 * d + 1] = Dh);
 }
 
 // prettier-ignore
@@ -93,7 +93,7 @@ function P(
 }
 
 function block(x: Uint32Array, xPos: number, yPos: number, outPos: number, needXor: boolean) {
-  for (let i = 0; i < 256; i++) BUF[i] = x[xPos + i] ^ x[yPos + i];
+  for (let i = 0; i < 256; i++) A2_BUF[i] = x[xPos + i] ^ x[yPos + i];
 
   // columns
   for (let i = 0; i < 128; i += 16) {
@@ -112,8 +112,8 @@ function block(x: Uint32Array, xPos: number, yPos: number, outPos: number, needX
     );
   }
 
-  if (needXor) for (let i = 0; i < 256; i++) x[outPos + i] ^= BUF[i] ^ x[xPos + i] ^ x[yPos + i];
-  else for (let i = 0; i < 256; i++) x[outPos + i] = BUF[i] ^ x[xPos + i] ^ x[yPos + i];
+  if (needXor) for (let i = 0; i < 256; i++) x[outPos + i] ^= A2_BUF[i] ^ x[xPos + i] ^ x[yPos + i];
+  else for (let i = 0; i < 256; i++) x[outPos + i] = A2_BUF[i] ^ x[xPos + i] ^ x[yPos + i];
 }
 
 // Variable-Length Hash Function H'

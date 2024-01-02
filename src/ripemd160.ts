@@ -34,7 +34,7 @@ function f(group: number, x: number, y: number, z: number): number {
   else return x ^ (y | ~z);
 }
 // Temporary buffer, not used to store anything between runs
-const BUF = /* @__PURE__ */ new Uint32Array(16);
+const R_BUF = /* @__PURE__ */ new Uint32Array(16);
 export class RIPEMD160 extends HashMD<RIPEMD160> {
   private h0 = 0x67452301 | 0;
   private h1 = 0xefcdab89 | 0;
@@ -57,7 +57,7 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
     this.h4 = h4 | 0;
   }
   protected process(view: DataView, offset: number): void {
-    for (let i = 0; i < 16; i++, offset += 4) BUF[i] = view.getUint32(offset, true);
+    for (let i = 0; i < 16; i++, offset += 4) R_BUF[i] = view.getUint32(offset, true);
     // prettier-ignore
     let al = this.h0 | 0, ar = al,
         bl = this.h1 | 0, br = bl,
@@ -73,12 +73,12 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
       const rl = idxL[group], rr = idxR[group]; // prettier-ignore
       const sl = shiftsL[group], sr = shiftsR[group]; // prettier-ignore
       for (let i = 0; i < 16; i++) {
-        const tl = (rotl(al + f(group, bl, cl, dl) + BUF[rl[i]] + hbl, sl[i]) + el) | 0;
+        const tl = (rotl(al + f(group, bl, cl, dl) + R_BUF[rl[i]] + hbl, sl[i]) + el) | 0;
         al = el, el = dl, dl = rotl(cl, 10) | 0, cl = bl, bl = tl; // prettier-ignore
       }
       // 2 loops are 10% faster
       for (let i = 0; i < 16; i++) {
-        const tr = (rotl(ar + f(rGroup, br, cr, dr) + BUF[rr[i]] + hbr, sr[i]) + er) | 0;
+        const tr = (rotl(ar + f(rGroup, br, cr, dr) + R_BUF[rr[i]] + hbr, sr[i]) + er) | 0;
         ar = er, er = dr, dr = rotl(cr, 10) | 0, cr = br, br = tr; // prettier-ignore
       }
     }
@@ -92,7 +92,7 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
     );
   }
   protected roundClean() {
-    BUF.fill(0);
+    R_BUF.fill(0);
   }
   destroy() {
     this.destroyed = true;
