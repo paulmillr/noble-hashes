@@ -145,6 +145,16 @@
       "types": "./utils.d.ts",
       "import": "./esm/utils.js",
       "default": "./utils.js"
+    },
+    "./groestl256": {
+      "types": "./groestl256.d.ts",
+      "import": "./esm/groestl256.js",
+      "default": "./groestll256.js"
+    },
+    "./groestl512": {
+      "types": "./groestl512.d.ts",
+      "import": "./esm/groestl512.js",
+      "default": "./groeslt512.js"
     }
   },
   "keywords": [
