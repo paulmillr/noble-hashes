@@ -13,6 +13,6 @@
     "esbuild": "0.18.11"
   },
   "scripts": {
-    "build": "npx esbuild --bundle input.js --outfile=noble-hashes.js --global-name=nobleHashes"
+    "build": "npx esbuild --minify --bundle input.js --outfile=noble-hashes.js --global-name=nobleHashes"
   }
 }

@@ -9,7 +9,7 @@ Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Sc
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🐢 Scrypt supports `N: 2**22`, while other implementations are limited to `2**20`
 - 🦘 SHA3 supports Keccak, cSHAKE, KangarooTwelve, MarsupilamiFourteen and TurboSHAKE
-- 🪶 Just 3.4k lines / 17KB gzipped. SHA256-only is 240 lines / 3KB gzipped
+- 🪶 45KB for everything, 5KB for single-hash build
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
