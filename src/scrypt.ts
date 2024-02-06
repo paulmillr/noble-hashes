@@ -1,7 +1,7 @@
 import { number as assertNumber } from './_assert.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2 } from './pbkdf2.js';
-import { rotl, asyncLoop, checkOpts, Input, u32 } from './utils.js';
+import { rotl, asyncLoop, checkOpts, Input, u32, isLE, byteSwap32 } from './utils.js';
 
 // RFC 7914 Scrypt KDF
 
@@ -186,6 +186,7 @@ export function scrypt(password: Input, salt: Input, opts: ScryptOpts) {
     salt,
     opts
   );
+  if (!isLE) byteSwap32(B32);
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
     for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
@@ -203,6 +204,7 @@ export function scrypt(password: Input, salt: Input, opts: ScryptOpts) {
       blockMixCb();
     }
   }
+  if (!isLE) byteSwap32(B32);
   return scryptOutput(password, dkLen, B, V, tmp);
 }
 
@@ -215,6 +217,7 @@ export async function scryptAsync(password: Input, salt: Input, opts: ScryptOpts
     salt,
     opts
   );
+  if (!isLE) byteSwap32(B32);
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
     for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
@@ -233,5 +236,6 @@ export async function scryptAsync(password: Input, salt: Input, opts: ScryptOpts
       blockMixCb();
     });
   }
+  if (!isLE) byteSwap32(B32);
   return scryptOutput(password, dkLen, B, V, tmp);
 }

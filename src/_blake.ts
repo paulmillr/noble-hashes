@@ -1,5 +1,5 @@
 import { number, exists, output } from './_assert.js';
-import { Hash, Input, toBytes, u32 } from './utils.js';
+import { Hash, Input, toBytes, u32, isLE, byteSwap, byteSwap32 } from './utils.js';
 
 // Blake is based on ChaCha permutation.
 
@@ -74,7 +74,9 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     for (let pos = 0; pos < len; ) {
       // If buffer is full and we still have input (don't process last block, same as blake2s)
       if (this.pos === blockLen) {
+        if (!isLE) byteSwap32(buffer32);
         this.compress(buffer32, 0, false);
+        if (!isLE) byteSwap32(buffer32);
         this.pos = 0;
       }
       const take = Math.min(blockLen - this.pos, len - pos);
@@ -82,10 +84,12 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
       // full block && aligned to 4 bytes && not last in input
       if (take === blockLen && !(dataOffset % 4) && pos + take < len) {
         const data32 = new Uint32Array(buf, dataOffset, Math.floor((len - pos) / 4));
+        if (!isLE) byteSwap32(data32);
         for (let pos32 = 0; pos + blockLen < len; pos32 += buffer32.length, pos += blockLen) {
           this.length += blockLen;
           this.compress(data32, pos32, false);
         }
+        if (!isLE) byteSwap32(data32);
         continue;
       }
       buffer.set(data.subarray(pos, pos + take), this.pos);
@@ -102,9 +106,11 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     this.finished = true;
     // Padding
     this.buffer.subarray(pos).fill(0);
+    if (!isLE) byteSwap32(buffer32);
     this.compress(buffer32, 0, true);
+    if (!isLE) byteSwap32(buffer32);
     const out32 = u32(out);
-    this.get().forEach((v, i) => (out32[i] = v));
+    this.get().forEach(isLE ? (v, i) => (out32[i] = v) : (v, i) => (out32[i] = byteSwap(v)));
   }
   digest() {
     const { buffer, outputLen } = this;

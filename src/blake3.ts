@@ -2,7 +2,7 @@ import { bytes, exists, number, output } from './_assert.js';
 import { fromBig } from './_u64.js';
 import { BLAKE } from './_blake.js';
 import { compress, B2S_IV } from './blake2s.js';
-import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts } from './utils.js';
+import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts, isLE, byteSwap32 } from './utils.js';
 
 // Blake3 is single-option Blake2 with reduced security (round count).
 
@@ -64,12 +64,14 @@ class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
       const key = toBytes(opts.key).slice();
       if (key.length !== 32) throw new Error('Blake3: key should be 32 byte');
       this.IV = u32(key);
+      if (!isLE) byteSwap32(this.IV);
       this.flags = flags | B3_Flags.KEYED_HASH;
     } else if (opts.context !== undefined) {
       const context_key = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
         .update(opts.context)
         .digest();
       this.IV = u32(context_key);
+      if (!isLE) byteSwap32(this.IV);
       this.flags = flags | B3_Flags.DERIVE_KEY_MATERIAL;
     } else {
       this.IV = B2S_IV.slice();
@@ -162,6 +164,7 @@ class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   private b2CompressOut() {
     const { state: s, pos, flags, buffer32, bufferOut32: out32 } = this;
     const { h, l } = fromBig(BigInt(this.chunkOut++));
+    if (!isLE) byteSwap32(buffer32);
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
@@ -185,6 +188,10 @@ class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     out32[13] = s[5] ^ v13;
     out32[14] = s[6] ^ v14;
     out32[15] = s[7] ^ v15;
+    if (!isLE) {
+      byteSwap32(buffer32);
+      byteSwap32(out32);
+    }
     this.posOut = 0;
   }
   protected finish() {
@@ -196,7 +203,9 @@ class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     let flags = this.flags | B3_Flags.ROOT;
     if (this.stack.length) {
       flags |= B3_Flags.PARENT;
+      if (!isLE) byteSwap32(this.buffer32);
       this.compress(this.buffer32, 0, true);
+      if (!isLE) byteSwap32(this.buffer32);
       this.chunksDone = 0;
       this.pos = this.blockLen;
     } else {

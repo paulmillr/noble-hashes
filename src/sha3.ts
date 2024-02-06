@@ -8,6 +8,8 @@ import {
   wrapConstructor,
   wrapXOFConstructorWithOpts,
   HashXOF,
+  isLE,
+  byteSwap32,
 } from './utils.js';
 
 // SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
@@ -112,7 +114,9 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.state32 = u32(this.state);
   }
   protected keccak() {
+    if (!isLE) byteSwap32(this.state32);
     keccakP(this.state32, this.rounds);
+    if (!isLE) byteSwap32(this.state32);
     this.posOut = 0;
     this.pos = 0;
   }

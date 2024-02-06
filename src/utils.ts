@@ -35,6 +35,18 @@ export const rotl = (word: number, shift: number) =>
   (word << shift) | ((word >>> (32 - shift)) >>> 0);
 
 export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
+// The byte swap operation for uint32
+export const byteSwap = (word: number) =>
+  ((word << 24) & 0xff000000) | ((word << 8) & 0xff0000) | ((word >>> 8) & 0xff00) | ((word >>> 24) & 0xff);
+// Conditionally byte swap if on a big-endian platform
+export const byteSwapIfBE = isLE ? (n: number) => n : (n: number) => byteSwap(n);
+
+// In place byte swap for Uint32Array
+export function byteSwap32(arr: Uint32Array) {
+  for (let i = 0; i < arr.length; i++) {
+    arr[i] = byteSwap(arr[i]);
+  }
+}
 
 // Array where index 0xf0 (240) is mapped to string 'f0'
 const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
