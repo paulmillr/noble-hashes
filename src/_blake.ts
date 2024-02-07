@@ -1,5 +1,5 @@
 import { number, exists, output } from './_assert.js';
-import { Hash, Input, toBytes, u32, isLE, byteSwap, byteSwap32 } from './utils.js';
+import { Hash, Input, toBytes, u32, isLE, byteSwap32, byteSwapIfBE } from './utils.js';
 
 // Blake is based on ChaCha permutation.
 
@@ -110,7 +110,7 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     this.compress(buffer32, 0, true);
     if (!isLE) byteSwap32(buffer32);
     const out32 = u32(out);
-    this.get().forEach(isLE ? (v, i) => (out32[i] = v) : (v, i) => (out32[i] = byteSwap(v)));
+    this.get().forEach((v, i) => (out32[i] = byteSwapIfBE(v)));
   }
   digest() {
     const { buffer, outputLen } = this;
