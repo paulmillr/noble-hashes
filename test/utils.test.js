@@ -30,13 +30,13 @@ const BYTESWAP_TEST_CASES = [
 ];
 
 should('byteSwap', () => {
-  BYTESWAP_TEST_CASES.forEach(test => {
+  BYTESWAP_TEST_CASES.forEach((test) => {
     assert.deepStrictEqual(test.out, byteSwap(test.in));
   });
 });
 
 should('byteSwapIfBE', () => {
-  BYTESWAP_TEST_CASES.forEach(test => {
+  BYTESWAP_TEST_CASES.forEach((test) => {
     if (isLE) {
       assert.deepStrictEqual(test.in, byteSwapIfBE(test.in));
     } else {

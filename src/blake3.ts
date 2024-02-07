@@ -2,7 +2,16 @@ import { bytes, exists, number, output } from './_assert.js';
 import { fromBig } from './_u64.js';
 import { BLAKE } from './_blake.js';
 import { compress, B2S_IV } from './blake2s.js';
-import { Input, u8, u32, toBytes, HashXOF, wrapXOFConstructorWithOpts, isLE, byteSwap32 } from './utils.js';
+import {
+  Input,
+  u8,
+  u32,
+  toBytes,
+  HashXOF,
+  wrapXOFConstructorWithOpts,
+  isLE,
+  byteSwap32,
+} from './utils.js';
 
 // Blake3 is single-option Blake2 with reduced security (round count).
 
