@@ -1,6 +1,6 @@
 import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
 import { fromBig } from './_u64.js';
-import { rotr, toBytes, wrapConstructorWithOpts, u32 } from './utils.js';
+import { rotr, toBytes, wrapConstructorWithOpts, u32, byteSwapIfBE } from './utils.js';
 
 // Initial state: same as SHA256
 // first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
@@ -71,13 +71,13 @@ class BLAKE2s extends BLAKE<BLAKE2s> {
     this.v0 ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (opts.salt) {
       const salt = u32(toBytes(opts.salt));
-      this.v4 ^= salt[0];
-      this.v5 ^= salt[1];
+      this.v4 ^= byteSwapIfBE(salt[0]);
+      this.v5 ^= byteSwapIfBE(salt[1]);
     }
     if (opts.personalization) {
       const pers = u32(toBytes(opts.personalization));
-      this.v6 ^= pers[0];
-      this.v7 ^= pers[1];
+      this.v6 ^= byteSwapIfBE(pers[0]);
+      this.v7 ^= byteSwapIfBE(pers[1]);
     }
     if (opts.key) {
       // Pad to blockLen and update

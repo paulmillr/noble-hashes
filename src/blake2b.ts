@@ -1,6 +1,6 @@
 import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
 import u64 from './_u64.js';
-import { toBytes, u32, wrapConstructorWithOpts } from './utils.js';
+import { toBytes, u32, wrapConstructorWithOpts, byteSwapIfBE } from './utils.js';
 
 // Same as SHA-512 but LE
 // prettier-ignore
@@ -87,17 +87,17 @@ class BLAKE2b extends BLAKE<BLAKE2b> {
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (opts.salt) {
       const salt = u32(toBytes(opts.salt));
-      this.v4l ^= salt[0];
-      this.v4h ^= salt[1];
-      this.v5l ^= salt[2];
-      this.v5h ^= salt[3];
+      this.v4l ^= byteSwapIfBE(salt[0]);
+      this.v4h ^= byteSwapIfBE(salt[1]);
+      this.v5l ^= byteSwapIfBE(salt[2]);
+      this.v5h ^= byteSwapIfBE(salt[3]);
     }
     if (opts.personalization) {
       const pers = u32(toBytes(opts.personalization));
-      this.v6l ^= pers[0];
-      this.v6h ^= pers[1];
-      this.v7l ^= pers[2];
-      this.v7h ^= pers[3];
+      this.v6l ^= byteSwapIfBE(pers[0]);
+      this.v6h ^= byteSwapIfBE(pers[1]);
+      this.v7l ^= byteSwapIfBE(pers[2]);
+      this.v7h ^= byteSwapIfBE(pers[3]);
     }
     if (opts.key) {
       // Pad to blockLen and update
