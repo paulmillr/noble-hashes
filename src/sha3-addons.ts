@@ -54,7 +54,7 @@ function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
 }
 
 const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
-  wrapConstructorWithOpts<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
+  wrapXOFConstructorWithOpts<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
     cshakePers(new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true), opts)
   );
 
