@@ -7,6 +7,7 @@
 // Makes the utils un-importable in browsers without a bundler.
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 import { crypto } from '@noble/hashes/crypto';
+import { isBytes, bytes as abytes } from './_assert.js';
 
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
@@ -16,13 +17,6 @@ export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
 export const u8 = (arr: TypedArray) => new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
 export const u32 = (arr: TypedArray) =>
   new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
-
-function isBytes(a: unknown): a is Uint8Array {
-  return (
-    a instanceof Uint8Array ||
-    (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array')
-  );
-}
 
 // Cast array to view
 export const createView = (arr: TypedArray) =>
@@ -44,6 +38,8 @@ export const byteSwap = (word: number) =>
 // Conditionally byte swap if on a big-endian platform
 export const byteSwapIfBE = isLE ? (n: number) => n : (n: number) => byteSwap(n);
 
+export { isBytes };
+
 // In place byte swap for Uint32Array
 export function byteSwap32(arr: Uint32Array) {
   for (let i = 0; i < arr.length; i++) {
@@ -59,7 +55,7 @@ const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
  */
 export function bytesToHex(bytes: Uint8Array): string {
-  if (!isBytes(bytes)) throw new Error('Uint8Array expected');
+  abytes(bytes);
   // pre-caching improves the speed 6x
   let hex = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -136,7 +132,7 @@ export type Input = Uint8Array | string;
  */
 export function toBytes(data: Input): Uint8Array {
   if (typeof data === 'string') data = utf8ToBytes(data);
-  if (!isBytes(data)) throw new Error(`expected Uint8Array, got ${typeof data}`);
+  abytes(data);
   return data;
 }
 
@@ -147,7 +143,7 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   let sum = 0;
   for (let i = 0; i < arrays.length; i++) {
     const a = arrays[i];
-    if (!isBytes(a)) throw new Error('Uint8Array expected');
+    abytes(a);
     sum += a.length;
   }
   const res = new Uint8Array(sum);

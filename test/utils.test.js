@@ -1,7 +1,7 @@
 const assert = require('assert');
 const { should } = require('micro-should');
 const { optional, integer, gen } = require('./generator');
-const { byteSwap, byteSwapIfBE, byteSwap32, isLE } = require('../utils.js');
+const { byteSwap, byteSwapIfBE, byteSwap32, isLE } = require('../utils');
 
 // Here goes test for tests...
 should(`Test generator`, () => {
