@@ -9,10 +9,10 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@noble/hashes": "1.3.3",
-    "esbuild": "0.18.11"
+    "@noble/hashes": "file:..",
+    "esbuild": "0.20.1"
   },
   "scripts": {
-    "build": "npx esbuild --minify --bundle input.js --outfile=noble-hashes.js --global-name=nobleHashes"
+    "build": "npx esbuild --bundle input.js --outfile=noble-hashes.js --global-name=nobleHashes"
   }
 }
