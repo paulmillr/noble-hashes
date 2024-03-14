@@ -7,7 +7,15 @@
 // Makes the utils un-importable in browsers without a bundler.
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 import { crypto } from '@noble/hashes/crypto';
-import { isBytes, bytes as abytes } from './_assert.js';
+import { bytes as abytes } from './_assert.js';
+// export { isBytes } from './_assert.js';
+// We can't reuse isBytes from _assert, because somehow this causes huge perf issues
+export function isBytes(a: unknown): a is Uint8Array {
+  return (
+    a instanceof Uint8Array ||
+    (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array')
+  );
+}
 
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
@@ -37,8 +45,6 @@ export const byteSwap = (word: number) =>
   ((word >>> 24) & 0xff);
 // Conditionally byte swap if on a big-endian platform
 export const byteSwapIfBE = isLE ? (n: number) => n : (n: number) => byteSwap(n);
-
-export { isBytes };
 
 // In place byte swap for Uint32Array
 export function byteSwap32(arr: Uint32Array) {
