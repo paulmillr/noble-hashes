@@ -80,11 +80,11 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 
 All hash functions:
 
-- can be called directly, with `Uint8Array`.
-- return `Uint8Array`
-- can receive `string`, which is automatically converted to `Uint8Array`
+- receive `Uint8Array` and return `Uint8Array`
+- may receive `string`, which is automatically converted to `Uint8Array`
   via utf8 encoding **(not hex)**
-- support hashing 4GB of data per update on 64-bit systems (unlimited with streaming)
+- support little-endian and big-endian architectures
+- can hash up to 4GB per chunk, with any amount of chunks
 
 ```ts
 function hash(message: Uint8Array | string): Uint8Array;
