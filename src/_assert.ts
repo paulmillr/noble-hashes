@@ -26,11 +26,11 @@ type Hash = {
   outputLen: number;
   create: any;
 };
-function hash(hash: Hash) {
-  if (typeof hash !== 'function' || typeof hash.create !== 'function')
+function hash(h: Hash) {
+  if (typeof h !== 'function' || typeof h.create !== 'function')
     throw new Error('Hash should be wrapped by utils.wrapConstructor');
-  number(hash.outputLen);
-  number(hash.blockLen);
+  number(h.outputLen);
+  number(h.blockLen);
 }
 
 function exists(instance: any, checkFinished = true) {
