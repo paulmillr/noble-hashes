@@ -1,10 +1,12 @@
 {
-  "extends": "./tsconfig.esm.json",
+  "extends": "@paulmillr/jsbt/tsconfigs/cjs.json",
   "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node10",
+    "baseUrl": ".",
     "outDir": ".",
-    "declaration": true,
-    "declarationMap": true
-  }
+    "paths": {
+      "@noble/hashes/crypto": ["src/crypto.ts"]
+    }
+  },
+  "include": ["index.ts", "src"],
+  "exclude": ["node_modules", "lib"]
 }
