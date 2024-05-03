@@ -9,7 +9,7 @@ Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Sc
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🐢 Scrypt supports `N: 2**22`, while other implementations are limited to `2**20`
 - 🦘 SHA3 supports Keccak, cSHAKE, KangarooTwelve, MarsupilamiFourteen and TurboSHAKE
-- 🪶 45KB for everything, 5KB for single-hash build
+- 🪶 89KB (17KB gzipped) for everything, 10KB (2.5KB gzipped) for single-hash build
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
@@ -218,9 +218,9 @@ const rand1b = p.fetch(1);
 - Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
   cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
 - [Reduced-round Keccak](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
-    - 🦘 K12 aka KangarooTwelve
-    - M14 aka MarsupilamiFourteen
-    - TurboSHAKE
+  - 🦘 K12 aka KangarooTwelve
+  - M14 aka MarsupilamiFourteen
+  - TurboSHAKE
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
 
 ##### ripemd160
@@ -459,16 +459,16 @@ can read application memory, you are doomed in any case:
 
 ### Supply chain security
 
-* **Commits** are signed with PGP keys, to prevent forgery. Make sure to verify commit signatures.
-* **Releases** are transparent and built on GitHub CI. Make sure to verify [provenance](https://docs.npmjs.com/generating-provenance-statements) logs
-* **Rare releasing** is followed to ensure less re-audit need for end-users
-* **Dependencies** are minimized and locked-down:
-   - If your app has 500 dependencies, any dep could get hacked and you'll be downloading
-     malware with every install. We make sure to use as few dependencies as possible
-   - We prevent automatic dependency updates by locking-down version ranges. Every update is checked with `npm-diff`
-* **Dev Dependencies** are only used if you want to contribute to the repo. They are disabled for end-users:
-   - scure-base, scure-bip32, scure-bip39, micro-bmark and micro-should are developed by the same author and follow identical security practices
-   - prettier (linter), fast-check (property-based testing) and typescript are used for code quality, vector generation and ts compilation. The packages are big, which makes it hard to audit their source code thoroughly and fully
+- **Commits** are signed with PGP keys, to prevent forgery. Make sure to verify commit signatures.
+- **Releases** are transparent and built on GitHub CI. Make sure to verify [provenance](https://docs.npmjs.com/generating-provenance-statements) logs
+- **Rare releasing** is followed to ensure less re-audit need for end-users
+- **Dependencies** are minimized and locked-down:
+  - If your app has 500 dependencies, any dep could get hacked and you'll be downloading
+    malware with every install. We make sure to use as few dependencies as possible
+  - We prevent automatic dependency updates by locking-down version ranges. Every update is checked with `npm-diff`
+- **Dev Dependencies** are only used if you want to contribute to the repo. They are disabled for end-users:
+  - scure-base, scure-bip32, scure-bip39, micro-bmark and micro-should are developed by the same author and follow identical security practices
+  - prettier (linter), fast-check (property-based testing) and typescript are used for code quality, vector generation and ts compilation. The packages are big, which makes it hard to audit their source code thoroughly and fully
 
 ### Randomness
 
