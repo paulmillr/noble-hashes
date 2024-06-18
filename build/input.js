@@ -9,7 +9,7 @@ export { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
 export { ripemd160 } from '@noble/hashes/ripemd160';
 export { scrypt, scryptAsync } from '@noble/hashes/scrypt';
 export { sha224, sha256 } from '@noble/hashes/sha256';
-export { sha512, sha384 } from '@noble/hashes/sha512';
+export { sha384, sha512 } from '@noble/hashes/sha512';
 export {
   sha3_224,
   sha3_256,
