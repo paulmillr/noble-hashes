@@ -3,9 +3,9 @@
 Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt & Argon2.
 
 - 🔒 [**Audited**](#security) by an independent security firm
-- 🔻 Tree-shaking-friendly: use only what's necessary, other code won't be included
-- 🏎 Ultra-fast, hand-optimized for caveats of JS engines
-- 🔍 Unique tests ensure correctness: chained tests, sliding window tests, DoS tests, fuzzing
+- 🔻 Tree-shakeable: unused code is excluded from your builds
+- 🏎 Fast: hand-optimized for caveats of JS engines
+- 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🐢 Scrypt supports `N: 2**22`, while other implementations are limited to `2**20`
 - 🦘 SHA3 supports Keccak, cSHAKE, KangarooTwelve, MarsupilamiFourteen and TurboSHAKE
