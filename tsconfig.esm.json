@@ -1,12 +1,18 @@
 {
-  "extends": "@paulmillr/jsbt/tsconfigs/esm-less-strict.json",
+  "extends": "@paulmillr/jsbt/tsconfig.esm.json",
   "compilerOptions": {
-    "outDir": "esm",
     "baseUrl": ".",
+    "outDir": "esm",
     "paths": {
-      "@noble/hashes/crypto": ["src/crypto.ts"]
+      "@noble/hashes/crypto": [
+        "src/crypto.ts"
+      ]
     }
   },
-  "include": ["index.ts", "src"],
-  "exclude": ["node_modules", "lib"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

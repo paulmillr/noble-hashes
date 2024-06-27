@@ -28,13 +28,8 @@
     "url": "git+https://github.com/paulmillr/noble-hashes.git"
   },
   "license": "MIT",
-  "sideEffects": false,
-  "browser": {
-    "node:crypto": false,
-    "./crypto": "./crypto.js"
-  },
   "devDependencies": {
-    "@paulmillr/jsbt": "0.1.0",
+    "@paulmillr/jsbt": "0.2.0",
     "micro-bmark": "0.3.1",
     "micro-should": "0.4.0",
     "prettier": "3.3.2",
@@ -45,12 +40,10 @@
   },
   "exports": {
     ".": {
-      "types": "./index.d.ts",
       "import": "./esm/index.js",
-      "default": "./index.js"
+      "require": "./index.js"
     },
     "./crypto": {
-      "types": "./crypto.d.ts",
       "node": {
         "import": "./esm/cryptoNode.js",
         "default": "./cryptoNode.js"
@@ -59,100 +52,86 @@
       "default": "./crypto.js"
     },
     "./_assert": {
-      "types": "./_assert.d.ts",
       "import": "./esm/_assert.js",
-      "default": "./_assert.js"
+      "require": "./_assert.js"
     },
     "./_md": {
-      "types": "./_md.d.ts",
       "import": "./esm/_md.js",
-      "default": "./_md.js"
+      "require": "./_md.js"
     },
     "./argon2": {
-      "types": "./argon2.d.ts",
       "import": "./esm/argon2.js",
-      "default": "./argon2.js"
+      "require": "./argon2.js"
     },
     "./blake2b": {
-      "types": "./blake2b.d.ts",
       "import": "./esm/blake2b.js",
-      "default": "./blake2b.js"
+      "require": "./blake2b.js"
     },
     "./blake2s": {
-      "types": "./blake2s.d.ts",
       "import": "./esm/blake2s.js",
-      "default": "./blake2s.js"
+      "require": "./blake2s.js"
     },
     "./blake3": {
-      "types": "./blake3.d.ts",
       "import": "./esm/blake3.js",
-      "default": "./blake3.js"
+      "require": "./blake3.js"
     },
     "./eskdf": {
-      "types": "./eskdf.d.ts",
       "import": "./esm/eskdf.js",
-      "default": "./eskdf.js"
+      "require": "./eskdf.js"
     },
     "./hkdf": {
-      "types": "./hkdf.d.ts",
       "import": "./esm/hkdf.js",
-      "default": "./hkdf.js"
+      "require": "./hkdf.js"
     },
     "./hmac": {
-      "types": "./hmac.d.ts",
       "import": "./esm/hmac.js",
-      "default": "./hmac.js"
+      "require": "./hmac.js"
     },
     "./pbkdf2": {
-      "types": "./pbkdf2.d.ts",
       "import": "./esm/pbkdf2.js",
-      "default": "./pbkdf2.js"
+      "require": "./pbkdf2.js"
     },
     "./ripemd160": {
-      "types": "./ripemd160.d.ts",
       "import": "./esm/ripemd160.js",
-      "default": "./ripemd160.js"
+      "require": "./ripemd160.js"
     },
     "./scrypt": {
-      "types": "./scrypt.d.ts",
       "import": "./esm/scrypt.js",
-      "default": "./scrypt.js"
+      "require": "./scrypt.js"
     },
     "./sha1": {
-      "types": "./sha1.d.ts",
       "import": "./esm/sha1.js",
-      "default": "./sha1.js"
+      "require": "./sha1.js"
     },
     "./sha2": {
-      "types": "./sha2.d.ts",
       "import": "./esm/sha2.js",
-      "default": "./sha2.js"
+      "require": "./sha2.js"
     },
     "./sha3-addons": {
-      "types": "./sha3-addons.d.ts",
       "import": "./esm/sha3-addons.js",
-      "default": "./sha3-addons.js"
+      "require": "./sha3-addons.js"
     },
     "./sha3": {
-      "types": "./sha3.d.ts",
       "import": "./esm/sha3.js",
-      "default": "./sha3.js"
+      "require": "./sha3.js"
     },
     "./sha256": {
-      "types": "./sha256.d.ts",
       "import": "./esm/sha256.js",
-      "default": "./sha256.js"
+      "require": "./sha256.js"
     },
     "./sha512": {
-      "types": "./sha512.d.ts",
       "import": "./esm/sha512.js",
-      "default": "./sha512.js"
+      "require": "./sha512.js"
     },
     "./utils": {
-      "types": "./utils.d.ts",
       "import": "./esm/utils.js",
-      "default": "./utils.js"
+      "require": "./utils.js"
     }
+  },
+  "sideEffects": false,
+  "browser": {
+    "node:crypto": false,
+    "./crypto": "./crypto.js"
   },
   "keywords": [
     "sha",

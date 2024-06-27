@@ -1,12 +1,18 @@
 {
-  "extends": "@paulmillr/jsbt/tsconfigs/cjs.json",
+  "extends": "@paulmillr/jsbt/tsconfig.cjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": ".",
     "paths": {
-      "@noble/hashes/crypto": ["src/crypto.ts"]
+      "@noble/hashes/crypto": [
+        "src/crypto.ts"
+      ]
     }
   },
-  "include": ["index.ts", "src"],
-  "exclude": ["node_modules", "lib"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
