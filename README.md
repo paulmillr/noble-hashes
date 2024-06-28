@@ -34,6 +34,14 @@ section of the repository.
 - [Check out homepage](https://paulmillr.com/noble/)
   for reading resources, documentation and apps built with noble
 
+## Uses
+
+Here are some amazing projects that use noble-hashes:
+
+- [Keycloak](https://github.com/keycloak/keycloak/blob/5af30011225bf4fecec9d75f58ad35a4ea2c7211/js/libs/keycloak-js/package.json#L81): Open Source Identity and Access Management For Modern Applications and Services.
+- [ethers-io/ethers.js](https://github.com/ethers-io/ethers.js/blob/fc66b8ad405df9e703d42a4b23bc452ec3be118f/package.json#L14): Complete Ethereum library and wallet implementation in JavaScript.
+- [aptos-labs/aptos-ts-sdk](https://github.com/aptos-labs/aptos-ts-sdk/blob/62de7f532feaa653556846eea6b66e33f7dc29d6/package.json#L53): Layer 1 blockchain built to support the widespread use of blockchain through better technology and user experience.
+
 ## Usage
 
 > npm install @noble/hashes
