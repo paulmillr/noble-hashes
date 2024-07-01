@@ -75,6 +75,10 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
  * @param hash - function that would be used e.g. sha256
  * @param key - message key
  * @param message - message data
+ * @example
+ * import { hmac } from '@noble/hashes/hmac';
+ * import { sha256 } from '@noble/hashes/sha2';
+ * const mac1 = hmac(sha256, 'key', 'message');
  */
 export const hmac = (hash: CHash, key: Input, message: Input): Uint8Array =>
   new HMAC<any>(hash, key).update(message).digest();

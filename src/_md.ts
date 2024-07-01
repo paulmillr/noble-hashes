@@ -1,7 +1,9 @@
 import { exists, output } from './_assert.js';
 import { Hash, createView, Input, toBytes } from './utils.js';
 
-// Polyfill for Safari 14
+/**
+ * Polyfill for Safari 14
+ */
 function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: boolean): void {
   if (typeof view.setBigUint64 === 'function') return view.setBigUint64(byteOffset, value, isLE);
   const _32n = BigInt(32);
@@ -14,9 +16,14 @@ function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: b
   view.setUint32(byteOffset + l, wl, isLE);
 }
 
-// Choice: a ? b : c
+/**
+ * Choice: a ? b : c
+ */
 export const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);
-// Majority function, true if any two inpust is true
+
+/**
+ * Majority function, true if any two inputs is true
+ */
 export const Maj = (a: number, b: number, c: number) => (a & b) ^ (a & c) ^ (b & c);
 
 /**
@@ -52,7 +59,7 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     const { view, buffer, blockLen } = this;
     data = toBytes(data);
     const len = data.length;
-    for (let pos = 0; pos < len; ) {
+    for (let pos = 0; pos < len;) {
       const take = Math.min(blockLen - this.pos, len - pos);
       // Fast path: we have at least one block in input, cast it to view and process
       if (take === blockLen) {

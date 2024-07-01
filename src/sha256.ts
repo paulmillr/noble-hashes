@@ -126,4 +126,7 @@ class SHA224 extends SHA256 {
  * @param message - data that would be hashed
  */
 export const sha256 = /* @__PURE__ */ wrapConstructor(() => new SHA256());
+/**
+ * SHA2-224 hash function
+ */
 export const sha224 = /* @__PURE__ */ wrapConstructor(() => new SHA224());

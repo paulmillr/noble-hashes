@@ -1,7 +1,7 @@
 import { HashMD, Chi, Maj } from './_md.js';
 import { rotl, wrapConstructor } from './utils.js';
 
-// SHA1 (RFC 3174) was cryptographically broken. It's still used. Don't use it for a new protocol.
+// SHA1 (RFC 3174). It was cryptographically broken: prefer newer algorithms.
 
 // Initial state
 const SHA1_IV = /* @__PURE__ */ new Uint32Array([
@@ -77,4 +77,9 @@ class SHA1 extends HashMD<SHA1> {
   }
 }
 
+/**
+ * SHA1 (RFC 3174) hash function.
+ * It was cryptographically broken: prefer newer algorithms.
+ * @param message - data that would be hashed
+ */
 export const sha1 = /* @__PURE__ */ wrapConstructor(() => new SHA1());
