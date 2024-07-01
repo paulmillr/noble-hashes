@@ -45,15 +45,15 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
-import { sha256 } from '@noble/hashes/sha256'; // ECMAScript modules (ESM) and Common.js
-// import { sha256 } from 'npm:@noble/hashes@1.3.0/sha256'; // Deno
+import { sha256 } from '@noble/hashes/sha2'; // ECMAScript modules (ESM) and Common.js
+// import { sha256 } from 'npm:@noble/hashes@1.3.0/sha2'; // Deno
 console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
 // you could also pass strings that will be UTF8-encoded to Uint8Array
 console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 ```
 
 - [Implementations](#implementations)
-  - [sha2: sha256, sha384, sha512, sha512_256](#sha2-sha256-sha384-sha512-sha512_256)
+  - [sha2: sha256, sha384, sha512 and others](#sha2-sha256-sha384-sha512-and-others)
   - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
   - [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
   - [ripemd160](#ripemd160)
@@ -109,44 +109,31 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
 - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
 
-##### sha2: sha256, sha384, sha512, sha512_256
+##### sha2: sha256, sha384, sha512 and others
 
 ```typescript
-import { sha256 } from '@noble/hashes/sha256';
+import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
+// also available as aliases:
+// import ... from '@noble/hashes/sha256'
+// import ... from '@noble/hashes/sha512'
+
+// Variant A:
 const h1a = sha256('abc');
+
+// Variant B:
 const h1b = sha256
   .create()
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
-```
 
-```typescript
-import { sha512 } from '@noble/hashes/sha512';
-const h2a = sha512('abc');
-const h2b = sha512
-  .create()
-  .update(Uint8Array.from([1, 2, 3]))
-  .digest();
-
-// SHA512/256 variant
-import { sha512_256 } from '@noble/hashes/sha512';
-const h3a = sha512_256('abc');
-const h3b = sha512_256
-  .create()
-  .update(Uint8Array.from([1, 2, 3]))
-  .digest();
-
-// SHA384
-import { sha384 } from '@noble/hashes/sha512';
-const h4a = sha384('abc');
-const h4b = sha384
-  .create()
-  .update(Uint8Array.from([1, 2, 3]))
-  .digest();
+for (let hash of [sha384, sha512, sha224, sha512_256, sha512_384]) {
+  const res1 = hash('abc');
+  const res2 = hash.create().update('def').update(Uint8Array.from([1, 2, 3])).digest();
+};
 ```
 
 See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
-[the paper on SHA512/256](https://eprint.iacr.org/2010/548.pdf).
+[the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
 ##### sha3: FIPS, SHAKE, Keccak
 
@@ -243,6 +230,8 @@ See [RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286),
 ```typescript
 import { blake2b } from '@noble/hashes/blake2b';
 import { blake2s } from '@noble/hashes/blake2s';
+import { blake3 } from '@noble/hashes/blake3';
+
 const h10a = blake2s('abc');
 const b2params = { key: new Uint8Array([1]), personalization: t, salt: t, dkLen: 32 };
 const h10b = blake2s('abc', b2params);
@@ -251,7 +240,6 @@ const h10c = blake2s
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
 
-import { blake3 } from '@noble/hashes/blake3';
 // All params are optional
 const h11 = blake3('abc', { dkLen: 256, key: 'def', context: 'fji' });
 ```
@@ -275,7 +263,7 @@ const h12 = sha1('def');
 
 ```typescript
 import { hmac } from '@noble/hashes/hmac';
-import { sha256 } from '@noble/hashes/sha256';
+import { sha256 } from '@noble/hashes/sha2';
 const mac1 = hmac(sha256, 'key', 'message');
 const mac2 = hmac
   .create(sha256, Uint8Array.from([1, 2, 3]))
@@ -289,8 +277,8 @@ Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 
 ```typescript
 import { hkdf } from '@noble/hashes/hkdf';
-import { sha256 } from '@noble/hashes/sha256';
-import { randomBytes } from '@noble/hashes/utils';
+import { sha256 } from '@noble/hashes/sha';
+import { randomBytes } from '@noble/hashes/webcrypto';
 const inputKey = randomBytes(32);
 const salt = randomBytes(32);
 const info = 'abc';
@@ -299,7 +287,7 @@ const hk1 = hkdf(sha256, inputKey, salt, info, dkLen);
 
 // == same as
 import * as hkdf from '@noble/hashes/hkdf';
-import { sha256 } from '@noble/hashes/sha256';
+import { sha256 } from '@noble/hashes/sha2';
 const prk = hkdf.extract(sha256, inputKey, salt);
 const hk2 = hkdf.expand(sha256, prk, info, dkLen);
 ```
@@ -310,7 +298,7 @@ Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
 
 ```typescript
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
-import { sha256 } from '@noble/hashes/sha256';
+import { sha256 } from '@noble/hashes/sha2';
 const pbkey1 = pbkdf2(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
 const pbkey2 = await pbkdf2Async(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
 const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]), {
@@ -360,7 +348,10 @@ arrays bigger than 4GB impossible, but we're looking into other possible solutio
 
 ##### argon2
 
-Experimental Argon2 RFC 9106 implementation. It may be removed at any time.
+> [!WARNING]
+> Experimental: it may be removed at any time.
+
+Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 
 ```ts
 import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2';
@@ -370,7 +361,7 @@ const result = argon2id('password', 'salt', { t: 2, m: 65536, p: 1 });
 ##### utils
 
 ```typescript
-import { bytesToHex as toHex, randomBytes } from '@noble/hashes/utils';
+import { bytesToHex as toHex } from '@noble/hashes/utils';
 console.log(toHex(randomBytes(32)));
 ```
 
@@ -380,8 +371,7 @@ console.log(toHex(randomBytes(32)));
 ##### All available imports
 
 ```js
-// sha384 is here, because it uses same internals as sha512
-import { sha512, sha512_256, sha384 } from '@noble/hashes/sha512';
+import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
 // prettier-ignore
 import {
   sha3_224, sha3_256, sha3_384, sha3_512,
@@ -391,10 +381,10 @@ import {
 // prettier-ignore
 import {
   cshake128, cshake256,
-  k12, m14,
   turboshake128, turboshake256,
   kmac128, kmac256,
-  tuplehash256, parallelhash256, keccakprg
+  tuplehash256, parallelhash256,
+  k12, m14, keccakprg
 } from '@noble/hashes/sha3-addons';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { blake3 } from '@noble/hashes/blake3';

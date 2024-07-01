@@ -1,32 +1,32 @@
-const bench = require('micro-bmark');
+import * as bench from 'micro-bmark';
 const { run, mark } = bench; // or bench.mark
-const crypto = require('crypto');
+import crypto from 'node:crypto';
 // Noble
-const { sha256 } = require('../sha256');
-const { sha384, sha512 } = require('../sha512');
-const { sha3_256 } = require('../sha3');
-const { k12, m14 } = require('../sha3-addons');
-const { blake2b } = require('../blake2b');
-const { blake2s } = require('../blake2s');
-const { blake3 } = require('../blake3');
-const { ripemd160 } = require('../ripemd160');
-const { hmac } = require('../hmac');
+import { sha256, sha384, sha512 } from '@noble/hashes/sha2';
+// import { sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
+import { sha3_256 } from '@noble/hashes/sha3';
+import { k12, m14 } from '@noble/hashes/sha3-addons';
+import { blake2b } from '@noble/hashes/blake2b';
+import { blake2s } from '@noble/hashes/blake2s';
+import { blake3 } from '@noble/hashes/blake3';
+import { ripemd160 } from '@noble/hashes/ripemd160';
+import { hmac } from '@noble/hashes/hmac';
 
 // Others
-const createHash = require('create-hash/browser');
-const createHmac = require('create-hmac/browser');
-const stable256 = require('@stablelib/sha256');
-const stableHmac = require('@stablelib/hmac');
-const fastsha256 = require('fast-sha256').hash;
-const stable2_384 = require('@stablelib/sha384');
-const stable2_512 = require('@stablelib/sha512');
-const stable3 = require('@stablelib/sha3');
-const stableb2b = require('@stablelib/blake2b');
-const stableb2s = require('@stablelib/blake2s');
-const jssha3 = require('js-sha3');
-const nobleUnrolled = require('unrolled-nbl-hashes-sha3');
-const { SHA3: _SHA3 } = require('sha3');
-const wasm_ = require('hash-wasm');
+import createHash from 'create-hash/browser.js';
+import createHmac from 'create-hmac/browser.js';
+import stable256 from '@stablelib/sha256';
+import stableHmac from '@stablelib/hmac';
+import { hash as fastsha256 } from 'fast-sha256';
+import stable2_384 from '@stablelib/sha384';
+import stable2_512 from '@stablelib/sha512';
+import stable3 from '@stablelib/sha3';
+import stableb2b from '@stablelib/blake2b';
+import stableb2s from '@stablelib/blake2s';
+import jssha3 from 'js-sha3';
+import nobleUnrolled from 'unrolled-nbl-hashes-sha3';
+import { SHA3 as _SHA3 } from 'sha3';
+import wasm_ from 'hash-wasm';
 const wasm = {};
 const wrapBuf = (arrayBuffer) => new Uint8Array(arrayBuffer);
 
@@ -104,7 +104,7 @@ const buffers = {
   // '1MB': [250, new Uint8Array(1024 * 1024).fill(4)],
 };
 
-const main = () =>
+export const main = () =>
   run(async () => {
     if (!ONLY_NOBLE) {
       wasm.sha256 = await wasm_.createSHA256();
@@ -131,5 +131,8 @@ const main = () =>
     bench.utils.logMem();
   });
 
-module.exports = { main };
-if (require.main === module) main();
+// ESM is broken.
+import url from 'node:url';
+if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {
+  main();
+}

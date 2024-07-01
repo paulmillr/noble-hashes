@@ -1,25 +1,25 @@
-const bench = require('micro-bmark');
-const { run, mark } = bench; // or bench.mark
-const crypto = require('crypto');
+import bench from 'micro-bmark';
+import crypto from 'node:crypto';
 // Noble
-const { sha256 } = require('../sha256');
-const { sha512 } = require('../sha512');
-const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
-const { hkdf } = require('../hkdf');
-const { scrypt, scryptAsync } = require('../scrypt');
+import { sha256 } from '@noble/hashes/sha256';
+import { sha512 } from '@noble/hashes/sha512';
+import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
+import { hkdf } from '@noble/hashes/hkdf';
+import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
 // Others
 
-const stable256 = require('@stablelib/sha256');
-const { deriveKey: stablePBKDF2 } = require('@stablelib/pbkdf2');
-const {
-  deriveKey: stableScrypt,
-  deriveKeyNonBlocking: stableScryptAsync,
-} = require('@stablelib/scrypt');
-const { HKDF: stableHKDF } = require('@stablelib/hkdf');
-const stable512 = require('@stablelib/sha512');
-const _scryptAsync = require('scrypt-async');
-const { syncScrypt: scryptJsSync, scrypt: scryptJsAsync } = require('scrypt-js');
-const wasm = require('hash-wasm');
+import stable256 from '@stablelib/sha256';
+import { deriveKey as stablePBKDF2 } from '@stablelib/pbkdf2';
+import {
+  deriveKey as stableScrypt,
+  deriveKeyNonBlocking as stableScryptAsync,
+} from '@stablelib/scrypt';
+import { HKDF as stableHKDF } from '@stablelib/hkdf';
+import stable512 from '@stablelib/sha512';
+import _scryptAsync from 'scrypt-async';
+import scryptjs from 'scrypt-js';
+import wasm from 'hash-wasm';
+const { run, mark } = bench; // or bench.mark
 
 function scryptAsyncSync(iters) {
   let res = undefined; // workaround for bad scrypt api
@@ -75,7 +75,7 @@ const KDF = {
     node: (iters) =>
       crypto.scryptSync(password, salt, 32, { N: iters, r: 8, p: 1, maxmem: 1024 ** 4 }),
     'scrypt-async': (iters) => scryptAsyncSync(iters),
-    'scrypt-js': (iters) => scryptJsSync(password, salt, iters, 8, 1, 32),
+    'scrypt-js': (iters) => scryptjs.syncScrypt(password, salt, iters, 8, 1, 32),
     stablelib: (iters) => stableScrypt(password, salt, iters, 8, 1, 32),
     noble: (iters) => scrypt(password, salt, { N: iters, r: 8, p: 1, dkLen: 32 }),
   },
@@ -104,7 +104,7 @@ const KDF = {
           resolve
         )
       ),
-    'scrypt-js': (iters) => scryptJsAsync(password, salt, iters, 8, 1, 32),
+    'scrypt-js': (iters) => scryptjs.scrypt(password, salt, iters, 8, 1, 32),
     stablelib: (iters) => stableScryptAsync(password, salt, iters, 8, 1, 32),
     noble: (iters) => scryptAsync(password, salt, { N: iters, r: 8, p: 1, dkLen: 32 }),
   },
@@ -128,7 +128,7 @@ const HKDF = {
   // },
 };
 
-const main = () =>
+export const main = () =>
   run(async () => {
     for (let [k, libs] of Object.entries(HKDF)) {
       if (!ONLY_NOBLE) console.log(`==== ${k} ====`);
@@ -158,5 +158,8 @@ const main = () =>
     bench.utils.logMem();
   });
 
-module.exports = { main };
-if (require.main === module) main();
+// ESM is broken.
+import url from 'node:url';
+if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {
+  main();
+}
