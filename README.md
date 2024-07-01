@@ -278,7 +278,7 @@ Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 ```typescript
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha';
-import { randomBytes } from '@noble/hashes/webcrypto';
+import { randomBytes } from '@noble/hashes/utils';
 const inputKey = randomBytes(32);
 const salt = randomBytes(32);
 const info = 'abc';
@@ -361,7 +361,7 @@ const result = argon2id('password', 'salt', { t: 2, m: 65536, p: 1 });
 ##### utils
 
 ```typescript
-import { bytesToHex as toHex } from '@noble/hashes/utils';
+import { bytesToHex as toHex, randomBytes } from '@noble/hashes/utils';
 console.log(toHex(randomBytes(32)));
 ```
 

@@ -126,10 +126,6 @@
     "./utils": {
       "import": "./esm/utils.js",
       "require": "./utils.js"
-    },
-    "./webcrypto": {
-      "import": "./esm/webcrypto.js",
-      "require": "./webcrypto.js"
     }
   },
   "sideEffects": false,
