@@ -59,7 +59,7 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     const { view, buffer, blockLen } = this;
     data = toBytes(data);
     const len = data.length;
-    for (let pos = 0; pos < len;) {
+    for (let pos = 0; pos < len; ) {
       const take = Math.min(blockLen - this.pos, len - pos);
       // Fast path: we have at least one block in input, cast it to view and process
       if (take === blockLen) {
