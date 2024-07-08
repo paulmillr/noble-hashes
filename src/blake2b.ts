@@ -62,7 +62,7 @@ function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: nu
   (BBUF[2 * d] = Dl), (BBUF[2 * d + 1] = Dh);
 }
 
-class BLAKE2b extends BLAKE<BLAKE2b> {
+export class BLAKE2b extends BLAKE<BLAKE2b> {
   // Same as SHA-512, but LE
   private v0l = B2B_IV[0] | 0;
   private v0h = B2B_IV[1] | 0;
@@ -111,7 +111,7 @@ class BLAKE2b extends BLAKE<BLAKE2b> {
     number, number, number, number, number, number, number, number,
     number, number, number, number, number, number, number, number
   ] {
-    let {v0l, v0h, v1l, v1h, v2l, v2h, v3l, v3h, v4l, v4h, v5l, v5h, v6l, v6h, v7l, v7h} = this;
+    let { v0l, v0h, v1l, v1h, v2l, v2h, v3l, v3h, v4l, v4h, v5l, v5h, v6l, v6h, v7l, v7h } = this;
     return [v0l, v0h, v1l, v1h, v2l, v2h, v3l, v3h, v4l, v4h, v5l, v5h, v6l, v6h, v7l, v7h];
   }
   // prettier-ignore

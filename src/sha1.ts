@@ -11,7 +11,7 @@ const SHA1_IV = /* @__PURE__ */ new Uint32Array([
 // Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
 const SHA1_W = /* @__PURE__ */ new Uint32Array(80);
-class SHA1 extends HashMD<SHA1> {
+export class SHA1 extends HashMD<SHA1> {
   private A = SHA1_IV[0] | 0;
   private B = SHA1_IV[1] | 0;
   private C = SHA1_IV[2] | 0;

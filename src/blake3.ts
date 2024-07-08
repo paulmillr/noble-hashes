@@ -49,7 +49,7 @@ export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
 //   complicated, which we are trying to avoid, since this library is intended to be used
 //   for cryptographic purposes. Also, parallelization happens only on chunk level (1024 bytes),
 //   which won't really benefit small inputs.
-class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
+export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   private IV: Uint32Array;
   private flags = 0 | 0;
   private state: Uint32Array;

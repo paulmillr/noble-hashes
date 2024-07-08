@@ -165,7 +165,7 @@ export class SHA512 extends HashMD<SHA512> {
   }
 }
 
-class SHA512_224 extends SHA512 {
+export class SHA512_224 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
   Ah = 0x8c3d37c8 | 0;
   Al = 0x19544da2 | 0;
@@ -190,7 +190,7 @@ class SHA512_224 extends SHA512 {
   }
 }
 
-class SHA512_256 extends SHA512 {
+export class SHA512_256 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
   Ah = 0x22312194 | 0;
   Al = 0xfc2bf72c | 0;
@@ -215,7 +215,7 @@ class SHA512_256 extends SHA512 {
   }
 }
 
-class SHA384 extends SHA512 {
+export class SHA384 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
   Ah = 0xcbbb9d5d | 0;
   Al = 0xc1059ed8 | 0;

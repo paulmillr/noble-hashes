@@ -28,7 +28,7 @@ const SHA256_IV = /* @__PURE__ */ new Uint32Array([
 // Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
 const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
-class SHA256 extends HashMD<SHA256> {
+export class SHA256 extends HashMD<SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
   A = SHA256_IV[0] | 0;

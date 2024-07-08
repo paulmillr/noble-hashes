@@ -124,28 +124,26 @@ function modReduceKey(key: Uint8Array, modulus: bigint): Uint8Array {
 }
 
 // We are not using classes because constructor cannot be async
-type ESKDF = Promise<
-  Readonly<{
-    /**
-     * Derives a child key. Child key will not be associated with any
-     * other child key because of properties of underlying KDF.
-     *
-     * @param protocol - 3-15 character protocol name
-     * @param accountId - numeric identifier of account
-     * @param options - `keyLength: 64` or `modulus: 41920438n`
-     * @example deriveChildKey('aes', 0)
-     */
-    deriveChildKey: (protocol: string, accountId: AccountID, options?: KeyOpts) => Uint8Array;
-    /**
-     * Deletes the main seed from eskdf instance
-     */
-    expire: () => void;
-    /**
-     * Account fingerprint
-     */
-    fingerprint: string;
-  }>
->;
+export interface ESKDF {
+  /**
+   * Derives a child key. Child key will not be associated with any
+   * other child key because of properties of underlying KDF.
+   *
+   * @param protocol - 3-15 character protocol name
+   * @param accountId - numeric identifier of account
+   * @param options - `keyLength: 64` or `modulus: 41920438n`
+   * @example deriveChildKey('aes', 0)
+   */
+  deriveChildKey: (protocol: string, accountId: AccountID, options?: KeyOpts) => Uint8Array;
+  /**
+   * Deletes the main seed from eskdf instance
+   */
+  expire: () => void;
+  /**
+   * Account fingerprint
+   */
+  fingerprint: string;
+}
 
 /**
  * ESKDF
@@ -157,7 +155,7 @@ type ESKDF = Promise<
  * console.log(kdf.fingerprint);
  * kdf.expire();
  */
-export async function eskdf(username: string, password: string): ESKDF {
+export async function eskdf(username: string, password: string): Promise<ESKDF> {
   // We are using closure + object instead of class because
   // we want to make `seed` non-accessible for any external function.
   let seed: Uint8Array | undefined = deriveMainSeed(username, password);

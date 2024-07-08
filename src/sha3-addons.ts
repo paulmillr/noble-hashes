@@ -61,7 +61,7 @@ const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
 export const cshake128 = /* @__PURE__ */ (() => gencShake(0x1f, 168, 128 / 8))();
 export const cshake256 = /* @__PURE__ */ (() => gencShake(0x1f, 136, 256 / 8))();
 
-class KMAC extends Keccak implements HashXOF<KMAC> {
+export class KMAC extends Keccak implements HashXOF<KMAC> {
   constructor(
     blockLen: number,
     outputLen: number,
@@ -114,7 +114,7 @@ export const kmac256xof = /* @__PURE__ */ (() => genKmac(136, 256 / 8, true))();
 
 // TupleHash
 // Usage: tuple(['ab', 'cd']) != tuple(['a', 'bcd'])
-class TupleHash extends Keccak implements HashXOF<TupleHash> {
+export class TupleHash extends Keccak implements HashXOF<TupleHash> {
   constructor(blockLen: number, outputLen: number, enableXOF: boolean, opts: cShakeOpts = {}) {
     super(blockLen, 0x1f, outputLen, enableXOF);
     cshakePers(this, { NISTfn: 'TupleHash', personalization: opts.personalization });
@@ -158,7 +158,7 @@ export const tuplehash256xof = /* @__PURE__ */ (() => genTuple(136, 256 / 8, tru
 // ParallelHash (same as K12/M14, but without speedup for inputs less 8kb, reduced number of rounds and more simple)
 type ParallelOpts = cShakeOpts & { blockLen?: number };
 
-class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
+export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
   private leafHash?: Hash<Keccak>;
   private chunkPos = 0; // Position of current block in chunk
   private chunksDone = 0; // How many chunks we already have
@@ -278,7 +278,7 @@ function rightEncodeK12(n: number): Uint8Array {
 export type KangarooOpts = { dkLen?: number; personalization?: Input };
 const EMPTY = new Uint8Array([]);
 
-class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
+export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
   readonly chunkLen = 8192;
   private leafHash?: Keccak;
   private personalization: Uint8Array;
@@ -364,7 +364,7 @@ export const m14 = /* @__PURE__ */ (() =>
 
 // https://keccak.team/files/CSF-0.1.pdf
 // + https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG
-class KeccakPRG extends Keccak {
+export class KeccakPRG extends Keccak {
   protected rate: number;
   constructor(capacity: number) {
     assertNumber(capacity);
