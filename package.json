@@ -36,7 +36,7 @@
     "typescript": "5.5.2"
   },
   "engines": {
-    "node": ">= 16"
+    "node": "^14.21.3 || >=16"
   },
   "exports": {
     ".": {
