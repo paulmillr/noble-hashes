@@ -277,7 +277,7 @@ Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 
 ```typescript
 import { hkdf } from '@noble/hashes/hkdf';
-import { sha256 } from '@noble/hashes/sha';
+import { sha256 } from '@noble/hashes/sha2';
 import { randomBytes } from '@noble/hashes/utils';
 const inputKey = randomBytes(32);
 const salt = randomBytes(32);
