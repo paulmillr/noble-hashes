@@ -126,7 +126,7 @@ async function main() {
     }
   }
   // Log current RAM
-  bench.utils.logMem();
+  utils.logMem();
 }
 
 
