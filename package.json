@@ -14,7 +14,7 @@
     "bench:all": "node benchmark/hashes.js; node benchmark/kdf.js",
     "bench:install": "npm pack && mv *.tgz benchmark/noble-hashes.tgz && cd benchmark && npm install && cd ..",
     "build": "npm run build:clean; tsc && tsc -p tsconfig.esm.json",
-    "build:clean": "rm *.{js,d.ts,js.map,d.ts.map} esm/*.{js,js.map,d.ts.map} 2> /dev/null",
+    "build:clean": "rm -f *.{js,d.ts,js.map,d.ts.map} esm/*.{js,js.map,d.ts.map}",
     "lint": "prettier --check 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "test": "node test/index.js",
