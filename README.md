@@ -128,8 +128,12 @@ const h1b = sha256
 
 for (let hash of [sha384, sha512, sha224, sha512_256, sha512_384]) {
   const res1 = hash('abc');
-  const res2 = hash.create().update('def').update(Uint8Array.from([1, 2, 3])).digest();
-};
+  const res2 = hash
+    .create()
+    .update('def')
+    .update(Uint8Array.from([1, 2, 3]))
+    .digest();
+}
 ```
 
 See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
@@ -532,6 +536,7 @@ The current performance is good enough when compared to other projects; SHA256 t
 5. `npm run test:dos` will test against DoS; by measuring function complexity. **Takes ~20 minutes**
 6. `npm run test:big` will execute hashing on 4GB inputs,
    scrypt with 1024 different `N, r, p` combinations, etc. **Takes several hours**. Using 8-32+ core CPU helps.
+7. `npm run format` will fix lint issues
 
 ## Resources
 

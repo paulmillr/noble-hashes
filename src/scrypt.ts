@@ -106,12 +106,10 @@ function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
     throw new Error('progressCb should be function');
   const blockSize = 128 * r;
   const blockSize32 = blockSize / 4;
-  if (N <= 1 || (N & (N - 1)) !== 0 || N >= 2 ** (blockSize / 8) || N > 2 ** 32) {
+  if (N <= 1 || (N & (N - 1)) !== 0 || N > 2 ** 32) {
     // NOTE: we limit N to be less than 2**32 because of 32 bit variant of Integrify function
     // There is no JS engines that allows alocate more than 4GB per single Uint8Array for now, but can change in future.
-    throw new Error(
-      'Scrypt: N must be larger than 1, a power of 2, less than 2^(128 * r / 8) and less than 2^32'
-    );
+    throw new Error('Scrypt: N must be larger than 1, a power of 2, and less than 2^32');
   }
   if (p < 0 || p > ((2 ** 32 - 1) * 32) / blockSize) {
     throw new Error(
