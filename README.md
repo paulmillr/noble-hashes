@@ -11,11 +11,8 @@ Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Sc
 - 🦘 SHA3 supports Keccak, cSHAKE, KangarooTwelve, MarsupilamiFourteen and TurboSHAKE
 - 🪶 89KB (17KB gzipped) for everything, 10KB (2.5KB gzipped) for single-hash build
 
+Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
-
-For discussions, questions and support, visit
-[GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions)
-section of the repository.
 
 ### This library belongs to _noble_ cryptography
 
