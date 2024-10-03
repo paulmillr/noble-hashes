@@ -1,9 +1,21 @@
 import { number as assertNumber } from './_assert.js';
-import { Input, toBytes, u8, u32 } from './utils.js';
+import { Input, toBytes, u8, u32, nextTick } from './utils.js';
 import { blake2b } from './blake2b.js';
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
 
-// Experimental Argon2 RFC 9106 implementation. It may be removed at any time.
+/*
+JS argon is 2-10x slower than native code. Reasons:
+
+- uint64 is everywhere, but JS has no fast uint64array
+- uint64 multiplication is 1/3 of time
+- Values are constantly being read from A2_BUF, requiring many checks
+- 'P' function would be very nice with u64, because most of value will be in registers,
+  hovewer with u32 it will require 32 registers, which is too much.
+- It is really unclear how to speed it up
+
+If you want fast JS KDF, we suggest Scrypt instead.
+*/
+
 const enum Types {
   Argond2d = 0,
   Argon2i = 1,
@@ -11,9 +23,9 @@ const enum Types {
 }
 
 const ARGON2_SYNC_POINTS = 4;
-
 const toBytesOptional = (buf?: Input) => (buf !== undefined ? toBytes(buf) : new Uint8Array([]));
 
+// u32 * u32 = u64
 function mul(a: number, b: number) {
   const aL = a & 0xffff;
   const aH = a >>> 16;
@@ -23,14 +35,10 @@ function mul(a: number, b: number) {
   const hl = Math.imul(aH, bL);
   const lh = Math.imul(aL, bH);
   const hh = Math.imul(aH, bH);
-  const BUF = ((ll >>> 16) + (hl & 0xffff) + lh) | 0;
-  const h = ((hl >>> 16) + (BUF >>> 16) + hh) | 0;
-  return { h, l: (BUF << 16) | (ll & 0xffff) };
-}
-
-function relPos(areaSize: number, relativePos: number) {
-  // areaSize - 1 - ((areaSize * ((relativePos ** 2) >>> 32)) >>> 32)
-  return areaSize - 1 - mul(areaSize, mul(relativePos, relativePos).h).h;
+  const carry = (ll >>> 16) + (hl & 0xffff) + lh;
+  const high = (hh + (hl >>> 16) + (carry >>> 16)) | 0;
+  const low = (carry << 16) | (ll & 0xffff);
+  return { h: high, l: low };
 }
 
 function mul2(a: number, b: number) {
@@ -39,6 +47,7 @@ function mul2(a: number, b: number) {
   return { h: ((h << 1) | (l >>> 31)) & 0xffff_ffff, l: (l << 1) & 0xffff_ffff };
 }
 
+// A + B + (2 * u32(A) * u32(B))
 function blamka(Ah: number, Al: number, Bh: number, Bl: number) {
   const { h: Ch, l: Cl } = mul2(Al, Bl);
   // A + B + (2 * A * B)
@@ -47,7 +56,7 @@ function blamka(Ah: number, Al: number, Bh: number, Bl: number) {
 }
 
 // Temporary block buffer
-const A2_BUF = new Uint32Array(256);
+const A2_BUF = new Uint32Array(256); // 1024 bytes (matrix 16x16)
 
 function G(a: number, b: number, c: number, d: number) {
   let Al = A2_BUF[2*a], Ah = A2_BUF[2*a + 1]; // prettier-ignore
@@ -94,8 +103,7 @@ function P(
 
 function block(x: Uint32Array, xPos: number, yPos: number, outPos: number, needXor: boolean) {
   for (let i = 0; i < 256; i++) A2_BUF[i] = x[xPos + i] ^ x[yPos + i];
-
-  // columns
+  // columns (8)
   for (let i = 0; i < 128; i += 16) {
     // prettier-ignore
     P(
@@ -103,7 +111,7 @@ function block(x: Uint32Array, xPos: number, yPos: number, outPos: number, needX
       i + 8, i + 9, i + 10, i + 11, i + 12, i + 13, i + 14, i + 15
     );
   }
-  // rows
+  // rows (8)
   for (let i = 0; i < 16; i += 2) {
     // prettier-ignore
     P(
@@ -114,6 +122,7 @@ function block(x: Uint32Array, xPos: number, yPos: number, outPos: number, needX
 
   if (needXor) for (let i = 0; i < 256; i++) x[outPos + i] ^= A2_BUF[i] ^ x[xPos + i] ^ x[yPos + i];
   else for (let i = 0; i < 256; i++) x[outPos + i] = A2_BUF[i] ^ x[xPos + i] ^ x[yPos + i];
+  A2_BUF.fill(0);
 }
 
 // Variable-Length Hash Function H'
@@ -131,12 +140,20 @@ function Hp(A: Uint32Array, dkLen: number) {
   out.set(V.subarray(0, 32));
   pos += 32;
   // Rest blocks
-  for (; dkLen - pos > 64; pos += 32) out.set((V = blake2b(V)).subarray(0, 32), pos);
+  for (; dkLen - pos > 64; pos += 32) {
+    const Vh = blake2b.create({}).update(V);
+    Vh.digestInto(V);
+    Vh.destroy();
+    out.set(V.subarray(0, 32), pos);
+  }
   // Last block
   out.set(blake2b(V, { dkLen: dkLen - pos }), pos);
+  V.fill(0);
+  T.fill(0);
   return u32(out);
 }
 
+// Used only inside process block!
 function indexAlpha(
   r: number,
   s: number,
@@ -146,17 +163,16 @@ function indexAlpha(
   randL: number,
   sameLane: boolean = false
 ) {
-  let area;
-  if (0 == r) {
-    if (0 == s) area = index - 1;
+  // This is ugly, but close enough to reference implementation.
+  let area: number;
+  if (r === 0) {
+    if (s === 0) area = index - 1;
     else if (sameLane) area = s * segmentLen + index - 1;
     else area = s * segmentLen + (index == 0 ? -1 : 0);
   } else if (sameLane) area = laneLen - segmentLen + index - 1;
   else area = laneLen - segmentLen + (index == 0 ? -1 : 0);
   const startPos = r !== 0 && s !== ARGON2_SYNC_POINTS - 1 ? (s + 1) * segmentLen : 0;
-  const rel = relPos(area, randL);
-  // NOTE: check about overflows here
-  //     absPos = (startPos + relPos) % laneLength;
+  const rel = area - 1 - mul(area, mul(randL, randL).h).h;
   return (startPos + rel) % laneLen;
 }
 
@@ -177,11 +193,12 @@ export type ArgonOpts = {
 function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
   password = toBytes(password);
   salt = toBytes(salt);
-  let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress } = {
+  let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } = {
     ...opts,
     version: opts.version || 0x13,
     dkLen: opts.dkLen || 32,
     maxmem: 2 ** 32,
+    asyncTick: 10,
   };
   // Validation
   assertNumber(p);
@@ -190,15 +207,21 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
   assertNumber(t);
   assertNumber(version);
   if (dkLen < 4 || dkLen >= 2 ** 32) throw new Error('Argon2: dkLen should be at least 4 bytes');
-  if (p < 1 || p >= 2 ** 32) throw new Error('Argon2: p (parallelism) should be at least 1');
-  if (t < 1 || t >= 2 ** 32) throw new Error('Argon2: t (iterations) should be at least 1');
+  if (p < 1 || p >= 2 ** 24)
+    throw new Error('Argon2: p (parallelism) should be at least 1 and less than 2^24');
+  if (t < 1 || t >= 2 ** 32)
+    throw new Error('Argon2: t (iterations) should be at least 1 and less than 2^32');
+  /*
+  Memory size m MUST be an integer number of kibibytes from 8*p to 2^(32)-1. The actual number of blocks is m', which is m rounded down to the nearest multiple of 4*p.
+  */
   if (m < 8 * p) throw new Error(`Argon2: memory should be at least 8*p bytes`);
-  if (version !== 16 && version !== 19) throw new Error(`Argon2: unknown version=${version}`);
+  if (version !== 0x10 && version !== 0x13) throw new Error(`Argon2: unknown version=${version}`);
   password = toBytes(password);
   if (password.length < 0 || password.length >= 2 ** 32)
     throw new Error('Argon2: password should be less than 4 GB');
   salt = toBytes(salt);
-  if (salt.length < 8) throw new Error('Argon2: salt should be at least 8 bytes');
+  if (salt.length < 8 || salt.length >= 2 ** 32)
+    throw new Error('Argon2: salt should be at least 8 bytes and less than 4 GB');
   key = toBytesOptional(key);
   personalization = toBytesOptional(personalization);
   if (onProgress !== undefined && typeof onProgress !== 'function')
@@ -210,24 +233,26 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
   //q = m' / p columns
   const laneLen = Math.floor(mP / p);
   const segmentLen = Math.floor(laneLen / ARGON2_SYNC_POINTS);
-  // H0
+  // H_0 = H^(64)(LE32(p) || LE32(T) || LE32(m) || LE32(t) ||
+  //       LE32(v) || LE32(y) || LE32(length(P)) || P ||
+  //       LE32(length(S)) || S ||  LE32(length(K)) || K ||
+  //       LE32(length(X)) || X)
   const h = blake2b.create({});
   const BUF = new Uint32Array(1);
   const BUF8 = u8(BUF);
   for (const i of [p, dkLen, m, t, version, type]) {
     if (i < 0 || i >= 2 ** 32) throw new Error(`Argon2: wrong parameter=${i}, expected uint32`);
-    BUF[0] = i;
+    BUF[0] = i; // BUF is u32 array, this is valid
     h.update(BUF8);
   }
   for (let i of [password, salt, key, personalization]) {
-    BUF[0] = i.length;
+    BUF[0] = i.length; // BUF is u32 array, this is valid
     h.update(BUF8).update(i);
   }
   const H0 = new Uint32Array(18);
   const H0_8 = u8(H0);
   h.digestInto(H0_8);
-
-  // 256 u32 = 1024 (BLOCK_SIZE)
+  // 256 u32 = 1024 (BLOCK_SIZE), fills A2_BUF on processing
   const memUsed = mP * 256;
   if (memUsed < 0 || memUsed >= 2 ** 32 || memUsed > maxmem) {
     throw new Error(
@@ -259,14 +284,18 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
         onProgress(blockCnt / totalBlock);
     };
   }
-  return { type, mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock };
+  BUF.fill(0);
+  H0.fill(0);
+  return { type, mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick };
 }
 
 function argon2Output(B: Uint32Array, p: number, laneLen: number, dkLen: number) {
   const B_final = new Uint32Array(256);
   for (let l = 0; l < p; l++)
     for (let j = 0; j < 256; j++) B_final[j] ^= B[256 * (laneLen * l + laneLen - 1) + j];
-  return u8(Hp(B_final, dkLen));
+  const res = u8(Hp(B_final, dkLen));
+  B_final.fill(0);
+  return res;
 }
 
 function processBlock(
@@ -363,6 +392,7 @@ function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
       }
     }
   }
+  address.fill(0);
   return argon2Output(B, p, laneLen, dkLen);
 }
 
@@ -372,3 +402,73 @@ export const argon2i = (password: Input, salt: Input, opts: ArgonOpts) =>
   argon2(Types.Argon2i, password, salt, opts);
 export const argon2id = (password: Input, salt: Input, opts: ArgonOpts) =>
   argon2(Types.Argon2id, password, salt, opts);
+
+async function argon2Async(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
+  const { mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick } =
+    argon2Init(type, password, salt, opts);
+  // Pre-loop setup
+  // [address, input, zero_block] format so we can pass single U32 to block function
+  const address = new Uint32Array(3 * 256);
+  address[256 + 6] = mP;
+  address[256 + 8] = t;
+  address[256 + 10] = type;
+  let ts = Date.now();
+  for (let r = 0; r < t; r++) {
+    const needXor = r !== 0 && version === 0x13;
+    address[256 + 0] = r;
+    for (let s = 0; s < ARGON2_SYNC_POINTS; s++) {
+      address[256 + 4] = s;
+      const dataIndependent = type == Types.Argon2i || (type == Types.Argon2id && r === 0 && s < 2);
+      for (let l = 0; l < p; l++) {
+        address[256 + 2] = l;
+        address[256 + 12] = 0;
+        let startPos = 0;
+        if (r === 0 && s === 0) {
+          startPos = 2;
+          if (dataIndependent) {
+            address[256 + 12]++;
+            block(address, 256, 2 * 256, 0, false);
+            block(address, 0, 2 * 256, 0, false);
+          }
+        }
+        // current block postion
+        let offset = l * laneLen + s * segmentLen + startPos;
+        // previous block position
+        let prev = offset % laneLen ? offset - 1 : offset + laneLen - 1;
+        for (let index = startPos; index < segmentLen; index++, offset++, prev++) {
+          perBlock();
+          processBlock(
+            B,
+            address,
+            l,
+            r,
+            s,
+            index,
+            laneLen,
+            segmentLen,
+            lanes,
+            offset,
+            prev,
+            dataIndependent,
+            needXor
+          );
+          // Date.now() is not monotonic, so in case if clock goes backwards we return return control too
+          const diff = Date.now() - ts;
+          if (!(diff >= 0 && diff < asyncTick)) {
+            await nextTick();
+            ts += diff;
+          }
+        }
+      }
+    }
+  }
+  address.fill(0);
+  return argon2Output(B, p, laneLen, dkLen);
+}
+
+export const argon2dAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
+  argon2Async(Types.Argond2d, password, salt, opts);
+export const argon2iAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
+  argon2Async(Types.Argon2i, password, salt, opts);
+export const argon2idAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
+  argon2Async(Types.Argon2id, password, salt, opts);

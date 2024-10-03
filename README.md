@@ -7,7 +7,7 @@ Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Sc
 - 🏎 Fast: hand-optimized for caveats of JS engines
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
-- 🐢 Scrypt supports `N: 2**22`, while other implementations are limited to `2**20`
+- 🐢 Scrypt supports large N, while other implementations are limited to `2**20`
 - 🦘 SHA3 supports Keccak, cSHAKE, KangarooTwelve, MarsupilamiFourteen and TurboSHAKE
 - 🪶 89KB (17KB gzipped) for everything, 10KB (2.5KB gzipped) for single-hash build
 
@@ -332,25 +332,36 @@ Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
 [Website](https://www.tarsnap.com/scrypt.html)
 
 - `N, r, p` are work factors. To understand them, see [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
-- `dkLen` is the length of output bytes
-- It is common to use N from `2**10` to `2**22` and `{r: 8, p: 1, dkLen: 32}`
+  `r: 8, p: 1` are common. JS doesn't support parallelization, making increasing p meaningless.
+- `dkLen` is the length of output bytes e.g. `32` or `64`
 - `onProgress` can be used with async version of the function to report progress to a user.
+- `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `N * r * p * 128 + (128 * r * p)`
 
-Memory usage of scrypt is calculated with the formula `N * r * p * 128 + (128 * r * p)`,
-which means `{N: 2 ** 22, r: 8, p: 1}` will use 4GB + 1KB of memory. To prevent
-DoS, we limit scrypt to `1GB + 1KB` of RAM used, which corresponds to
-`{N: 2 ** 20, r: 8, p: 1}`. If you want to use higher values, increase
-`maxmem` using the formula above.
+Time it takes to derive Scrypt key under different values of N on Apple M2 (mobile phones can be 1x-4x slower):
 
-_Note:_ noble supports `2**22` (4GB RAM) which is the highest amount amongst JS
-libs. Many other implementations don't support it. We cannot support `2**23`,
-because there is a limitation in JS engines that makes allocating
-arrays bigger than 4GB impossible, but we're looking into other possible solutions.
+| N  | Time  |
+|----|-------|
+| 16 | 0.17s |
+| 17 | 0.35s |
+| 18 | 0.7s  |
+| 19 | 1.4s  |
+| 20 | 2.9s  |
+| 21 | 5.6s  |
+| 22 | 11s   |
+| 23 | 26s   |
+| 24 | 56s   |
+
+> [!NOTE]
+> Other JS implementations don't support N larger than `2**20`.
+> In noble, such N requires `maxmem` adjustment using formula above.
 
 ##### argon2
 
 > [!WARNING]
-> Experimental: it may be removed at any time.
+> The implementation is a few times slower than native code.
+> While selecting "slow" params, they may not be slow for GPU password brute-forcer.
+> All other JS implementations are the same, because there are no fast u64 arrays.
+> We suggest to use [Scrypt](#scrypt) instead.
 
 Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 

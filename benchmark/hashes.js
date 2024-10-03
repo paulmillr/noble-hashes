@@ -129,7 +129,6 @@ async function main() {
   utils.logMem();
 }
 
-
 // ESM is broken.
 import url from 'node:url';
 if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {

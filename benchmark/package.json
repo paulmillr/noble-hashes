@@ -35,6 +35,7 @@
     "unrolled-nbl-hashes-sha3": "0.1.1"
   },
   "dependencies": {
-    "@noble/hashes": "file:noble-hashes.tgz"
+    "@noble/hashes": "file:noble-hashes.tgz",
+    "@node-rs/argon2": "^1.8.3"
   }
 }
