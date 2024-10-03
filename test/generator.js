@@ -84,13 +84,13 @@ function executeKDFTests(limit = true) {
   should('PBKDF2(sha256) generator', async () => {
     const cases = genl({
       c: integer(1, 1024),
-      dkLen: integer(0, 1024),
+      dkLen: integer(1, 1024),
       pwd: bytes(0, 1024),
       salt: bytes(0, 1024),
     });
     for (let c of cases) {
       // console.log('T', c);
-      if (c.dkLen === 0) continue;
+      // if (c.dkLen === 0) continue;
       const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(sha256, c.pwd, c.salt, opt), exp, `pbkdf2(sha256, ${opt})`);
@@ -105,11 +105,12 @@ function executeKDFTests(limit = true) {
   should('PBKDF2(sha512) generator', async () => {
     const cases = genl({
       c: integer(1, 1024),
-      dkLen: integer(0, 1024),
+      dkLen: integer(1, 1024),
       pwd: bytes(0, 1024),
       salt: bytes(0, 1024),
     });
     for (let c of cases) {
+      // if (c.dkLen === 0) continue;
       const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha512'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(sha512, c.pwd, c.salt, opt), exp, `pbkdf2(sha512, ${opt})`);
@@ -124,7 +125,7 @@ function executeKDFTests(limit = true) {
   should('PBKDF2(sha3_256) generator', async () => {
     const cases = genl({
       c: integer(1, 1024),
-      dkLen: integer(0, 1024),
+      dkLen: integer(1, 1024),
       pwd: bytes(0, 1024),
       salt: bytes(0, 1024),
     });
@@ -143,7 +144,7 @@ function executeKDFTests(limit = true) {
   should('PBKDF2(sha3_512) generator', async () => {
     const cases = genl({
       c: integer(1, 1024),
-      dkLen: integer(0, 1024),
+      dkLen: integer(1, 1024),
       pwd: bytes(0, 1024),
       salt: bytes(0, 1024),
     });
@@ -186,7 +187,7 @@ function executeKDFTests(limit = true) {
   should('PBKDF2(blake2s) generator', async () => {
     const cases = genl({
       c: integer(1, 1024),
-      dkLen: integer(0, 1024),
+      dkLen: integer(1, 1024),
       pwd: bytes(0, 1024),
       salt: bytes(0, 1024),
     });
@@ -205,7 +206,7 @@ function executeKDFTests(limit = true) {
   should('PBKDF2(blake2b) generator', async () => {
     const cases = genl({
       c: integer(1, 1024),
-      dkLen: integer(0, 1024),
+      dkLen: integer(1, 1024),
       pwd: bytes(0, 1024),
       salt: bytes(0, 1024),
     });
