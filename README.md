@@ -7,7 +7,7 @@ Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Sc
 - 🏎 Fast: hand-optimized for caveats of JS engines
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
-- 🦘 SHA3 supports Keccak, cSHAKE, KangarooTwelve, MarsupilamiFourteen and TurboSHAKE
+- 🦘 Includes KangarooTwelve
 - 🪶 89KB (17KB gzipped) for everything, 10KB (2.5KB gzipped) for single-hash build
 
 Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
