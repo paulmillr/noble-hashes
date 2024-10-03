@@ -10,18 +10,25 @@ import {
 } from './utils.js';
 import { Keccak, ShakeOpts } from './sha3.js';
 // cSHAKE && KMAC (NIST SP800-185)
-function leftEncode(n: number): Uint8Array {
-  const res = [n & 0xff];
-  n >>= 8;
-  for (; n > 0; n >>= 8) res.unshift(n & 0xff);
+const _8n = BigInt(8);
+const _ffn = BigInt(0xff);
+
+// NOTE: it is safe to use bigints here, since they used only for length encoding (not actual data).
+// We use bigints in sha256 for lengths too.
+function leftEncode(n: number | bigint): Uint8Array {
+  n = BigInt(n);
+  const res = [Number(n & _ffn)];
+  n >>= _8n;
+  for (; n > 0; n >>= _8n) res.unshift(Number(n & _ffn));
   res.unshift(res.length);
   return new Uint8Array(res);
 }
 
-function rightEncode(n: number): Uint8Array {
-  const res = [n & 0xff];
-  n >>= 8;
-  for (; n > 0; n >>= 8) res.unshift(n & 0xff);
+function rightEncode(n: number | bigint): Uint8Array {
+  n = BigInt(n);
+  const res = [Number(n & _ffn)];
+  n >>= _8n;
+  for (; n > 0; n >>= _8n) res.unshift(Number(n & _ffn));
   res.push(res.length);
   return new Uint8Array(res);
 }
@@ -42,9 +49,9 @@ function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
   // bytepad(encode_string(N) || encode_string(S), 168)
   const blockLenBytes = leftEncode(hash.blockLen);
   const fn = toBytesOptional(opts.NISTfn);
-  const fnLen = leftEncode(8 * fn.length); // length in bits
+  const fnLen = leftEncode(_8n * BigInt(fn.length)); // length in bits
   const pers = toBytesOptional(opts.personalization);
-  const persLen = leftEncode(8 * pers.length); // length in bits
+  const persLen = leftEncode(_8n * BigInt(pers.length)); // length in bits
   if (!fn.length && !pers.length) return hash;
   hash.suffix = 0x04;
   hash.update(blockLenBytes).update(fnLen).update(fn).update(persLen).update(pers);
@@ -74,13 +81,13 @@ export class KMAC extends Keccak implements HashXOF<KMAC> {
     key = toBytes(key);
     // 1. newX = bytepad(encode_string(K), 168) || X || right_encode(L).
     const blockLenBytes = leftEncode(this.blockLen);
-    const keyLen = leftEncode(8 * key.length);
+    const keyLen = leftEncode(_8n * BigInt(key.length));
     this.update(blockLenBytes).update(keyLen).update(key);
     const totalLen = blockLenBytes.length + keyLen.length + key.length;
     this.update(getPadding(totalLen, this.blockLen));
   }
   protected finish() {
-    if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : this.outputLen * 8)); // outputLen in bits
+    if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen))); // outputLen in bits
     super.finish();
   }
   _cloneInto(to?: KMAC): KMAC {
@@ -121,13 +128,14 @@ export class TupleHash extends Keccak implements HashXOF<TupleHash> {
     // Change update after cshake processed
     this.update = (data: Input) => {
       data = toBytes(data);
-      super.update(leftEncode(data.length * 8));
+      super.update(leftEncode(_8n * BigInt(data.length)));
       super.update(data);
       return this;
     };
   }
   protected finish() {
-    if (!this.finished) super.update(rightEncode(this.enableXOF ? 0 : this.outputLen * 8)); // outputLen in bits
+    if (!this.finished)
+      super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen))); // outputLen in bits
     super.finish();
   }
   _cloneInto(to?: TupleHash): TupleHash {
@@ -205,7 +213,7 @@ export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
       this.chunksDone++;
     }
     super.update(rightEncode(this.chunksDone));
-    super.update(rightEncode(this.enableXOF ? 0 : this.outputLen * 8)); // outputLen in bits
+    super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen))); // outputLen in bits
     super.finish();
   }
   _cloneInto(to?: ParallelHash): ParallelHash {
@@ -268,9 +276,10 @@ export const turboshake256 = /* @__PURE__ */ genTurboshake(136, 512 / 8);
 
 // Kangaroo
 // Same as NIST rightEncode, but returns [0] for zero string
-function rightEncodeK12(n: number): Uint8Array {
+function rightEncodeK12(n: number | bigint): Uint8Array {
+  n = BigInt(n);
   const res = [];
-  for (; n > 0; n >>= 8) res.unshift(n & 0xff);
+  for (; n > 0; n >>= _8n) res.unshift(Number(n & _ffn));
   res.push(res.length);
   return new Uint8Array(res);
 }
