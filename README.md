@@ -106,7 +106,7 @@ _Some_ hash functions can also receive `options` object, which can be either pas
 - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
 - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
 
-##### sha2: sha256, sha384, sha512 and others
+#### sha2: sha256, sha384, sha512 and others
 
 ```typescript
 import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
@@ -136,7 +136,7 @@ for (let hash of [sha384, sha512, sha224, sha512_256, sha512_384]) {
 See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
 [the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
-##### sha3: FIPS, SHAKE, Keccak
+#### sha3: FIPS, SHAKE, Keccak
 
 ```typescript
 import {
@@ -166,7 +166,7 @@ See [FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
-##### sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE
+#### sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE
 
 ```typescript
 import {
@@ -211,7 +211,7 @@ const rand1b = p.fetch(1);
   - TurboSHAKE
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
 
-##### ripemd160
+#### ripemd160
 
 ```typescript
 import { ripemd160 } from '@noble/hashes/ripemd160';
@@ -226,7 +226,7 @@ const hash9 = ripemd160
 See [RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286),
 [Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
 
-##### blake2b, blake2s, blake3
+#### blake2b, blake2s, blake3
 
 ```typescript
 import { blake2b } from '@noble/hashes/blake2b';
@@ -247,7 +247,7 @@ const h11 = blake3('abc', { dkLen: 256, key: 'def', context: 'fji' });
 
 See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net).
 
-##### sha1: legacy hash
+#### sha1: legacy hash
 
 SHA1 was cryptographically broken, however, it was not broken for cases like HMAC.
 
@@ -260,7 +260,7 @@ import { sha1 } from '@noble/hashes/sha1';
 const h12 = sha1('def');
 ```
 
-##### hmac
+#### hmac
 
 ```typescript
 import { hmac } from '@noble/hashes/hmac';
@@ -274,7 +274,7 @@ const mac2 = hmac
 
 Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 
-##### hkdf
+#### hkdf
 
 ```typescript
 import { hkdf } from '@noble/hashes/hkdf';
@@ -295,7 +295,7 @@ const hk2 = hkdf.expand(sha256, prk, info, dkLen);
 
 Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
 
-##### pbkdf2
+#### pbkdf2
 
 ```typescript
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
@@ -310,7 +310,7 @@ const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.
 
 Matches [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898).
 
-##### scrypt
+#### scrypt
 
 ```typescript
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
@@ -355,7 +355,7 @@ Time it takes to derive Scrypt key under different values of N on Apple M2 (mobi
 > Other JS implementations don't support N larger than `2**20`.
 > In noble, such N requires `maxmem` adjustment using formula above.
 
-##### argon2
+#### argon2
 
 ```ts
 import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2';
@@ -370,7 +370,7 @@ Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 > All other JS implementations are the same, because there are no fast u64 arrays.
 > We suggest to use [Scrypt](#scrypt) instead.
 
-##### utils
+#### utils
 
 ```typescript
 import { bytesToHex as toHex, randomBytes } from '@noble/hashes/utils';
@@ -380,7 +380,7 @@ console.log(toHex(randomBytes(32)));
 - `bytesToHex` will convert `Uint8Array` to a hex string
 - `randomBytes(bytes)` will produce cryptographically secure random `Uint8Array` of length `bytes`
 
-##### All available imports
+#### All available imports
 
 ```js
 import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
