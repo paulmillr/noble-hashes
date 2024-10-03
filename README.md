@@ -7,7 +7,6 @@ Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Sc
 - 🏎 Fast: hand-optimized for caveats of JS engines
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
-- 🐢 Scrypt supports large N, while other implementations are limited to `2**20`
 - 🦘 SHA3 supports Keccak, cSHAKE, KangarooTwelve, MarsupilamiFourteen and TurboSHAKE
 - 🪶 89KB (17KB gzipped) for everything, 10KB (2.5KB gzipped) for single-hash build
 
@@ -317,7 +316,7 @@ import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
 const scr1 = scrypt('password', 'salt', { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
 const scr2 = await scryptAsync('password', 'salt', { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
 const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]), {
-  N: 2 ** 22,
+  N: 2 ** 17,
   r: 8,
   p: 1,
   dkLen: 32,
@@ -352,8 +351,11 @@ Time it takes to derive Scrypt key under different values of N (2**N) on Apple M
 | 24 | 56s   |
 
 > [!NOTE]
-> Other JS implementations don't support N larger than `2**20`.
-> In noble, such N requires `maxmem` adjustment using formula above.
+> We support N larger than `2**20` where available, however,
+> not all JS engines support >= 2GB ArrayBuffer-s.
+> When using such N, you'll need to manually adjust `maxmem`, using formula above.
+> Other JS implementations don't support large N-s.
+
 
 #### argon2
 
