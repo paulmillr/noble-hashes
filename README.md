@@ -337,9 +337,9 @@ Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
 - `onProgress` can be used with async version of the function to report progress to a user.
 - `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `N * r * p * 128 + (128 * r * p)`
 
-Time it takes to derive Scrypt key under different values of N on Apple M2 (mobile phones can be 1x-4x slower):
+Time it takes to derive Scrypt key under different values of N (2**N) on Apple M2 (mobile phones can be 1x-4x slower):
 
-| N  | Time  |
+| N pow  | Time  |
 |----|-------|
 | 16 | 0.17s |
 | 17 | 0.35s |
