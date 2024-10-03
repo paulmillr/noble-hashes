@@ -357,18 +357,18 @@ Time it takes to derive Scrypt key under different values of N on Apple M2 (mobi
 
 ##### argon2
 
+```ts
+import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2';
+const result = argon2id('password', 'salt', { t: 2, m: 65536, p: 1 });
+```
+
+Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
+
 > [!WARNING]
 > The implementation is a few times slower than native code.
 > While selecting "slow" params, they may not be slow for GPU password brute-forcer.
 > All other JS implementations are the same, because there are no fast u64 arrays.
 > We suggest to use [Scrypt](#scrypt) instead.
-
-Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
-
-```ts
-import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2';
-const result = argon2id('password', 'salt', { t: 2, m: 65536, p: 1 });
-```
 
 ##### utils
 
