@@ -1,13 +1,13 @@
 # noble-hashes
 
-Audited & minimal JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt & Argon2.
+Audited & minimal JS implementation of hash functions, MACs and KDFs.
 
 - 🔒 [**Audited**](#security) by an independent security firm
 - 🔻 Tree-shakeable: unused code is excluded from your builds
 - 🏎 Fast: hand-optimized for caveats of JS engines
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
-- 🦘 Includes KangarooTwelve
+- 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2 & KangarooTwelve
 - 🪶 89KB (17KB gzipped) for everything, 10KB (2.5KB gzipped) for single-hash build
 
 Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
