@@ -84,13 +84,12 @@ function executeKDFTests(limit = true) {
   should('PBKDF2(sha256) generator', async () => {
     const cases = genl({
       c: integer(1, 1024),
-      dkLen: integer(1, 1024),
+      dkLen: integer(1, 1024), // 0 disallowed in node v22
       pwd: bytes(0, 1024),
       salt: bytes(0, 1024),
     });
     for (let c of cases) {
-      // console.log('T', c);
-      // if (c.dkLen === 0) continue;
+      if (c.dkLen === 0) continue; // Disallowed in node v22
       const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(sha256, c.pwd, c.salt, opt), exp, `pbkdf2(sha256, ${opt})`);
@@ -109,8 +108,7 @@ function executeKDFTests(limit = true) {
       pwd: bytes(0, 1024),
       salt: bytes(0, 1024),
     });
-    for (let c of cases) {
-      // if (c.dkLen === 0) continue;
+    for (const c of cases) {
       const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha512'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(sha512, c.pwd, c.salt, opt), exp, `pbkdf2(sha512, ${opt})`);

@@ -25,10 +25,9 @@ const tupleData = (hex) => {
 };
 describe('sha3-addons', () => {
   should('cshake >4gb (GH-101)', () => {
-    //const big = new Uint8Array(536871912);
-    const rng = cshake128(new Uint8Array(), { dkLen: 536871912 + 1000 });
-    const S = rng.subarray(0, 536871912);
-    const data = rng.subarray(536871912);
+    const rng = cshake128(new Uint8Array(), { dkLen: 536_871_912 + 1000 });
+    const S = rng.subarray(0, 536_871_912);
+    const data = rng.subarray(536_871_912);
     const res = cshake128(data, { personalization: S, dkLen: 32 });
     assert.deepStrictEqual(
       bytesToHex(res),
