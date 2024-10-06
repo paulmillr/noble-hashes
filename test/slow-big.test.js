@@ -130,9 +130,7 @@ should('Scrypt (4GB)', async () => {
 // 27: 8ed4c994fab397a1c87c0f15ec810f0ca3ec8e9100bb3f49604a910527ad14df
 should('Scrypt (2**25)', async () => {
   const opts = { N: 2 ** 25, r: 2, p: 2 };
-  const exp = (
-    hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1')
-  );
+  const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
   const nobleOpts = { ...opts, maxmem: 9 * GB };
   assert.deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
   assert.deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
@@ -175,26 +173,20 @@ for (let i = 0; i < SCRYPT_CASES.length; i++) {
 
 // takes 5 min
 should('HKDF 4GB', () => {
-  const exp = (
-    hexToBytes('411cd96b5326af15c28c6f63e73c1f87b49e6cd0e21a0f7989a993d6d796e0dd')
-  );
+  const exp = hexToBytes('411cd96b5326af15c28c6f63e73c1f87b49e6cd0e21a0f7989a993d6d796e0dd');
   assert.deepStrictEqual(hkdf(sha512, ZERO_4GB, ZERO_4GB, ZERO_4GB, 32), exp);
 });
 
 should('HKDF 5GB', () => {
-  const exp = (
-    hexToBytes('b5f75ccb25f5e3e2f4b524e9cf99449aac9b03bd4d0ad4957d0e3d42583a77d4')
-  );
+  const exp = hexToBytes('b5f75ccb25f5e3e2f4b524e9cf99449aac9b03bd4d0ad4957d0e3d42583a77d4');
   assert.deepStrictEqual(hkdf(sha512, ZERO_5GB, ZERO_5GB, ZERO_5GB, 32), exp);
 });
 
 // takes 3min
 should('PBKDF2 pwd/salt 4GB', async () => {
   const opt = { dkLen: 64, c: 10 };
-  const exp = (
-    hexToBytes(
-      '58bf5b189082c9820b63d4eeb31c0d77efbc091b36856fff38032522e7e2f353d6781b0ba2bc0cbc50aa3896863803c61f907bcc3909b25b39e8f2f78174d4aa'
-    )
+  const exp = hexToBytes(
+    '58bf5b189082c9820b63d4eeb31c0d77efbc091b36856fff38032522e7e2f353d6781b0ba2bc0cbc50aa3896863803c61f907bcc3909b25b39e8f2f78174d4aa'
   );
   assert.deepStrictEqual(pbkdf2(sha512, ZERO_4GB, ZERO_4GB, opt), exp, `pbkdf2(${opt})`);
   assert.deepStrictEqual(
@@ -206,10 +198,8 @@ should('PBKDF2 pwd/salt 4GB', async () => {
 
 should('PBKDF2 pwd/salt 5GB', async () => {
   const opt = { dkLen: 64, c: 10 };
-  const exp = (
-    hexToBytes(
-      '1445d2aa24bf84d7f69269a7e088f7130b00901860de454415c947f0cb87ea892d84ccb1757e973a649d09f32f965f4aa223dba690c0cea0ef0359c325cd9501'
-    )
+  const exp = hexToBytes(
+    '1445d2aa24bf84d7f69269a7e088f7130b00901860de454415c947f0cb87ea892d84ccb1757e973a649d09f32f965f4aa223dba690c0cea0ef0359c325cd9501'
   );
   assert.deepStrictEqual(pbkdf2(sha512, ZERO_5GB, ZERO_5GB, opt), exp, `pbkdf2(${opt})`);
   assert.deepStrictEqual(
@@ -221,9 +211,7 @@ should('PBKDF2 pwd/salt 5GB', async () => {
 
 should('Scrypt pwd/salt 4GB', async () => {
   const opt = { N: 4, r: 4, p: 4, dkLen: 32 };
-  const exp = (
-    hexToBytes('00609885de3a56181c60f315c4ee65366368b01dd55efcd7923188597dc40912')
-  );
+  const exp = hexToBytes('00609885de3a56181c60f315c4ee65366368b01dd55efcd7923188597dc40912');
   assert.deepStrictEqual(scrypt(ZERO_4GB, ZERO_4GB, opt), exp, `scrypt(${opt})`);
   assert.deepStrictEqual(await scryptAsync(ZERO_4GB, ZERO_4GB, opt), exp, `scryptAsync(${opt})`);
 });
@@ -231,24 +219,18 @@ should('Scrypt pwd/salt 4GB', async () => {
 should('Scrypt pwd/salt 5GB', async () => {
   // This doesn't work in node, python: ~1.5h, noble: ~5min
   const opt = { N: 4, r: 4, p: 4, dkLen: 32 };
-  const exp = (
-    hexToBytes('0e49e31878f256302b581977f4f5b921cd9c53f3072b0b2948f5c6f53416cac7')
-  );
+  const exp = hexToBytes('0e49e31878f256302b581977f4f5b921cd9c53f3072b0b2948f5c6f53416cac7');
   assert.deepStrictEqual(scrypt(ZERO_5GB, ZERO_5GB, opt), exp, `scrypt(${opt})`);
   assert.deepStrictEqual(await scryptAsync(ZERO_5GB, ZERO_5GB, opt), exp, `scryptAsync(${opt})`);
 });
 
 should('Hmac 4GB', async () => {
-  const exp = (
-    hexToBytes('c5c39ec0ad91ddc3010d683b7e077aeedaba92fb7da17e367dbcf08e11aa25d1')
-  );
+  const exp = hexToBytes('c5c39ec0ad91ddc3010d683b7e077aeedaba92fb7da17e367dbcf08e11aa25d1');
   assert.deepStrictEqual(hmac(sha256, ZERO_4GB, ZERO_4GB), exp);
 });
 
 should('Hmac 5GB', async () => {
-  const exp = (
-    hexToBytes('669fbe7961b70cb36f9d5559e939c4303090991a270586c23f2e6c2b82d2a4af')
-  );
+  const exp = hexToBytes('669fbe7961b70cb36f9d5559e939c4303090991a270586c23f2e6c2b82d2a4af');
   assert.deepStrictEqual(hmac(sha256, ZERO_5GB, ZERO_5GB), exp);
 });
 // non parallel: 14h, parallel: ~1h
