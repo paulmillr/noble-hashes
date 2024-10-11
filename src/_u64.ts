@@ -1,7 +1,9 @@
 const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
 const _32n = /* @__PURE__ */ BigInt(32);
 
-// We are not using BigUint64Array, because they are extremely slow as per 2022
+// BigUint64Array is too slow as per 2024, so we implement it using Uint32Array. 
+// TODO: re-check https://issues.chromium.org/issues/42212588
+
 function fromBig(n: bigint, le = false) {
   if (le) return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
   return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
