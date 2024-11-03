@@ -39,12 +39,14 @@ const HASHES = {
     stablelib: (buf) => stable256.hash(buf),
     'fast-sha256': (buf) => fastsha256.hash(buf),
     noble: (buf) => sha256(buf),
+    webcrypto: (buf) => globalThis.crypto.subtle.digest('SHA-256', buf),
   },
   SHA384: {
     node: (buf) => crypto_createHash('sha384').update(buf).digest(),
     'crypto-browserify': (buf) => createHash('sha384').update(buf).digest(),
     stablelib: (buf) => stable2_384.hash(buf),
     noble: (buf) => sha384(buf),
+    webcrypto: (buf) => globalThis.crypto.subtle.digest('SHA-384', buf),
   },
   SHA512: {
     node: (buf) => crypto_createHash('sha512').update(buf).digest(),
@@ -52,6 +54,7 @@ const HASHES = {
     'crypto-browserify': (buf) => createHash('sha512').update(buf).digest(),
     stablelib: (buf) => stable2_512.hash(buf),
     noble: (buf) => sha512(buf),
+    webcrypto: (buf) => globalThis.crypto.subtle.digest('SHA-512', buf),
   },
   'SHA3-256, keccak256, shake256': {
     node: (buf) => crypto_createHash('sha3-256').update(buf).digest(),
@@ -90,6 +93,10 @@ const HASHES = {
     'crypto-browserify': (buf) => createHmac('sha256', buf).update(buf).digest(),
     stablelib: (buf) => new stableHmac.HMAC(stable256.SHA256, buf).update(buf).digest(),
     noble: (buf) => hmac(sha256, buf, buf),
+    webcrypto: async (buf) => {
+      const key = await globalThis.crypto.subtle.importKey('raw', buf, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      return await globalThis.crypto.subtle.sign('HMAC', key, buf);
+    },
   },
 };
 

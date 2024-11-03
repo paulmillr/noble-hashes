@@ -55,6 +55,10 @@ const KDF = {
     stablelib: (iters) => stablePBKDF2(stable256.SHA256, password, salt, iters, 32),
     noble: (iters) => pbkdf2(sha256, password, salt, { c: iters, dkLen: 32 }),
     'noble (async)': (iters) => pbkdf2Async(sha256, password, salt, { c: iters, dkLen: 32 }),
+    webcrypto: async (iters) => {
+      const key = await globalThis.crypto.subtle.importKey('raw', password, 'PBKDF2', false, ['deriveBits']);
+      return await globalThis.crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: salt, iterations: iters }, key, 32 * 8);
+    },
   },
   'PBKDF2-HMAC-SHA512': {
     node: (iters) => crypto.pbkdf2Sync(password, salt, iters, 64, 'sha512'),
@@ -70,6 +74,10 @@ const KDF = {
     stablelib: (iters) => stablePBKDF2(stable512.SHA512, password, salt, iters, 64),
     noble: (iters) => pbkdf2(sha512, password, salt, { c: iters, dkLen: 64 }),
     'noble (async)': (iters) => pbkdf2Async(sha512, password, salt, { c: iters, dkLen: 64 }),
+    webcrypto: async (iters) => {
+      const key = await globalThis.crypto.subtle.importKey('raw', password, 'PBKDF2', false, ['deriveBits']);
+      return await globalThis.crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-512', salt: salt, iterations: iters }, key, 64 * 8);
+    },
   },
   'Scrypt r: 8, p: 1, n:': {
     node: (iters) =>
