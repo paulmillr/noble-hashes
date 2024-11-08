@@ -420,8 +420,8 @@ console.log(toHex(sha256('abc'))); // ba7816bf8f01cfea414140de5dae2223b00361a396
 
 The library has been independently audited:
 
-- at version 1.0.0, in Jan 2022, by [cure53](https://cure53.de)
-  - PDFs: [online](https://cure53.de/pentest-report_hashing-libs.pdf), [offline, in-repo](./audit/2022-01-05-cure53-audit-nbl2.pdf)
+- at version 1.0.0, in Jan 2022, by [Cure53](https://cure53.de)
+  - PDFs: [website](https://cure53.de/pentest-report_hashing-libs.pdf), [in-repo](./audit/2022-01-05-cure53-audit-nbl2.pdf)
   - [Changes since audit](https://github.com/paulmillr/noble-hashes/compare/1.0.0..main).
   - Scope: everything, besides `blake3`, `sha3-addons`, `sha1` and `argon2`, which have not been audited
   - The audit has been funded by [Ethereum Foundation](https://ethereum.org/en/) with help of [Nomic Labs](https://nomiclabs.io)
