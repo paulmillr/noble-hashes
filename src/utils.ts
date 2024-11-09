@@ -11,9 +11,7 @@ import { bytes as abytes } from './_assert.js';
 // export { isBytes } from './_assert.js';
 // We can't reuse isBytes from _assert, because somehow this causes huge perf issues
 export function isBytes(a: unknown): a is Uint8Array {
-  return (
-    a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array')
-  );
+  return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
 }
 
 // prettier-ignore

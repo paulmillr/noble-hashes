@@ -8,9 +8,7 @@ function bool(b: boolean) {
 
 // copied from utils
 export function isBytes(a: unknown): a is Uint8Array {
-  return (
-    a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array')
-  );
+  return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
 }
 
 function bytes(b: Uint8Array | undefined, ...lengths: number[]) {
