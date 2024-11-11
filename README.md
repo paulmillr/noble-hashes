@@ -367,10 +367,9 @@ const result = argon2id('password', 'salt', { t: 2, m: 65536, p: 1 });
 Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 
 > [!WARNING]
-> The implementation is a few times slower than native code.
-> While selecting "slow" params, they may not be slow for GPU password brute-forcer.
-> All other JS implementations are the same, because there are no fast u64 arrays.
-> We suggest to use [Scrypt](#scrypt) instead.
+> Argon2 can't be fast in JS, because there is no fast Uint64Array.
+> It is suggested to use [Scrypt](#scrypt) instead.
+> Being 5x slower than native code means brute-forcing attackers have bigger advantage.
 
 #### utils
 
