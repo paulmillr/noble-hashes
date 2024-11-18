@@ -1,9 +1,8 @@
 const fs = require('fs');
 const zlib = require('zlib');
+const { bytesToHex, concatBytes, hexToBytes } = require('../utils.js');
 const utf8ToBytes = (str) => new TextEncoder().encode(str);
-const hexToBytes = (str) => Uint8Array.from(Buffer.from(str, 'hex'));
 const truncate = (buf, length) => (length ? buf.slice(0, length) : buf);
-const bytesToHex = (buf) => Buffer.from(buf).toString('hex');
 
 const repeat = (buf, len) => {
   // too slow: Uint8Array.from({ length: len * buf.length }, (_, i) => buf[i % buf.length]);
@@ -11,18 +10,6 @@ const repeat = (buf, len) => {
   for (let i = 0; i < len; i++) out.set(buf, i * buf.length);
   return out;
 };
-
-function concatBytes(...arrays) {
-  if (arrays.length === 1) return arrays[0];
-  const length = arrays.reduce((a, arr) => a + arr.length, 0);
-  const result = new Uint8Array(length);
-  for (let i = 0, pad = 0; i < arrays.length; i++) {
-    const arr = arrays[i];
-    result.set(arr, pad);
-    pad += arr.length;
-  }
-  return result;
-}
 
 // Everything except undefined, string, Uint8Array
 const TYPE_TEST_BASE = [
@@ -40,6 +27,7 @@ const TYPE_TEST_BASE = [
   new Int16Array([1, 2, 3]),
   new ArrayBuffer(100),
   new DataView(new ArrayBuffer(100)),
+  { constructor: { name: 'Uint8Array' }, length: '1e30' },
   () => {},
   async () => {},
   class Test {},
@@ -59,12 +47,21 @@ const TYPE_TEST_OPT = [
 
 const TYPE_TEST_NOT_BOOL = [false, true];
 const TYPE_TEST_NOT_BYTES = ['', 'test', '1', new Uint8Array([]), new Uint8Array([1, 2, 3])];
+const TYPE_TEST_NOT_STR = [
+  ' 1 2 3 4 5',
+  '010203040x',
+  'abcdefgh',
+  '1 2 3 4 5 ',
+  'bee',
+  new String('1234'),
+];
 const TYPE_TEST_NOT_INT = [-0.0, 0, 1];
 
 const TYPE_TEST = {
   int: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_BOOL).concat(TYPE_TEST_NOT_BYTES),
   bytes: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT).concat(TYPE_TEST_NOT_BOOL),
   boolean: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT).concat(TYPE_TEST_NOT_BYTES),
+  hex: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT, TYPE_TEST_NOT_BOOL, TYPE_TEST_NOT_STR),
   opts: TYPE_TEST_OPT,
   hash: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_BOOL)
     .concat(TYPE_TEST_NOT_INT)
@@ -113,9 +110,9 @@ module.exports = {
   utf8ToBytes,
   hexToBytes,
   bytesToHex,
+  concatBytes,
   truncate,
   repeat,
-  concatBytes,
   TYPE_TEST,
   SPACE: {
     str: ' ',
