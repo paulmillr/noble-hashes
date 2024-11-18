@@ -1,4 +1,4 @@
-const assert = require('assert');
+const { deepStrictEqual, rejects, throws } = require('assert');
 const { should } = require('micro-should');
 const { RANDOM } = require('./generator');
 const { HASHES } = require('./hashes.test');
@@ -86,7 +86,7 @@ async function isLinear(callback, iters = 128) {
   // Median of differences. Should be close to zero for linear functions (+/- some noise).
   const medianDifference = stats(stats(timings.map((i) => i)).difference).median;
   console.log({ medianDifference });
-  assert.deepStrictEqual(
+  deepStrictEqual(
     medianDifference < MARGIN,
     true,
     `medianDifference(${medianDifference}) should be less than ${MARGIN}`
@@ -108,7 +108,7 @@ should(
     console.log('Log10');
     await isLinear((buf) => log10(buf), 16);
     console.log('Quadratic');
-    await assert.rejects(() => isLinear((buf) => quadratic(buf), 16));
+    await rejects(() => isLinear((buf) => quadratic(buf), 16));
     // Function itself is linear if we look on password/salt only, but there is quadratic relation
     // between salt / pass length and iterations which makes function quadratic if we look at all inputs.
     // Correct function should have time complexity like:
@@ -116,7 +116,7 @@ should(
     // However this implementation has time complexity like:
     // (C1*N) * (C2*M) which is quadratic
     console.log('PBKDF2 with DOS support');
-    await assert.rejects(() => isLinear((buf) => pbkdf2DOS(sha256, buf, buf, buf.length), 16));
+    await rejects(() => isLinear((buf) => pbkdf2DOS(sha256, buf, buf, buf.length), 16));
   })
 );
 
@@ -141,7 +141,7 @@ function pbkdf2DOS(hash, password, salt, c) {
 should('DoS: pbkdfDOS returns correct result', () => {
   const password = new Uint8Array([1, 2, 3]);
   const salt = new Uint8Array([4, 5, 6]);
-  assert.deepStrictEqual(
+  deepStrictEqual(
     pbkdf2(sha256, password, salt, { dkLen: 32, c: 1024 }),
     pbkdf2DOS(sha256, password, salt, 1024)
   );

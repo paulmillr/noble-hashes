@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const { createHash, hkdfSync, pbkdf2Sync } = require('crypto');
 const assert = require('assert');
 const { should } = require('micro-should');
 const { sha256 } = require('../sha256');
@@ -14,7 +14,7 @@ let start = new Uint8Array([1, 2, 3, 4, 5]);
 let RANDOM = new Uint8Array();
 // Fill with random data (1MB)
 for (let i = 0; i < 32 * 1024; i++)
-  RANDOM = concatBytes(RANDOM, (start = crypto.createHash('sha256').update(start).digest()));
+  RANDOM = concatBytes(RANDOM, (start = createHash('sha256').update(start).digest()));
 
 const optional = (val) => [undefined, ...val];
 const integer = (start, end) => Array.from({ length: end - start }, (_, j) => start + j);
@@ -70,7 +70,7 @@ function executeKDFTests(limit = true) {
     });
     for (let c of cases) {
       const exp = new Uint8Array( // returns ArrayBuffer
-        crypto.hkdfSync(
+        hkdfSync(
           'sha256',
           c.ikm,
           c.salt || new Uint8Array(32), // nodejs doesn't support optional salt
@@ -90,7 +90,7 @@ function executeKDFTests(limit = true) {
     });
     for (let c of cases) {
       if (c.dkLen === 0) continue; // Disallowed in node v22
-      const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
+      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(sha256, c.pwd, c.salt, opt), exp, `pbkdf2(sha256, ${opt})`);
       assert.deepStrictEqual(
@@ -109,7 +109,7 @@ function executeKDFTests(limit = true) {
       salt: bytes(0, 1024),
     });
     for (const c of cases) {
-      const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha512'));
+      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha512'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(sha512, c.pwd, c.salt, opt), exp, `pbkdf2(sha512, ${opt})`);
       assert.deepStrictEqual(
@@ -128,7 +128,7 @@ function executeKDFTests(limit = true) {
       salt: bytes(0, 1024),
     });
     for (let c of cases) {
-      const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-256'));
+      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-256'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(sha3_256, c.pwd, c.salt, opt), exp, `pbkdf2(sha3_256, ${opt})`);
       assert.deepStrictEqual(
@@ -147,7 +147,7 @@ function executeKDFTests(limit = true) {
       salt: bytes(0, 1024),
     });
     for (let c of cases) {
-      const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-512'));
+      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-512'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(sha3_512, c.pwd, c.salt, opt), exp, `pbkdf2(sha3_512, ${opt})`);
       assert.deepStrictEqual(
@@ -167,7 +167,7 @@ function executeKDFTests(limit = true) {
   //     salt: bytes(0, 1024),
   //   });
   //   for (let c of cases) {
-  //     const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
+  //     const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
   //     const opt = { c: c.c, dkLen: c.dkLen };
   //     assert.deepStrictEqual(
   //       pbkdf2(ripemd160, c.pwd, c.salt, opt),
@@ -190,7 +190,7 @@ function executeKDFTests(limit = true) {
       salt: bytes(0, 1024),
     });
     for (let c of cases) {
-      const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2s256'));
+      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2s256'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(blake2s, c.pwd, c.salt, opt), exp, `pbkdf2(blake2s, ${opt})`);
       assert.deepStrictEqual(
@@ -209,7 +209,7 @@ function executeKDFTests(limit = true) {
       salt: bytes(0, 1024),
     });
     for (let c of cases) {
-      const exp = Uint8Array.from(crypto.pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2b512'));
+      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2b512'));
       const opt = { c: c.c, dkLen: c.dkLen };
       assert.deepStrictEqual(pbkdf2(blake2b, c.pwd, c.salt, opt), exp, `pbkdf2(blake2b, ${opt})`);
       assert.deepStrictEqual(

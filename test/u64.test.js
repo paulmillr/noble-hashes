@@ -1,4 +1,4 @@
-const assert = require('assert');
+const { deepStrictEqual } = require('assert');
 const { should } = require('micro-should');
 const u64 = require('../_u64');
 
@@ -19,7 +19,7 @@ should('shr_small', () => {
   for (let i = 0; i < 32; i++) {
     const h = u64.shrSH(val[0], val[1], i);
     const l = u64.shrSL(val[0], val[1], i);
-    assert.deepStrictEqual((big >> BigInt(i)) & U64_MASK, u64.toBig(h, l));
+    deepStrictEqual((big >> BigInt(i)) & U64_MASK, u64.toBig(h, l));
   }
 });
 
@@ -29,7 +29,7 @@ should('shr_small', () => {
 //   for (let i = 32; i < 64; i++) {
 //     const h = u64.shrBH(val[0], val[1], i);
 //     const l = u64.shrBL(val[0], val[1], i);
-//     assert.deepStrictEqual((big >> BigInt(i)) & U64_MASK, u64.toBig(h, l));
+//     deepStrictEqual((big >> BigInt(i)) & U64_MASK, u64.toBig(h, l));
 //   }
 // });
 
@@ -39,7 +39,7 @@ should('rotr_small', () => {
   for (let i = 1; i < 32; i++) {
     const h = u64.rotrSH(val[0], val[1], i);
     const l = u64.rotrSL(val[0], val[1], i);
-    assert.deepStrictEqual(rotate_right(big, BigInt(i)), u64.toBig(h, l));
+    deepStrictEqual(rotate_right(big, BigInt(i)), u64.toBig(h, l));
   }
 });
 
@@ -48,7 +48,7 @@ should('rotr32', () => {
   const big = u64.toBig(...val);
   const h = u64.rotr32H(val[0], val[1], 32);
   const l = u64.rotr32L(val[0], val[1], 32);
-  assert.deepStrictEqual(rotate_right(big, BigInt(32)), u64.toBig(h, l));
+  deepStrictEqual(rotate_right(big, BigInt(32)), u64.toBig(h, l));
 });
 
 should('rotr_big', () => {
@@ -57,7 +57,7 @@ should('rotr_big', () => {
   for (let i = 33; i < 64; i++) {
     const h = u64.rotrBH(val[0], val[1], i);
     const l = u64.rotrBL(val[0], val[1], i);
-    assert.deepStrictEqual(rotate_right(big, BigInt(i)), u64.toBig(h, l));
+    deepStrictEqual(rotate_right(big, BigInt(i)), u64.toBig(h, l));
   }
 });
 
@@ -67,7 +67,7 @@ should('rotl small', () => {
   for (let i = 1; i < 32; i++) {
     const h = u64.rotlSH(val[0], val[1], i);
     const l = u64.rotlSL(val[0], val[1], i);
-    assert.deepStrictEqual(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
+    deepStrictEqual(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
   }
 });
 
@@ -77,7 +77,7 @@ should('rotl big', () => {
   for (let i = 33; i < 64; i++) {
     const h = u64.rotlBH(val[0], val[1], i);
     const l = u64.rotlBL(val[0], val[1], i);
-    assert.deepStrictEqual(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
+    deepStrictEqual(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
   }
 });
 

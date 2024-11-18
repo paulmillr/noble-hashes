@@ -1,6 +1,6 @@
-const assert = require('assert');
+const { deepStrictEqual, throws } = require('assert');
 const { describe, should } = require('micro-should');
-const crypto = require('crypto');
+const { createHash, createHmac } = require('crypto');
 const { sha224, sha256 } = require('../sha256');
 const { sha384, sha512, sha512_224, sha512_256 } = require('../sha512');
 const {
@@ -53,8 +53,8 @@ const HASHES = {
   SHA1: {
     fn: sha1,
     obj: sha1.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha1').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha1'),
+    node: (buf) => Uint8Array.from(createHash('sha1').update(buf).digest()),
+    node_obj: () => createHash('sha1'),
     nist: [
       'a9993e36 4706816a ba3e2571 7850c26c 9cd0d89d',
       'da39a3ee 5e6b4b0d 3255bfef 95601890 afd80709',
@@ -67,8 +67,8 @@ const HASHES = {
   SHA224: {
     fn: sha224,
     obj: sha224.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha224').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha224'),
+    node: (buf) => Uint8Array.from(createHash('sha224').update(buf).digest()),
+    node_obj: () => createHash('sha224'),
     nist: [
       '23097d22 3405d822 8642a477 bda255b3 2aadbce4 bda0b3f7 e36c9da7',
       'd14a028c 2a3a2bc9 476102bb 288234c4 15a2b01f 828ea62a c5b3e42f',
@@ -81,8 +81,8 @@ const HASHES = {
   SHA256: {
     fn: sha256,
     obj: sha256.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha256').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha256'),
+    node: (buf) => Uint8Array.from(createHash('sha256').update(buf).digest()),
+    node_obj: () => createHash('sha256'),
     nist: [
       'ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad',
       'e3b0c442 98fc1c14 9afbf4c8 996fb924 27ae41e4 649b934c a495991b 7852b855',
@@ -95,8 +95,8 @@ const HASHES = {
   SHA384: {
     fn: sha384,
     obj: sha384.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha384').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha384'),
+    node: (buf) => Uint8Array.from(createHash('sha384').update(buf).digest()),
+    node_obj: () => createHash('sha384'),
     nist: [
       'cb00753f45a35e8b b5a03d699ac65007 272c32ab0eded163 1a8b605a43ff5bed 8086072ba1e7cc23 58baeca134c825a7',
       '38b060a751ac9638 4cd9327eb1b1e36a 21fdb71114be0743 4c0cc7bf63f6e1da 274edebfe76f65fb d51ad2f14898b95b',
@@ -109,8 +109,8 @@ const HASHES = {
   SHA512: {
     fn: sha512,
     obj: sha512.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha512').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha512'),
+    node: (buf) => Uint8Array.from(createHash('sha512').update(buf).digest()),
+    node_obj: () => createHash('sha512'),
     nist: [
       'ddaf35a193617aba cc417349ae204131 12e6fa4e89a97ea2 0a9eeee64b55d39a 2192992a274fc1a8 36ba3c23a3feebbd 454d4423643ce80e 2a9ac94fa54ca49f',
       'cf83e1357eefb8bd f1542850d66d8007 d620e4050b5715dc 83f4a921d36ce9ce 47d0d13c5d85f2b0 ff8318d2877eec2f 63b931bd47417a81 a538327af927da3e',
@@ -123,8 +123,8 @@ const HASHES = {
   SHA384: {
     fn: sha384,
     obj: sha384.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha384').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha384'),
+    node: (buf) => Uint8Array.from(createHash('sha384').update(buf).digest()),
+    node_obj: () => createHash('sha384'),
     nist: [
       'cb00753f45a35e8b b5a03d699ac65007 272c32ab0eded163 1a8b605a43ff5bed 8086072ba1e7cc23 58baeca134c825a7',
       '38b060a751ac9638 4cd9327eb1b1e36a 21fdb71114be0743 4c0cc7bf63f6e1da 274edebfe76f65fb d51ad2f14898b95b',
@@ -137,10 +137,10 @@ const HASHES = {
   SHA512_224: {
     fn: sha512_224,
     obj: sha512_224.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha512-224').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha512-224'),
+    node: (buf) => Uint8Array.from(createHash('sha512-224').update(buf).digest()),
+    node_obj: () => createHash('sha512-224'),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHash('sha512-256').update(i[2]).digest('hex'))
+    // > NIST_VECTORS.map((i) => createHash('sha512-256').update(i[2]).digest('hex'))
     nist: [
       '4634270f707b6a54daae7530460842e20e37ed265ceee9a43e8924aa',
       '6ed0dd02806fa89e25de060c19d3ac86cabb87d6a0ddd05c333b84f4',
@@ -152,10 +152,10 @@ const HASHES = {
   SHA512_256: {
     fn: sha512_256,
     obj: sha512_256.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha512-256').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha512-256'),
+    node: (buf) => Uint8Array.from(createHash('sha512-256').update(buf).digest()),
+    node_obj: () => createHash('sha512-256'),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHash('sha512-256').update(i[2]).digest('hex'))
+    // > NIST_VECTORS.map((i) => createHash('sha512-256').update(i[2]).digest('hex'))
     nist: [
       '53048e2681941ef99b2e29b76b4c7dabe4c2d0c634fc6d46e0e2f13107e7af23',
       'c672b8d1ef56ed28ab87c3622c5114069bdd3ad7b8f9737498d0c01ecef0967a',
@@ -167,8 +167,8 @@ const HASHES = {
   SHA3_224: {
     fn: sha3_224,
     obj: sha3_224.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha3-224').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha3-224'),
+    node: (buf) => Uint8Array.from(createHash('sha3-224').update(buf).digest()),
+    node_obj: () => createHash('sha3-224'),
     nist: [
       'e642824c3f8cf24a d09234ee7d3c766f c9a3a5168d0c94ad 73b46fdf',
       '6b4e03423667dbb7 3b6e15454f0eb1ab d4597f9a1b078e3f 5b5a6bc7',
@@ -181,8 +181,8 @@ const HASHES = {
   SHA3_256: {
     fn: sha3_256,
     obj: sha3_256.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha3-256').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha3-256'),
+    node: (buf) => Uint8Array.from(createHash('sha3-256').update(buf).digest()),
+    node_obj: () => createHash('sha3-256'),
     nist: [
       '3a985da74fe225b2 045c172d6bd390bd 855f086e3e9d525b 46bfe24511431532',
       'a7ffc6f8bf1ed766 51c14756a061d662 f580ff4de43b49fa 82d80a4b80f8434a',
@@ -195,8 +195,8 @@ const HASHES = {
   SHA3_384: {
     fn: sha3_384,
     obj: sha3_384.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha3-384').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha3-384'),
+    node: (buf) => Uint8Array.from(createHash('sha3-384').update(buf).digest()),
+    node_obj: () => createHash('sha3-384'),
     nist: [
       'ec01498288516fc9 26459f58e2c6ad8d f9b473cb0fc08c25 96da7cf0e49be4b2 98d88cea927ac7f5 39f1edf228376d25',
       '0c63a75b845e4f7d 01107d852e4c2485 c51a50aaaa94fc61 995e71bbee983a2a c3713831264adb47 fb6bd1e058d5f004',
@@ -209,8 +209,8 @@ const HASHES = {
   SHA3_512: {
     fn: sha3_512,
     obj: sha3_512.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('sha3-512').update(buf).digest()),
-    node_obj: () => crypto.createHash('sha3-512'),
+    node: (buf) => Uint8Array.from(createHash('sha3-512').update(buf).digest()),
+    node_obj: () => createHash('sha3-512'),
     nist: [
       'b751850b1a57168a 5693cd924b6b096e 08f621827444f70d 884f5d0240d2712e 10e116e9192af3c9 1a7ec57647e39340 57340b4cf408d5a5 6592f8274eec53f0',
       'a69f73cca23a9ac5 c8b567dc185a756e 97c982164fe25859 e0d1dcc1475c80a6 15b2123af1f5f94c 11e3e9402c3ac558 f500199d95b6d3e3 01758586281dcd26',
@@ -223,10 +223,10 @@ const HASHES = {
   SHAKE128: {
     fn: shake128,
     obj: shake128.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('shake128').update(buf).digest()),
-    node_obj: () => crypto.createHash('shake128'),
+    node: (buf) => Uint8Array.from(createHash('shake128').update(buf).digest()),
+    node_obj: () => createHash('shake128'),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHash('shake128').update(i[2]).digest('hex'))
+    // > NIST_VECTORS.map((i) => createHash('shake128').update(i[2]).digest('hex'))
     nist: [
       '5881092dd818bf5cf8a3ddb793fbcba7',
       '7f9c2ba4e88f827d616045507605853e',
@@ -238,10 +238,10 @@ const HASHES = {
   SHAKE256: {
     fn: shake256,
     obj: shake256.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('shake256').update(buf).digest()),
-    node_obj: () => crypto.createHash('shake256'),
+    node: (buf) => Uint8Array.from(createHash('shake256').update(buf).digest()),
+    node_obj: () => createHash('shake256'),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHash('shake256').update(i[2]).digest('hex'))
+    // > NIST_VECTORS.map((i) => createHash('shake256').update(i[2]).digest('hex'))
     nist: [
       '483366601360a8771c6863080cc4114d8db44530f8f1e1ee4f94ea37e78b5739',
       '46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762f',
@@ -286,10 +286,10 @@ const HASHES = {
   BLAKE2s: {
     fn: blake2s,
     obj: blake2s.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('blake2s256').update(buf).digest()),
-    node_obj: () => crypto.createHash('blake2s256'),
+    node: (buf) => Uint8Array.from(createHash('blake2s256').update(buf).digest()),
+    node_obj: () => createHash('blake2s256'),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHash('blake2s256').update(i[2]).digest('hex'))
+    // > NIST_VECTORS.map((i) => createHash('blake2s256').update(i[2]).digest('hex'))
     nist: [
       '508c5e8c327c14e2e1a72ba34eeb452f37458b209ed63a294d999b4c86675982',
       '69217a3079908094e11121d042354a7c1f55b6482ca1a51e1b250dfd1ed0eef9',
@@ -301,10 +301,10 @@ const HASHES = {
   BLAKE2b: {
     fn: blake2b,
     obj: blake2b.create,
-    node: (buf) => Uint8Array.from(crypto.createHash('blake2b512').update(buf).digest()),
-    node_obj: () => crypto.createHash('blake2b512'),
+    node: (buf) => Uint8Array.from(createHash('blake2b512').update(buf).digest()),
+    node_obj: () => createHash('blake2b512'),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHash('blake2b512').update(i[2]).digest('hex'))
+    // > NIST_VECTORS.map((i) => createHash('blake2b512').update(i[2]).digest('hex'))
     nist: [
       'ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923',
       '786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce',
@@ -351,10 +351,10 @@ const HASHES = {
     fn: ripemd160,
     obj: ripemd160.create,
     // Node.js 18 dropped support for RIPEMD160
-    // node: (buf) => Uint8Array.from(crypto.createHash('ripemd160').update(buf).digest()),
-    // node_obj: () => crypto.createHash('ripemd160'),
+    // node: (buf) => Uint8Array.from(createHash('ripemd160').update(buf).digest()),
+    // node_obj: () => createHash('ripemd160'),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHash('ripemd160').update(i[2]).digest().toString('hex'))
+    // > NIST_VECTORS.map((i) => createHash('ripemd160').update(i[2]).digest().toString('hex'))
     // Matched against some vectors from https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
     nist: [
       '8eb208f7e05d987a9b044a8e98c6b087f15a0bfc',
@@ -368,11 +368,10 @@ const HASHES = {
   'HMAC-SHA256': {
     fn: hmac.bind(null, sha256, new Uint8Array()),
     obj: hmac.create.bind(null, sha256, new Uint8Array()),
-    node: (buf) =>
-      Uint8Array.from(crypto.createHmac('sha256', new Uint8Array()).update(buf).digest()),
-    node_obj: () => crypto.createHmac('sha256', new Uint8Array()),
+    node: (buf) => Uint8Array.from(createHmac('sha256', new Uint8Array()).update(buf).digest()),
+    node_obj: () => createHmac('sha256', new Uint8Array()),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHmac('sha256', new Uint8Array()).update(i[2]).digest().toString('hex'))
+    // > NIST_VECTORS.map((i) => createHmac('sha256', new Uint8Array()).update(i[2]).digest().toString('hex'))
     nist: [
       'fd7adb152c05ef80dccf50a1fa4c05d5a3ec6da95575fc312ae7c5d091836351',
       'b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad',
@@ -384,11 +383,10 @@ const HASHES = {
   'HMAC-SHA512': {
     fn: hmac.bind(null, sha512, new Uint8Array()),
     obj: hmac.create.bind(null, sha512, new Uint8Array()),
-    node: (buf) =>
-      Uint8Array.from(crypto.createHmac('sha512', new Uint8Array()).update(buf).digest()),
-    node_obj: () => crypto.createHmac('sha512', new Uint8Array()),
+    node: (buf) => Uint8Array.from(createHmac('sha512', new Uint8Array()).update(buf).digest()),
+    node_obj: () => createHmac('sha512', new Uint8Array()),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => crypto.createHmac('sha512', new Uint8Array()).update(i[2]).digest().toString('hex'))
+    // > NIST_VECTORS.map((i) => createHmac('sha512', new Uint8Array()).update(i[2]).digest().toString('hex'))
     nist: [
       '29689f6b79a8dd686068c2eeae97fd8769ad3ba65cb5381f838358a8045a358ee3ba1739c689c7805e31734fb6072f87261d1256995370d55725cba00d10bdd0',
       'b936cee86c9f87aa5d3c6f2e84cb5a4239a5fe50480a6ec66b70ab5b1f4ac6730c6c515421b327ec1d69402e53dfb49ad7381eb067b338fd7b0cb22247225d47',
@@ -402,7 +400,7 @@ const HASHES = {
 let BUF_768 = new Uint8Array(256 * 3);
 // Fill with random data
 for (let i = 0; i < (256 * 3) / 32; i++)
-  BUF_768.set(crypto.createHash('sha256').update(new Uint8Array(i)).digest(), i * 32);
+  BUF_768.set(createHash('sha256').update(new Uint8Array(i)).digest(), i * 32);
 
 function init() {
   for (const h in HASHES) {
@@ -414,14 +412,14 @@ function init() {
         for (let i = 0; i < NIST_VECTORS.length; i++) {
           if (!NIST_VECTORS[i]) continue;
           const [r, rbuf, buf] = NIST_VECTORS[i];
-          assert.deepStrictEqual(
+          deepStrictEqual(
             hash.obj().update(buf).digest(),
             hexToBytes(hash.nist[i].replace(/ /g, '')),
             `vector ${i}`
           );
           const tmp = hash.obj();
           for (let j = 0; j < r; j++) tmp.update(rbuf);
-          assert.deepStrictEqual(
+          deepStrictEqual(
             tmp.digest(),
             hexToBytes(hash.nist[i].replace(/ /g, '')),
             `partial vector ${i}`
@@ -430,45 +428,42 @@ function init() {
       });
       should(`accept string`, () => {
         const tmp = hash.obj().update('abc').digest();
-        assert.deepStrictEqual(tmp, hexToBytes(hash.nist[0].replace(/ /g, '')));
+        deepStrictEqual(tmp, hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
       should(`accept data in compact call form (string)`, () => {
-        assert.deepStrictEqual(hash.fn('abc'), hexToBytes(hash.nist[0].replace(/ /g, '')));
+        deepStrictEqual(hash.fn('abc'), hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
       should(`accept data in compact call form (Uint8Array)`, () => {
-        assert.deepStrictEqual(
-          hash.fn(utf8ToBytes('abc')),
-          hexToBytes(hash.nist[0].replace(/ /g, ''))
-        );
+        deepStrictEqual(hash.fn(utf8ToBytes('abc')), hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
       should(`throw on update after digest`, () => {
         const tmp = hash.obj();
         tmp.update('abc').digest();
-        assert.throws(() => tmp.update('abc'));
+        throws(() => tmp.update('abc'));
       });
       should(`throw on second digest call in cleanup mode`, () => {
         const tmp = hash.obj();
         tmp.update('abc').digest();
-        assert.throws(() => tmp.digest());
+        throws(() => tmp.digest());
       });
       should(`throw on wrong argument type`, () => {
         // Allowed only: undefined (for compact form only), string, Uint8Array
         for (const t of TYPE_TEST.bytes) {
-          assert.throws(() => hash.fn(t), `compact(${t})`);
-          assert.throws(() => hash.obj().update(t).digest(), `full(${t})`);
+          throws(() => hash.fn(t), `compact(${t})`);
+          throws(() => hash.obj().update(t).digest(), `full(${t})`);
         }
-        assert.throws(() => hash.fn(), `compact(undefined)`);
-        assert.throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
-        for (const t of TYPE_TEST.opts) assert.throws(() => hash.fn(undefined, t), `opt(${t})`);
+        throws(() => hash.fn(), `compact(undefined)`);
+        throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
+        for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), `opt(${t})`);
       });
       should(`check types`, () => {
-        assert.deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
-        assert.deepStrictEqual(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));
-        assert.deepStrictEqual(
+        deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
+        deepStrictEqual(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));
+        deepStrictEqual(
           hash.obj().update(SPACE.str).digest(),
           hash.obj().update(SPACE.bytes).digest()
         );
-        assert.deepStrictEqual(
+        deepStrictEqual(
           hash.obj().update(EMPTY.str).digest(),
           hash.obj().update(EMPTY.bytes).digest()
         );
@@ -481,8 +476,8 @@ function init() {
           for (let j = 0; j < 256; j++) {
             let b2 = BUF_768.subarray(i, i + j);
             let b3 = BUF_768.subarray(i + j);
-            assert.deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
-            assert.deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
+            deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
+            deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
           }
         }
       });
@@ -495,15 +490,15 @@ function init() {
           for (let j = 0; j < 256; j++) {
             let b2 = BUF_768.subarray(i, i + j).slice();
             let b3 = BUF_768.subarray(i + j).slice();
-            assert.deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
-            assert.deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
+            deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
+            deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
           }
         }
       });
       if (hash.node) {
         should(`node.js cross-test`, () => {
           for (let i = 0; i < testBuf.length; i++) {
-            assert.deepStrictEqual(
+            deepStrictEqual(
               hash.obj().update(testBuf.subarray(0, i)).digest(),
               hash.node(testBuf.subarray(0, i))
             );
@@ -516,11 +511,11 @@ function init() {
           for (let i = 0; i < 256; i++) {
             nodeH = hash.node(nodeH);
             nobleH = hash.fn(nobleH);
-            assert.deepStrictEqual(nodeH, nobleH);
+            deepStrictEqual(nodeH, nobleH);
           }
         });
         should(`node.js cross-test partial`, () => {
-          assert.deepStrictEqual(hash.fn(BUF_768), hash.node(BUF_768));
+          deepStrictEqual(hash.fn(BUF_768), hash.node(BUF_768));
         });
       }
     });

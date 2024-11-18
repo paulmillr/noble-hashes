@@ -1,6 +1,5 @@
-const assert = require('assert');
-const crypto = require('crypto');
-const { should } = require('micro-should');
+const { deepStrictEqual, throws, rejects } = require('assert');
+const { should, describe } = require('micro-should');
 const { sha256 } = require('../sha256');
 const { sha512 } = require('../sha512');
 const { extract: hkdf_extract, hkdf } = require('../hkdf');
@@ -168,182 +167,176 @@ const PBKDF2_VECTORS = [
   },
 ];
 
-for (let i = 0; i < HKDF_VECTORS.length; i++) {
-  const t = HKDF_VECTORS[i];
-  should(`HKDF vector (${i})`, () => {
-    const PRK = hkdf_extract(t.hash, t.IKM, t.salt);
-    assert.deepStrictEqual(PRK, t.PRK);
-    const OKM = hkdf(t.hash, t.IKM, t.salt, t.info, t.L);
-    assert.deepStrictEqual(OKM, t.OKM);
-    assert.deepStrictEqual(hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: true }), t.OKM);
-    assert.deepStrictEqual(hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: false }), t.OKM);
-  });
-}
+describe('hkdf', () => {
+  for (let i = 0; i < HKDF_VECTORS.length; i++) {
+    const t = HKDF_VECTORS[i];
+    should(`HKDF vector (${i})`, () => {
+      const PRK = hkdf_extract(t.hash, t.IKM, t.salt);
+      deepStrictEqual(PRK, t.PRK);
+      const OKM = hkdf(t.hash, t.IKM, t.salt, t.info, t.L);
+      deepStrictEqual(OKM, t.OKM);
+      deepStrictEqual(hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: true }), t.OKM);
+      deepStrictEqual(hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: false }), t.OKM);
+    });
+  }
 
-for (let i = 0; i < SCRYPT_VECTORS.length; i++) {
-  const t = SCRYPT_VECTORS[i];
-  should(`Scrypt vector (${i})`, async () => {
-    const exp = hexToBytes(t.exp.replace(/ /g, ''));
-    assert.deepStrictEqual(scrypt(t.P, t.S, t), exp);
-    assert.deepStrictEqual(await scryptAsync(t.P, t.S, t), exp);
-    assert.deepStrictEqual(scrypt(t.P, t.S, { ...t, cleanup: true }), exp);
-    assert.deepStrictEqual(await scryptAsync(t.P, t.S, { ...t, cleanup: true }), exp);
-    assert.deepStrictEqual(scrypt(t.P, t.S, { ...t, cleanup: false }), exp);
-    assert.deepStrictEqual(await scryptAsync(t.P, t.S, { ...t, cleanup: false }), exp);
-  });
-}
+  should('HKDF types', () => {
+    hkdf(sha256, '', '', '', 32);
+    hkdf(sha256, '', '', '', 8160);
+    throws(() => hkdf(sha256, '', '', '', 8160 + 1), `hkdf.dkLen(8160 + 1)`);
+    hkdf(sha512, '', '', '', 16320);
+    throws(() => hkdf(sha512, '', '', '', 16320 + 1), `hkdf.dkLen(16320 + 1)`);
+    for (const t of TYPE_TEST.int) {
+      throws(() => hkdf(sha256, '', '', '', t), `hkdf.dkLen(${t})`);
+    }
+    for (const t of TYPE_TEST.bytes) {
+      throws(() => hkdf(sha256, t, '', '', 32), `hkdf.ikm(${t})`);
+      throws(() => hkdf(sha256, '', t, '', 32), `hkdf.salt(${t})`);
+      throws(() => hkdf(sha256, '', '', t, 32), `hkdf.info(${t})`);
+    }
+    // for (const t of TYPE_TEST.opts)
+    //   throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${t})`);
+    throws(() => hkdf(sha256, undefined, '', '', 32), 'hkdf.ikm===undefined');
+    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, '', '', '', 32), `hkdf(hash=${t})`);
 
-for (let i = 0; i < PBKDF2_VECTORS.length; i++) {
-  const t = PBKDF2_VECTORS[i];
-  should(`PBKDF2 vector (${i})`, async () => {
-    const exp = hexToBytes(t.exp.replace(/ /g, ''));
-    assert.deepStrictEqual(pbkdf2(t.hash, t.P, t.S, t), exp);
-    assert.deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, t), exp);
-    assert.deepStrictEqual(pbkdf2(t.hash, t.P, t.S, { ...t, cleanup: true }), exp);
-    assert.deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, { ...t, cleanup: true }), exp);
-    assert.deepStrictEqual(pbkdf2(t.hash, t.P, t.S, { ...t, cleanup: false }), exp);
-    assert.deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, { ...t, cleanup: false }), exp);
+    deepStrictEqual(
+      hkdf(sha256, SPACE.str, SPACE.str, SPACE.str),
+      hkdf(sha256, SPACE.bytes, SPACE.bytes, SPACE.bytes),
+      'hkdf.SPACE'
+    );
+    deepStrictEqual(
+      hkdf(sha256, EMPTY.str, EMPTY.str, EMPTY.str),
+      hkdf(sha256, EMPTY.bytes, EMPTY.bytes, EMPTY.bytes),
+      'hkdf.EMPTY'
+    );
   });
-}
-
-should('PBKDF2 types', async () => {
-  const opts = { c: 10, dkLen: 32 };
-  pbkdf2(sha256, 'pwd', 'salt', opts);
-  assert.throws(() => pbkdf2(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }), `pbkdf2(c=0)`);
-  await assert.rejects(
-    () => pbkdf2Async(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }),
-    `pbkdf2(c=0)`
-  );
-  for (const t of TYPE_TEST.int) {
-    assert.throws(() => pbkdf2(sha256, 'pwd', 'salt', { ...opts, c: t }), `pbkdf2(c=${t})`);
-    await assert.rejects(
-      () => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, c: t }),
-      `pbkdf2(c=${t})`
-    );
-    assert.throws(() => pbkdf2(sha256, 'pwd', 'salt', { ...opts, dkLen: t }), `pbkdf2(dkLen=${t})`);
-    await assert.rejects(
-      () => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, dkLen: t }),
-      `pbkdf2(dkLen=${t})`
-    );
-    await assert.rejects(
-      () => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, asyncTick: t }),
-      `pbkdf2(asyncTick=${t})`
-    );
-  }
-  for (const t of TYPE_TEST.bytes.concat([undefined])) {
-    assert.throws(() => pbkdf2(sha256, t, 'salt', opts), `pbkdf2(pwd=${t})`);
-    await assert.rejects(() => pbkdf2Async(sha256, t, 'salt', opts), `pbkdf2(pwd=${t})`);
-    assert.throws(() => pbkdf2(sha256, 'pwd', t, opts), `pbkdf2(salt=${t})`);
-    await assert.rejects(() => pbkdf2Async(sha256, 'pwd', t, opts), `pbkdf2(salt=${t})`);
-  }
-  for (const t of TYPE_TEST.opts) {
-    assert.throws(() => pbkdf2(sha256, 'pwd', 'salt', t), `pbkdf2(opt=${t})`);
-    await assert.rejects(() => pbkdf2Async(sha256, 'pwd', 'salt', t), `pbkdf2(opt=${t})`);
-  }
-  for (const t of TYPE_TEST.hash) {
-    assert.throws(() => pbkdf2(t, 'pwd', 'salt', t), `pbkdf2(hash=${t})`);
-    await assert.rejects(() => pbkdf2Async(t, 'pwd', 'salt', t), `pbkdf2(hash=${t})`);
-  }
-  assert.deepStrictEqual(
-    pbkdf2(sha256, SPACE.str, SPACE.str, opts),
-    pbkdf2(sha256, SPACE.bytes, SPACE.bytes, opts),
-    'pbkdf2.SPACE'
-  );
-  assert.deepStrictEqual(
-    pbkdf2(sha256, EMPTY.str, EMPTY.str, opts),
-    pbkdf2(sha256, EMPTY.bytes, EMPTY.bytes, opts),
-    'pbkdf2.EMPTY'
-  );
 });
 
-should('Scrypt types', async () => {
-  const opt = { N: 1024, r: 8, p: 16, dkLen: 64 };
-  scrypt('pwd', 'salt', opt);
-  // N < 0 -> throws
-  assert.throws(() => scrypt('pwd', 'salt', { ...opt, N: -2 }), `scrypt(N=-2)`);
-  await assert.rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: -2 }), `scrypt(N=-2)`);
-  // N==0 -> throws (nodejs version is not, but it is against RFC)
-  assert.throws(() => scrypt('pwd', 'salt', { ...opt, N: 0 }), `scrypt(N=0)`);
-  await assert.rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: 0 }), `scrypt(N=0)`);
-  // N==1 -> throws
-  assert.throws(() => scrypt('pwd', 'salt', { ...opt, N: 1 }), `scrypt(N=1)`);
-  await assert.rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: 1 }), `scrypt(N=1)`);
-  for (const t of TYPE_TEST.int) {
-    for (const k of ['N', 'r', 'p', 'dkLen']) {
-      assert.throws(() => scrypt('pwd', 'salt', { ...opt, [k]: t }), `scrypt(${k}=${t})`);
-      await assert.rejects(
-        () => scryptAsync('pwd', 'salt', { ...opt, [k]: t }),
-        `scrypt(${k}=${t})`
+describe('scrypt', () => {
+  for (let i = 0; i < SCRYPT_VECTORS.length; i++) {
+    const t = SCRYPT_VECTORS[i];
+    should(`Scrypt vector (${i})`, async () => {
+      const exp = hexToBytes(t.exp.replace(/ /g, ''));
+      deepStrictEqual(scrypt(t.P, t.S, t), exp);
+      deepStrictEqual(await scryptAsync(t.P, t.S, t), exp);
+      deepStrictEqual(scrypt(t.P, t.S, { ...t, cleanup: true }), exp);
+      deepStrictEqual(await scryptAsync(t.P, t.S, { ...t, cleanup: true }), exp);
+      deepStrictEqual(scrypt(t.P, t.S, { ...t, cleanup: false }), exp);
+      deepStrictEqual(await scryptAsync(t.P, t.S, { ...t, cleanup: false }), exp);
+    });
+  }
+
+  should('Scrypt types', async () => {
+    const opt = { N: 1024, r: 8, p: 16, dkLen: 64 };
+    scrypt('pwd', 'salt', opt);
+    // N < 0 -> throws
+    throws(() => scrypt('pwd', 'salt', { ...opt, N: -2 }), `scrypt(N=-2)`);
+    await rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: -2 }), `scrypt(N=-2)`);
+    // N==0 -> throws (nodejs version is not, but it is against RFC)
+    throws(() => scrypt('pwd', 'salt', { ...opt, N: 0 }), `scrypt(N=0)`);
+    await rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: 0 }), `scrypt(N=0)`);
+    // N==1 -> throws
+    throws(() => scrypt('pwd', 'salt', { ...opt, N: 1 }), `scrypt(N=1)`);
+    await rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: 1 }), `scrypt(N=1)`);
+    for (const t of TYPE_TEST.int) {
+      for (const k of ['N', 'r', 'p', 'dkLen']) {
+        throws(() => scrypt('pwd', 'salt', { ...opt, [k]: t }), `scrypt(${k}=${t})`);
+        await rejects(() => scryptAsync('pwd', 'salt', { ...opt, [k]: t }), `scrypt(${k}=${t})`);
+      }
+      await rejects(
+        () => scryptAsync('pwd', 'salt', { ...opt, asyncTick: t }),
+        `scrypt(asyncTick=${t})`
       );
     }
-    await assert.rejects(
-      () => scryptAsync('pwd', 'salt', { ...opt, asyncTick: t }),
-      `scrypt(asyncTick=${t})`
-    );
-  }
-  for (const t of TYPE_TEST.bytes.concat([undefined])) {
-    assert.throws(() => scrypt('pwd', t, opt), `scrypt(salt=${t})`);
-    await assert.rejects(() => scryptAsync('pwd', t, opt), `scrypt(salt=${t})`);
-    assert.throws(() => scrypt(t, 'salt', opt), `scrypt(pwd=${t})`);
-    await assert.rejects(() => scryptAsync(t, 'salt', opt), `scrypt(pwd=${t})`);
-    for (const t of TYPE_TEST.opts) {
-      assert.throws(() => scrypt('pwd', 'salt', t), `scrypt(opt=${t})`);
-      await assert.rejects(() => scryptAsync('pwd', 'salt', t), `scrypt(opt=${t})`);
+    for (const t of TYPE_TEST.bytes.concat([undefined])) {
+      throws(() => scrypt('pwd', t, opt), `scrypt(salt=${t})`);
+      await rejects(() => scryptAsync('pwd', t, opt), `scrypt(salt=${t})`);
+      throws(() => scrypt(t, 'salt', opt), `scrypt(pwd=${t})`);
+      await rejects(() => scryptAsync(t, 'salt', opt), `scrypt(pwd=${t})`);
+      for (const t of TYPE_TEST.opts) {
+        throws(() => scrypt('pwd', 'salt', t), `scrypt(opt=${t})`);
+        await rejects(() => scryptAsync('pwd', 'salt', t), `scrypt(opt=${t})`);
+      }
     }
-  }
-  assert.deepStrictEqual(
-    scrypt(SPACE.str, SPACE.str, opt),
-    scrypt(SPACE.bytes, SPACE.bytes, opt),
-    'scrypt.SPACE'
-  );
-  assert.deepStrictEqual(
-    scrypt(EMPTY.str, EMPTY.str, opt),
-    scrypt(EMPTY.bytes, EMPTY.bytes, opt),
-    'scrypt.EMPTY'
-  );
+    deepStrictEqual(
+      scrypt(SPACE.str, SPACE.str, opt),
+      scrypt(SPACE.bytes, SPACE.bytes, opt),
+      'scrypt.SPACE'
+    );
+    deepStrictEqual(
+      scrypt(EMPTY.str, EMPTY.str, opt),
+      scrypt(EMPTY.bytes, EMPTY.bytes, opt),
+      'scrypt.EMPTY'
+    );
+  });
+
+  should('Scrypt maxmem', async () => {
+    const opts = { N: 2 ** 10, r: 8, p: 16, dkLen: 64, maxmem: 128 * 8 * (2 ** 10 + 16) };
+    scrypt('pwd', 'salt', opts);
+    throws(() => scrypt('pwd', 'salt', { ...opts, maxmem: opts.maxmem - 1 }), `scrypt(maxmem+=1)`);
+    throws(() => scrypt('pwd', 'salt', { ...opts, N: 2 ** 11 }), `scrypt(default maxmem)`);
+  });
 });
 
-should('HKDF types', () => {
-  hkdf(sha256, '', '', '', 32);
-  hkdf(sha256, '', '', '', 8160);
-  assert.throws(() => hkdf(sha256, '', '', '', 8160 + 1), `hkdf.dkLen(8160 + 1)`);
-  hkdf(sha512, '', '', '', 16320);
-  assert.throws(() => hkdf(sha512, '', '', '', 16320 + 1), `hkdf.dkLen(16320 + 1)`);
-  for (const t of TYPE_TEST.int) {
-    assert.throws(() => hkdf(sha256, '', '', '', t), `hkdf.dkLen(${t})`);
+describe('PBKDF2', () => {
+  for (let i = 0; i < PBKDF2_VECTORS.length; i++) {
+    const t = PBKDF2_VECTORS[i];
+    should(`PBKDF2 vector (${i})`, async () => {
+      const exp = hexToBytes(t.exp.replace(/ /g, ''));
+      deepStrictEqual(pbkdf2(t.hash, t.P, t.S, t), exp);
+      deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, t), exp);
+      deepStrictEqual(pbkdf2(t.hash, t.P, t.S, { ...t, cleanup: true }), exp);
+      deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, { ...t, cleanup: true }), exp);
+      deepStrictEqual(pbkdf2(t.hash, t.P, t.S, { ...t, cleanup: false }), exp);
+      deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, { ...t, cleanup: false }), exp);
+    });
   }
-  for (const t of TYPE_TEST.bytes) {
-    assert.throws(() => hkdf(sha256, t, '', '', 32), `hkdf.ikm(${t})`);
-    assert.throws(() => hkdf(sha256, '', t, '', 32), `hkdf.salt(${t})`);
-    assert.throws(() => hkdf(sha256, '', '', t, 32), `hkdf.info(${t})`);
-  }
-  // for (const t of TYPE_TEST.opts)
-  //   assert.throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${t})`);
-  assert.throws(() => hkdf(sha256, undefined, '', '', 32), 'hkdf.ikm===undefined');
-  for (const t of TYPE_TEST.hash) assert.throws(() => hkdf(t, '', '', '', 32), `hkdf(hash=${t})`);
 
-  assert.deepStrictEqual(
-    hkdf(sha256, SPACE.str, SPACE.str, SPACE.str),
-    hkdf(sha256, SPACE.bytes, SPACE.bytes, SPACE.bytes),
-    'hkdf.SPACE'
-  );
-  assert.deepStrictEqual(
-    hkdf(sha256, EMPTY.str, EMPTY.str, EMPTY.str),
-    hkdf(sha256, EMPTY.bytes, EMPTY.bytes, EMPTY.bytes),
-    'hkdf.EMPTY'
-  );
+  should('PBKDF2 types', async () => {
+    const opts = { c: 10, dkLen: 32 };
+    pbkdf2(sha256, 'pwd', 'salt', opts);
+    throws(() => pbkdf2(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }), `pbkdf2(c=0)`);
+    await rejects(() => pbkdf2Async(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }), `pbkdf2(c=0)`);
+    for (const t of TYPE_TEST.int) {
+      throws(() => pbkdf2(sha256, 'pwd', 'salt', { ...opts, c: t }), `pbkdf2(c=${t})`);
+      await rejects(() => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, c: t }), `pbkdf2(c=${t})`);
+      throws(() => pbkdf2(sha256, 'pwd', 'salt', { ...opts, dkLen: t }), `pbkdf2(dkLen=${t})`);
+      await rejects(
+        () => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, dkLen: t }),
+        `pbkdf2(dkLen=${t})`
+      );
+      await rejects(
+        () => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, asyncTick: t }),
+        `pbkdf2(asyncTick=${t})`
+      );
+    }
+    for (const t of TYPE_TEST.bytes.concat([undefined])) {
+      throws(() => pbkdf2(sha256, t, 'salt', opts), `pbkdf2(pwd=${t})`);
+      await rejects(() => pbkdf2Async(sha256, t, 'salt', opts), `pbkdf2(pwd=${t})`);
+      throws(() => pbkdf2(sha256, 'pwd', t, opts), `pbkdf2(salt=${t})`);
+      await rejects(() => pbkdf2Async(sha256, 'pwd', t, opts), `pbkdf2(salt=${t})`);
+    }
+    for (const t of TYPE_TEST.opts) {
+      throws(() => pbkdf2(sha256, 'pwd', 'salt', t), `pbkdf2(opt=${t})`);
+      await rejects(() => pbkdf2Async(sha256, 'pwd', 'salt', t), `pbkdf2(opt=${t})`);
+    }
+    for (const t of TYPE_TEST.hash) {
+      throws(() => pbkdf2(t, 'pwd', 'salt', t), `pbkdf2(hash=${t})`);
+      await rejects(() => pbkdf2Async(t, 'pwd', 'salt', t), `pbkdf2(hash=${t})`);
+    }
+    deepStrictEqual(
+      pbkdf2(sha256, SPACE.str, SPACE.str, opts),
+      pbkdf2(sha256, SPACE.bytes, SPACE.bytes, opts),
+      'pbkdf2.SPACE'
+    );
+    deepStrictEqual(
+      pbkdf2(sha256, EMPTY.str, EMPTY.str, opts),
+      pbkdf2(sha256, EMPTY.bytes, EMPTY.bytes, opts),
+      'pbkdf2.EMPTY'
+    );
+  });
 });
 
 executeKDFTests(true);
-
-should('Scrypt maxmem', async () => {
-  const opts = { N: 2 ** 10, r: 8, p: 16, dkLen: 64, maxmem: 128 * 8 * (2 ** 10 + 16) };
-  scrypt('pwd', 'salt', opts);
-  assert.throws(
-    () => scrypt('pwd', 'salt', { ...opts, maxmem: opts.maxmem - 1 }),
-    `scrypt(maxmem+=1)`
-  );
-  assert.throws(() => scrypt('pwd', 'salt', { ...opts, N: 2 ** 11 }), `scrypt(default maxmem)`);
-});
 
 if (require.main === module) should.run();

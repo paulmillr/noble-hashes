@@ -15,4 +15,4 @@ require('./clone.test.js');
 require('./u64.test.js');
 require('./utils.test.js');
 
-should.run();
+should.runParallel();

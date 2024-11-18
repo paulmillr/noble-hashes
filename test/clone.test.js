@@ -1,5 +1,5 @@
-const assert = require('assert');
-const { should } = require('micro-should');
+const { deepStrictEqual } = require('assert');
+const { describe, should } = require('micro-should');
 const { sha256 } = require('../sha256');
 const { sha512 } = require('../sha512');
 const { hmac } = require('../hmac');
@@ -73,79 +73,83 @@ const HASHES = {
   },
 };
 
-for (let k in HASHES) {
-  const small = HASHES[k].small;
-  const big = HASHES[k].big || HASHES[k].small;
-  const smallExp = small()
-    .update(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
-    .digest();
-  const bigExp = big()
-    .update(new Uint8Array([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]))
-    .digest();
+describe('clone', () => {
+  for (let k in HASHES) {
+    describe(k, () => {
+      const small = HASHES[k].small;
+      const big = HASHES[k].big || HASHES[k].small;
+      const smallExp = small()
+        .update(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+        .digest();
+      const bigExp = big()
+        .update(new Uint8Array([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]))
+        .digest();
 
-  should(`Clone ${k}: just clone small`, () => {
-    const s1 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
-    const s2 = s1
-      ._cloneInto()
-      .update(new Uint8Array([6, 7, 8, 9, 10]))
-      .digest();
-    assert.deepStrictEqual(s2, smallExp, 's2 correct');
-    // Original is not modified
-    assert.deepStrictEqual(
-      s1.digest(),
-      small()
-        .update(new Uint8Array([1, 2, 3, 4, 5]))
-        .digest(),
-      's1 same'
-    );
-  });
-  should(`Clone ${k}: just clone big`, () => {
-    const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
-    const b2 = b1
-      ._cloneInto()
-      .update(new Uint8Array([5, 4, 3, 2, 1]))
-      .digest();
-    assert.deepStrictEqual(b2, bigExp, 'b2 correct');
-    // Original is not modified
-    assert.deepStrictEqual(
-      b1.digest(),
-      big()
-        .update(new Uint8Array([10, 9, 8, 7, 6]))
-        .digest(),
-      'b1 same'
-    );
-  });
-  should(`Clone ${k}: small<->big`, () => {
-    const s1 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
-    const s2 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
-    const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
-    const b2 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
-    b1._cloneInto(s2);
-    assert.deepStrictEqual(b1, s2, 'b1===s2');
-    s1._cloneInto(b2);
-    assert.deepStrictEqual(s1, b2, 'b1===b2');
-    assert.deepStrictEqual(s2.update(new Uint8Array([5, 4, 3, 2, 1])).digest(), bigExp, 's2===big');
-    assert.deepStrictEqual(
-      b2.update(new Uint8Array([6, 7, 8, 9, 10])).digest(),
-      smallExp,
-      'b2===small'
-    );
-    // Original is not modified
-    assert.deepStrictEqual(
-      b1.digest(),
-      big()
-        .update(new Uint8Array([10, 9, 8, 7, 6]))
-        .digest(),
-      'b1 same'
-    );
-    assert.deepStrictEqual(
-      s1.digest(),
-      small()
-        .update(new Uint8Array([1, 2, 3, 4, 5]))
-        .digest(),
-      's1 same'
-    );
-  });
-}
+      should(`small`, () => {
+        const s1 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
+        const s2 = s1
+          ._cloneInto()
+          .update(new Uint8Array([6, 7, 8, 9, 10]))
+          .digest();
+        deepStrictEqual(s2, smallExp, 's2 correct');
+        // Original is not modified
+        deepStrictEqual(
+          s1.digest(),
+          small()
+            .update(new Uint8Array([1, 2, 3, 4, 5]))
+            .digest(),
+          's1 same'
+        );
+      });
+      should(`big`, () => {
+        const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
+        const b2 = b1
+          ._cloneInto()
+          .update(new Uint8Array([5, 4, 3, 2, 1]))
+          .digest();
+        deepStrictEqual(b2, bigExp, 'b2 correct');
+        // Original is not modified
+        deepStrictEqual(
+          b1.digest(),
+          big()
+            .update(new Uint8Array([10, 9, 8, 7, 6]))
+            .digest(),
+          'b1 same'
+        );
+      });
+      should(`small <=> big`, () => {
+        const s1 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
+        const s2 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
+        const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
+        const b2 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
+        b1._cloneInto(s2);
+        deepStrictEqual(b1, s2, 'b1===s2');
+        s1._cloneInto(b2);
+        deepStrictEqual(s1, b2, 'b1===b2');
+        deepStrictEqual(s2.update(new Uint8Array([5, 4, 3, 2, 1])).digest(), bigExp, 's2===big');
+        deepStrictEqual(
+          b2.update(new Uint8Array([6, 7, 8, 9, 10])).digest(),
+          smallExp,
+          'b2===small'
+        );
+        // Original is not modified
+        deepStrictEqual(
+          b1.digest(),
+          big()
+            .update(new Uint8Array([10, 9, 8, 7, 6]))
+            .digest(),
+          'b1 same'
+        );
+        deepStrictEqual(
+          s1.digest(),
+          small()
+            .update(new Uint8Array([1, 2, 3, 4, 5]))
+            .digest(),
+          's1 same'
+        );
+      });
+    });
+  }
+});
 
 if (require.main === module) should.run();

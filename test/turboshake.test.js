@@ -3,10 +3,9 @@
 const { deepStrictEqual, throws } = require('assert');
 const { describe, should } = require('micro-should');
 const { turboshake128, turboshake256, k12 } = require('../sha3-addons');
-const { pattern } = require('./utils');
+const { pattern, bytesToHex: toHex, hexToBytes } = require('./utils');
 
-const fromHex = (hex) => Uint8Array.from(Buffer.from(hex.replace(/ |\n/gm, ''), 'hex'));
-const toHex = (buf) => Buffer.from(buf).toString('hex');
+const fromHex = (hex) => hexToBytes(hex.replace(/ |\n/gm, ''));
 
 const VECTORS_TURBO = [
   {

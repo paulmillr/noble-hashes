@@ -1,5 +1,5 @@
-const assert = require('assert');
-const { should } = require('micro-should');
+const { deepStrictEqual, throws } = require('assert');
+const { describe, should } = require('micro-should');
 const { sha256 } = require('../sha256');
 const { sha512, sha384 } = require('../sha512');
 const { hmac } = require('../hmac');
@@ -13,7 +13,6 @@ const {
   SPACE,
   EMPTY,
 } = require('./utils');
-const { deepStrictEqual } = require('assert');
 
 // HMAC test vectors from RFC 4231
 const HMAC_VECTORS = [
@@ -119,108 +118,112 @@ const HMAC_VECTORS = [
   },
 ];
 
-for (let i = 0; i < HMAC_VECTORS.length; i++) {
-  const t = HMAC_VECTORS[i];
-  should(`HMAC vector (${i}) sha256 full`, () => {
-    const h256 = hmac.create(sha256, t.key).update(concatBytes(...t.data));
-    assert.deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
-  });
-  should(`HMAC vector (${i}) sha256 partial`, () => {
-    const h256 = hmac.create(sha256, t.key);
-    for (let d of t.data) h256.update(d);
-    assert.deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
-  });
-  should(`HMAC vector (${i}) sha256 partial (cleanup=true)`, () => {
-    const h256 = hmac.create(sha256, t.key, { cleanup: true });
-    for (let d of t.data) h256.update(d);
-    assert.deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
-  });
-  should(`HMAC vector (${i}) sha256 partial (cleanup=false)`, () => {
-    const h256 = hmac.create(sha256, t.key, { cleanup: false });
-    for (let d of t.data) h256.update(d);
-    assert.deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
-  });
-  should(`HMAC vector (${i}) sha512 full`, () => {
-    const h512 = hmac.create(sha512, t.key).update(concatBytes(...t.data));
-    assert.deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
-  });
-  should(`HMAC vector (${i}) sha512 partial`, () => {
-    const h512 = hmac.create(sha512, t.key);
-    for (let d of t.data) h512.update(d);
-    assert.deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
-  });
-  should(`HMAC vector (${i}) sha512 partial (cleanup=false)`, () => {
-    const h512 = hmac.create(sha512, t.key, { cleanup: false });
-    for (let d of t.data) h512.update(d);
-    assert.deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
-  });
-  should(`HMAC vector (${i}) sha512 partial (cleanup=true)`, () => {
-    const h512 = hmac.create(sha512, t.key, { cleanup: true });
-    for (let d of t.data) h512.update(d);
-    assert.deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
-  });
-}
-
-should('HMAC types', () => {
-  hmac(sha256, 'key', 'msg');
-  hmac.create(sha256, 'key');
-  for (const t of TYPE_TEST.bytes) {
-    assert.throws(() => hmac(sha256, t, 'msg'), `hmac(key=${t})`);
-    assert.throws(() => hmac(sha256, 'key', t), `hmac(msg=${t})`);
-    assert.throws(() => hmac.create(sha256, t), `hmac.create(key=${t})`);
+describe('hmac', () => {
+  for (let i = 0; i < HMAC_VECTORS.length; i++) {
+    const t = HMAC_VECTORS[i];
+    describe('vector ' + i, () => {
+      should(`sha256 full`, () => {
+        const h256 = hmac.create(sha256, t.key).update(concatBytes(...t.data));
+        deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+      });
+      should(`sha256 partial`, () => {
+        const h256 = hmac.create(sha256, t.key);
+        for (let d of t.data) h256.update(d);
+        deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+      });
+      should(`sha256 partial (cleanup=true)`, () => {
+        const h256 = hmac.create(sha256, t.key, { cleanup: true });
+        for (let d of t.data) h256.update(d);
+        deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+      });
+      should(`sha256 partial (cleanup=false)`, () => {
+        const h256 = hmac.create(sha256, t.key, { cleanup: false });
+        for (let d of t.data) h256.update(d);
+        deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+      });
+      should(`sha512 full`, () => {
+        const h512 = hmac.create(sha512, t.key).update(concatBytes(...t.data));
+        deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
+      });
+      should(`sha512 partial`, () => {
+        const h512 = hmac.create(sha512, t.key);
+        for (let d of t.data) h512.update(d);
+        deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
+      });
+      should(`sha512 partial (cleanup=false)`, () => {
+        const h512 = hmac.create(sha512, t.key, { cleanup: false });
+        for (let d of t.data) h512.update(d);
+        deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
+      });
+      should(`sha512 partial (cleanup=true)`, () => {
+        const h512 = hmac.create(sha512, t.key, { cleanup: true });
+        for (let d of t.data) h512.update(d);
+        deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
+      });
+    });
   }
-  assert.throws(() => hmac(sha256, undefined, 'msg'), `hmac(key=undefined)`);
-  assert.throws(() => hmac(sha256, 'key'), `hmac(msg=undefined)`);
-  assert.throws(() => hmac.create(sha256, undefined), `hmac.create(key=undefined)`);
-  // for (const t of TYPE_TEST.opts) {
-  //   assert.throws(() => hmac(sha256, 'key', 'salt', t), `hmac(opt=${t})`);
-  //   assert.throws(() => hmac.create(sha256, 'key', t), `hmac.create(opt=${t})`);
-  // }
-  for (const t of TYPE_TEST.hash) assert.throws(() => hmac(t, 'key', 'salt'), `hmac(hash=${t})`);
-  assert.deepStrictEqual(
-    hmac(sha512, SPACE.str, SPACE.str),
-    hmac(sha512, SPACE.bytes, SPACE.bytes),
-    'hmac.SPACE'
-  );
-  assert.deepStrictEqual(
-    hmac(sha512, EMPTY.str, EMPTY.str),
-    hmac(sha512, EMPTY.bytes, EMPTY.bytes),
-    'hmac.EMPTY'
-  );
-  assert.deepStrictEqual(
-    hmac(sha512, SPACE.str, SPACE.str),
-    hmac.create(sha512, SPACE.str).update(SPACE.bytes).digest(),
-    'hmac.SPACE (full form bytes)'
-  );
-  assert.deepStrictEqual(
-    hmac(sha512, SPACE.str, SPACE.str),
-    hmac.create(sha512, SPACE.str).update(SPACE.str).digest(),
-    'hmac.SPACE (full form stingr)'
-  );
-});
 
-should('Sha512/384 issue', () => {
-  const h = hmac.create(
-    sha384,
-    hexToBytes(
-      '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-    )
-  );
-  h.update(
-    hexToBytes(
-      '010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101'
-    )
-  );
-  h.update(hexToBytes('00'));
-  h.update(
-    hexToBytes(
-      '6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf59a9083505bc92276aec4be312696ef7bf3bf603f4bbd381196a029f340585312313bca4a9b5b890efee42c77b1ee25fe'
-    )
-  );
-  deepStrictEqual(
-    bytesToHex(h.digest()),
-    'a1ae63339c4fac449464e302c61e8ceb5b28c04d108e022179ce6dabb2d3e310cb3bf41cd6013b3006f33c037e6b7fa8'
-  );
+  should('HMAC types', () => {
+    hmac(sha256, 'key', 'msg');
+    hmac.create(sha256, 'key');
+    for (const t of TYPE_TEST.bytes) {
+      throws(() => hmac(sha256, t, 'msg'), `hmac(key=${t})`);
+      throws(() => hmac(sha256, 'key', t), `hmac(msg=${t})`);
+      throws(() => hmac.create(sha256, t), `hmac.create(key=${t})`);
+    }
+    throws(() => hmac(sha256, undefined, 'msg'), `hmac(key=undefined)`);
+    throws(() => hmac(sha256, 'key'), `hmac(msg=undefined)`);
+    throws(() => hmac.create(sha256, undefined), `hmac.create(key=undefined)`);
+    // for (const t of TYPE_TEST.opts) {
+    //   throws(() => hmac(sha256, 'key', 'salt', t), `hmac(opt=${t})`);
+    //   throws(() => hmac.create(sha256, 'key', t), `hmac.create(opt=${t})`);
+    // }
+    for (const t of TYPE_TEST.hash) throws(() => hmac(t, 'key', 'salt'), `hmac(hash=${t})`);
+    deepStrictEqual(
+      hmac(sha512, SPACE.str, SPACE.str),
+      hmac(sha512, SPACE.bytes, SPACE.bytes),
+      'hmac.SPACE'
+    );
+    deepStrictEqual(
+      hmac(sha512, EMPTY.str, EMPTY.str),
+      hmac(sha512, EMPTY.bytes, EMPTY.bytes),
+      'hmac.EMPTY'
+    );
+    deepStrictEqual(
+      hmac(sha512, SPACE.str, SPACE.str),
+      hmac.create(sha512, SPACE.str).update(SPACE.bytes).digest(),
+      'hmac.SPACE (full form bytes)'
+    );
+    deepStrictEqual(
+      hmac(sha512, SPACE.str, SPACE.str),
+      hmac.create(sha512, SPACE.str).update(SPACE.str).digest(),
+      'hmac.SPACE (full form stingr)'
+    );
+  });
+
+  should('Sha512/384 issue', () => {
+    const h = hmac.create(
+      sha384,
+      hexToBytes(
+        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+      )
+    );
+    h.update(
+      hexToBytes(
+        '010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101'
+      )
+    );
+    h.update(hexToBytes('00'));
+    h.update(
+      hexToBytes(
+        '6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf59a9083505bc92276aec4be312696ef7bf3bf603f4bbd381196a029f340585312313bca4a9b5b890efee42c77b1ee25fe'
+      )
+    );
+    deepStrictEqual(
+      bytesToHex(h.digest()),
+      'a1ae63339c4fac449464e302c61e8ceb5b28c04d108e022179ce6dabb2d3e310cb3bf41cd6013b3006f33c037e6b7fa8'
+    );
+  });
 });
 
 if (require.main === module) should.run();
