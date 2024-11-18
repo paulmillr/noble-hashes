@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { should } = require('micro-should');
+const { describe, should } = require('micro-should');
 const crypto = require('crypto');
 const { sha224, sha256 } = require('../sha256');
 const { sha384, sha512, sha512_224, sha512_256 } = require('../sha512');
@@ -407,117 +407,123 @@ for (let i = 0; i < (256 * 3) / 32; i++)
 function init() {
   for (const h in HASHES) {
     const hash = HASHES[h];
-    // All hashes has NIST vectors, some generated manually
-    for (let i = 0; i < NIST_VECTORS.length; i++) {
-      if (!NIST_VECTORS[i]) continue;
-      const [r, rbuf, buf] = NIST_VECTORS[i];
-      should(`NIST: ${h} (${i})`, () => {
-        assert.deepStrictEqual(
-          hash.obj().update(buf).digest(),
-          hexToBytes(hash.nist[i].replace(/ /g, ''))
-        );
-      });
-      should(`NIST: ${h} (${i}) partial`, () => {
-        const tmp = hash.obj();
-        for (let j = 0; j < r; j++) tmp.update(rbuf);
-        assert.deepStrictEqual(tmp.digest(), hexToBytes(hash.nist[i].replace(/ /g, '')));
-      });
-    }
-    should(`accept string (${h})`, () => {
-      const tmp = hash.obj().update('abc').digest();
-      assert.deepStrictEqual(tmp, hexToBytes(hash.nist[0].replace(/ /g, '')));
-    });
-    should(`accept data in compact call form (${h}, string)`, () => {
-      assert.deepStrictEqual(hash.fn('abc'), hexToBytes(hash.nist[0].replace(/ /g, '')));
-    });
-    should(`accept data in compact call form (${h}, u8array)`, () => {
-      assert.deepStrictEqual(
-        hash.fn(utf8ToBytes('abc')),
-        hexToBytes(hash.nist[0].replace(/ /g, ''))
-      );
-    });
-    should(`throw on update after digest (${h})`, () => {
-      const tmp = hash.obj();
-      tmp.update('abc').digest();
-      assert.throws(() => tmp.update('abc'));
-    });
-    should(`throw on second digest call in cleanup mode (${h})`, () => {
-      const tmp = hash.obj();
-      tmp.update('abc').digest();
-      assert.throws(() => tmp.digest());
-    });
-    should(`throw on wrong argument type`, () => {
-      // Allowed only: undefined (for compact form only), string, Uint8Array
-      for (const t of TYPE_TEST.bytes) {
-        assert.throws(() => hash.fn(t), `compact(${t})`);
-        assert.throws(() => hash.obj().update(t).digest(), `full(${t})`);
-      }
-      assert.throws(() => hash.fn(), `compact(undefined)`);
-      assert.throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
-      for (const t of TYPE_TEST.opts) assert.throws(() => hash.fn(undefined, t), `opt(${t})`);
-    });
-    should(`check types`, () => {
-      assert.deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
-      assert.deepStrictEqual(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));
-      assert.deepStrictEqual(
-        hash.obj().update(SPACE.str).digest(),
-        hash.obj().update(SPACE.bytes).digest()
-      );
-      assert.deepStrictEqual(
-        hash.obj().update(EMPTY.str).digest(),
-        hash.obj().update(EMPTY.bytes).digest()
-      );
-    });
 
-    should(`Partial: ${h}`, () => {
-      const fnH = hash.fn(BUF_768);
-      for (let i = 0; i < 256; i++) {
-        let b1 = BUF_768.subarray(0, i);
-        for (let j = 0; j < 256; j++) {
-          let b2 = BUF_768.subarray(i, i + j);
-          let b3 = BUF_768.subarray(i + j);
-          assert.deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
-          assert.deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
-        }
-      }
-    });
-    // Same as before, but creates copy of each slice, which changes dataoffset of typed array
-    // Catched bug in blake2
-    should(`Partial (copy): ${h} partial`, () => {
-      const fnH = hash.fn(BUF_768);
-      for (let i = 0; i < 256; i++) {
-        let b1 = BUF_768.subarray(0, i).slice();
-        for (let j = 0; j < 256; j++) {
-          let b2 = BUF_768.subarray(i, i + j).slice();
-          let b3 = BUF_768.subarray(i + j).slice();
-          assert.deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
-          assert.deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
-        }
-      }
-    });
-    if (hash.node) {
-      should(`Node: ${h}`, () => {
-        for (let i = 0; i < testBuf.length; i++) {
+    describe(h, () => {
+      // All hashes has NIST vectors, some generated manually
+      should('NIST vectors', () => {
+        for (let i = 0; i < NIST_VECTORS.length; i++) {
+          if (!NIST_VECTORS[i]) continue;
+          const [r, rbuf, buf] = NIST_VECTORS[i];
           assert.deepStrictEqual(
-            hash.obj().update(testBuf.subarray(0, i)).digest(),
-            hash.node(testBuf.subarray(0, i))
+            hash.obj().update(buf).digest(),
+            hexToBytes(hash.nist[i].replace(/ /g, '')),
+            `vector ${i}`
+          );
+          const tmp = hash.obj();
+          for (let j = 0; j < r; j++) tmp.update(rbuf);
+          assert.deepStrictEqual(
+            tmp.digest(),
+            hexToBytes(hash.nist[i].replace(/ /g, '')),
+            `partial vector ${i}`
           );
         }
       });
-      should(`Node: ${h} chained`, () => {
-        const b = new Uint8Array([1, 2, 3]);
-        let nodeH = hash.node(b);
-        let nobleH = hash.fn(b);
+      should(`accept string`, () => {
+        const tmp = hash.obj().update('abc').digest();
+        assert.deepStrictEqual(tmp, hexToBytes(hash.nist[0].replace(/ /g, '')));
+      });
+      should(`accept data in compact call form (string)`, () => {
+        assert.deepStrictEqual(hash.fn('abc'), hexToBytes(hash.nist[0].replace(/ /g, '')));
+      });
+      should(`accept data in compact call form (Uint8Array)`, () => {
+        assert.deepStrictEqual(
+          hash.fn(utf8ToBytes('abc')),
+          hexToBytes(hash.nist[0].replace(/ /g, ''))
+        );
+      });
+      should(`throw on update after digest`, () => {
+        const tmp = hash.obj();
+        tmp.update('abc').digest();
+        assert.throws(() => tmp.update('abc'));
+      });
+      should(`throw on second digest call in cleanup mode`, () => {
+        const tmp = hash.obj();
+        tmp.update('abc').digest();
+        assert.throws(() => tmp.digest());
+      });
+      should(`throw on wrong argument type`, () => {
+        // Allowed only: undefined (for compact form only), string, Uint8Array
+        for (const t of TYPE_TEST.bytes) {
+          assert.throws(() => hash.fn(t), `compact(${t})`);
+          assert.throws(() => hash.obj().update(t).digest(), `full(${t})`);
+        }
+        assert.throws(() => hash.fn(), `compact(undefined)`);
+        assert.throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
+        for (const t of TYPE_TEST.opts) assert.throws(() => hash.fn(undefined, t), `opt(${t})`);
+      });
+      should(`check types`, () => {
+        assert.deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
+        assert.deepStrictEqual(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));
+        assert.deepStrictEqual(
+          hash.obj().update(SPACE.str).digest(),
+          hash.obj().update(SPACE.bytes).digest()
+        );
+        assert.deepStrictEqual(
+          hash.obj().update(EMPTY.str).digest(),
+          hash.obj().update(EMPTY.bytes).digest()
+        );
+      });
+
+      should('partial', () => {
+        const fnH = hash.fn(BUF_768);
         for (let i = 0; i < 256; i++) {
-          nodeH = hash.node(nodeH);
-          nobleH = hash.fn(nobleH);
-          assert.deepStrictEqual(nodeH, nobleH);
+          let b1 = BUF_768.subarray(0, i);
+          for (let j = 0; j < 256; j++) {
+            let b2 = BUF_768.subarray(i, i + j);
+            let b3 = BUF_768.subarray(i + j);
+            assert.deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
+            assert.deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
+          }
         }
       });
-      should(`Node: ${h} partial`, () => {
-        assert.deepStrictEqual(hash.fn(BUF_768), hash.node(BUF_768));
+      // Same as before, but creates copy of each slice, which changes dataoffset of typed array
+      // Catched bug in blake2
+      should('partial (copy): partial', () => {
+        const fnH = hash.fn(BUF_768);
+        for (let i = 0; i < 256; i++) {
+          let b1 = BUF_768.subarray(0, i).slice();
+          for (let j = 0; j < 256; j++) {
+            let b2 = BUF_768.subarray(i, i + j).slice();
+            let b3 = BUF_768.subarray(i + j).slice();
+            assert.deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
+            assert.deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
+          }
+        }
       });
-    }
+      if (hash.node) {
+        should(`node.js cross-test`, () => {
+          for (let i = 0; i < testBuf.length; i++) {
+            assert.deepStrictEqual(
+              hash.obj().update(testBuf.subarray(0, i)).digest(),
+              hash.node(testBuf.subarray(0, i))
+            );
+          }
+        });
+        should(`node.js cross-test chained`, () => {
+          const b = new Uint8Array([1, 2, 3]);
+          let nodeH = hash.node(b);
+          let nobleH = hash.fn(b);
+          for (let i = 0; i < 256; i++) {
+            nodeH = hash.node(nodeH);
+            nobleH = hash.fn(nobleH);
+            assert.deepStrictEqual(nodeH, nobleH);
+          }
+        });
+        should(`node.js cross-test partial`, () => {
+          assert.deepStrictEqual(hash.fn(BUF_768), hash.node(BUF_768));
+        });
+      }
+    });
   }
 }
 
