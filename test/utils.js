@@ -23,14 +23,19 @@ const TYPE_TEST_BASE = [
   new Uint32Array([1, 2, 3]),
   100n,
   new Set([1, 2, 3]),
+  new Map([['aa', 'bb']]),
   new Uint8ClampedArray([1, 2, 3]),
   new Int16Array([1, 2, 3]),
+  new Float32Array([1]),
+  new BigInt64Array([1n, 2n, 3n]),
   new ArrayBuffer(100),
   new DataView(new ArrayBuffer(100)),
   { constructor: { name: 'Uint8Array' }, length: '1e30' },
   () => {},
   async () => {},
   class Test {},
+  Symbol.for('a'),
+  new Proxy(new Uint8Array(), {}),
 ];
 
 const TYPE_TEST_OPT = [
@@ -47,7 +52,8 @@ const TYPE_TEST_OPT = [
 
 const TYPE_TEST_NOT_BOOL = [false, true];
 const TYPE_TEST_NOT_BYTES = ['', 'test', '1', new Uint8Array([]), new Uint8Array([1, 2, 3])];
-const TYPE_TEST_NOT_STR = [
+const TYPE_TEST_NOT_HEX = [
+  '0xbe',
   ' 1 2 3 4 5',
   '010203040x',
   'abcdefgh',
@@ -58,15 +64,17 @@ const TYPE_TEST_NOT_STR = [
 const TYPE_TEST_NOT_INT = [-0.0, 0, 1];
 
 const TYPE_TEST = {
-  int: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_BOOL).concat(TYPE_TEST_NOT_BYTES),
-  bytes: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT).concat(TYPE_TEST_NOT_BOOL),
-  boolean: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT).concat(TYPE_TEST_NOT_BYTES),
-  hex: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT, TYPE_TEST_NOT_BOOL, TYPE_TEST_NOT_STR),
+  int: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_BOOL, TYPE_TEST_NOT_BYTES),
+  bytes: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT, TYPE_TEST_NOT_BOOL),
+  boolean: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT, TYPE_TEST_NOT_BYTES),
+  hex: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT, TYPE_TEST_NOT_BOOL, TYPE_TEST_NOT_HEX),
   opts: TYPE_TEST_OPT,
-  hash: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_BOOL)
-    .concat(TYPE_TEST_NOT_INT)
-    .concat(TYPE_TEST_NOT_BYTES)
-    .concat(TYPE_TEST_OPT),
+  hash: TYPE_TEST_BASE.concat(
+    TYPE_TEST_NOT_BOOL,
+    TYPE_TEST_NOT_INT,
+    TYPE_TEST_NOT_BYTES,
+    TYPE_TEST_OPT
+  ),
 };
 
 function median(list) {
