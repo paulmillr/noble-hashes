@@ -3,7 +3,15 @@ const fc = require('fast-check');
 const { describe, should } = require('micro-should');
 const { optional, integer, gen } = require('./generator');
 const { TYPE_TEST } = require('./utils');
-const { byteSwap, byteSwapIfBE, byteSwap32, isLE, bytesToHex, concatBytes, hexToBytes } = require('../utils');
+const {
+  byteSwap,
+  byteSwapIfBE,
+  byteSwap32,
+  isLE,
+  bytesToHex,
+  concatBytes,
+  hexToBytes,
+} = require('../utils');
 
 describe('utils', () => {
   const staticHexVectors = [
