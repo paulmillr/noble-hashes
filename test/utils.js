@@ -35,7 +35,12 @@ const TYPE_TEST_BASE = [
   async () => {},
   class Test {},
   Symbol.for('a'),
-  new Proxy(new Uint8Array(), {}),
+  new Proxy(new Uint8Array(), {
+    get(t, p, r) {
+      if (p === 'isProxy') return true;
+      return Reflect.get(t, p, r);
+    },
+  }),
 ];
 
 const TYPE_TEST_OPT = [
@@ -76,6 +81,12 @@ const TYPE_TEST = {
     TYPE_TEST_OPT
   ),
 };
+
+function repr(item) {
+  if (item && item.isProxy) return '[proxy]';
+  if (typeof item === 'symbol') return item.toString();
+  return `${item}`;
+}
 
 function median(list) {
   const values = list.slice().sort((a, b) => a - b);
@@ -122,6 +133,7 @@ module.exports = {
   truncate,
   repeat,
   TYPE_TEST,
+  repr,
   SPACE: {
     str: ' ',
     bytes: new Uint8Array([0x20]),

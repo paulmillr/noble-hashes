@@ -27,6 +27,7 @@ const {
   TYPE_TEST,
   SPACE,
   EMPTY,
+  repr,
 } = require('./utils');
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
@@ -449,12 +450,12 @@ function init() {
       should(`throw on wrong argument type`, () => {
         // Allowed only: undefined (for compact form only), string, Uint8Array
         for (const t of TYPE_TEST.bytes) {
-          throws(() => hash.fn(t), `compact(${t})`);
-          throws(() => hash.obj().update(t).digest(), `full(${t})`);
+          throws(() => hash.fn(t), `compact(${repr(t)})`);
+          throws(() => hash.obj().update(t).digest(), `full(${repr(t)})`);
         }
         throws(() => hash.fn(), `compact(undefined)`);
         throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
-        for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), `opt(${t})`);
+        for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), `opt(${repr(t)})`);
       });
       should(`check types`, () => {
         deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));

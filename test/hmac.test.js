@@ -9,6 +9,7 @@ const {
   bytesToHex,
   truncate,
   concatBytes,
+  repr,
   TYPE_TEST,
   SPACE,
   EMPTY,
@@ -167,18 +168,18 @@ describe('hmac', () => {
     hmac(sha256, 'key', 'msg');
     hmac.create(sha256, 'key');
     for (const t of TYPE_TEST.bytes) {
-      throws(() => hmac(sha256, t, 'msg'), `hmac(key=${t})`);
-      throws(() => hmac(sha256, 'key', t), `hmac(msg=${t})`);
-      throws(() => hmac.create(sha256, t), `hmac.create(key=${t})`);
+      throws(() => hmac(sha256, t, 'msg'), `hmac(key=${repr(t)})`);
+      throws(() => hmac(sha256, 'key', t), `hmac(msg=${repr(t)})`);
+      throws(() => hmac.create(sha256, t), `hmac.create(key=${repr(t)})`);
     }
     throws(() => hmac(sha256, undefined, 'msg'), `hmac(key=undefined)`);
     throws(() => hmac(sha256, 'key'), `hmac(msg=undefined)`);
     throws(() => hmac.create(sha256, undefined), `hmac.create(key=undefined)`);
     // for (const t of TYPE_TEST.opts) {
-    //   throws(() => hmac(sha256, 'key', 'salt', t), `hmac(opt=${t})`);
-    //   throws(() => hmac.create(sha256, 'key', t), `hmac.create(opt=${t})`);
+    //   throws(() => hmac(sha256, 'key', 'salt', t), `hmac(opt=${repr(t})`);
+    //   throws(() => hmac.create(sha256, 'key', t), `hmac.create(opt=${repr(t)})`);
     // }
-    for (const t of TYPE_TEST.hash) throws(() => hmac(t, 'key', 'salt'), `hmac(hash=${t})`);
+    for (const t of TYPE_TEST.hash) throws(() => hmac(t, 'key', 'salt'), `hmac(hash=${repr(t)})`);
     deepStrictEqual(
       hmac(sha512, SPACE.str, SPACE.str),
       hmac(sha512, SPACE.bytes, SPACE.bytes),
