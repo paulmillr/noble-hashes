@@ -38,7 +38,7 @@ function aoutput(out: any, instance: any) {
   }
 }
 
-export { anumber, abytes, abytes as bytes, ahash, aexists, aoutput };
+export { anumber, anumber as number, abytes, abytes as bytes, ahash, aexists, aoutput };
 
 const assert = {
   number: anumber,
