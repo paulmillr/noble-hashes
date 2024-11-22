@@ -2,10 +2,6 @@ function anumber(n: number) {
   if (!Number.isSafeInteger(n) || n < 0) throw new Error('positive integer expected, got ' + n);
 }
 
-function abool(b: boolean) {
-  if (typeof b !== 'boolean') throw new Error('boolean expected, got ' + b);
-}
-
 // copied from utils
 function isBytes(a: unknown): a is Uint8Array {
   return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
@@ -42,11 +38,10 @@ function aoutput(out: any, instance: any) {
   }
 }
 
-export { anumber, abool, abytes, ahash, aexists, aoutput };
+export { anumber, abytes, ahash, aexists, aoutput };
 
 const assert = {
   number: anumber,
-  bool: abool,
   bytes: abytes,
   hash: ahash,
   exists: aexists,
