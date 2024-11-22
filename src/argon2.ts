@@ -190,6 +190,11 @@ export type ArgonOpts = {
   onProgress?: (progress: number) => void;
 };
 
+const maxUint32 = 2 ** 32;
+function isUint32(num: number) {
+  return Number.isSafeInteger(num) && num >= 0 && num < maxUint32;
+}
+
 function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
   password = toBytes(password);
   salt = toBytes(salt);
@@ -206,21 +211,20 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
   assertNumber(m);
   assertNumber(t);
   assertNumber(version);
-  if (dkLen < 4 || dkLen >= 2 ** 32) throw new Error('Argon2: dkLen should be at least 4 bytes');
-  if (p < 1 || p >= 2 ** 24)
+  if (!isUint32(dkLen) || dkLen < 4) throw new Error('Argon2: dkLen should be at least 4 bytes');
+  if (!isUint32(p) || p < 1 || p >= 2 ** 24)
     throw new Error('Argon2: p (parallelism) should be at least 1 and less than 2^24');
-  if (t < 1 || t >= 2 ** 32)
+  if (!isUint32(t) || t < 1)
     throw new Error('Argon2: t (iterations) should be at least 1 and less than 2^32');
   /*
   Memory size m MUST be an integer number of kibibytes from 8*p to 2^(32)-1. The actual number of blocks is m', which is m rounded down to the nearest multiple of 4*p.
   */
-  if (m < 8 * p) throw new Error(`Argon2: memory should be at least 8*p bytes`);
-  if (version !== 0x10 && version !== 0x13) throw new Error(`Argon2: unknown version=${version}`);
+  if (m < 8 * p) throw new Error('Argon2: memory should be at least 8*p bytes');
+  if (version !== 0x10 && version !== 0x13) throw new Error('Argon2: unknown version=' + version);
   password = toBytes(password);
-  if (password.length < 0 || password.length >= 2 ** 32)
-    throw new Error('Argon2: password should be less than 4 GB');
+  if (!isUint32(password.length)) throw new Error('Argon2: password should be less than 4 GB');
   salt = toBytes(salt);
-  if (salt.length < 8 || salt.length >= 2 ** 32)
+  if (!isUint32(salt.length) || salt.length < 8)
     throw new Error('Argon2: salt should be at least 8 bytes and less than 4 GB');
   key = toBytesOptional(key);
   personalization = toBytesOptional(personalization);
@@ -240,8 +244,8 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
   const h = blake2b.create({});
   const BUF = new Uint32Array(1);
   const BUF8 = u8(BUF);
-  for (const i of [p, dkLen, m, t, version, type]) {
-    if (i < 0 || i >= 2 ** 32) throw new Error(`Argon2: wrong parameter=${i}, expected uint32`);
+  for (const [k, i] of Object.entries({ p, dkLen, m, t, version, type })) {
+    if (!isUint32(i)) throw new Error('Argon2: invalid parameter=' + k + ', expected uint32');
     BUF[0] = i; // BUF is u32 array, this is valid
     h.update(BUF8);
   }
@@ -254,10 +258,9 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
   h.digestInto(H0_8);
   // 256 u32 = 1024 (BLOCK_SIZE), fills A2_BUF on processing
   const memUsed = mP * 256;
-  if (memUsed < 0 || memUsed >= 2 ** 32 || memUsed > maxmem) {
-    throw new Error(
-      `Argon2: wrong params (memUsed=${memUsed} maxmem=${maxmem}), should be less than 2**32`
-    );
+  if (!isUint32(maxmem) || memUsed > maxmem) {
+    const res = [String(maxmem), String(memUsed)].join(', ');
+    throw new Error('Argon2: maxmem and memUsed should be less than 2**32, got: ' + res);
   }
   const B = new Uint32Array(memUsed);
   // Fill first blocks
