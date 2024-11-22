@@ -547,6 +547,8 @@ The current performance is good enough when compared to other projects; SHA256 t
    scrypt with 1024 different `N, r, p` combinations, etc. **Takes several hours**. Using 8-32+ core CPU helps.
 7. `npm run format` will fix lint issues
 
+`test/misc` directory contains implementations of loop unrolling and md5.
+
 ## Resources
 
 Check out [paulmillr.com/noble](https://paulmillr.com/noble/)
