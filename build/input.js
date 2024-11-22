@@ -19,6 +19,8 @@ export {
   keccak_256,
   keccak_384,
   keccak_512,
+  shake128,
+  shake256
 } from '@noble/hashes/sha3';
 export {
   cshake128, cshake256, kmac128, kmac256, k12, m14, turboshake128, turboshake256
