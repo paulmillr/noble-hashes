@@ -14,7 +14,7 @@ export function isBytes(a: unknown): a is Uint8Array {
 function bytes(b: Uint8Array | undefined, ...lengths: number[]) {
   if (!isBytes(b)) throw new Error('Uint8Array expected');
   if (lengths.length > 0 && !lengths.includes(b.length))
-    throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length)
+    throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
 }
 
 type Hash = {
