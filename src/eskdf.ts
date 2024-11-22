@@ -43,14 +43,12 @@ function strHasLength(str: string, min: number, max: number): boolean {
 export function deriveMainSeed(username: string, password: string): Uint8Array {
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
   if (!strHasLength(password, 8, 255)) throw new Error('invalid password');
-  // Declared like this to fool minifiers which auto-convert .fromCharCode(1) to actual string.
+  // Declared like this to throw off minifiers which auto-convert .fromCharCode(1) to actual string.
   // String with non-ascii may be problematic in some envs
-  const _1 = 1;
-  const _2 = 2;
-  const sepS = String.fromCharCode(_1);
-  const sepP = String.fromCharCode(_2);
-  const scr = scrypt(password + sepS, username + sepS);
-  const pbk = pbkdf2(password + sepP, username + sepP);
+  const codes = { _1: 1, _2: 2 };
+  const sep = { s: String.fromCharCode(codes._1), p: String.fromCharCode(codes._2) };
+  const scr = scrypt(password + sep.s, username + sep.s);
+  const pbk = pbkdf2(password + sep.p, username + sep.p);
   const res = xor32(scr, pbk);
   scr.fill(0);
   pbk.fill(0);
