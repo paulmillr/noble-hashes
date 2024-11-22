@@ -1,4 +1,4 @@
-import { bytes as assertBytes } from './_assert.js';
+import { abytes } from './_assert.js';
 import { hkdf } from './hkdf.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.js';
@@ -24,8 +24,8 @@ export function pbkdf2(password: string, salt: string): Uint8Array {
 
 // Combines two 32-byte byte arrays
 function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
-  assertBytes(a, 32);
-  assertBytes(b, 32);
+  abytes(a, 32);
+  abytes(b, 32);
   const arr = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
     arr[i] = a[i] ^ b[i];
@@ -168,7 +168,7 @@ export async function eskdf(username: string, password: string): Promise<ESKDF> 
   let seed: Uint8Array | undefined = deriveMainSeed(username, password);
 
   function deriveCK(protocol: string, accountId: AccountID = 0, options?: KeyOpts): Uint8Array {
-    assertBytes(seed, 32);
+    abytes(seed, 32);
     const { salt, info } = getSaltInfo(protocol, accountId); // validate protocol & accountId
     const keyLength = getKeyLength(options); // validate options
     const key = hkdf(sha256, seed!, salt, info, keyLength);

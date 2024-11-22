@@ -1,4 +1,4 @@
-import { number as assertNumber } from './_assert.js';
+import { anumber } from './_assert.js';
 import {
   Input,
   toBytes,
@@ -182,7 +182,7 @@ export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
     cshakePers(this, { NISTfn: 'ParallelHash', personalization: opts.personalization });
     let { blockLen: B } = opts;
     B ||= 8;
-    assertNumber(B);
+    anumber(B);
     this.chunkLen = B;
     super.update(leftEncode(B));
     // Change update after cshake processed
@@ -376,7 +376,7 @@ export const m14 = /* @__PURE__ */ (() =>
 export class KeccakPRG extends Keccak {
   protected rate: number;
   constructor(capacity: number) {
-    assertNumber(capacity);
+    anumber(capacity);
     // Rho should be full bytes
     if (capacity < 0 || capacity > 1600 - 10 || (1600 - capacity - 2) % 8)
       throw new Error('KeccakPRG: Invalid capacity');

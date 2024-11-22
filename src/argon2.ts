@@ -1,4 +1,4 @@
-import { number as assertNumber } from './_assert.js';
+import { anumber as anumber } from './_assert.js';
 import { Input, toBytes, u8, u32, nextTick } from './utils.js';
 import { blake2b } from './blake2b.js';
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
@@ -206,11 +206,11 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
     asyncTick: 10,
   };
   // Validation
-  assertNumber(p);
-  assertNumber(dkLen);
-  assertNumber(m);
-  assertNumber(t);
-  assertNumber(version);
+  anumber(p);
+  anumber(dkLen);
+  anumber(m);
+  anumber(t);
+  anumber(version);
   if (!isUint32(dkLen) || dkLen < 4) throw new Error('Argon2: dkLen should be at least 4 bytes');
   if (!isUint32(p) || p < 1 || p >= 2 ** 24)
     throw new Error('Argon2: p (parallelism) should be at least 1 and less than 2^24');

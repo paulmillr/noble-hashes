@@ -1,4 +1,4 @@
-import { exists, output } from './_assert.js';
+import { aexists, aoutput } from './_assert.js';
 import { Hash, createView, Input, toBytes } from './utils.js';
 
 /**
@@ -55,7 +55,7 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     this.view = createView(this.buffer);
   }
   update(data: Input): this {
-    exists(this);
+    aexists(this);
     const { view, buffer, blockLen } = this;
     data = toBytes(data);
     const len = data.length;
@@ -80,8 +80,8 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     return this;
   }
   digestInto(out: Uint8Array) {
-    exists(this);
-    output(out, this);
+    aexists(this);
+    aoutput(out, this);
     this.finished = true;
     // Padding
     // We can avoid allocation of buffer for padding completely if it

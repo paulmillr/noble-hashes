@@ -1,4 +1,4 @@
-import { number, exists, output } from './_assert.js';
+import { anumber, aexists, aoutput } from './_assert.js';
 import { Hash, Input, toBytes, u32, isLE, byteSwap32, byteSwapIfBE } from './utils.js';
 
 // Blake is based on ChaCha permutation.
@@ -48,9 +48,9 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     persLen: number
   ) {
     super();
-    number(blockLen);
-    number(outputLen);
-    number(keyLen);
+    anumber(blockLen);
+    anumber(outputLen);
+    anumber(keyLen);
     if (outputLen < 0 || outputLen > keyLen) throw new Error('outputLen bigger than keyLen');
     if (opts.key !== undefined && (opts.key.length < 1 || opts.key.length > keyLen))
       throw new Error('key length must be undefined or 1..' + keyLen);
@@ -62,7 +62,7 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     this.buffer32 = u32(this.buffer);
   }
   update(data: Input) {
-    exists(this);
+    aexists(this);
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
     // is the next one. This significantly complicates logic and reduces ability
@@ -101,8 +101,8 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     return this;
   }
   digestInto(out: Uint8Array) {
-    exists(this);
-    output(out, this);
+    aexists(this);
+    aoutput(out, this);
     const { pos, buffer32 } = this;
     this.finished = true;
     // Padding

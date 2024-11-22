@@ -7,7 +7,7 @@
 // Makes the utils un-importable in browsers without a bundler.
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 import { crypto } from '@noble/hashes/crypto';
-import { bytes as abytes } from './_assert.js';
+import { abytes } from './_assert.js';
 // export { isBytes } from './_assert.js';
 // We can't reuse isBytes from _assert, because somehow this causes huge perf issues
 export function isBytes(a: unknown): a is Uint8Array {
@@ -33,7 +33,8 @@ export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (w
 export const rotl = (word: number, shift: number) =>
   (word << shift) | ((word >>> (32 - shift)) >>> 0);
 
-export const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
+export const isLE = /* @__PURE__ */ (() =>
+  new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
 // The byte swap operation for uint32
 export const byteSwap = (word: number) =>
   ((word << 24) & 0xff000000) |
@@ -197,13 +198,12 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
   xofInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
 };
 
-const toStr = {}.toString;
 type EmptyObj = {};
 export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   defaults: T1,
   opts?: T2
 ): T1 & T2 {
-  if (opts !== undefined && toStr.call(opts) !== '[object Object]')
+  if (opts !== undefined && {}.toString.call(opts) !== '[object Object]')
     throw new Error('Options should be object or undefined');
   const merged = Object.assign(defaults, opts);
   return merged as T1 & T2;

@@ -1,4 +1,4 @@
-import { number as assertNumber } from './_assert.js';
+import { anumber } from './_assert.js';
 import { sha256 } from './sha256.js';
 import { pbkdf2 } from './pbkdf2.js';
 import { rotl, asyncLoop, checkOpts, Input, u32, isLE, byteSwap32 } from './utils.js';
@@ -96,12 +96,12 @@ function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
     _opts
   );
   const { N, r, p, dkLen, asyncTick, maxmem, onProgress } = opts;
-  assertNumber(N);
-  assertNumber(r);
-  assertNumber(p);
-  assertNumber(dkLen);
-  assertNumber(asyncTick);
-  assertNumber(maxmem);
+  anumber(N);
+  anumber(r);
+  anumber(p);
+  anumber(dkLen);
+  anumber(asyncTick);
+  anumber(maxmem);
   if (onProgress !== undefined && typeof onProgress !== 'function')
     throw new Error('progressCb should be function');
   const blockSize = 128 * r;

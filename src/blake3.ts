@@ -1,4 +1,4 @@
-import { bytes, exists, number, output } from './_assert.js';
+import { abytes, aexists, anumber, aoutput } from './_assert.js';
 import { fromBig } from './_u64.js';
 import { BLAKE } from './_blake.js';
 import { compress, B2S_IV } from './blake2s.js';
@@ -66,7 +66,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   constructor(opts: Blake3Opts = {}, flags = 0) {
     super(64, opts.dkLen === undefined ? 32 : opts.dkLen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
     this.outputLen = opts.dkLen === undefined ? 32 : opts.dkLen;
-    number(this.outputLen);
+    anumber(this.outputLen);
     if (opts.key !== undefined && opts.context !== undefined)
       throw new Error('Blake3: only key or context can be specified at same time');
     else if (opts.key !== undefined) {
@@ -224,8 +224,8 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     this.b2CompressOut();
   }
   private writeInto(out: Uint8Array) {
-    exists(this, false);
-    bytes(out);
+    aexists(this, false);
+    abytes(out);
     this.finish();
     const { blockLen, bufferOut } = this;
     for (let pos = 0, len = out.length; pos < len; ) {
@@ -242,11 +242,11 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     return this.writeInto(out);
   }
   xof(bytes: number): Uint8Array {
-    number(bytes);
+    anumber(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
   digestInto(out: Uint8Array) {
-    output(out, this);
+    aoutput(out, this);
     if (this.finished) throw new Error('digest() was already called');
     this.enableXOF = false;
     this.writeInto(out);
