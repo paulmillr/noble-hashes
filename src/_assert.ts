@@ -1,9 +1,9 @@
 function number(n: number) {
-  if (!Number.isSafeInteger(n) || n < 0) throw new Error(`positive integer expected, not ${n}`);
+  if (!Number.isSafeInteger(n) || n < 0) throw new Error('positive integer expected, got ' + n);
 }
 
 function bool(b: boolean) {
-  if (typeof b !== 'boolean') throw new Error(`boolean expected, not ${b}`);
+  if (typeof b !== 'boolean') throw new Error('boolean expected, got ' + b);
 }
 
 // copied from utils
@@ -14,7 +14,7 @@ export function isBytes(a: unknown): a is Uint8Array {
 function bytes(b: Uint8Array | undefined, ...lengths: number[]) {
   if (!isBytes(b)) throw new Error('Uint8Array expected');
   if (lengths.length > 0 && !lengths.includes(b.length))
-    throw new Error(`Uint8Array expected of length ${lengths}, not of length=${b.length}`);
+    throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length)
 }
 
 type Hash = {
@@ -38,7 +38,7 @@ function output(out: any, instance: any) {
   bytes(out);
   const min = instance.outputLen;
   if (out.length < min) {
-    throw new Error(`digestInto() expects output buffer of length at least ${min}`);
+    throw new Error('digestInto() expects output buffer of length at least ' + min);
   }
 }
 

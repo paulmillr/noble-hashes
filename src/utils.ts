@@ -123,7 +123,7 @@ declare const TextEncoder: any;
  * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
  */
 export function utf8ToBytes(str: string): Uint8Array {
-  if (typeof str !== 'string') throw new Error(`utf8ToBytes expected string, got ${typeof str}`);
+  if (typeof str !== 'string') throw new Error('utf8ToBytes expected string, got ' + typeof str);
   return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
 

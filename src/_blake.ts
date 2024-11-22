@@ -53,12 +53,13 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     number(keyLen);
     if (outputLen < 0 || outputLen > keyLen) throw new Error('outputLen bigger than keyLen');
     if (opts.key !== undefined && (opts.key.length < 1 || opts.key.length > keyLen))
-      throw new Error(`key must be up 1..${keyLen} byte long or undefined`);
+      throw new Error('key length must be undefined or 1..' + keyLen);
     if (opts.salt !== undefined && opts.salt.length !== saltLen)
-      throw new Error(`salt must be ${saltLen} byte long or undefined`);
+      throw new Error('salt must be undefined or ' + saltLen);
     if (opts.personalization !== undefined && opts.personalization.length !== persLen)
-      throw new Error(`personalization must be ${persLen} byte long or undefined`);
-    this.buffer32 = u32((this.buffer = new Uint8Array(blockLen)));
+      throw new Error('personalization must be undefined or ' + persLen);
+    this.buffer = new Uint8Array(blockLen);
+    this.buffer32 = u32(this.buffer);
   }
   update(data: Input) {
     exists(this);

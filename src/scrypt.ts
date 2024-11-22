@@ -127,7 +127,7 @@ function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
   const memUsed = blockSize * (N + p);
   if (memUsed > maxmem) {
     throw new Error(
-      `Scrypt: parameters too large, ${memUsed} (128 * r * (N + p)) > ${maxmem} (maxmem)`
+      'Scrypt: memused is bigger than maxMem. Expected 128 * r * (N + p) > maxmem of ' + maxmem
     );
   }
   // [B0...Bp−1] ← PBKDF2HMAC-SHA256(Passphrase, Salt, 1, blockSize*ParallelizationFactor)

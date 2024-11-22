@@ -267,7 +267,7 @@ const genTurboshake = (blockLen: number, outputLen: number) =>
     const D = opts.D === undefined ? 0x1f : opts.D;
     // Section 2.1 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
     if (!Number.isSafeInteger(D) || D < 0x01 || D > 0x7f)
-      throw new Error(`turboshake: wrong domain separation byte: ${D}, should be 0x01..0x7f`);
+      throw new Error('invalid domain separation byte must be 0x01..0x7f, got: ' + D);
     return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);
   });
 
@@ -278,10 +278,10 @@ export const turboshake256 = /* @__PURE__ */ genTurboshake(136, 512 / 8);
 // Same as NIST rightEncode, but returns [0] for zero string
 function rightEncodeK12(n: number | bigint): Uint8Array {
   n = BigInt(n);
-  const res = [];
+  const res: number[] = [];
   for (; n > 0; n >>= _8n) res.unshift(Number(n & _ffn));
   res.push(res.length);
-  return new Uint8Array(res);
+  return Uint8Array.from(res);
 }
 
 export type KangarooOpts = { dkLen?: number; personalization?: Input };

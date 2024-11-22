@@ -43,8 +43,14 @@ function strHasLength(str: string, min: number, max: number): boolean {
 export function deriveMainSeed(username: string, password: string): Uint8Array {
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
   if (!strHasLength(password, 8, 255)) throw new Error('invalid password');
-  const scr = scrypt(password + '\u{1}', username + '\u{1}');
-  const pbk = pbkdf2(password + '\u{2}', username + '\u{2}');
+  // Declared like this to fool minifiers which auto-convert .fromCharCode(1) to actual string.
+  // String with non-ascii may be problematic in some envs
+  const _1 = 1;
+  const _2 = 2;
+  const sepS = String.fromCharCode(_1);
+  const sepP = String.fromCharCode(_2);
+  const scr = scrypt(password + sepS, username + sepS);
+  const pbk = pbkdf2(password + sepP, username + sepP);
   const res = xor32(scr, pbk);
   scr.fill(0);
   pbk.fill(0);
@@ -68,7 +74,8 @@ function getSaltInfo(protocol: string, accountId: AccountID = 0) {
   let salt: Uint8Array; // Extract salt. Default is undefined.
   if (typeof accountId === 'string') {
     if (!allowsStr) throw new Error('accountId must be a number');
-    if (!strHasLength(accountId, 1, 255)) throw new Error('accountId must be valid string');
+    if (!strHasLength(accountId, 1, 255))
+      throw new Error('accountId must be string of length 1..255');
     salt = toBytes(accountId);
   } else if (Number.isSafeInteger(accountId)) {
     if (accountId < 0 || accountId > 2 ** 32 - 1) throw new Error('invalid accountId');
@@ -76,7 +83,7 @@ function getSaltInfo(protocol: string, accountId: AccountID = 0) {
     salt = new Uint8Array(4);
     createView(salt).setUint32(0, accountId, false);
   } else {
-    throw new Error(`accountId must be a number${allowsStr ? ' or string' : ''}`);
+    throw new Error('accountId must be a number' + (allowsStr ? ' or string' : ''));
   }
   const info = toBytes(protocol);
   return { salt, info };
