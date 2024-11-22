@@ -8,7 +8,7 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2 & KangarooTwelve
-- 🪶 89KB (17KB gzipped) for everything, 10KB (2.5KB gzipped) for single-hash build
+- 🪶 47KB for everything, 5KB (2.5KB gzipped) for single-hash build
 
 Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
