@@ -361,7 +361,7 @@ Time it takes to derive Scrypt key under different values of N (2**N) on Apple M
 
 ```ts
 import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2';
-const result = argon2id('password', 'salt', { t: 2, m: 65536, p: 1 });
+const result = argon2id('password', 'saltsalt', { t: 2, m: 65536, p: 1 });
 ```
 
 Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
