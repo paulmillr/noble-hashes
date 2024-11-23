@@ -84,7 +84,7 @@ export function hexToBytes(hex: string): Uint8Array {
   if (typeof hex !== 'string') throw new Error('hex string expected, got ' + typeof hex);
   const hl = hex.length;
   const al = hl / 2;
-  if (hl % 2) throw new Error('padded hex string expected, got unpadded hex of length ' + hl);
+  if (hl % 2) throw new Error('hex string expected, got unpadded hex of length ' + hl);
   const array = new Uint8Array(al);
   for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
     const n1 = asciiToBase16(hex.charCodeAt(hi));
