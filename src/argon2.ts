@@ -202,7 +202,7 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
     ...opts,
     version: opts.version || 0x13,
     dkLen: opts.dkLen || 32,
-    maxmem: 2 ** 32,
+    maxmem: 2 ** 32 - 1,
     asyncTick: 10,
   };
   // Validation
