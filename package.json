@@ -4,8 +4,9 @@
   "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
   "files": [
     "/*.js",
-    "/*.d.ts",
     "/*.js.map",
+    "/*.d.ts",
+    "/*.d.ts.map",
     "esm",
     "src/*.ts"
   ],
