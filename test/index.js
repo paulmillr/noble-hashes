@@ -9,6 +9,7 @@ require('./sha3-addons.test.js');
 require('./turboshake.test.js');
 require('./hmac.test.js');
 require('./kdf.test.js');
+require('./argon2.test.js');
 require('./eskdf.test.js');
 require('./async.test.js');
 require('./clone.test.js');
