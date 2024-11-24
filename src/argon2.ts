@@ -1,4 +1,3 @@
-import { anumber as anumber } from './_assert.js';
 import { Input, toBytes, u8, u32, nextTick } from './utils.js';
 import { blake2b } from './blake2b.js';
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
@@ -16,11 +15,8 @@ JS argon is 2-10x slower than native code. Reasons:
 If you want fast JS KDF, we suggest Scrypt instead.
 */
 
-const enum Types {
-  Argond2d = 0,
-  Argon2i = 1,
-  Argon2id = 2,
-}
+const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
+type Types = (typeof AT)[keyof typeof AT];
 
 const ARGON2_SYNC_POINTS = 4;
 const toBytesOptional = (buf?: Input) => (buf !== undefined ? toBytes(buf) : new Uint8Array([]));
@@ -177,6 +173,9 @@ function indexAlpha(
 }
 
 // RFC 9106
+/**
+ * t: time cost, m: mem cost, p: parallelization
+ */
 export type ArgonOpts = {
   t: number; // Time cost, iterations count
   m: number; // Memory cost (in KB)
@@ -195,48 +194,45 @@ function isUint32(num: number) {
   return Number.isSafeInteger(num) && num >= 0 && num < maxUint32;
 }
 
-function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
-  password = toBytes(password);
-  salt = toBytes(salt);
-  let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } = {
-    ...opts,
-    version: opts.version || 0x13,
-    dkLen: opts.dkLen || 32,
+function initOpts(opts: ArgonOpts) {
+  const merged: any = {
+    version: 0x13,
+    dkLen: 32,
     maxmem: 2 ** 32 - 1,
     asyncTick: 10,
   };
-  // Validation
-  anumber(p);
-  anumber(dkLen);
-  anumber(m);
-  anumber(t);
-  anumber(version);
+  for (let [k, v] of Object.entries(opts)) if (v != null) merged[k] = v;
+
+  const { dkLen, p, m, t, version, onProgress } = merged;
   if (!isUint32(dkLen) || dkLen < 4) throw new Error('Argon2: dkLen should be at least 4 bytes');
   if (!isUint32(p) || p < 1 || p >= 2 ** 24)
     throw new Error('Argon2: p (parallelism) should be at least 1 and less than 2^24');
+  if (!isUint32(m)) throw new Error('Argon2: m should be 0 <= m < 2^32');
   if (!isUint32(t) || t < 1)
     throw new Error('Argon2: t (iterations) should be at least 1 and less than 2^32');
+  if (onProgress !== undefined && typeof onProgress !== 'function')
+    throw new Error('progressCb should be function');
   /*
   Memory size m MUST be an integer number of kibibytes from 8*p to 2^(32)-1. The actual number of blocks is m', which is m rounded down to the nearest multiple of 4*p.
   */
-  if (m < 8 * p) throw new Error('Argon2: memory should be at least 8*p bytes');
+  if (!isUint32(m) || m < 8 * p) throw new Error('Argon2: memory should be at least 8*p bytes');
   if (version !== 0x10 && version !== 0x13) throw new Error('Argon2: unknown version=' + version);
+  return merged;
+}
+
+function argon2Init(password: Input, salt: Input, type: Types, opts: ArgonOpts) {
   password = toBytes(password);
-  if (!isUint32(password.length)) throw new Error('Argon2: password should be less than 4 GB');
   salt = toBytes(salt);
+  if (!isUint32(password.length)) throw new Error('Argon2: password should be less than 4 GB');
   if (!isUint32(salt.length) || salt.length < 8)
     throw new Error('Argon2: salt should be at least 8 bytes and less than 4 GB');
+  if (!Object.values(AT).includes(type)) throw new Error('invalid argon2 type');
+  let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } =
+    initOpts(opts);
+
+  // Validation
   key = toBytesOptional(key);
   personalization = toBytesOptional(personalization);
-  if (onProgress !== undefined && typeof onProgress !== 'function')
-    throw new Error('progressCb should be function');
-  // Params
-  const lanes = p;
-  // m' = 4 * p * floor (m / 4p)
-  const mP = 4 * p * Math.floor(m / (ARGON2_SYNC_POINTS * p));
-  //q = m' / p columns
-  const laneLen = Math.floor(mP / p);
-  const segmentLen = Math.floor(laneLen / ARGON2_SYNC_POINTS);
   // H_0 = H^(64)(LE32(p) || LE32(T) || LE32(m) || LE32(t) ||
   //       LE32(v) || LE32(y) || LE32(length(P)) || P ||
   //       LE32(length(S)) || S ||  LE32(length(K)) || K ||
@@ -244,9 +240,8 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
   const h = blake2b.create({});
   const BUF = new Uint32Array(1);
   const BUF8 = u8(BUF);
-  for (const [k, i] of Object.entries({ p, dkLen, m, t, version, type })) {
-    if (!isUint32(i)) throw new Error('Argon2: invalid parameter=' + k + ', expected uint32');
-    BUF[0] = i; // BUF is u32 array, this is valid
+  for (let item of [p, dkLen, m, t, version, type]) {
+    BUF[0] = item;
     h.update(BUF8);
   }
   for (let i of [password, salt, key, personalization]) {
@@ -257,11 +252,19 @@ function argon2Init(type: Types, password: Input, salt: Input, opts: ArgonOpts) 
   const H0_8 = u8(H0);
   h.digestInto(H0_8);
   // 256 u32 = 1024 (BLOCK_SIZE), fills A2_BUF on processing
+
+  // Params
+  const lanes = p;
+  // m' = 4 * p * floor (m / 4p)
+  const mP = 4 * p * Math.floor(m / (ARGON2_SYNC_POINTS * p));
+  //q = m' / p columns
+  const laneLen = Math.floor(mP / p);
+  const segmentLen = Math.floor(laneLen / ARGON2_SYNC_POINTS);
   const memUsed = mP * 256;
-  if (!isUint32(maxmem) || memUsed > maxmem) {
-    const res = [String(maxmem), String(memUsed)].join(', ');
-    throw new Error('Argon2: maxmem and memUsed should be less than 2**32, got: ' + res);
-  }
+  if (!isUint32(maxmem) || memUsed > maxmem)
+    throw new Error(
+      'Argon2: mem should be less than 2**32, got: maxmem=' + maxmem + ', memused=' + memUsed
+    );
   const B = new Uint32Array(memUsed);
   // Fill first blocks
   for (let l = 0; l < p; l++) {
@@ -319,13 +322,14 @@ function processBlock(
   if (offset % laneLen) prev = offset - 1;
   let randL, randH;
   if (dataIndependent) {
-    if (index % 128 === 0) {
+    let i128 = index % 128;
+    if (i128 === 0) {
       address[256 + 12]++;
       block(address, 256, 2 * 256, 0, false);
       block(address, 0, 2 * 256, 0, false);
     }
-    randL = address[2 * (index % 128)];
-    randH = address[2 * (index % 128) + 1];
+    randL = address[2 * i128];
+    randH = address[2 * i128 + 1];
   } else {
     const T = 256 * prev;
     randL = B[T];
@@ -341,9 +345,9 @@ function processBlock(
 
 function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
   const { mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock } = argon2Init(
-    type,
     password,
     salt,
+    type,
     opts
   );
   // Pre-loop setup
@@ -357,7 +361,7 @@ function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
     address[256 + 0] = r;
     for (let s = 0; s < ARGON2_SYNC_POINTS; s++) {
       address[256 + 4] = s;
-      const dataIndependent = type == Types.Argon2i || (type == Types.Argon2id && r === 0 && s < 2);
+      const dataIndependent = type == AT.Argon2i || (type == AT.Argon2id && r === 0 && s < 2);
       for (let l = 0; l < p; l++) {
         address[256 + 2] = l;
         address[256 + 12] = 0;
@@ -400,15 +404,15 @@ function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
 }
 
 export const argon2d = (password: Input, salt: Input, opts: ArgonOpts) =>
-  argon2(Types.Argond2d, password, salt, opts);
+  argon2(AT.Argond2d, password, salt, opts);
 export const argon2i = (password: Input, salt: Input, opts: ArgonOpts) =>
-  argon2(Types.Argon2i, password, salt, opts);
+  argon2(AT.Argon2i, password, salt, opts);
 export const argon2id = (password: Input, salt: Input, opts: ArgonOpts) =>
-  argon2(Types.Argon2id, password, salt, opts);
+  argon2(AT.Argon2id, password, salt, opts);
 
 async function argon2Async(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
   const { mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick } =
-    argon2Init(type, password, salt, opts);
+    argon2Init(password, salt, type, opts);
   // Pre-loop setup
   // [address, input, zero_block] format so we can pass single U32 to block function
   const address = new Uint32Array(3 * 256);
@@ -421,7 +425,7 @@ async function argon2Async(type: Types, password: Input, salt: Input, opts: Argo
     address[256 + 0] = r;
     for (let s = 0; s < ARGON2_SYNC_POINTS; s++) {
       address[256 + 4] = s;
-      const dataIndependent = type == Types.Argon2i || (type == Types.Argon2id && r === 0 && s < 2);
+      const dataIndependent = type == AT.Argon2i || (type == AT.Argon2id && r === 0 && s < 2);
       for (let l = 0; l < p; l++) {
         address[256 + 2] = l;
         address[256 + 12] = 0;
@@ -470,8 +474,8 @@ async function argon2Async(type: Types, password: Input, salt: Input, opts: Argo
 }
 
 export const argon2dAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
-  argon2Async(Types.Argond2d, password, salt, opts);
+  argon2Async(AT.Argond2d, password, salt, opts);
 export const argon2iAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
-  argon2Async(Types.Argon2i, password, salt, opts);
+  argon2Async(AT.Argon2i, password, salt, opts);
 export const argon2idAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
-  argon2Async(Types.Argon2id, password, salt, opts);
+  argon2Async(AT.Argon2id, password, salt, opts);
