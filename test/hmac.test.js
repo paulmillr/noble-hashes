@@ -14,6 +14,7 @@ const {
   SPACE,
   EMPTY,
 } = require('./utils');
+const { Hash } = require('../utils');
 
 // HMAC test vectors from RFC 4231
 const HMAC_VECTORS = [
@@ -224,6 +225,18 @@ describe('hmac', () => {
       bytesToHex(h.digest()),
       'a1ae63339c4fac449464e302c61e8ceb5b28c04d108e022179ce6dabb2d3e310cb3bf41cd6013b3006f33c037e6b7fa8'
     );
+  });
+
+  should('not be created with invalid hash fn', () => {
+    function fakeHash() {}
+    fakeHash.create = () => {
+      return {};
+    };
+    fakeHash.update = () => {};
+    // no fakeHash.update()
+    fakeHash.blockLen = 32;
+    fakeHash.outputLen = 32;
+    throws(() => hmac(fakeHash, EMPTY.str, EMPTY.str));
   });
 });
 

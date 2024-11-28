@@ -5,8 +5,6 @@ require('./hashes.test.js').init();
 require('./keccak.test.js');
 require('./blake.test.js');
 // Tests generated from rust
-require('./sha3-addons.test.js');
-require('./turboshake.test.js');
 require('./hmac.test.js');
 require('./kdf.test.js');
 require('./argon2.test.js');

@@ -5,6 +5,7 @@ const { HASHES } = require('./hashes.test');
 const { bytes, integer, gen, RANDOM, serializeCase, executeKDFTests } = require('./generator');
 const { sha256 } = require('../sha256');
 const { sha512 } = require('../sha512');
+const { cshake128 } = require('../sha3-addons');
 const { hmac } = require('../hmac');
 const { hkdf } = require('../hkdf');
 const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
@@ -225,6 +226,17 @@ should('Hmac 4GB', async () => {
 should('Hmac 5GB', async () => {
   const exp = hexToBytes('669fbe7961b70cb36f9d5559e939c4303090991a270586c23f2e6c2b82d2a4af');
   deepStrictEqual(hmac(sha256, ZERO_5GB, ZERO_5GB), exp);
+});
+
+should('cshake >4gb (GH-101)', () => {
+  const rng = cshake128(new Uint8Array(), { dkLen: 536_871_912 + 1000 });
+  const S = rng.subarray(0, 536_871_912);
+  const data = rng.subarray(536_871_912);
+  const res = cshake128(data, { personalization: S, dkLen: 32 });
+  deepStrictEqual(
+    bytesToHex(res),
+    '2cb9f237767e98f2614b8779cf096a52da9b3a849280bbddec820771ae529cf0'
+  );
 });
 
 // cross-test
