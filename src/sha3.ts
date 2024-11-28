@@ -108,6 +108,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     // Can be passed from user as dkLen
     anumber(outputLen);
     // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
+    // 0 < blockLen < 200
     if (0 >= this.blockLen || this.blockLen >= 200)
       throw new Error('Sha3 supports only keccak-f1600 function');
     this.state = new Uint8Array(200);
