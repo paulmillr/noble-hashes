@@ -69,7 +69,6 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
   - [Randomness](#randomness)
 - [Speed](#speed)
 - [Contributing & testing](#contributing--testing)
-- [Resources](#resources)
 - [License](#license)
 
 ### Implementations
