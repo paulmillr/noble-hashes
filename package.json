@@ -11,8 +11,8 @@
     "src/*.ts"
   ],
   "scripts": {
-    "bench": "node benchmark/hashes.js noble; node benchmark/kdf.js noble",
-    "bench:all": "node benchmark/hashes.js; node benchmark/kdf.js",
+    "bench": "node benchmark/noble.js",
+    "bench:compare": "node benchmark/hashes.js; node benchmark/kdf.js",
     "bench:install": "cd benchmark; npm install; npm install .. --install-links",
     "build": "npm run build:clean; tsc && tsc -p tsconfig.esm.json",
     "build:clean": "rm -f *.{js,d.ts,js.map,d.ts.map} esm/*.{js,js.map,d.ts.map}",
