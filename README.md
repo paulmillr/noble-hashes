@@ -482,6 +482,15 @@ In the past, browsers had bugs that made it weak: it may happen again.
 Implementing a userspace CSPRNG to get resilient to the weakness
 is even worse: there is no reliable userspace source of quality entropy.
 
+### Quantum computers
+
+Cryptographically relevant quantum computer, if built, will allow to
+utilize Grover's algorithm to break hashes in 2^n/2 operations, instead of 2^n.
+
+This means SHA256 should be replaced with SHA512, SHA3-256 with SHA3-512, SHAKE128 with SHAKE256 etc.
+
+Australian ASD prohibits SHA256 and similar hashes [after 2030](https://www.cyber.gov.au/resources-business-and-government/essential-cyber-security/ism/cyber-security-guidelines/guidelines-cryptography).
+
 ## Speed
 
 Benchmarks measured on Apple M1 with macOS 12.
