@@ -11,7 +11,13 @@ const {
   bytesToHex,
   concatBytes,
   hexToBytes,
+  createView,
+  isBytes,
+  randomBytes,
 } = require('../utils');
+const assert = require('../_assert');
+const { sha256 } = require('../sha256');
+const { setBigUint64 } = require('../_md');
 
 describe('utils', () => {
   const staticHexVectors = [
@@ -147,6 +153,105 @@ describe('utils etc', () => {
             10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
             20 21 22 23 24 25`)
     );
+  });
+  should('setBigUint64', () => {
+    const t = new Uint8Array(20);
+    const v = createView(t);
+    const VECTORS = [
+      {
+        n: 123n,
+        le: false,
+        hex: '000000000000007b000000000000000000000000',
+      },
+      {
+        n: 123n,
+        le: true,
+        hex: '7b00000000000000000000000000000000000000',
+      },
+      {
+        n: 2n ** 64n - 1n,
+        le: true,
+        hex: 'ffffffffffffffff000000000000000000000000',
+      },
+      {
+        n: 2n ** 64n - 1n,
+        le: true,
+        hex: '000000ffffffffffffffff000000000000000000',
+        pos: 3,
+      },
+      {
+        n: 0x123456789abcdef0n,
+        le: true,
+        hex: 'f0debc9a78563412000000000000000000000000',
+      },
+      {
+        n: 0x123456789abcdef0n,
+        le: false,
+        hex: '123456789abcdef0000000000000000000000000',
+      },
+    ];
+    const createViewMock = (u8) => {
+      const v = createView(u8);
+      return {
+        setUint32: (o, wh, isLE) => v.setUint32(o, wh, isLE),
+      };
+    };
+
+    for (const cv of [createView, createViewMock]) {
+      for (const t of VECTORS) {
+        const b = new Uint8Array(20);
+        const v = cv(b);
+        setBigUint64(v, t.pos || 0, t.n, t.le);
+        deepStrictEqual(bytesToHex(b), t.hex);
+      }
+    }
+  });
+  should('randomBytes', () => {
+    const t = randomBytes(32);
+    deepStrictEqual(t instanceof Uint8Array, true);
+    deepStrictEqual(t.length, 32);
+    const t2 = randomBytes(12);
+    deepStrictEqual(t2 instanceof Uint8Array, true);
+    deepStrictEqual(t2.length, 12);
+  });
+  should('isBytes', () => {
+    deepStrictEqual(isBytes(new Uint8Array(0)), true);
+    deepStrictEqual(isBytes(Buffer.alloc(10)), true);
+    deepStrictEqual(isBytes(''), false);
+    deepStrictEqual(isBytes([1, 2, 3]), false);
+  });
+});
+
+describe('assert', () => {
+  should('anumber', () => {
+    deepStrictEqual(assert.anumber(10), undefined);
+    throws(() => assert.anumber(1.2));
+    throws(() => assert.anumber('1'));
+    throws(() => assert.anumber(true));
+    throws(() => assert.anumber(NaN));
+  });
+  should('abytes', () => {
+    deepStrictEqual(assert.abytes(new Uint8Array(0)), undefined);
+    deepStrictEqual(assert.abytes(Buffer.alloc(10)), undefined);
+    deepStrictEqual(assert.abytes(new Uint8Array(10)), undefined);
+    assert.abytes(new Uint8Array(11), 11, 12);
+    assert.abytes(new Uint8Array(12), 12, 12);
+    throws(() => assert.abytes('test'));
+    throws(() => assert.abytes(new Uint8Array(10), 11, 12));
+    throws(() => assert.abytes(new Uint8Array(10), 11, 12));
+  });
+  should('ahash', () => {
+    deepStrictEqual(assert.ahash(sha256), undefined);
+    throws(() => assert.ahash({}));
+    throws(() => assert.ahash({ blockLen: 1, outputLen: 1, create: () => {} }));
+  });
+  should('aexists', () => {
+    deepStrictEqual(assert.aexists({}), undefined);
+    throws(() => assert.aexists({ destroyed: true }));
+  });
+  should('aoutput', () => {
+    deepStrictEqual(assert.aoutput(new Uint8Array(10), { outputLen: 5 }), undefined);
+    throws(() => assert.aoutput(new Uint8Array(1), { outputLen: 5 }));
   });
 });
 

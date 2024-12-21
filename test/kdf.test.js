@@ -237,6 +237,14 @@ describe('scrypt', () => {
     await rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: 0 }), `scrypt(N=0)`);
     // N==1 -> throws
     throws(() => scrypt('pwd', 'salt', { ...opt, N: 1 }), `scrypt(N=1)`);
+    // on progress callback
+    throws(() => scrypt('pwd', 'salt', { ...opt, onProgress: true }));
+    // P = 0
+    throws(() => scrypt('pwd', 'salt', { ...opt, p: -1 }));
+    throws(() => scrypt('pwd', 'salt', { ...opt, p: 2 ** 48 }));
+    // dkLen
+    throws(() => scrypt('pwd', 'salt', { ...opt, dkLen: -1 }));
+    throws(() => scrypt('pwd', 'salt', { ...opt, dkLen: 2 ** 48 }));
     await rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: 1 }), `scrypt(N=1)`);
     for (const t of TYPE_TEST.int) {
       for (const k of ['N', 'r', 'p', 'dkLen']) {

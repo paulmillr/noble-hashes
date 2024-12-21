@@ -1,4 +1,4 @@
-const { deepStrictEqual } = require('assert');
+const { deepStrictEqual, throws } = require('assert');
 const { describe, should } = require('micro-should');
 const { argon2i, argon2d, argon2id } = require('../argon2');
 const { argon2iAsync, argon2dAsync, argon2idAsync } = require('../argon2');
@@ -9,7 +9,7 @@ const asyncMap = new Map([
   [argon2d, argon2dAsync],
   [argon2id, argon2idAsync],
 ]);
-
+const IGNORE_SLOW = false;
 const VECTORS = [
   {
     fn: argon2i,
@@ -342,9 +342,38 @@ const VECTORS = [
     salt: 'diffsalt',
     exp: 'bdf32b05ccc42eb15d58fd19b1f856b113da1e9a5874fdcc544308565aa8141c',
   },
-].filter((i) => !!i);
+].filter((i) => !!i && (!IGNORE_SLOW || i.m <= 256));
 
 describe('Argon2', () => {
+  should('types', async () => {
+    const opt = {
+      t: 2,
+      m: 256,
+      p: 1,
+    };
+    argon2id('password', 'diffsalt', opt);
+    throws(() => argon2id('password', 'diffsalt', { ...opt, p: 0 }));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, p: true }));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, t: 0 }));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, t: true }));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, onProgress: true }));
+    throws(() => argon2id('password', 'salt', opt));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, maxmem: 1 }));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, maxmem: true }));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, dkLen: 0 }));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, m: true }));
+    throws(() => argon2id('password', 'diffsalt', { ...opt, m: 1 }));
+    throws(() => argon2id('password', true, opt));
+    throws(() => argon2id(true, 'diffsalt', opt));
+    const t = [];
+    await argon2idAsync('password', 'diffsalt', {
+      ...opt,
+      onProgress: (p) => {
+        t.push(p);
+      },
+    });
+    deepStrictEqual(t.length !== 0, true);
+  });
   for (let i = 0; i < VECTORS.length; i++) {
     const v = VECTORS[i];
     const ver = v.version || 0x13;

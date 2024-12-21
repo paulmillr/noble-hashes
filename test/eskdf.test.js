@@ -1,4 +1,4 @@
-const { equal, rejects, throws } = require('assert');
+const { equal, rejects, throws, deepStrictEqual } = require('assert');
 const { describe, should } = require('micro-should');
 const { eskdf } = require('../eskdf');
 const { bytesToHex: toHex } = require('../utils');
@@ -46,6 +46,40 @@ describe('eskdf', () => {
       throws(() => e.deriveChildKey('aes', 0, { keyLength: 64, modulus: BigInt(65537) }));
     });
   }
+  should('types', async () => {
+    const keyc = await eskdf('test@test.com', 'test2test');
+    deepStrictEqual(
+      toHex(keyc.deriveChildKey('ssh', 'test')),
+      '3bc39ad06a15d4867aaa53f4025077ecca7cd33b3f5b9da131b50586601726fa'
+    );
+    deepStrictEqual(
+      toHex(keyc.deriveChildKey('ssh', 0)),
+      'd7b14774e815d429e75b5f366b0df4eff32343e94f1b30a5e12eaab682974667'
+    );
+
+    throws(() => keyc.deriveChildKey('ssh', 'test', { keyLength: 1, modulus: 1 }));
+    throws(() => keyc.deriveChildKey('ssh', 'test', {}));
+    deepStrictEqual(
+      toHex(keyc.deriveChildKey('ssh', 0, { keyLength: 16 })),
+      'd7b14774e815d429e75b5f366b0df4ef'
+    );
+    throws(() => keyc.deriveChildKey('ssh', 'test', { modulus: -1n }));
+    throws(() => keyc.deriveChildKey('ssh', 'test', { modulus: 1n }));
+    deepStrictEqual(
+      toHex(keyc.deriveChildKey('ssh', 0, { modulus: 2n ** 128n - 1n })),
+      'e75b5f366b0df4f1a285d2d31f46d8f8'
+    );
+    throws(() => keyc.deriveChildKey('ssh', ''));
+    throws(() => keyc.deriveChildKey('ssh', '1'.repeat(256)));
+    throws(() => keyc.deriveChildKey('tmp', 'test'));
+    throws(() => keyc.deriveChildKey('ssh', true));
+    throws(() => keyc.deriveChildKey('ssh', 100n));
+    throws(() => keyc.deriveChildKey('ssh', new Uint8Array(10)));
+    // Expire
+    keyc.expire();
+    throws(() => keyc.deriveChildKey('ssh', 'test'));
+    throws(() => keyc.deriveChildKey('ssh', 0));
+  });
 });
 
 // should.run();

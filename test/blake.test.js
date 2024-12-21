@@ -44,11 +44,13 @@ describe('blake', () => {
   should(`BLAKE2s: key`, () => {
     for (const key of TYPE_TEST.bytes) throws(() => blake2s.fn('data', { key }));
     throws(() => blake2s.fn('data', { key: new Uint8Array(33) }));
+    throws(() => blake2s.fn('data', { key: new Uint8Array(0) }));
   });
 
   should(`BLAKE2b: key`, () => {
     for (const key of TYPE_TEST.bytes) throws(() => blake2b.fn('data', { key }));
     throws(() => blake2b.fn('data', { key: new Uint8Array(65) }));
+    throws(() => blake2b.fn('data', { key: new Uint8Array(0) }));
   });
 
   should(`BLAKE2s: personalization/salt`, () => {

@@ -4,7 +4,12 @@ import { Hash, createView, Input, toBytes } from './utils.js';
 /**
  * Polyfill for Safari 14
  */
-function setBigUint64(view: DataView, byteOffset: number, value: bigint, isLE: boolean): void {
+export function setBigUint64(
+  view: DataView,
+  byteOffset: number,
+  value: bigint,
+  isLE: boolean
+): void {
   if (typeof view.setBigUint64 === 'function') return view.setBigUint64(byteOffset, value, isLE);
   const _32n = BigInt(32);
   const _u32_max = BigInt(0xffffffff);

@@ -10,7 +10,7 @@ export const B2S_IV = /* @__PURE__ */ new Uint32Array([
 ]);
 
 // Mixing function G splitted in two halfs
-function G1s(a: number, b: number, c: number, d: number, x: number) {
+export function G1s(a: number, b: number, c: number, d: number, x: number) {
   a = (a + b + x) | 0;
   d = rotr(d ^ a, 16);
   c = (c + d) | 0;
@@ -18,7 +18,7 @@ function G1s(a: number, b: number, c: number, d: number, x: number) {
   return { a, b, c, d };
 }
 
-function G2s(a: number, b: number, c: number, d: number, x: number) {
+export function G2s(a: number, b: number, c: number, d: number, x: number) {
   a = (a + b + x) | 0;
   d = rotr(d ^ a, 8);
   c = (c + d) | 0;

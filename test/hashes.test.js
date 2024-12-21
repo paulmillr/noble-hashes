@@ -470,6 +470,17 @@ function init() {
         );
       });
 
+      should('clone', () => {
+        const exp = hash.fn(BUF_768);
+        const t = hash.obj();
+        t.update(BUF_768.subarray(0, 10));
+        const t2 = t.clone();
+        t2.update(BUF_768.subarray(10));
+        deepStrictEqual(t2.digest(), exp);
+        t.update(BUF_768.subarray(10));
+        deepStrictEqual(t.digest(), exp);
+      });
+
       should('partial', () => {
         const fnH = hash.fn(BUF_768);
         for (let i = 0; i < 256; i++) {
