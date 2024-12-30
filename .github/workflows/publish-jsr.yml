@@ -1,0 +1,16 @@
+name: Publish package to JSR
+on:
+  release:
+    types: [created]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: actions/checkout@v4
+      - name: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno publish --unstable-sloppy-imports --allow-slow-types

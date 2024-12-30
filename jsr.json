@@ -1,0 +1,43 @@
+{
+  "name": "@noble/hashes",
+  "version": "1.6.1",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./crypto": "./src/crypto.ts",
+    "./_assert": "./src/_assert.ts",
+    "./_md": "./src/_md.ts",
+    "./argon2": "./src/argon2.ts",
+    "./blake2b": "./src/blake2b.ts",
+    "./blake2s": "./src/blake2s.ts",
+    "./blake3": "./src/blake3.ts",
+    "./eskdf": "./src/eskdf.ts",
+    "./hkdf": "./src/hkdf.ts",
+    "./hmac": "./src/hmac.ts",
+    "./pbkdf2": "./src/pbkdf2.ts",
+    "./ripemd160": "./src/ripemd160.ts",
+    "./scrypt": "./src/scrypt.ts",
+    "./sha1": "./src/sha1.ts",
+    "./sha2": "./src/sha2.ts",
+    "./sha3-addons": "./src/sha3-addons.ts",
+    "./sha3": "./src/sha3.ts",
+    "./sha256": "./src/sha256.ts",
+    "./sha512": "./src/sha512.ts",
+    "./utils": "./src/utils.ts"
+  },
+  "imports": {
+    "@noble/hashes/crypto": "./src/crypto.ts"
+  },
+  "publish": {
+    "include": [
+      "src",
+      "README.md"
+    ],
+    "exclude": [
+      "src/cryptoNode.ts"
+    ]
+  },
+  "compilerOptions": {
+    "noImplicitOverride": false
+  }
+}
