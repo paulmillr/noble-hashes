@@ -1,7 +1,6 @@
 {
   "name": "@noble/hashes",
   "version": "1.6.1",
-  "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
     "./crypto": "./src/crypto.ts",
@@ -31,13 +30,12 @@
   "publish": {
     "include": [
       "src",
+      "jsr.json",
+      "LICENSE",
       "README.md"
     ],
     "exclude": [
       "src/cryptoNode.ts"
     ]
-  },
-  "compilerOptions": {
-    "noImplicitOverride": false
   }
 }
