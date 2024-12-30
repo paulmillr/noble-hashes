@@ -1,4 +1,4 @@
-name: Publish packge to jsr
+name: Publish package to jsr
 on:
   release:
     types: [created]
