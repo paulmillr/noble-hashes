@@ -1,4 +1,4 @@
-import { mark, utils } from 'micro-bmark';
+import { compareMatrix, mark, utils } from 'micro-bmark';
 // Noble
 import { sha256, sha384, sha512 } from '@noble/hashes/sha2';
 // import { sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
@@ -27,12 +27,27 @@ import nobleUnrolled from 'unrolled-nbl-hashes-sha3';
 import { SHA3 as _SHA3 } from 'sha3';
 import wasm_ from 'hash-wasm';
 
+function buf(size) {
+  return new Uint8Array(size).fill(size % 251);
+}
+
+// buffer title, sample count, data
+const buffers = {
+  '32B': buf(32),
+  // '64B': buf(64),
+  // '1KB': buf(1024),
+  // '8KB': buf(1024 * 8),
+  '1MB': buf(1024 * 1024),
+};
+
 const wasm = {};
-const wrapBuf = (arrayBuffer) => new Uint8Array(arrayBuffer);
-const ONLY_NOBLE = process.argv[2] === 'noble';
+
+function samples(buf) {
+  return buf.length === 32 ? 500_000 : 250;
+}
 
 const HASHES = {
-  SHA256: {
+  sha256: {
     node: (buf) => crypto_createHash('sha256').update(buf).digest(),
     'hash-wasm': (buf) => wasm.sha256.init().update(buf).digest(),
     'crypto-browserify': (buf) => createHash('sha256').update(buf).digest(),
@@ -41,14 +56,14 @@ const HASHES = {
     noble: (buf) => sha256(buf),
     webcrypto: (buf) => globalThis.crypto.subtle.digest('SHA-256', buf),
   },
-  SHA384: {
+  sha384: {
     node: (buf) => crypto_createHash('sha384').update(buf).digest(),
     'crypto-browserify': (buf) => createHash('sha384').update(buf).digest(),
     stablelib: (buf) => stable2_384.hash(buf),
     noble: (buf) => sha384(buf),
     webcrypto: (buf) => globalThis.crypto.subtle.digest('SHA-384', buf),
   },
-  SHA512: {
+  sha512: {
     node: (buf) => crypto_createHash('sha512').update(buf).digest(),
     'hash-wasm': (buf) => wasm.sha512.init().update(buf).digest(),
     'crypto-browserify': (buf) => createHash('sha512').update(buf).digest(),
@@ -56,62 +71,58 @@ const HASHES = {
     noble: (buf) => sha512(buf),
     webcrypto: (buf) => globalThis.crypto.subtle.digest('SHA-512', buf),
   },
-  'SHA3-256, keccak256, shake256': {
+  sha3_256: {
     node: (buf) => crypto_createHash('sha3-256').update(buf).digest(),
     'hash-wasm': (buf) => wasm.sha3.init().update(buf).digest(),
     stablelib: (buf) => new stable3.SHA3256().update(buf).digest(),
-    'js-sha3': (buf) => wrapBuf(jssha3.sha3_256.create().update(buf).arrayBuffer()),
+    'js-sha3': (buf) => new Uint8Array(jssha3.sha3_256.create().update(buf).arrayBuffer()),
     sha3: (buf) => new _SHA3(256).update(Buffer.from(buf)).digest(),
     'noble (unrolled)': (buf) => nobleUnrolled.sha3_256(buf),
     noble: (buf) => sha3_256(buf),
   },
-  Kangaroo12: { noble: (buf) => k12(buf) },
-  Marsupilami14: { noble: (buf) => m14(buf) },
-  BLAKE2b: {
+  k12: { noble: (buf) => k12(buf) },
+  m14: { noble: (buf) => m14(buf) },
+  blake2b: {
     node: (buf) => crypto_createHash('blake2b512').update(buf).digest(),
     'hash-wasm': (buf) => wasm.blake2b.init().update(buf).digest(),
     stablelib: (buf) => new stableb2b.BLAKE2b().update(buf).digest(),
     noble: (buf) => blake2b(buf),
   },
-  BLAKE2s: {
+  blake2s: {
     node: (buf) => crypto_createHash('blake2s256').update(buf).digest(),
     'hash-wasm': (buf) => wasm.blake2s.init().update(buf).digest(),
     stablelib: (buf) => new stableb2s.BLAKE2s().update(buf).digest(),
     noble: (buf) => blake2s(buf),
   },
-  BLAKE3: {
+  blake3: {
     'hash-wasm': (buf) => wasm.blake3.init().update(buf).digest(),
     noble: (buf) => blake3(buf),
   },
-  RIPEMD160: {
+  ripemd160: {
     node: (buf) => crypto_createHash('ripemd160').update(buf).digest(),
     'crypto-browserify': (buf) => createHash('ripemd160').update(Buffer.from(buf)).digest(),
     noble: (buf) => ripemd160(buf),
   },
-  'HMAC-SHA256': {
+  'hmac(sha256)': {
     node: (buf) => crypto_createHmac('sha256', buf).update(buf).digest(),
     'crypto-browserify': (buf) => createHmac('sha256', buf).update(buf).digest(),
     stablelib: (buf) => new stableHmac.HMAC(stable256.SHA256, buf).update(buf).digest(),
     noble: (buf) => hmac(sha256, buf, buf),
     webcrypto: async (buf) => {
-      const key = await globalThis.crypto.subtle.importKey('raw', buf, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const key = await globalThis.crypto.subtle.importKey(
+        'raw',
+        buf,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
       return await globalThis.crypto.subtle.sign('HMAC', key, buf);
     },
   },
 };
 
-// buffer title, sample count, data
-const buffers = {
-  '32B': [500000, new Uint8Array(32).fill(1)],
-  // '64B': [200000, new Uint8Array(64).fill(1)],
-  // '1KB': [50000, new Uint8Array(1024).fill(2)],
-  // '8KB': [6250, new Uint8Array(1024 * 8).fill(3)],
-  // // Slow, but 100 doesn't show difference, probably opt doesn't happen or something
-  // '1MB': [250, new Uint8Array(1024 * 1024).fill(4)],
-};
-
 async function main() {
-  if (!ONLY_NOBLE) {
+  if (typeof wasm_ !== 'undefined') {
     wasm.sha256 = await wasm_.createSHA256();
     wasm.sha512 = await wasm_.createSHA512();
     wasm.sha3 = await wasm_.createSHA3();
@@ -120,17 +131,8 @@ async function main() {
     wasm.blake3 = await wasm_.createBLAKE3();
   }
   for (let [k, libs] of Object.entries(HASHES)) {
-    if (!ONLY_NOBLE) console.log(`==== ${k} ====`);
-    for (const [size, [samples, buf]] of Object.entries(buffers)) {
-      for (const [lib, fn] of Object.entries(libs)) {
-        if (ONLY_NOBLE && lib !== 'noble') continue;
-        // if (lib !== 'noble') continue;
-        let title = `${k} ${size}`;
-        if (!ONLY_NOBLE) title += ` ${lib}`;
-        await mark(title, samples, () => fn(buf));
-      }
-      if (!ONLY_NOBLE) console.log();
-    }
+    libs.samples = samples;
+    await compareMatrix(k, [buffers], libs);
   }
   // Log current RAM
   utils.logMem();

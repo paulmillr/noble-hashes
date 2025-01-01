@@ -7,7 +7,15 @@ const password = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]);
 const salt = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
 const ITERS = [1, 4, 8];
-const MEMORY = [256, 64 * 1024, 256 * 1024, 1 * 1024 * 1024]; // in KB (256kb, 64mb, 256mb, 1gb)
+const MEMORY = [1 * 1024 * 1024]; // in KB (256kb, 64mb, 256mb, 1gb)
+
+
+const matrix = [
+  {'i=1': 1, 'i=4': 4, 'i=8': 8},
+  {'256kb': 256, '64mb': 64 * 1024, '1gb': 256 * 1024},
+  {'32b out': new Uint8Array(32), '64b out': new Uint8Array(64)}
+];
+
 
 const KDF = {
   argon2id: {
@@ -34,7 +42,7 @@ const main = () =>
           if (!ONLY_NOBLE) console.log(`==== ${title} ====`);
           for (const [lib, fn] of Object.entries(libs)) {
             if (ONLY_NOBLE && lib !== 'noble') continue;
-            await mark(!ONLY_NOBLE ? lib : title, 10, () => fn(i, m));
+            await mark(!ONLY_NOBLE ? lib : title, 3, () => fn(i, m));
           }
           if (!ONLY_NOBLE) console.log();
         }
