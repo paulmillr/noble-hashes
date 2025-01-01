@@ -3,24 +3,25 @@
   "version": "1.6.1",
   "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
   "files": [
-    "*.js",
-    "*.js.map",
-    "*.d.ts",
-    "*.d.ts.map",
+    "/*.js",
+    "/*.js.map",
+    "/*.d.ts",
+    "/*.d.ts.map",
     "esm",
-    "src"
+    "src/*.ts"
   ],
   "scripts": {
     "bench": "node benchmark/noble.js",
     "bench:compare": "node benchmark/hashes.js; node benchmark/kdf.js",
     "bench:install": "cd benchmark; npm install; npm install .. --install-links",
     "build": "npm run build:clean; tsc && tsc -p tsconfig.esm.json",
-    "build:clean": "rm {.,esm}/*.{js,d.ts,d.ts.map,js.map} 2> /dev/null",
+    "build:clean": "rm -f *.{js,d.ts,js.map,d.ts.map} esm/*.{js,js.map,d.ts.map}",
     "lint": "prettier --check 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "test": "node test/index.js",
     "test:dos": "node test/slow-dos.test.js",
-    "test:big": "node test/slow-big.test.js"
+    "test:big": "node test/slow-big.test.js",
+    "coverage": "c8 node test/index.js"
   },
   "author": "Paul Miller (https://paulmillr.com)",
   "homepage": "https://paulmillr.com/noble/",
@@ -31,6 +32,7 @@
   "license": "MIT",
   "devDependencies": {
     "@paulmillr/jsbt": "0.2.1",
+    "c8": "10.1.2",
     "fast-check": "3.0.0",
     "micro-bmark": "0.3.1",
     "micro-should": "0.4.0",
