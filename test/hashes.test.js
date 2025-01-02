@@ -224,7 +224,8 @@ const HASHES = {
   SHAKE128: {
     fn: shake128,
     obj: shake128.create,
-    node: (buf) => Uint8Array.from(createHash('shake128').update(buf).digest()),
+    node: (buf) =>
+      Uint8Array.from(createHash('shake128', { outputLength: 16 }).update(buf).digest()),
     node_obj: () => createHash('shake128'),
     // There is no official vectors, so we created them via:
     // > NIST_VECTORS.map((i) => createHash('shake128').update(i[2]).digest('hex'))
@@ -239,7 +240,8 @@ const HASHES = {
   SHAKE256: {
     fn: shake256,
     obj: shake256.create,
-    node: (buf) => Uint8Array.from(createHash('shake256').update(buf).digest()),
+    node: (buf) =>
+      Uint8Array.from(createHash('shake256', { outputLength: 32 }).update(buf).digest()),
     node_obj: () => createHash('shake256'),
     // There is no official vectors, so we created them via:
     // > NIST_VECTORS.map((i) => createHash('shake256').update(i[2]).digest('hex'))
@@ -538,5 +540,5 @@ module.exports = { init, HASHES, NIST_VECTORS };
 
 if (require.main === module) {
   init();
-  should.runParallel();
+  should.run();
 }
