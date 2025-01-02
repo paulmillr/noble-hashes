@@ -127,17 +127,11 @@ See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
 #### sha3: FIPS, SHAKE, Keccak
 
 ```typescript
+// prettier-ignore
 import {
-  sha3_224,
-  sha3_256,
-  sha3_384,
-  sha3_512,
-  keccak_224,
-  keccak_256,
-  keccak_384,
-  keccak_512,
-  shake128,
-  shake256,
+  sha3_224, sha3_256, sha3_384, sha3_512,
+  keccak_224, keccak_256, keccak_384, keccak_512,
+  shake128, shake256,
 } from '@noble/hashes/sha3';
 const h5a = sha3_256('abc');
 const h5b = sha3_256
@@ -157,20 +151,13 @@ Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchang
 #### sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE
 
 ```typescript
+// prettier-ignore
 import {
-  cshake128,
-  cshake256,
-  kmac128,
-  kmac256,
-  k12,
-  m14,
-  turboshake128,
-  turboshake256,
-  tuplehash128,
-  tuplehash256,
-  parallelhash128,
-  parallelhash256,
-  keccakprg,
+  cshake128, cshake256,
+  turboshake128, turboshake256,
+  kmac128, kmac256,
+  tuplehash256, parallelhash256,
+  k12, m14, keccakprg
 } from '@noble/hashes/sha3-addons';
 const h7c = cshake128('abc', { personalization: 'def' });
 const h7d = cshake256('abc', { personalization: 'def' });
@@ -180,10 +167,10 @@ const h7h = k12('abc');
 const h7g = m14('abc');
 const h7t1 = turboshake128('abc');
 const h7t2 = turboshake256('def', { D: 0x05 });
-const h7i = tuplehash128(['ab', 'c']); // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash(['abc'])
+const h7i = tuplehash256(['ab', 'c']); // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash(['abc'])
 // Same as k12/blake3, but without reduced number of rounds. Doesn't speedup anything due lack of SIMD and threading,
 // added for compatibility.
-const h7j = parallelhash128('abc', { blockLen: 8 });
+const h7j = parallelhash256('abc', { blockLen: 8 });
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
 // * with a capacity of 254 bits.
 const p = keccakprg(254);
