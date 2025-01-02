@@ -5,7 +5,7 @@ import { Hash, Input, toBytes, u32, isLE, byteSwap32, byteSwapIfBE } from './uti
 
 // For BLAKE2b, the two extra permutations for rounds 10 and 11 are SIGMA[10..11] = SIGMA[0..1].
 // prettier-ignore
-export const SIGMA = /* @__PURE__ */ new Uint8Array([
+export const SIGMA: Uint8Array = /* @__PURE__ */ new Uint8Array([
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
   14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
   11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,
@@ -42,7 +42,7 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
   constructor(
     readonly blockLen: number,
     public outputLen: number,
-    opts: BlakeOpts = {},
+    opts: BlakeOpts | undefined = {},
     keyLen: number,
     saltLen: number,
     persLen: number
@@ -61,7 +61,7 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     this.buffer = new Uint8Array(blockLen);
     this.buffer32 = u32(this.buffer);
   }
-  update(data: Input) {
+  update(data: Input): this {
     aexists(this);
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
@@ -100,7 +100,7 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     }
     return this;
   }
-  digestInto(out: Uint8Array) {
+  digestInto(out: Uint8Array): void {
     aexists(this);
     aoutput(out, this);
     const { pos, buffer32 } = this;
@@ -113,7 +113,7 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     const out32 = u32(out);
     this.get().forEach((v, i) => (out32[i] = byteSwapIfBE(v)));
   }
-  digest() {
+  digest(): Uint8Array {
     const { buffer, outputLen } = this;
     this.digestInto(buffer);
     const res = buffer.slice(0, outputLen);

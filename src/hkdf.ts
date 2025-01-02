@@ -13,7 +13,7 @@ import { hmac } from './hmac.js';
  * @param salt
  * @returns
  */
-export function extract(hash: CHash, ikm: Input, salt?: Input) {
+export function extract(hash: CHash, ikm: Input, salt?: Input): Uint8Array {
   ahash(hash);
   // NOTE: some libraries treat zero-length array as 'not provided';
   // we don't, since we have undefined as 'not provided'
@@ -32,7 +32,7 @@ const EMPTY_BUFFER = /* @__PURE__ */ new Uint8Array();
  * @param info - optional context and application specific information (can be a zero-length string)
  * @param length - length of output keying material in octets
  */
-export function expand(hash: CHash, prk: Input, info?: Input, length: number = 32) {
+export function expand(hash: CHash, prk: Input, info?: Input, length: number = 32): Uint8Array {
   ahash(hash);
   anumber(length);
   if (length > 255 * hash.outputLen) throw new Error('Length should be <= 255*HashLen');
@@ -76,4 +76,4 @@ export const hkdf = (
   salt: Input | undefined,
   info: Input | undefined,
   length: number
-) => expand(hash, extract(hash, ikm, salt), info, length);
+): Uint8Array => expand(hash, extract(hash, ikm, salt), info, length);

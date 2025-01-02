@@ -3,7 +3,7 @@
 // See utils.ts for details.
 // @ts-ignore
 import * as nc from 'node:crypto';
-export const crypto =
+export const crypto: any =
   nc && typeof nc === 'object' && 'webcrypto' in nc
     ? (nc.webcrypto as any)
     : nc && typeof nc === 'object' && 'randomBytes' in nc

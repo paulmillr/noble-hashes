@@ -48,7 +48,7 @@ function pbkdf2Output<T extends Hash<T>>(
  * @param salt - cryptographic salt
  * @param opts - {c, dkLen} where c is work factor and dkLen is output message size
  */
-export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Opt) {
+export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Opt): Uint8Array {
   const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
   let prfW: any; // Working copy
   const arr = new Uint8Array(4);
@@ -72,7 +72,12 @@ export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Op
   return pbkdf2Output(PRF, PRFSalt, DK, prfW, u);
 }
 
-export async function pbkdf2Async(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Opt) {
+export async function pbkdf2Async(
+  hash: CHash,
+  password: Input,
+  salt: Input,
+  opts: Pbkdf2Opt
+): Promise<Uint8Array> {
   const { c, dkLen, asyncTick, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
   let prfW: any; // Working copy
   const arr = new Uint8Array(4);

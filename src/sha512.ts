@@ -1,6 +1,6 @@
 import { HashMD } from './_md.js';
 import u64 from './_u64.js';
-import { wrapConstructor } from './utils.js';
+import { CHash, wrapConstructor } from './utils.js';
 
 // Round contants (first 32 bits of the fractional parts of the cube roots of the first 80 primes 2..409):
 // prettier-ignore
@@ -35,22 +35,22 @@ export class SHA512 extends HashMD<SHA512> {
   // Also looks cleaner and easier to verify with spec.
   // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
   // h -- high 32 bits, l -- low 32 bits
-  Ah = 0x6a09e667 | 0;
-  Al = 0xf3bcc908 | 0;
-  Bh = 0xbb67ae85 | 0;
-  Bl = 0x84caa73b | 0;
-  Ch = 0x3c6ef372 | 0;
-  Cl = 0xfe94f82b | 0;
-  Dh = 0xa54ff53a | 0;
-  Dl = 0x5f1d36f1 | 0;
-  Eh = 0x510e527f | 0;
-  El = 0xade682d1 | 0;
-  Fh = 0x9b05688c | 0;
-  Fl = 0x2b3e6c1f | 0;
-  Gh = 0x1f83d9ab | 0;
-  Gl = 0xfb41bd6b | 0;
-  Hh = 0x5be0cd19 | 0;
-  Hl = 0x137e2179 | 0;
+  Ah: number = 0x6a09e667 | 0;
+  Al: number = 0xf3bcc908 | 0;
+  Bh: number = 0xbb67ae85 | 0;
+  Bl: number = 0x84caa73b | 0;
+  Ch: number = 0x3c6ef372 | 0;
+  Cl: number = 0xfe94f82b | 0;
+  Dh: number = 0xa54ff53a | 0;
+  Dl: number = 0x5f1d36f1 | 0;
+  Eh: number = 0x510e527f | 0;
+  El: number = 0xade682d1 | 0;
+  Fh: number = 0x9b05688c | 0;
+  Fl: number = 0x2b3e6c1f | 0;
+  Gh: number = 0x1f83d9ab | 0;
+  Gl: number = 0xfb41bd6b | 0;
+  Hh: number = 0x5be0cd19 | 0;
+  Hl: number = 0x137e2179 | 0;
 
   constructor() {
     super(128, 64, 16, false);
@@ -67,7 +67,7 @@ export class SHA512 extends HashMD<SHA512> {
   protected set(
     Ah: number, Al: number, Bh: number, Bl: number, Ch: number, Cl: number, Dh: number, Dl: number,
     Eh: number, El: number, Fh: number, Fl: number, Gh: number, Gl: number, Hh: number, Hl: number
-  ) {
+  ): void {
     this.Ah = Ah | 0;
     this.Al = Al | 0;
     this.Bh = Bh | 0;
@@ -85,7 +85,7 @@ export class SHA512 extends HashMD<SHA512> {
     this.Hh = Hh | 0;
     this.Hl = Hl | 0;
   }
-  protected process(view: DataView, offset: number) {
+  protected process(view: DataView, offset: number): void {
     // Extend the first 16 words into the remaining 64 words w[16..79] of the message schedule array
     for (let i = 0; i < 16; i++, offset += 4) {
       SHA512_W_H[i] = view.getUint32(offset);
@@ -155,11 +155,11 @@ export class SHA512 extends HashMD<SHA512> {
     ({ h: Hh, l: Hl } = u64.add(this.Hh | 0, this.Hl | 0, Hh | 0, Hl | 0));
     this.set(Ah, Al, Bh, Bl, Ch, Cl, Dh, Dl, Eh, El, Fh, Fl, Gh, Gl, Hh, Hl);
   }
-  protected roundClean() {
+  protected roundClean(): void {
     SHA512_W_H.fill(0);
     SHA512_W_L.fill(0);
   }
-  destroy() {
+  destroy(): void {
     this.buffer.fill(0);
     this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   }
@@ -167,22 +167,22 @@ export class SHA512 extends HashMD<SHA512> {
 
 export class SHA512_224 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
-  Ah = 0x8c3d37c8 | 0;
-  Al = 0x19544da2 | 0;
-  Bh = 0x73e19966 | 0;
-  Bl = 0x89dcd4d6 | 0;
-  Ch = 0x1dfab7ae | 0;
-  Cl = 0x32ff9c82 | 0;
-  Dh = 0x679dd514 | 0;
-  Dl = 0x582f9fcf | 0;
-  Eh = 0x0f6d2b69 | 0;
-  El = 0x7bd44da8 | 0;
-  Fh = 0x77e36f73 | 0;
-  Fl = 0x04c48942 | 0;
-  Gh = 0x3f9d85a8 | 0;
-  Gl = 0x6a1d36c8 | 0;
-  Hh = 0x1112e6ad | 0;
-  Hl = 0x91d692a1 | 0;
+  Ah: number = 0x8c3d37c8 | 0;
+  Al: number = 0x19544da2 | 0;
+  Bh: number = 0x73e19966 | 0;
+  Bl: number = 0x89dcd4d6 | 0;
+  Ch: number = 0x1dfab7ae | 0;
+  Cl: number = 0x32ff9c82 | 0;
+  Dh: number = 0x679dd514 | 0;
+  Dl: number = 0x582f9fcf | 0;
+  Eh: number = 0x0f6d2b69 | 0;
+  El: number = 0x7bd44da8 | 0;
+  Fh: number = 0x77e36f73 | 0;
+  Fl: number = 0x04c48942 | 0;
+  Gh: number = 0x3f9d85a8 | 0;
+  Gl: number = 0x6a1d36c8 | 0;
+  Hh: number = 0x1112e6ad | 0;
+  Hl: number = 0x91d692a1 | 0;
 
   constructor() {
     super();
@@ -192,22 +192,22 @@ export class SHA512_224 extends SHA512 {
 
 export class SHA512_256 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
-  Ah = 0x22312194 | 0;
-  Al = 0xfc2bf72c | 0;
-  Bh = 0x9f555fa3 | 0;
-  Bl = 0xc84c64c2 | 0;
-  Ch = 0x2393b86b | 0;
-  Cl = 0x6f53b151 | 0;
-  Dh = 0x96387719 | 0;
-  Dl = 0x5940eabd | 0;
-  Eh = 0x96283ee2 | 0;
-  El = 0xa88effe3 | 0;
-  Fh = 0xbe5e1e25 | 0;
-  Fl = 0x53863992 | 0;
-  Gh = 0x2b0199fc | 0;
-  Gl = 0x2c85b8aa | 0;
-  Hh = 0x0eb72ddc | 0;
-  Hl = 0x81c52ca2 | 0;
+  Ah: number = 0x22312194 | 0;
+  Al: number = 0xfc2bf72c | 0;
+  Bh: number = 0x9f555fa3 | 0;
+  Bl: number = 0xc84c64c2 | 0;
+  Ch: number = 0x2393b86b | 0;
+  Cl: number = 0x6f53b151 | 0;
+  Dh: number = 0x96387719 | 0;
+  Dl: number = 0x5940eabd | 0;
+  Eh: number = 0x96283ee2 | 0;
+  El: number = 0xa88effe3 | 0;
+  Fh: number = 0xbe5e1e25 | 0;
+  Fl: number = 0x53863992 | 0;
+  Gh: number = 0x2b0199fc | 0;
+  Gl: number = 0x2c85b8aa | 0;
+  Hh: number = 0x0eb72ddc | 0;
+  Hl: number = 0x81c52ca2 | 0;
 
   constructor() {
     super();
@@ -217,22 +217,22 @@ export class SHA512_256 extends SHA512 {
 
 export class SHA384 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
-  Ah = 0xcbbb9d5d | 0;
-  Al = 0xc1059ed8 | 0;
-  Bh = 0x629a292a | 0;
-  Bl = 0x367cd507 | 0;
-  Ch = 0x9159015a | 0;
-  Cl = 0x3070dd17 | 0;
-  Dh = 0x152fecd8 | 0;
-  Dl = 0xf70e5939 | 0;
-  Eh = 0x67332667 | 0;
-  El = 0xffc00b31 | 0;
-  Fh = 0x8eb44a87 | 0;
-  Fl = 0x68581511 | 0;
-  Gh = 0xdb0c2e0d | 0;
-  Gl = 0x64f98fa7 | 0;
-  Hh = 0x47b5481d | 0;
-  Hl = 0xbefa4fa4 | 0;
+  Ah: number = 0xcbbb9d5d | 0;
+  Al: number = 0xc1059ed8 | 0;
+  Bh: number = 0x629a292a | 0;
+  Bl: number = 0x367cd507 | 0;
+  Ch: number = 0x9159015a | 0;
+  Cl: number = 0x3070dd17 | 0;
+  Dh: number = 0x152fecd8 | 0;
+  Dl: number = 0xf70e5939 | 0;
+  Eh: number = 0x67332667 | 0;
+  El: number = 0xffc00b31 | 0;
+  Fh: number = 0x8eb44a87 | 0;
+  Fl: number = 0x68581511 | 0;
+  Gh: number = 0xdb0c2e0d | 0;
+  Gl: number = 0x64f98fa7 | 0;
+  Hh: number = 0x47b5481d | 0;
+  Hl: number = 0xbefa4fa4 | 0;
 
   constructor() {
     super();
@@ -240,7 +240,7 @@ export class SHA384 extends SHA512 {
   }
 }
 
-export const sha512 = /* @__PURE__ */ wrapConstructor(() => new SHA512());
-export const sha512_224 = /* @__PURE__ */ wrapConstructor(() => new SHA512_224());
-export const sha512_256 = /* @__PURE__ */ wrapConstructor(() => new SHA512_256());
-export const sha384 = /* @__PURE__ */ wrapConstructor(() => new SHA384());
+export const sha512: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512());
+export const sha512_224: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512_224());
+export const sha512_256: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512_256());
+export const sha384: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA384());

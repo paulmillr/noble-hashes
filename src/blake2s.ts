@@ -1,16 +1,26 @@
 import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
 import { fromBig } from './_u64.js';
-import { rotr, toBytes, wrapConstructorWithOpts, u32, byteSwapIfBE } from './utils.js';
+import { CHashO, rotr, toBytes, wrapConstructorWithOpts, u32, byteSwapIfBE } from './utils.js';
 
 // Initial state: same as SHA256
 // first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
 // prettier-ignore
-export const B2S_IV = /* @__PURE__ */ new Uint32Array([
+export const B2S_IV: Uint32Array = /* @__PURE__ */ new Uint32Array([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 ]);
 
+// prettier-ignore
+type Num4 = { a: number; b: number; c: number; d: number; };
+// prettier-ignore
+type Num16 = {
+  v0: number; v1: number; v2: number; v3: number;
+  v4: number; v5: number; v6: number; v7: number;
+  v8: number; v9: number; v10: number; v11: number;
+  v12: number; v13: number; v14: number; v15: number;
+};
+
 // Mixing function G splitted in two halfs
-export function G1s(a: number, b: number, c: number, d: number, x: number) {
+export function G1s(a: number, b: number, c: number, d: number, x: number): Num4 {
   a = (a + b + x) | 0;
   d = rotr(d ^ a, 16);
   c = (c + d) | 0;
@@ -18,7 +28,7 @@ export function G1s(a: number, b: number, c: number, d: number, x: number) {
   return { a, b, c, d };
 }
 
-export function G2s(a: number, b: number, c: number, d: number, x: number) {
+export function G2s(a: number, b: number, c: number, d: number, x: number): Num4 {
   a = (a + b + x) | 0;
   d = rotr(d ^ a, 8);
   c = (c + d) | 0;
@@ -30,7 +40,7 @@ export function G2s(a: number, b: number, c: number, d: number, x: number) {
 export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds: number,
   v0: number, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number,
   v8: number, v9: number, v10: number, v11: number, v12: number, v13: number, v14: number, v15: number,
-) {
+): Num16 {
   let j = 0;
   for (let i = 0; i < rounds; i++) {
     ({ a: v0, b: v4, c: v8, d: v12 } = G1s(v0, v4, v8, v12, msg[offset + s[j++]]));
@@ -93,7 +103,7 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
   // prettier-ignore
   protected set(
     v0: number, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number
-  ) {
+  ): void {
     this.v0 = v0 | 0;
     this.v1 = v1 | 0;
     this.v2 = v2 | 0;
@@ -103,7 +113,7 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
     this.v6 = v6 | 0;
     this.v7 = v7 | 0;
   }
-  protected compress(msg: Uint32Array, offset: number, isLast: boolean) {
+  protected compress(msg: Uint32Array, offset: number, isLast: boolean): void {
     const { h, l } = fromBig(BigInt(this.length));
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
@@ -121,7 +131,7 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
     this.v6 ^= v6 ^ v14;
     this.v7 ^= v7 ^ v15;
   }
-  destroy() {
+  destroy(): void {
     this.destroyed = true;
     this.buffer32.fill(0);
     this.set(0, 0, 0, 0, 0, 0, 0, 0);
@@ -133,6 +143,6 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, salt, personalization
  */
-export const blake2s = /* @__PURE__ */ wrapConstructorWithOpts<BLAKE2s, BlakeOpts>(
+export const blake2s: CHashO = /* @__PURE__ */ wrapConstructorWithOpts<BLAKE2s, BlakeOpts>(
   (opts) => new BLAKE2s(opts)
 );

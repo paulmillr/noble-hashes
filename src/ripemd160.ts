@@ -1,5 +1,5 @@
 import { HashMD } from './_md.js';
-import { rotl, wrapConstructor } from './utils.js';
+import { rotl, wrapConstructor, CHash } from './utils.js';
 
 // https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
 // https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
@@ -49,7 +49,7 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
     const { h0, h1, h2, h3, h4 } = this;
     return [h0, h1, h2, h3, h4];
   }
-  protected set(h0: number, h1: number, h2: number, h3: number, h4: number) {
+  protected set(h0: number, h1: number, h2: number, h3: number, h4: number): void {
     this.h0 = h0 | 0;
     this.h1 = h1 | 0;
     this.h2 = h2 | 0;
@@ -91,10 +91,10 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
       (this.h0 + bl + cr) | 0
     );
   }
-  protected roundClean() {
+  protected roundClean(): void {
     R_BUF.fill(0);
   }
-  destroy() {
+  destroy(): void {
     this.destroyed = true;
     this.buffer.fill(0);
     this.set(0, 0, 0, 0, 0);
@@ -105,4 +105,4 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
  * RIPEMD-160 - a hash function from 1990s.
  * @param message - msg that would be hashed
  */
-export const ripemd160 = /* @__PURE__ */ wrapConstructor(() => new RIPEMD160());
+export const ripemd160: CHash = /* @__PURE__ */ wrapConstructor(() => new RIPEMD160());

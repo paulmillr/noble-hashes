@@ -403,11 +403,11 @@ function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
   return argon2Output(B, p, laneLen, dkLen);
 }
 
-export const argon2d = (password: Input, salt: Input, opts: ArgonOpts) =>
+export const argon2d = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argond2d, password, salt, opts);
-export const argon2i = (password: Input, salt: Input, opts: ArgonOpts) =>
+export const argon2i = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argon2i, password, salt, opts);
-export const argon2id = (password: Input, salt: Input, opts: ArgonOpts) =>
+export const argon2id = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argon2id, password, salt, opts);
 
 async function argon2Async(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
@@ -473,9 +473,9 @@ async function argon2Async(type: Types, password: Input, salt: Input, opts: Argo
   return argon2Output(B, p, laneLen, dkLen);
 }
 
-export const argon2dAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
+export const argon2dAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
   argon2Async(AT.Argond2d, password, salt, opts);
-export const argon2iAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
+export const argon2iAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
   argon2Async(AT.Argon2i, password, salt, opts);
-export const argon2idAsync = (password: Input, salt: Input, opts: ArgonOpts) =>
+export const argon2idAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
   argon2Async(AT.Argon2id, password, salt, opts);

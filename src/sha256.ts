@@ -1,5 +1,5 @@
 import { HashMD, Chi, Maj } from './_md.js';
-import { rotr, wrapConstructor } from './utils.js';
+import { rotr, wrapConstructor, CHash } from './utils.js';
 
 // SHA2-256 need to try 2^128 hashes to execute birthday attack.
 // BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per late 2024.
@@ -31,14 +31,14 @@ const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
 export class SHA256 extends HashMD<SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
-  A = SHA256_IV[0] | 0;
-  B = SHA256_IV[1] | 0;
-  C = SHA256_IV[2] | 0;
-  D = SHA256_IV[3] | 0;
-  E = SHA256_IV[4] | 0;
-  F = SHA256_IV[5] | 0;
-  G = SHA256_IV[6] | 0;
-  H = SHA256_IV[7] | 0;
+  A: number = SHA256_IV[0] | 0;
+  B: number = SHA256_IV[1] | 0;
+  C: number = SHA256_IV[2] | 0;
+  D: number = SHA256_IV[3] | 0;
+  E: number = SHA256_IV[4] | 0;
+  F: number = SHA256_IV[5] | 0;
+  G: number = SHA256_IV[6] | 0;
+  H: number = SHA256_IV[7] | 0;
 
   constructor() {
     super(64, 32, 8, false);
@@ -50,7 +50,7 @@ export class SHA256 extends HashMD<SHA256> {
   // prettier-ignore
   protected set(
     A: number, B: number, C: number, D: number, E: number, F: number, G: number, H: number
-  ) {
+  ): void {
     this.A = A | 0;
     this.B = B | 0;
     this.C = C | 0;
@@ -97,10 +97,10 @@ export class SHA256 extends HashMD<SHA256> {
     H = (H + this.H) | 0;
     this.set(A, B, C, D, E, F, G, H);
   }
-  protected roundClean() {
+  protected roundClean(): void {
     SHA256_W.fill(0);
   }
-  destroy() {
+  destroy(): void {
     this.set(0, 0, 0, 0, 0, 0, 0, 0);
     this.buffer.fill(0);
   }
@@ -125,8 +125,8 @@ class SHA224 extends SHA256 {
  * SHA2-256 hash function
  * @param message - data that would be hashed
  */
-export const sha256 = /* @__PURE__ */ wrapConstructor(() => new SHA256());
+export const sha256: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA256());
 /**
  * SHA2-224 hash function
  */
-export const sha224 = /* @__PURE__ */ wrapConstructor(() => new SHA224());
+export const sha224: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA224());

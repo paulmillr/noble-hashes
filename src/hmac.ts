@@ -31,12 +31,12 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     this.oHash.update(pad);
     pad.fill(0);
   }
-  update(buf: Input) {
+  update(buf: Input): this {
     aexists(this);
     this.iHash.update(buf);
     return this;
   }
-  digestInto(out: Uint8Array) {
+  digestInto(out: Uint8Array): void {
     aexists(this);
     abytes(out, this.outputLen);
     this.finished = true;
@@ -45,7 +45,7 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     this.oHash.digestInto(out);
     this.destroy();
   }
-  digest() {
+  digest(): Uint8Array {
     const out = new Uint8Array(this.oHash.outputLen);
     this.digestInto(out);
     return out;
@@ -63,7 +63,7 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     to.iHash = iHash._cloneInto(to.iHash);
     return to;
   }
-  destroy() {
+  destroy(): void {
     this.destroyed = true;
     this.oHash.destroy();
     this.iHash.destroy();
@@ -80,6 +80,9 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
  * import { sha256 } from '@noble/hashes/sha2';
  * const mac1 = hmac(sha256, 'key', 'message');
  */
-export const hmac = (hash: CHash, key: Input, message: Input): Uint8Array =>
+export const hmac: {
+  (hash: CHash, key: Input, message: Input): Uint8Array;
+  create(hash: CHash, key: Input): HMAC<any>;
+} = (hash: CHash, key: Input, message: Input): Uint8Array =>
   new HMAC<any>(hash, key).update(message).digest();
 hmac.create = (hash: CHash, key: Input) => new HMAC<any>(hash, key);

@@ -1,5 +1,5 @@
 import { HashMD, Chi, Maj } from './_md.js';
-import { rotl, wrapConstructor } from './utils.js';
+import { rotl, wrapConstructor, CHash } from './utils.js';
 
 // SHA1 (RFC 3174). It was cryptographically broken: prefer newer algorithms.
 
@@ -25,7 +25,7 @@ export class SHA1 extends HashMD<SHA1> {
     const { A, B, C, D, E } = this;
     return [A, B, C, D, E];
   }
-  protected set(A: number, B: number, C: number, D: number, E: number) {
+  protected set(A: number, B: number, C: number, D: number, E: number): void {
     this.A = A | 0;
     this.B = B | 0;
     this.C = C | 0;
@@ -68,10 +68,10 @@ export class SHA1 extends HashMD<SHA1> {
     E = (E + this.E) | 0;
     this.set(A, B, C, D, E);
   }
-  protected roundClean() {
+  protected roundClean(): void {
     SHA1_W.fill(0);
   }
-  destroy() {
+  destroy(): void {
     this.set(0, 0, 0, 0, 0);
     this.buffer.fill(0);
   }
@@ -82,4 +82,4 @@ export class SHA1 extends HashMD<SHA1> {
  * It was cryptographically broken: prefer newer algorithms.
  * @param message - data that would be hashed
  */
-export const sha1 = /* @__PURE__ */ wrapConstructor(() => new SHA1());
+export const sha1: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA1());

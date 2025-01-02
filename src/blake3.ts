@@ -3,6 +3,7 @@ import { fromBig } from './_u64.js';
 import { BLAKE } from './_blake.js';
 import { compress, B2S_IV } from './blake2s.js';
 import {
+  CHashXO,
   Input,
   u8,
   u32,
@@ -90,10 +91,10 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     this.bufferOut = u8(this.bufferOut32);
   }
   // Unused
-  protected get() {
+  protected get(): [] {
     return [];
   }
-  protected set() {}
+  protected set(): void {}
   private b2Compress(counter: number, flags: number, buf: Uint32Array, bufPos: number = 0) {
     const { state: s, pos } = this;
     const { h, l } = fromBig(BigInt(counter), true);
@@ -113,7 +114,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     s[6] = v6 ^ v14;
     s[7] = v7 ^ v15;
   }
-  protected compress(buf: Uint32Array, bufPos: number = 0, isLast: boolean = false) {
+  protected compress(buf: Uint32Array, bufPos: number = 0, isLast: boolean = false): void {
     // Compress last block
     let flags = this.flags;
     if (!this.chunkPos) flags |= B3_Flags.CHUNK_START;
@@ -161,7 +162,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     to.bufferOut32.set(this.bufferOut32);
     return to;
   }
-  destroy() {
+  destroy(): void {
     this.destroyed = true;
     this.state.fill(0);
     this.buffer32.fill(0);
@@ -203,7 +204,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     }
     this.posOut = 0;
   }
-  protected finish() {
+  protected finish(): void {
     if (this.finished) return;
     this.finished = true;
     // Padding
@@ -245,7 +246,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     anumber(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
-  digestInto(out: Uint8Array) {
+  digestInto(out: Uint8Array): Uint8Array {
     aoutput(out, this);
     if (this.finished) throw new Error('digest() was already called');
     this.enableXOF = false;
@@ -253,7 +254,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     this.destroy();
     return out;
   }
-  digest() {
+  digest(): Uint8Array {
     return this.digestInto(new Uint8Array(this.outputLen));
   }
 }
@@ -263,6 +264,6 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, context
  */
-export const blake3 = /* @__PURE__ */ wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>(
+export const blake3: CHashXO = /* @__PURE__ */ wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>(
   (opts) => new BLAKE3(opts)
 );

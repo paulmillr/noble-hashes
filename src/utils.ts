@@ -19,33 +19,37 @@ export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
 
 // Cast array to different type
-export const u8 = (arr: TypedArray) => new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-export const u32 = (arr: TypedArray) =>
+export const u8 = (arr: TypedArray): Uint8Array =>
+  new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+export const u32 = (arr: TypedArray): Uint32Array =>
   new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
 
 // Cast array to view
-export const createView = (arr: TypedArray) =>
+export const createView = (arr: TypedArray): DataView =>
   new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
 
 // The rotate right (circular right shift) operation for uint32
-export const rotr = (word: number, shift: number) => (word << (32 - shift)) | (word >>> shift);
+export const rotr = (word: number, shift: number): number =>
+  (word << (32 - shift)) | (word >>> shift);
 // The rotate left (circular left shift) operation for uint32
-export const rotl = (word: number, shift: number) =>
+export const rotl = (word: number, shift: number): number =>
   (word << shift) | ((word >>> (32 - shift)) >>> 0);
 
-export const isLE = /* @__PURE__ */ (() =>
+export const isLE: boolean = /* @__PURE__ */ (() =>
   new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
 // The byte swap operation for uint32
-export const byteSwap = (word: number) =>
+export const byteSwap = (word: number): number =>
   ((word << 24) & 0xff000000) |
   ((word << 8) & 0xff0000) |
   ((word >>> 8) & 0xff00) |
   ((word >>> 24) & 0xff);
 // Conditionally byte swap if on a big-endian platform
-export const byteSwapIfBE = isLE ? (n: number) => n : (n: number) => byteSwap(n);
+export const byteSwapIfBE: (n: number) => number = isLE
+  ? (n: number) => n
+  : (n: number) => byteSwap(n);
 
 // In place byte swap for Uint32Array
-export function byteSwap32(arr: Uint32Array) {
+export function byteSwap32(arr: Uint32Array): void {
   for (let i = 0; i < arr.length; i++) {
     arr[i] = byteSwap(arr[i]);
   }
@@ -101,10 +105,14 @@ export function hexToBytes(hex: string): Uint8Array {
 // There is no setImmediate in browser and setTimeout is slow.
 // call of async fn will return Promise, which will be fullfiled only on
 // next scheduler queue processing step and this is exactly what we need.
-export const nextTick = async () => {};
+export const nextTick = async (): Promise<void> => {};
 
 // Returns control to thread each 'tick' ms to avoid blocking
-export async function asyncLoop(iters: number, tick: number, cb: (i: number) => void) {
+export async function asyncLoop(
+  iters: number,
+  tick: number,
+  cb: (i: number) => void
+): Promise<void> {
   let ts = Date.now();
   for (let i = 0; i < iters; i++) {
     cb(i);
@@ -210,8 +218,17 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
 }
 
 export type CHash = ReturnType<typeof wrapConstructor>;
+export type CHashO = ReturnType<typeof wrapConstructorWithOpts>;
+export type CHashXO = ReturnType<typeof wrapXOFConstructorWithOpts>;
 
-export function wrapConstructor<T extends Hash<T>>(hashCons: () => Hash<T>) {
+export function wrapConstructor<T extends Hash<T>>(
+  hashCons: () => Hash<T>
+): {
+  (msg: Input): Uint8Array;
+  outputLen: number;
+  blockLen: number;
+  create(): Hash<T>;
+} {
   const hashC = (msg: Input): Uint8Array => hashCons().update(toBytes(msg)).digest();
   const tmp = hashCons();
   hashC.outputLen = tmp.outputLen;
@@ -222,7 +239,12 @@ export function wrapConstructor<T extends Hash<T>>(hashCons: () => Hash<T>) {
 
 export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   hashCons: (opts?: T) => Hash<H>
-) {
+): {
+  (msg: Input, opts?: T): Uint8Array;
+  outputLen: number;
+  blockLen: number;
+  create(opts: T): Hash<H>;
+} {
   const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
@@ -233,7 +255,12 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
 
 export function wrapXOFConstructorWithOpts<H extends HashXOF<H>, T extends Object>(
   hashCons: (opts?: T) => HashXOF<H>
-) {
+): {
+  (msg: Input, opts?: T): Uint8Array;
+  outputLen: number;
+  blockLen: number;
+  create(opts: T): HashXOF<H>;
+} {
   const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;

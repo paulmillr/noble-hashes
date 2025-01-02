@@ -10,6 +10,8 @@ import {
   HashXOF,
   isLE,
   byteSwap32,
+  CHash,
+  CHashXO,
 } from './utils.js';
 
 // SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
@@ -46,7 +48,7 @@ const rotlH = (h: number, l: number, s: number) => (s > 32 ? rotlBH(h, l, s) : r
 const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
 
 // Same as keccakf1600, but allows to skip some rounds
-export function keccakP(s: Uint32Array, rounds: number = 24) {
+export function keccakP(s: Uint32Array, rounds: number = 24): void {
   const B = new Uint32Array(5 * 2);
   // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
   for (let round = 24 - rounds; round < 24; round++) {
@@ -114,14 +116,14 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.state = new Uint8Array(200);
     this.state32 = u32(this.state);
   }
-  protected keccak() {
+  protected keccak(): void {
     if (!isLE) byteSwap32(this.state32);
     keccakP(this.state32, this.rounds);
     if (!isLE) byteSwap32(this.state32);
     this.posOut = 0;
     this.pos = 0;
   }
-  update(data: Input) {
+  update(data: Input): this {
     aexists(this);
     const { blockLen, state } = this;
     data = toBytes(data);
@@ -133,7 +135,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     }
     return this;
   }
-  protected finish() {
+  protected finish(): void {
     if (this.finished) return;
     this.finished = true;
     const { state, suffix, pos, blockLen } = this;
@@ -167,17 +169,17 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     anumber(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
-  digestInto(out: Uint8Array) {
+  digestInto(out: Uint8Array): Uint8Array {
     aoutput(out, this);
     if (this.finished) throw new Error('digest() was already called');
     this.writeInto(out);
     this.destroy();
     return out;
   }
-  digest() {
+  digest(): Uint8Array {
     return this.digestInto(new Uint8Array(this.outputLen));
   }
-  destroy() {
+  destroy(): void {
     this.destroyed = true;
     this.state.fill(0);
   }
@@ -201,22 +203,22 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
 const gen = (suffix: number, blockLen: number, outputLen: number) =>
   wrapConstructor(() => new Keccak(blockLen, suffix, outputLen));
 
-export const sha3_224 = /* @__PURE__ */ gen(0x06, 144, 224 / 8);
+export const sha3_224: CHash = /* @__PURE__ */ gen(0x06, 144, 224 / 8);
 /**
  * SHA3-256 hash function
  * @param message - that would be hashed
  */
-export const sha3_256 = /* @__PURE__ */ gen(0x06, 136, 256 / 8);
-export const sha3_384 = /* @__PURE__ */ gen(0x06, 104, 384 / 8);
-export const sha3_512 = /* @__PURE__ */ gen(0x06, 72, 512 / 8);
-export const keccak_224 = /* @__PURE__ */ gen(0x01, 144, 224 / 8);
+export const sha3_256: CHash = /* @__PURE__ */ gen(0x06, 136, 256 / 8);
+export const sha3_384: CHash = /* @__PURE__ */ gen(0x06, 104, 384 / 8);
+export const sha3_512: CHash = /* @__PURE__ */ gen(0x06, 72, 512 / 8);
+export const keccak_224: CHash = /* @__PURE__ */ gen(0x01, 144, 224 / 8);
 /**
  * keccak-256 hash function. Different from SHA3-256.
  * @param message - that would be hashed
  */
-export const keccak_256 = /* @__PURE__ */ gen(0x01, 136, 256 / 8);
-export const keccak_384 = /* @__PURE__ */ gen(0x01, 104, 384 / 8);
-export const keccak_512 = /* @__PURE__ */ gen(0x01, 72, 512 / 8);
+export const keccak_256: CHash = /* @__PURE__ */ gen(0x01, 136, 256 / 8);
+export const keccak_384: CHash = /* @__PURE__ */ gen(0x01, 104, 384 / 8);
+export const keccak_512: CHash = /* @__PURE__ */ gen(0x01, 72, 512 / 8);
 
 export type ShakeOpts = { dkLen?: number };
 
@@ -226,5 +228,5 @@ const genShake = (suffix: number, blockLen: number, outputLen: number) =>
       new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true)
   );
 
-export const shake128 = /* @__PURE__ */ genShake(0x1f, 168, 128 / 8);
-export const shake256 = /* @__PURE__ */ genShake(0x1f, 136, 256 / 8);
+export const shake128: CHashXO = /* @__PURE__ */ genShake(0x1f, 168, 128 / 8);
+export const shake256: CHashXO = /* @__PURE__ */ genShake(0x1f, 136, 256 / 8);

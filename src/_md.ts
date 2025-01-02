@@ -24,12 +24,12 @@ export function setBigUint64(
 /**
  * Choice: a ? b : c
  */
-export const Chi = (a: number, b: number, c: number) => (a & b) ^ (~a & c);
+export const Chi = (a: number, b: number, c: number): number => (a & b) ^ (~a & c);
 
 /**
  * Majority function, true if any two inputs is true
  */
-export const Maj = (a: number, b: number, c: number) => (a & b) ^ (a & c) ^ (b & c);
+export const Maj = (a: number, b: number, c: number): number => (a & b) ^ (a & c) ^ (b & c);
 
 /**
  * Merkle-Damgard hash construction base class.
@@ -84,7 +84,7 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     this.roundClean();
     return this;
   }
-  digestInto(out: Uint8Array) {
+  digestInto(out: Uint8Array): void {
     aexists(this);
     aoutput(out, this);
     this.finished = true;
@@ -118,7 +118,7 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     if (outLen > state.length) throw new Error('_sha2: outputLen bigger than state');
     for (let i = 0; i < outLen; i++) oview.setUint32(4 * i, state[i], isLE);
   }
-  digest() {
+  digest(): Uint8Array {
     const { buffer, outputLen } = this;
     this.digestInto(buffer);
     const res = buffer.slice(0, outputLen);

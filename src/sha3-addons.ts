@@ -7,6 +7,8 @@ import {
   Hash,
   HashXOF,
   wrapXOFConstructorWithOpts,
+  CHashO,
+  CHashXO,
 } from './utils.js';
 import { Keccak, ShakeOpts } from './sha3.js';
 // cSHAKE && KMAC (NIST SP800-185)
@@ -65,8 +67,23 @@ const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
     cshakePers(new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true), opts)
   );
 
-export const cshake128 = /* @__PURE__ */ (() => gencShake(0x1f, 168, 128 / 8))();
-export const cshake256 = /* @__PURE__ */ (() => gencShake(0x1f, 136, 256 / 8))();
+// TODO: refactor
+export type ICShake = {
+  (msg: Input, opts?: cShakeOpts): Uint8Array;
+  outputLen: number;
+  blockLen: number;
+  create(opts: cShakeOpts): HashXOF<Keccak>;
+};
+export type ITupleHash = {
+  (messages: Input[], opts?: cShakeOpts): Uint8Array;
+  create(opts?: cShakeOpts): TupleHash;
+};
+export type IParHash = {
+  (message: Input, opts?: ParallelOpts): Uint8Array;
+  create(opts?: ParallelOpts): ParallelHash;
+};
+export const cshake128: ICShake = /* @__PURE__ */ (() => gencShake(0x1f, 168, 128 / 8))();
+export const cshake256: ICShake = /* @__PURE__ */ (() => gencShake(0x1f, 136, 256 / 8))();
 
 export class KMAC extends Keccak implements HashXOF<KMAC> {
   constructor(
@@ -86,7 +103,7 @@ export class KMAC extends Keccak implements HashXOF<KMAC> {
     const totalLen = blockLenBytes.length + keyLen.length + key.length;
     this.update(getPadding(totalLen, this.blockLen));
   }
-  protected finish() {
+  protected finish(): void {
     if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen))); // outputLen in bits
     super.finish();
   }
@@ -114,10 +131,22 @@ function genKmac(blockLen: number, outputLen: number, xof = false) {
   return kmac;
 }
 
-export const kmac128 = /* @__PURE__ */ (() => genKmac(168, 128 / 8))();
-export const kmac256 = /* @__PURE__ */ (() => genKmac(136, 256 / 8))();
-export const kmac128xof = /* @__PURE__ */ (() => genKmac(168, 128 / 8, true))();
-export const kmac256xof = /* @__PURE__ */ (() => genKmac(136, 256 / 8, true))();
+export const kmac128: {
+  (key: Input, message: Input, opts?: cShakeOpts): Uint8Array;
+  create(key: Input, opts?: cShakeOpts): KMAC;
+} = /* @__PURE__ */ (() => genKmac(168, 128 / 8))();
+export const kmac256: {
+  (key: Input, message: Input, opts?: cShakeOpts): Uint8Array;
+  create(key: Input, opts?: cShakeOpts): KMAC;
+} = /* @__PURE__ */ (() => genKmac(136, 256 / 8))();
+export const kmac128xof: {
+  (key: Input, message: Input, opts?: cShakeOpts): Uint8Array;
+  create(key: Input, opts?: cShakeOpts): KMAC;
+} = /* @__PURE__ */ (() => genKmac(168, 128 / 8, true))();
+export const kmac256xof: {
+  (key: Input, message: Input, opts?: cShakeOpts): Uint8Array;
+  create(key: Input, opts?: cShakeOpts): KMAC;
+} = /* @__PURE__ */ (() => genKmac(136, 256 / 8, true))();
 
 // TupleHash
 // Usage: tuple(['ab', 'cd']) != tuple(['a', 'bcd'])
@@ -133,7 +162,7 @@ export class TupleHash extends Keccak implements HashXOF<TupleHash> {
       return this;
     };
   }
-  protected finish() {
+  protected finish(): void {
     if (!this.finished)
       super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen))); // outputLen in bits
     super.finish();
@@ -158,10 +187,10 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
   return tuple;
 }
 
-export const tuplehash128 = /* @__PURE__ */ (() => genTuple(168, 128 / 8))();
-export const tuplehash256 = /* @__PURE__ */ (() => genTuple(136, 256 / 8))();
-export const tuplehash128xof = /* @__PURE__ */ (() => genTuple(168, 128 / 8, true))();
-export const tuplehash256xof = /* @__PURE__ */ (() => genTuple(136, 256 / 8, true))();
+export const tuplehash128: ITupleHash = /* @__PURE__ */ (() => genTuple(168, 128 / 8))();
+export const tuplehash256: ITupleHash = /* @__PURE__ */ (() => genTuple(136, 256 / 8))();
+export const tuplehash128xof: ITupleHash = /* @__PURE__ */ (() => genTuple(168, 128 / 8, true))();
+export const tuplehash256xof: ITupleHash = /* @__PURE__ */ (() => genTuple(136, 256 / 8, true))();
 
 // ParallelHash (same as K12/M14, but without speedup for inputs less 8kb, reduced number of rounds and more simple)
 type ParallelOpts = cShakeOpts & { blockLen?: number };
@@ -206,7 +235,7 @@ export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
       return this;
     };
   }
-  protected finish() {
+  protected finish(): void {
     if (this.finished) return;
     if (this.leafHash) {
       super.update(this.leafHash.digest());
@@ -224,7 +253,7 @@ export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
     to.chunksDone = this.chunksDone;
     return super._cloneInto(to) as ParallelHash;
   }
-  destroy() {
+  destroy(): void {
     super.destroy.call(this);
     if (this.leafHash) this.leafHash.destroy();
   }
@@ -252,10 +281,12 @@ function genPrl(
   return parallel;
 }
 
-export const parallelhash128 = /* @__PURE__ */ (() => genPrl(168, 128 / 8, cshake128))();
-export const parallelhash256 = /* @__PURE__ */ (() => genPrl(136, 256 / 8, cshake256))();
-export const parallelhash128xof = /* @__PURE__ */ (() => genPrl(168, 128 / 8, cshake128, true))();
-export const parallelhash256xof = /* @__PURE__ */ (() => genPrl(136, 256 / 8, cshake256, true))();
+export const parallelhash128: IParHash = /* @__PURE__ */ (() => genPrl(168, 128 / 8, cshake128))();
+export const parallelhash256: IParHash = /* @__PURE__ */ (() => genPrl(136, 256 / 8, cshake256))();
+export const parallelhash128xof: IParHash = /* @__PURE__ */ (() =>
+  genPrl(168, 128 / 8, cshake128, true))();
+export const parallelhash256xof: IParHash = /* @__PURE__ */ (() =>
+  genPrl(136, 256 / 8, cshake256, true))();
 
 // Should be simple 'shake with 12 rounds', but no, we got whole new spec about Turbo SHAKE Pro MAX.
 export type TurboshakeOpts = ShakeOpts & {
@@ -271,8 +302,8 @@ const genTurboshake = (blockLen: number, outputLen: number) =>
     return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);
   });
 
-export const turboshake128 = /* @__PURE__ */ genTurboshake(168, 256 / 8);
-export const turboshake256 = /* @__PURE__ */ genTurboshake(136, 512 / 8);
+export const turboshake128: CHashXO = /* @__PURE__ */ genTurboshake(168, 256 / 8);
+export const turboshake256: CHashXO = /* @__PURE__ */ genTurboshake(136, 512 / 8);
 
 // Kangaroo
 // Same as NIST rightEncode, but returns [0] for zero string
@@ -304,7 +335,7 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
     const { personalization } = opts;
     this.personalization = toBytesOptional(personalization);
   }
-  update(data: Input) {
+  update(data: Input): this {
     data = toBytes(data);
     const { chunkLen, blockLen, leafLen, rounds } = this;
     for (let pos = 0, len = data.length; pos < len; ) {
@@ -327,7 +358,7 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
     }
     return this;
   }
-  protected finish() {
+  protected finish(): void {
     if (this.finished) return;
     const { personalization } = this;
     this.update(personalization).update(rightEncodeK12(personalization.length));
@@ -339,7 +370,7 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
     }
     super.finish.call(this);
   }
-  destroy() {
+  destroy(): void {
     super.destroy.call(this);
     if (this.leafHash) this.leafHash.destroy();
     // We cannot zero personalization buffer since it is user provided and we don't want to mutate user input
@@ -361,12 +392,12 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
   }
 }
 // Default to 32 bytes, so it can be used without opts
-export const k12 = /* @__PURE__ */ (() =>
+export const k12: CHashO = /* @__PURE__ */ (() =>
   wrapConstructorWithOpts<KangarooTwelve, KangarooOpts>(
     (opts: KangarooOpts = {}) => new KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
   ))();
 // MarsupilamiFourteen
-export const m14 = /* @__PURE__ */ (() =>
+export const m14: CHashO = /* @__PURE__ */ (() =>
   wrapConstructorWithOpts<KangarooTwelve, KangarooOpts>(
     (opts: KangarooOpts = {}) => new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)
   ))();
@@ -385,7 +416,7 @@ export class KeccakPRG extends Keccak {
     this.rate = 1600 - capacity;
     this.posOut = Math.floor((this.rate + 7) / 8);
   }
-  keccak() {
+  keccak(): void {
     // Duplex padding
     this.state[this.pos] ^= 0x01;
     this.state[this.blockLen] ^= 0x02; // Rho is full bytes
@@ -393,15 +424,15 @@ export class KeccakPRG extends Keccak {
     this.pos = 0;
     this.posOut = 0;
   }
-  update(data: Input) {
+  update(data: Input): this {
     super.update(data);
     this.posOut = this.blockLen;
     return this;
   }
-  feed(data: Input) {
+  feed(data: Input): this {
     return this.update(data);
   }
-  protected finish() {}
+  protected finish(): void {}
   digestInto(_out: Uint8Array): Uint8Array {
     throw new Error('KeccakPRG: digest is not allowed, please use .fetch instead.');
   }
@@ -409,7 +440,7 @@ export class KeccakPRG extends Keccak {
     return this.xof(bytes);
   }
   // Ensure irreversibility (even if state leaked previous outputs cannot be computed)
-  forget() {
+  forget(): void {
     if (this.rate < 1600 / 2 + 1) throw new Error('KeccakPRG: rate too low to use forget');
     this.keccak();
     for (let i = 0; i < this.blockLen; i++) this.state[i] = 0;
@@ -429,4 +460,4 @@ export class KeccakPRG extends Keccak {
   }
 }
 
-export const keccakprg = (capacity = 254) => new KeccakPRG(capacity);
+export const keccakprg = (capacity = 254): KeccakPRG => new KeccakPRG(capacity);

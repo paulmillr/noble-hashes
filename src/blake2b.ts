@@ -1,6 +1,6 @@
 import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
 import u64 from './_u64.js';
-import { toBytes, u32, wrapConstructorWithOpts, byteSwapIfBE } from './utils.js';
+import { toBytes, u32, wrapConstructorWithOpts, byteSwapIfBE, CHashO } from './utils.js';
 
 // Same as SHA-512 but LE
 // prettier-ignore
@@ -120,7 +120,7 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
     v2l: number, v2h: number, v3l: number, v3h: number,
     v4l: number, v4h: number, v5l: number, v5h: number,
     v6l: number, v6h: number, v7l: number, v7h: number
-  ) {
+  ): void {
     this.v0l = v0l | 0;
     this.v0h = v0h | 0;
     this.v1l = v1l | 0;
@@ -138,7 +138,7 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
     this.v7l = v7l | 0;
     this.v7h = v7h | 0;
   }
-  protected compress(msg: Uint32Array, offset: number, isLast: boolean) {
+  protected compress(msg: Uint32Array, offset: number, isLast: boolean): void {
     this.get().forEach((v, i) => (BBUF[i] = v)); // First half from state.
     BBUF.set(B2B_IV, 16); // Second half from IV.
     let { h, l } = u64.fromBig(BigInt(this.length));
@@ -188,7 +188,7 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
     this.v7h ^= BBUF[15] ^ BBUF[31];
     BBUF.fill(0);
   }
-  destroy() {
+  destroy(): void {
     this.destroyed = true;
     this.buffer32.fill(0);
     this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -200,6 +200,6 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
  * @param msg - message that would be hashed
  * @param opts - dkLen, key, salt, personalization
  */
-export const blake2b = /* @__PURE__ */ wrapConstructorWithOpts<BLAKE2b, BlakeOpts>(
+export const blake2b: CHashO = /* @__PURE__ */ wrapConstructorWithOpts<BLAKE2b, BlakeOpts>(
   (opts) => new BLAKE2b(opts)
 );

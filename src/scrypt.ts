@@ -181,7 +181,7 @@ function scryptOutput(
  * - `onProgress` - callback function that would be executed for progress report
  * @returns Derived key
  */
-export function scrypt(password: Input, salt: Input, opts: ScryptOpts) {
+export function scrypt(password: Input, salt: Input, opts: ScryptOpts): Uint8Array {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
     password,
     salt,
@@ -212,7 +212,11 @@ export function scrypt(password: Input, salt: Input, opts: ScryptOpts) {
 /**
  * Scrypt KDF from RFC 7914.
  */
-export async function scryptAsync(password: Input, salt: Input, opts: ScryptOpts) {
+export async function scryptAsync(
+  password: Input,
+  salt: Input,
+  opts: ScryptOpts
+): Promise<Uint8Array> {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(
     password,
     salt,
