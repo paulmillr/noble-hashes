@@ -21,7 +21,7 @@
     "test": "node test/index.js",
     "test:dos": "node test/slow-dos.test.js",
     "test:big": "node test/slow-big.test.js",
-    "coverage": "c8 node test/index.js"
+    "test:coverage": "c8 node test/index.js"
   },
   "author": "Paul Miller (https://paulmillr.com)",
   "homepage": "https://paulmillr.com/noble/",
