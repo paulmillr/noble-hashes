@@ -43,9 +43,9 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
 import { sha256 } from '@noble/hashes/sha2'; // ECMAScript modules (ESM) and Common.js
-// import { sha256 } from 'npm:@noble/hashes@1.3.0/sha2'; // Deno
+// u8a is accepted
 console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
-// you could also pass strings that will be UTF8-encoded to Uint8Array
+// strings are also accepted and auto-encoded into u8a
 console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 ```
 
