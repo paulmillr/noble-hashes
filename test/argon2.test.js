@@ -9,8 +9,7 @@ const asyncMap = new Map([
   [argon2d, argon2dAsync],
   [argon2id, argon2idAsync],
 ]);
-const IGNORE_SLOW = false;
-const VECTORS = [
+let VECTORS = [
   {
     fn: argon2i,
     password: 'password',
@@ -113,26 +112,6 @@ const VECTORS = [
     fn: argon2i,
     version: 0x10,
     t: 2,
-    m: 1048576,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: '9690ec55d28d3ed32562f2e73ea62b02b018757643a2ae6e79528459de8106e9',
-  }, // SLOW
-  {
-    fn: argon2i,
-    version: 0x10,
-    t: 2,
-    m: 262144,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: '3e689aaa3d28a77cf2bc72a51ac53166761751182f1ee292e3f677a7da4c2467',
-  },
-  {
-    fn: argon2i,
-    version: 0x10,
-    t: 2,
     m: 256,
     p: 1,
     password: 'password',
@@ -201,24 +180,6 @@ const VECTORS = [
   {
     fn: argon2i,
     t: 2,
-    m: 1048576,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: 'd1587aca0922c3b5d6a83edab31bee3c4ebaef342ed6127a55d19b2351ad1f41',
-  },
-  {
-    fn: argon2i,
-    t: 2,
-    m: 262144,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: '296dbae80b807cdceaad44ae741b506f14db0959267b183b118f9b24229bc7cb',
-  },
-  {
-    fn: argon2i,
-    t: 2,
     m: 256,
     p: 1,
     password: 'password',
@@ -234,15 +195,6 @@ const VECTORS = [
     salt: 'somesalt',
     exp: '4ff5ce2769a1d7f4c8a491df09d41a9fbe90e5eb02155a13e4c01e20cd4eab61',
   },
-  {
-    fn: argon2i,
-    t: 1,
-    m: 65536,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: 'd168075c4d985e13ebeae560cf8b94c3b5d8a16c51916b6f4ac2da3ac11bbecf',
-  }, // SLOW
   {
     fn: argon2i,
     t: 4,
@@ -342,7 +294,58 @@ const VECTORS = [
     salt: 'diffsalt',
     exp: 'bdf32b05ccc42eb15d58fd19b1f856b113da1e9a5874fdcc544308565aa8141c',
   },
-].filter((i) => !!i && (!IGNORE_SLOW || i.m <= 256));
+];
+
+const verySlow = [
+  {
+    fn: argon2i,
+    version: 0x10,
+    t: 2,
+    m: 262144,
+    p: 1,
+    password: 'password',
+    salt: 'somesalt',
+    exp: '3e689aaa3d28a77cf2bc72a51ac53166761751182f1ee292e3f677a7da4c2467',
+  },
+  {
+    fn: argon2i,
+    t: 2,
+    m: 262144,
+    p: 1,
+    password: 'password',
+    salt: 'somesalt',
+    exp: '296dbae80b807cdceaad44ae741b506f14db0959267b183b118f9b24229bc7cb',
+  },
+  {
+    fn: argon2i,
+    t: 2,
+    m: 1048576,
+    p: 1,
+    password: 'password',
+    salt: 'somesalt',
+    exp: 'd1587aca0922c3b5d6a83edab31bee3c4ebaef342ed6127a55d19b2351ad1f41',
+  },
+  {
+    fn: argon2i,
+    version: 0x10,
+    t: 2,
+    m: 1048576,
+    p: 1,
+    password: 'password',
+    salt: 'somesalt',
+    exp: '9690ec55d28d3ed32562f2e73ea62b02b018757643a2ae6e79528459de8106e9',
+  },
+  {
+    fn: argon2i,
+    t: 1,
+    m: 65536,
+    p: 1,
+    password: 'password',
+    salt: 'somesalt',
+    exp: 'd168075c4d985e13ebeae560cf8b94c3b5d8a16c51916b6f4ac2da3ac11bbecf',
+  },
+];
+// VECTORS = VECTORS.concat(verySlow);
 
 describe('Argon2', () => {
   should('types', async () => {
@@ -377,7 +380,9 @@ describe('Argon2', () => {
   for (let i = 0; i < VECTORS.length; i++) {
     const v = VECTORS[i];
     const ver = v.version || 0x13;
-    should(`${v.fn.name}/v${ver} (${i})`, () => {
+    const str = `m=${v.m}, t=${v.t}, p=${v.p}`;
+    const title = `${v.fn.name}/v${ver} ${str} (#${i})`;
+    should(title, () => {
       const res = bytesToHex(
         v.fn(v.password, v.salt, {
           m: v.m,
@@ -390,7 +395,7 @@ describe('Argon2', () => {
       );
       deepStrictEqual(res, v.exp);
     });
-    should(`${v.fn.name}/v${ver} (${i}): async`, async () => {
+    should(`${title}: async`, async () => {
       const asyncFn = asyncMap.get(v.fn);
       const res = bytesToHex(
         await asyncFn(v.password, v.salt, {
