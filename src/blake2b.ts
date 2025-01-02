@@ -2,6 +2,11 @@ import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
 import u64 from './_u64.js';
 import { toBytes, u32, wrapConstructorWithOpts, byteSwapIfBE, CHashO } from './utils.js';
 
+/**
+ * Blake2b fast hash, focusing on 64-bit platforms.
+ * @module
+ */
+
 // Same as SHA-512 but LE
 // prettier-ignore
 const B2B_IV = /* @__PURE__ */ new Uint32Array([

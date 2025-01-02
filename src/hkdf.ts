@@ -2,8 +2,11 @@ import { ahash, anumber } from './_assert.js';
 import { CHash, Input, toBytes } from './utils.js';
 import { hmac } from './hmac.js';
 
-// HKDF (RFC 5869)
-// https://soatok.blog/2021/11/17/understanding-hkdf/
+/**
+ * HKDF (RFC 5869): extract + expand in one step.
+ * See https://soatok.blog/2021/11/17/understanding-hkdf/.
+ * @module
+ */
 
 /**
  * HKDF-Extract(IKM, salt) -> PRK

@@ -3,7 +3,10 @@ import { sha256 } from './sha256.js';
 import { pbkdf2 } from './pbkdf2.js';
 import { rotl, asyncLoop, checkOpts, Input, u32, isLE, byteSwap32 } from './utils.js';
 
-// RFC 7914 Scrypt KDF
+/**
+ * RFC 7914 Scrypt KDF.
+ * @module
+ */
 
 // The main Scrypt loop: uses Salsa extensively.
 // Six versions of the function were tried, this is the fastest one.
@@ -180,6 +183,8 @@ function scryptOutput(
  * - `maxmem` - (default: `1024 ** 3 + 1024` aka 1GB+1KB). A limit that the app could use for scrypt
  * - `onProgress` - callback function that would be executed for progress report
  * @returns Derived key
+ * @example
+ * scrypt('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  */
 export function scrypt(password: Input, salt: Input, opts: ScryptOpts): Uint8Array {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
@@ -210,7 +215,8 @@ export function scrypt(password: Input, salt: Input, opts: ScryptOpts): Uint8Arr
 }
 
 /**
- * Scrypt KDF from RFC 7914.
+ * Scrypt KDF from RFC 7914. Async version.
+ * await scryptAsync('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  */
 export async function scryptAsync(
   password: Input,

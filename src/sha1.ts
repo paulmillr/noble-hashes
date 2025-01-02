@@ -1,7 +1,10 @@
 import { HashMD, Chi, Maj } from './_md.js';
 import { rotl, wrapConstructor, CHash } from './utils.js';
 
-// SHA1 (RFC 3174). It was cryptographically broken: prefer newer algorithms.
+/**
+ * SHA1 (RFC 3174). It was cryptographically broken: prefer newer algorithms.
+ * @module
+ */
 
 // Initial state
 const SHA1_IV = /* @__PURE__ */ new Uint32Array([

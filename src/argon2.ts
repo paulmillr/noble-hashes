@@ -2,18 +2,16 @@ import { Input, toBytes, u8, u32, nextTick } from './utils.js';
 import { blake2b } from './blake2b.js';
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
 
-/*
-JS argon is 2-10x slower than native code. Reasons:
-
-- uint64 is everywhere, but JS has no fast uint64array
-- uint64 multiplication is 1/3 of time
-- Values are constantly being read from A2_BUF, requiring many checks
-- 'P' function would be very nice with u64, because most of value will be in registers,
+/**
+ * We suggest to use Scrypt. JS Argon is 2-10x slower than native code. Reasons:
+ * * uint64 is everywhere, but JS has no fast uint64array
+ * * uint64 multiplication is 1/3 of time
+ * * Values are constantly being read from A2_BUF, requiring many checks
+ * * 'P' function would be very nice with u64, because most of value will be in registers,
   hovewer with u32 it will require 32 registers, which is too much.
-- It is really unclear how to speed it up
-
-If you want fast JS KDF, we suggest Scrypt instead.
-*/
+ * * It is really unclear how to speed it up
+ * @module
+ */
 
 const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];

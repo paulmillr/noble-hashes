@@ -1,3 +1,8 @@
+/**
+ * Assertion helpers
+ * @module
+ */
+
 function anumber(n: number): void {
   if (!Number.isSafeInteger(n) || n < 0) throw new Error('positive integer expected, got ' + n);
 }
@@ -13,7 +18,7 @@ function abytes(b: Uint8Array | undefined, ...lengths: number[]): void {
     throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
 }
 
-type Hash = {
+export type Hash = {
   (data: Uint8Array): Uint8Array;
   blockLen: number;
   outputLen: number;
@@ -38,19 +43,4 @@ function aoutput(out: any, instance: any): void {
   }
 }
 
-export { anumber, anumber as number, abytes, abytes as bytes, ahash, aexists, aoutput };
-
-const assert: {
-  number: typeof anumber;
-  bytes: typeof abytes;
-  hash: typeof ahash;
-  exists: typeof aexists;
-  output: typeof aoutput;
-} = {
-  number: anumber,
-  bytes: abytes,
-  hash: ahash,
-  exists: aexists,
-  output: aoutput,
-};
-export default assert;
+export { anumber, abytes, ahash, aexists, aoutput };

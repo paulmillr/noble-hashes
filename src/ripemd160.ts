@@ -1,8 +1,13 @@
 import { HashMD } from './_md.js';
 import { rotl, wrapConstructor, CHash } from './utils.js';
 
-// https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
-// https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
+/**
+ * RIPEMD-160 legacy hash function.
+ * https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
+ * https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
+ * @module
+ */
+
 const Rho = /* @__PURE__ */ new Uint8Array([7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8]);
 const Id = /* @__PURE__ */ new Uint8Array(new Array(16).fill(0).map((_, i) => i));
 const Pi = /* @__PURE__ */ Id.map((i) => (9 * i + 5) % 16);

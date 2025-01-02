@@ -2,6 +2,11 @@ import { aexists, aoutput } from './_assert.js';
 import { Hash, createView, Input, toBytes } from './utils.js';
 
 /**
+ * Merkle-Damgard hash utils.
+ * @module
+ */
+
+/**
  * Polyfill for Safari 14
  */
 export function setBigUint64(

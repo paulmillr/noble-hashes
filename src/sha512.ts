@@ -2,6 +2,11 @@ import { HashMD } from './_md.js';
 import u64 from './_u64.js';
 import { CHash, wrapConstructor } from './utils.js';
 
+/**
+ * SHA2-512 a.k.a. sha512.
+ * @module
+ */
+
 // Round contants (first 32 bits of the fractional parts of the cube roots of the first 80 primes 2..409):
 // prettier-ignore
 const [SHA512_Kh, SHA512_Kl] = /* @__PURE__ */ (() => u64.split([
@@ -240,7 +245,11 @@ export class SHA384 extends SHA512 {
   }
 }
 
+/** SHA2-512 hash function. */
 export const sha512: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512());
+/** SHA2-512-224 "truncated" hash function, with improved resistance to length extension attacks. */
 export const sha512_224: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512_224());
+/** SHA2-512-256 "truncated" hash function, with improved resistance to length extension attacks. */
 export const sha512_256: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512_256());
+/** SHA2-384 hash function. */
 export const sha384: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA384());

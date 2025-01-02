@@ -1,8 +1,12 @@
 import { HashMD, Chi, Maj } from './_md.js';
 import { rotr, wrapConstructor, CHash } from './utils.js';
 
-// SHA2-256 need to try 2^128 hashes to execute birthday attack.
-// BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per late 2024.
+/**
+ * SHA2-256 a.k.a. sha256.
+ * Attackers need to try 2^128 hashes to execute birthday attack.
+ * BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
+ * @module
+ */
 
 // Round constants:
 // first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
@@ -121,12 +125,7 @@ class SHA224 extends SHA256 {
   }
 }
 
-/**
- * SHA2-256 hash function
- * @param message - data that would be hashed
- */
+/** SHA2-256 hash function */
 export const sha256: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA256());
-/**
- * SHA2-224 hash function
- */
+/** SHA2-224 hash function */
 export const sha224: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA224());

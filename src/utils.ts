@@ -1,5 +1,9 @@
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 
+/**
+ * Utilities for hex, bytes, CSPRNG.
+ * @module
+ */
 // We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
 // node.js versions earlier than v19 don't declare it in global scope.
 // For node.js, package.json#exports field mapping rewrites import
@@ -28,13 +32,14 @@ export const u32 = (arr: TypedArray): Uint32Array =>
 export const createView = (arr: TypedArray): DataView =>
   new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
 
-// The rotate right (circular right shift) operation for uint32
+/** The rotate right (circular right shift) operation for uint32 */
 export const rotr = (word: number, shift: number): number =>
   (word << (32 - shift)) | (word >>> shift);
-// The rotate left (circular left shift) operation for uint32
+/** The rotate left (circular left shift) operation for uint32 */
 export const rotl = (word: number, shift: number): number =>
   (word << shift) | ((word >>> (32 - shift)) >>> 0);
 
+/** Is current platform little-endian? Most are. Big-Endian platform: IBM */
 export const isLE: boolean = /* @__PURE__ */ (() =>
   new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
 // The byte swap operation for uint32
@@ -43,12 +48,12 @@ export const byteSwap = (word: number): number =>
   ((word << 8) & 0xff0000) |
   ((word >>> 8) & 0xff00) |
   ((word >>> 24) & 0xff);
-// Conditionally byte swap if on a big-endian platform
+/** Conditionally byte swap if on a big-endian platform */
 export const byteSwapIfBE: (n: number) => number = isLE
   ? (n: number) => n
   : (n: number) => byteSwap(n);
 
-// In place byte swap for Uint32Array
+/** In place byte swap for Uint32Array */
 export function byteSwap32(arr: Uint32Array): void {
   for (let i = 0; i < arr.length; i++) {
     arr[i] = byteSwap(arr[i]);
@@ -60,6 +65,7 @@ const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
   i.toString(16).padStart(2, '0')
 );
 /**
+ * Convert byte array to hex string.
  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
  */
 export function bytesToHex(bytes: Uint8Array): string {
@@ -82,6 +88,7 @@ function asciiToBase16(ch: number): number | undefined {
 }
 
 /**
+ * Convert hex string to byte array.
  * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
  */
 export function hexToBytes(hex: string): Uint8Array {
@@ -129,6 +136,7 @@ export async function asyncLoop(
 declare const TextEncoder: any;
 
 /**
+ * Convert JS string to byte array.
  * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
  */
 export function utf8ToBytes(str: string): Uint8Array {
@@ -136,6 +144,7 @@ export function utf8ToBytes(str: string): Uint8Array {
   return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
 
+/** Accepted input of hash functions. Strings are converted to byte arrays. */
 export type Input = Uint8Array | string;
 /**
  * Normalizes (non-hex) string or Uint8Array to Uint8Array.

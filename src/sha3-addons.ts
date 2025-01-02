@@ -11,6 +11,13 @@ import {
   CHashXO,
 } from './utils.js';
 import { Keccak, ShakeOpts } from './sha3.js';
+
+/**
+ * SHA3 (keccak) addons: cSHAKE, KMAC, k12 (KangarooTwelve), m14 (MarsupilamiFourteen),
+ * TurboSHAKE, ParallelHash, TupleHash, KeccakPRG.
+ * @module
+ */
+
 // cSHAKE && KMAC (NIST SP800-185)
 const _8n = BigInt(8);
 const _ffn = BigInt(0xff);

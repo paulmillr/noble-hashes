@@ -242,7 +242,9 @@ const h10c = blake2s
   .digest();
 
 // All params are optional
-const h11 = blake3('abc', { dkLen: 256, key: 'def', context: 'fji' });
+const h11 = blake3('abc', { dkLen: 256 });
+const h11_mac = blake3('abc', { key: new Uint8Array(32) });
+const h11_kdf = blake3('abc', { context: new Uint8Array(32) });
 ```
 
 See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net).

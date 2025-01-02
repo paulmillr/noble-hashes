@@ -2,6 +2,11 @@ import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
 import { fromBig } from './_u64.js';
 import { CHashO, rotr, toBytes, wrapConstructorWithOpts, u32, byteSwapIfBE } from './utils.js';
 
+/**
+ * Blake2s fast hash, focusing on 8-bit to 32-bit platforms.
+ * @module
+ */
+
 // Initial state: same as SHA256
 // first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
 // prettier-ignore

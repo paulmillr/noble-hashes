@@ -2,7 +2,11 @@ import { ahash, anumber } from './_assert.js';
 import { hmac } from './hmac.js';
 import { Hash, CHash, Input, createView, toBytes, checkOpts, asyncLoop } from './utils.js';
 
-// PBKDF (RFC 2898)
+/**
+ * PBKDF (RFC 2898).
+ * @module
+ */
+
 export type Pbkdf2Opt = {
   c: number; // Iterations
   dkLen?: number; // Desired key length in bytes (Intended output length in octets of the derived key
@@ -47,6 +51,8 @@ function pbkdf2Output<T extends Hash<T>>(
  * @param password - password from which a derived key is generated
  * @param salt - cryptographic salt
  * @param opts - {c, dkLen} where c is work factor and dkLen is output message size
+ * @example
+ * pbkdf2(sha256, 'password', 'salt', { dkLen: 32, c: 500_000 });
  */
 export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Opt): Uint8Array {
   const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
@@ -72,6 +78,11 @@ export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Op
   return pbkdf2Output(PRF, PRFSalt, DK, prfW, u);
 }
 
+/**
+ * PBKDF2-HMAC: RFC 2898 key derivation function. Async version.
+ * @example
+ * await pbkdf2Async(sha256, 'password', 'salt', { dkLen: 32, c: 500_000 });
+ */
 export async function pbkdf2Async(
   hash: CHash,
   password: Input,

@@ -14,7 +14,20 @@ import {
   byteSwap32,
 } from './utils.js';
 
-// Blake3 is single-option Blake2 with reduced security (round count).
+/**
+ * Blake3 fast hash is Blake2 with reduced security (round count). Can also be used as MAC & KDF.
+ *
+ * It is advertised as "the fastest cryptographic hash". However, it isn't true in JS.
+ * Why is this so slow? While it should be 6x faster than blake2b, perf diff is only 20%:
+ *
+ * * There is only 30% reduction in number of rounds from blake2s
+ * * Speed-up comes from tree structure,
+ *   which is parallelized using SIMD & threading. These features are not present in JS,
+ *   so we only get overhead from trees.
+ * * Parallelization only happens on 1024-byte chunks: there is no benefit for small inputs.
+ * * It is still possible to make it faster using: a) loop unrolling b) web workers c) wasm
+ * @module
+ */
 
 // Flag bitset
 const enum B3_Flags {
@@ -42,14 +55,7 @@ const SIGMA: Uint8Array = /* @__PURE__ */ (() => {
 // - Only one of 'key' (keyed mode) or 'context' (derive key mode) can be used at same time
 export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
 
-// Why is this so slow? It should be 6x faster than blake2b.
-// - There is only 30% reduction in number of rounds from blake2s
-// - This function uses tree mode to achive parallelisation via SIMD and threading,
-//   however in JS we don't have threads and SIMD, so we get only overhead from tree structure
-// - It is possible to speed it up via Web Workers, hovewer it will make code singnificantly more
-//   complicated, which we are trying to avoid, since this library is intended to be used
-//   for cryptographic purposes. Also, parallelization happens only on chunk level (1024 bytes),
-//   which won't really benefit small inputs.
+/** Blake3 hash. Can be used as MAC and KDF. */
 export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   private IV: Uint32Array;
   private flags = 0 | 0;
@@ -260,9 +266,14 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
 }
 
 /**
- * BLAKE3 hash function.
+ * BLAKE3 hash function. Can be used as MAC and KDF.
  * @param msg - message that would be hashed
- * @param opts - dkLen, key, context
+ * @param opts - `dkLen` for output length, `key` for MAC mode, `context` for KDF mode
+ * @example
+ * const data = new Uint8Array(32);
+ * const hash = blake3(data);
+ * const mac = blake3(data, { key: new Uint8Array(32) });
+ * const kdf = blake3(data, { context: new Uint8Array(32) });
  */
 export const blake3: CHashXO = /* @__PURE__ */ wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>(
   (opts) => new BLAKE3(opts)
