@@ -52,7 +52,7 @@ function pbkdf2Output<T extends Hash<T>>(
  * @param salt - cryptographic salt
  * @param opts - {c, dkLen} where c is work factor and dkLen is output message size
  * @example
- * pbkdf2(sha256, 'password', 'salt', { dkLen: 32, c: 500_000 });
+ * const key = pbkdf2(sha256, 'password', 'salt', { dkLen: 32, c: 2 ** 18 });
  */
 export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Opt): Uint8Array {
   const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);

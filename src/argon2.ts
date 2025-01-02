@@ -3,13 +3,13 @@ import { blake2b } from './blake2b.js';
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
 
 /**
- * We suggest to use Scrypt. JS Argon is 2-10x slower than native code. Reasons:
- * * uint64 is everywhere, but JS has no fast uint64array
+ * Argon2 from RFC 9106.
+ * We suggest to use Scrypt. JS Argon is 2-10x slower than native code because of 64-bitness:
+ * * argon uses uint64, but JS doesn't have fast uint64array
  * * uint64 multiplication is 1/3 of time
- * * Values are constantly being read from A2_BUF, requiring many checks
- * * 'P' function would be very nice with u64, because most of value will be in registers,
-  hovewer with u32 it will require 32 registers, which is too much.
- * * It is really unclear how to speed it up
+ * * `P` function would be very nice with u64, because most of value will be in registers,
+ *   hovewer with u32 it will require 32 registers, which is too much.
+ * * JS arrays do slow bound checks, so reading from `A2_BUF` slows it down
  * @module
  */
 
@@ -170,9 +170,11 @@ function indexAlpha(
   return (startPos + rel) % laneLen;
 }
 
-// RFC 9106
 /**
- * t: time cost, m: mem cost, p: parallelization
+ * Argon2 options.
+ * * t: time cost, m: mem cost in kb, p: parallelization.
+ * * key: optional key. personalization: arbitrary extra data.
+ * * dkLen: desired number of output bytes.
  */
 export type ArgonOpts = {
   t: number; // Time cost, iterations count
@@ -401,10 +403,13 @@ function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
   return argon2Output(B, p, laneLen, dkLen);
 }
 
+/** argon2d GPU-resistant version. */
 export const argon2d = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argond2d, password, salt, opts);
+/** argon2i side-channel-resistant version. */
 export const argon2i = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argon2i, password, salt, opts);
+/** argon2id, combining i+d, the most popular version from RFC 9106 */
 export const argon2id = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argon2id, password, salt, opts);
 
@@ -471,9 +476,12 @@ async function argon2Async(type: Types, password: Input, salt: Input, opts: Argo
   return argon2Output(B, p, laneLen, dkLen);
 }
 
+/** argon2d async GPU-resistant version. */
 export const argon2dAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
   argon2Async(AT.Argond2d, password, salt, opts);
+/** argon2i async side-channel-resistant version. */
 export const argon2iAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
   argon2Async(AT.Argon2i, password, salt, opts);
+/** argon2id async, combining i+d, the most popular version from RFC 9106 */
 export const argon2idAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
   argon2Async(AT.Argon2id, password, salt, opts);

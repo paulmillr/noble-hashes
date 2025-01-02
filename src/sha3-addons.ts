@@ -13,8 +13,15 @@ import {
 import { Keccak, ShakeOpts } from './sha3.js';
 
 /**
- * SHA3 (keccak) addons: cSHAKE, KMAC, k12 (KangarooTwelve), m14 (MarsupilamiFourteen),
- * TurboSHAKE, ParallelHash, TupleHash, KeccakPRG.
+ * SHA3 (keccak) addons.
+ *
+ * * Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
+ *   cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
+ * * [Reduced-round Keccak](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
+ *     * 🦘 K12 aka KangarooTwelve
+ *     * M14 aka MarsupilamiFourteen
+ *     * TurboSHAKE
+ * * [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
  * @module
  */
 
@@ -194,9 +201,13 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
   return tuple;
 }
 
+/** 128-bit TupleHASH. */
 export const tuplehash128: ITupleHash = /* @__PURE__ */ (() => genTuple(168, 128 / 8))();
+/** 256-bit TupleHASH. */
 export const tuplehash256: ITupleHash = /* @__PURE__ */ (() => genTuple(136, 256 / 8))();
+/** 128-bit TupleHASH XOF. */
 export const tuplehash128xof: ITupleHash = /* @__PURE__ */ (() => genTuple(168, 128 / 8, true))();
+/** 256-bit TupleHASH XOF. */
 export const tuplehash256xof: ITupleHash = /* @__PURE__ */ (() => genTuple(136, 256 / 8, true))();
 
 // ParallelHash (same as K12/M14, but without speedup for inputs less 8kb, reduced number of rounds and more simple)
@@ -288,10 +299,14 @@ function genPrl(
   return parallel;
 }
 
+/** 128-bit ParallelHash. In JS, it is not parallel. */
 export const parallelhash128: IParHash = /* @__PURE__ */ (() => genPrl(168, 128 / 8, cshake128))();
+/** 256-bit ParallelHash. In JS, it is not parallel. */
 export const parallelhash256: IParHash = /* @__PURE__ */ (() => genPrl(136, 256 / 8, cshake256))();
+/** 128-bit ParallelHash XOF. In JS, it is not parallel. */
 export const parallelhash128xof: IParHash = /* @__PURE__ */ (() =>
   genPrl(168, 128 / 8, cshake128, true))();
+/** 256-bit ParallelHash. In JS, it is not parallel. */
 export const parallelhash256xof: IParHash = /* @__PURE__ */ (() =>
   genPrl(136, 256 / 8, cshake256, true))();
 
@@ -309,7 +324,9 @@ const genTurboshake = (blockLen: number, outputLen: number) =>
     return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);
   });
 
+/** TurboSHAKE 128-bit: reduced 12-round keccak. */
 export const turboshake128: CHashXO = /* @__PURE__ */ genTurboshake(168, 256 / 8);
+/** TurboSHAKE 256-bit: reduced 12-round keccak. */
 export const turboshake256: CHashXO = /* @__PURE__ */ genTurboshake(136, 512 / 8);
 
 // Kangaroo
@@ -398,19 +415,20 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
     return this._cloneInto();
   }
 }
-// Default to 32 bytes, so it can be used without opts
+/** KangarooTwelve: reduced 12-round keccak. */
 export const k12: CHashO = /* @__PURE__ */ (() =>
   wrapConstructorWithOpts<KangarooTwelve, KangarooOpts>(
     (opts: KangarooOpts = {}) => new KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
   ))();
-// MarsupilamiFourteen
+/** MarsupilamiFourteen: reduced 14-round keccak. */
 export const m14: CHashO = /* @__PURE__ */ (() =>
   wrapConstructorWithOpts<KangarooTwelve, KangarooOpts>(
     (opts: KangarooOpts = {}) => new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)
   ))();
 
-// https://keccak.team/files/CSF-0.1.pdf
-// + https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG
+/**
+ * More at https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG.
+ */
 export class KeccakPRG extends Keccak {
   protected rate: number;
   constructor(capacity: number) {
@@ -467,4 +485,5 @@ export class KeccakPRG extends Keccak {
   }
 }
 
+/** KeccakPRG: Pseudo-random generator based on Keccak. https://keccak.team/files/CSF-0.1.pdf */
 export const keccakprg = (capacity = 254): KeccakPRG => new KeccakPRG(capacity);

@@ -63,36 +63,26 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
 
 ### Implementations
 
-All hash functions:
-
-- receive `Uint8Array` and return `Uint8Array`
-- may receive `string`, which is automatically converted to `Uint8Array`
-  via utf8 encoding **(not hex)**
-- support little-endian and big-endian architectures
-- can hash up to 4GB per chunk, with any amount of chunks
-
 ```ts
-function hash(message: Uint8Array | string): Uint8Array;
+// function hash(message: Uint8Array | string): Uint8Array;
 hash(new Uint8Array([1, 3]));
-hash('string') == hash(new TextEncoder().encode('string'));
+hash('string'); // == hash(new TextEncoder().encode('string'));
+// prettier-ignore
+hash.create().update(new Uint8Array([1, 3])).digest();
 ```
 
-All hash functions can be constructed via `hash.create()` method:
+Hash functions:
 
-- the result is `Hash` subclass instance, which has `update()` and `digest()` methods
-- `digest()` finalizes the hash and makes it no longer usable
-
-```ts
-hash
-  .create()
-  .update(new Uint8Array([1, 3]))
-  .digest();
-```
-
-_Some_ hash functions can also receive `options` object, which can be either passed as a:
-
-- second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
-- first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
+- receive & return `Uint8Array`
+- may receive `string` **(not hex)**, which is automatically utf8-encoded to `Uint8Array`
+- support little-endian architecture; also experimentally big-endian
+- can hash up to 4GB per chunk, with any amount of chunks
+- can be constructed via `hash.create()` method
+    - the result is `Hash` subclass instance, which has `update()` and `digest()` methods
+    - `digest()` finalizes the hash and makes it no longer usable
+- some of them can receive `options`:
+    - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
+    - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
 
 #### sha2: sha256, sha384, sha512 and others
 
@@ -143,7 +133,7 @@ const h7a = shake128('abc', { dkLen: 512 });
 const h7b = shake256('abc', { dkLen: 512 });
 ```
 
-See [FIPS PUB 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
+See [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
 [Website](https://keccak.team/keccak.html).
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
@@ -219,7 +209,7 @@ const h10c = blake2s
 // All params are optional
 const h11 = blake3('abc', { dkLen: 256 });
 const h11_mac = blake3('abc', { key: new Uint8Array(32) });
-const h11_kdf = blake3('abc', { context: new Uint8Array(32) });
+const h11_kdf = blake3('abc', { context: 'application name' });
 ```
 
 See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net).
@@ -259,9 +249,8 @@ import { sha256 } from '@noble/hashes/sha2';
 import { randomBytes } from '@noble/hashes/utils';
 const inputKey = randomBytes(32);
 const salt = randomBytes(32);
-const info = 'abc';
-const dkLen = 32;
-const hk1 = hkdf(sha256, inputKey, salt, info, dkLen);
+const info = 'application-key';
+const hk1 = hkdf(sha256, inputKey, salt, info, 32);
 
 // == same as
 import * as hkdf from '@noble/hashes/hkdf';

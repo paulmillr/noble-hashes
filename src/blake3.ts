@@ -49,10 +49,13 @@ const SIGMA: Uint8Array = /* @__PURE__ */ (() => {
   return Uint8Array.from(res);
 })();
 
-// - key: is 256-bit key
-// - context: string should be hardcoded, globally unique, and application - specific.
-//   A good default format for the context string is "[application] [commit timestamp] [purpose]"
-// - Only one of 'key' (keyed mode) or 'context' (derive key mode) can be used at same time
+/**
+ * Ensure to use EITHER `key` OR `context`, not both.
+ *
+ * * `key`: 32-byte MAC key.
+ * * `context`: string for KDF. Should be hardcoded, globally unique, and application - specific.
+ *   A good default format for the context string is "[application] [commit timestamp] [purpose]".
+ */
 export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
 
 /** Blake3 hash. Can be used as MAC and KDF. */
@@ -273,7 +276,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
  * const data = new Uint8Array(32);
  * const hash = blake3(data);
  * const mac = blake3(data, { key: new Uint8Array(32) });
- * const kdf = blake3(data, { context: new Uint8Array(32) });
+ * const kdf = blake3(data, { context: 'application name' });
  */
 export const blake3: CHashXO = /* @__PURE__ */ wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>(
   (opts) => new BLAKE3(opts)

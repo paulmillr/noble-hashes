@@ -3,7 +3,10 @@ import u64 from './_u64.js';
 import { CHash, wrapConstructor } from './utils.js';
 
 /**
- * SHA2-512 a.k.a. sha512.
+ * SHA2-512 a.k.a. sha512 and sha384. It is slower than sha256 in js because u64 operations are slow.
+ *
+ * Check out [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
+ * [the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
  * @module
  */
 
@@ -40,22 +43,22 @@ export class SHA512 extends HashMD<SHA512> {
   // Also looks cleaner and easier to verify with spec.
   // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
   // h -- high 32 bits, l -- low 32 bits
-  Ah: number = 0x6a09e667 | 0;
-  Al: number = 0xf3bcc908 | 0;
-  Bh: number = 0xbb67ae85 | 0;
-  Bl: number = 0x84caa73b | 0;
-  Ch: number = 0x3c6ef372 | 0;
-  Cl: number = 0xfe94f82b | 0;
-  Dh: number = 0xa54ff53a | 0;
-  Dl: number = 0x5f1d36f1 | 0;
-  Eh: number = 0x510e527f | 0;
-  El: number = 0xade682d1 | 0;
-  Fh: number = 0x9b05688c | 0;
-  Fl: number = 0x2b3e6c1f | 0;
-  Gh: number = 0x1f83d9ab | 0;
-  Gl: number = 0xfb41bd6b | 0;
-  Hh: number = 0x5be0cd19 | 0;
-  Hl: number = 0x137e2179 | 0;
+  protected Ah: number = 0x6a09e667 | 0;
+  protected Al: number = 0xf3bcc908 | 0;
+  protected Bh: number = 0xbb67ae85 | 0;
+  protected Bl: number = 0x84caa73b | 0;
+  protected Ch: number = 0x3c6ef372 | 0;
+  protected Cl: number = 0xfe94f82b | 0;
+  protected Dh: number = 0xa54ff53a | 0;
+  protected Dl: number = 0x5f1d36f1 | 0;
+  protected Eh: number = 0x510e527f | 0;
+  protected El: number = 0xade682d1 | 0;
+  protected Fh: number = 0x9b05688c | 0;
+  protected Fl: number = 0x2b3e6c1f | 0;
+  protected Gh: number = 0x1f83d9ab | 0;
+  protected Gl: number = 0xfb41bd6b | 0;
+  protected Hh: number = 0x5be0cd19 | 0;
+  protected Hl: number = 0x137e2179 | 0;
 
   constructor() {
     super(128, 64, 16, false);
@@ -172,22 +175,22 @@ export class SHA512 extends HashMD<SHA512> {
 
 export class SHA512_224 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
-  Ah: number = 0x8c3d37c8 | 0;
-  Al: number = 0x19544da2 | 0;
-  Bh: number = 0x73e19966 | 0;
-  Bl: number = 0x89dcd4d6 | 0;
-  Ch: number = 0x1dfab7ae | 0;
-  Cl: number = 0x32ff9c82 | 0;
-  Dh: number = 0x679dd514 | 0;
-  Dl: number = 0x582f9fcf | 0;
-  Eh: number = 0x0f6d2b69 | 0;
-  El: number = 0x7bd44da8 | 0;
-  Fh: number = 0x77e36f73 | 0;
-  Fl: number = 0x04c48942 | 0;
-  Gh: number = 0x3f9d85a8 | 0;
-  Gl: number = 0x6a1d36c8 | 0;
-  Hh: number = 0x1112e6ad | 0;
-  Hl: number = 0x91d692a1 | 0;
+  protected Ah: number = 0x8c3d37c8 | 0;
+  protected Al: number = 0x19544da2 | 0;
+  protected Bh: number = 0x73e19966 | 0;
+  protected Bl: number = 0x89dcd4d6 | 0;
+  protected Ch: number = 0x1dfab7ae | 0;
+  protected Cl: number = 0x32ff9c82 | 0;
+  protected Dh: number = 0x679dd514 | 0;
+  protected Dl: number = 0x582f9fcf | 0;
+  protected Eh: number = 0x0f6d2b69 | 0;
+  protected El: number = 0x7bd44da8 | 0;
+  protected Fh: number = 0x77e36f73 | 0;
+  protected Fl: number = 0x04c48942 | 0;
+  protected Gh: number = 0x3f9d85a8 | 0;
+  protected Gl: number = 0x6a1d36c8 | 0;
+  protected Hh: number = 0x1112e6ad | 0;
+  protected Hl: number = 0x91d692a1 | 0;
 
   constructor() {
     super();
@@ -197,22 +200,22 @@ export class SHA512_224 extends SHA512 {
 
 export class SHA512_256 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
-  Ah: number = 0x22312194 | 0;
-  Al: number = 0xfc2bf72c | 0;
-  Bh: number = 0x9f555fa3 | 0;
-  Bl: number = 0xc84c64c2 | 0;
-  Ch: number = 0x2393b86b | 0;
-  Cl: number = 0x6f53b151 | 0;
-  Dh: number = 0x96387719 | 0;
-  Dl: number = 0x5940eabd | 0;
-  Eh: number = 0x96283ee2 | 0;
-  El: number = 0xa88effe3 | 0;
-  Fh: number = 0xbe5e1e25 | 0;
-  Fl: number = 0x53863992 | 0;
-  Gh: number = 0x2b0199fc | 0;
-  Gl: number = 0x2c85b8aa | 0;
-  Hh: number = 0x0eb72ddc | 0;
-  Hl: number = 0x81c52ca2 | 0;
+  protected Ah: number = 0x22312194 | 0;
+  protected Al: number = 0xfc2bf72c | 0;
+  protected Bh: number = 0x9f555fa3 | 0;
+  protected Bl: number = 0xc84c64c2 | 0;
+  protected Ch: number = 0x2393b86b | 0;
+  protected Cl: number = 0x6f53b151 | 0;
+  protected Dh: number = 0x96387719 | 0;
+  protected Dl: number = 0x5940eabd | 0;
+  protected Eh: number = 0x96283ee2 | 0;
+  protected El: number = 0xa88effe3 | 0;
+  protected Fh: number = 0xbe5e1e25 | 0;
+  protected Fl: number = 0x53863992 | 0;
+  protected Gh: number = 0x2b0199fc | 0;
+  protected Gl: number = 0x2c85b8aa | 0;
+  protected Hh: number = 0x0eb72ddc | 0;
+  protected Hl: number = 0x81c52ca2 | 0;
 
   constructor() {
     super();
@@ -222,22 +225,22 @@ export class SHA512_256 extends SHA512 {
 
 export class SHA384 extends SHA512 {
   // h -- high 32 bits, l -- low 32 bits
-  Ah: number = 0xcbbb9d5d | 0;
-  Al: number = 0xc1059ed8 | 0;
-  Bh: number = 0x629a292a | 0;
-  Bl: number = 0x367cd507 | 0;
-  Ch: number = 0x9159015a | 0;
-  Cl: number = 0x3070dd17 | 0;
-  Dh: number = 0x152fecd8 | 0;
-  Dl: number = 0xf70e5939 | 0;
-  Eh: number = 0x67332667 | 0;
-  El: number = 0xffc00b31 | 0;
-  Fh: number = 0x8eb44a87 | 0;
-  Fl: number = 0x68581511 | 0;
-  Gh: number = 0xdb0c2e0d | 0;
-  Gl: number = 0x64f98fa7 | 0;
-  Hh: number = 0x47b5481d | 0;
-  Hl: number = 0xbefa4fa4 | 0;
+  protected Ah: number = 0xcbbb9d5d | 0;
+  protected Al: number = 0xc1059ed8 | 0;
+  protected Bh: number = 0x629a292a | 0;
+  protected Bl: number = 0x367cd507 | 0;
+  protected Ch: number = 0x9159015a | 0;
+  protected Cl: number = 0x3070dd17 | 0;
+  protected Dh: number = 0x152fecd8 | 0;
+  protected Dl: number = 0xf70e5939 | 0;
+  protected Eh: number = 0x67332667 | 0;
+  protected El: number = 0xffc00b31 | 0;
+  protected Fh: number = 0x8eb44a87 | 0;
+  protected Fl: number = 0x68581511 | 0;
+  protected Gh: number = 0xdb0c2e0d | 0;
+  protected Gl: number = 0x64f98fa7 | 0;
+  protected Hh: number = 0x47b5481d | 0;
+  protected Hl: number = 0xbefa4fa4 | 0;
 
   constructor() {
     super();
@@ -247,9 +250,9 @@ export class SHA384 extends SHA512 {
 
 /** SHA2-512 hash function. */
 export const sha512: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512());
-/** SHA2-512-224 "truncated" hash function, with improved resistance to length extension attacks. */
+/** SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks. */
 export const sha512_224: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512_224());
-/** SHA2-512-256 "truncated" hash function, with improved resistance to length extension attacks. */
+/** SHA2-512/256 "truncated" hash function, with improved resistance to length extension attacks. */
 export const sha512_256: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA512_256());
 /** SHA2-384 hash function. */
 export const sha384: CHash = /* @__PURE__ */ wrapConstructor(() => new SHA384());

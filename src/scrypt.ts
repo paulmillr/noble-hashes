@@ -216,6 +216,7 @@ export function scrypt(password: Input, salt: Input, opts: ScryptOpts): Uint8Arr
 
 /**
  * Scrypt KDF from RFC 7914. Async version.
+ * @example
  * await scryptAsync('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  */
 export async function scryptAsync(

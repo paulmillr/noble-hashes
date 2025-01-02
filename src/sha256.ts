@@ -2,14 +2,16 @@ import { HashMD, Chi, Maj } from './_md.js';
 import { rotr, wrapConstructor, CHash } from './utils.js';
 
 /**
- * SHA2-256 a.k.a. sha256.
- * Attackers need to try 2^128 hashes to execute birthday attack.
+ * SHA2-256 a.k.a. sha256. In JS, it is the fastest hash, even faster than Blake3.
+ *
+ * To break sha256 using birthday attack, attackers need to try 2^128 hashes.
  * BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
+ *
+ * Check out [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
  * @module
  */
 
-// Round constants:
-// first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
+/** Round constants: first 32 bits of fractional parts of the cube roots of the first 64 primes 2..311). */
 // prettier-ignore
 const SHA256_K = /* @__PURE__ */ new Uint32Array([
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -22,27 +24,28 @@ const SHA256_K = /* @__PURE__ */ new Uint32Array([
   0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 ]);
 
-// Initial state:
-// first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
+/** Initial state: first 32 bits of fractional parts of the square roots of the first 8 primes 2..19. */
 // prettier-ignore
 const SHA256_IV = /* @__PURE__ */ new Uint32Array([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 ]);
 
-// Temporary buffer, not used to store anything between runs
-// Named this way because it matches specification.
+/**
+ * Temporary buffer, not used to store anything between runs.
+ * Named this way because it matches specification.
+ */
 const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
 export class SHA256 extends HashMD<SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
-  A: number = SHA256_IV[0] | 0;
-  B: number = SHA256_IV[1] | 0;
-  C: number = SHA256_IV[2] | 0;
-  D: number = SHA256_IV[3] | 0;
-  E: number = SHA256_IV[4] | 0;
-  F: number = SHA256_IV[5] | 0;
-  G: number = SHA256_IV[6] | 0;
-  H: number = SHA256_IV[7] | 0;
+  protected A: number = SHA256_IV[0] | 0;
+  protected B: number = SHA256_IV[1] | 0;
+  protected C: number = SHA256_IV[2] | 0;
+  protected D: number = SHA256_IV[3] | 0;
+  protected E: number = SHA256_IV[4] | 0;
+  protected F: number = SHA256_IV[5] | 0;
+  protected G: number = SHA256_IV[6] | 0;
+  protected H: number = SHA256_IV[7] | 0;
 
   constructor() {
     super(64, 32, 8, false);
@@ -109,16 +112,19 @@ export class SHA256 extends HashMD<SHA256> {
     this.buffer.fill(0);
   }
 }
-// Constants from https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+
+/**
+ * Constants taken from https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf.
+ */
 class SHA224 extends SHA256 {
-  A = 0xc1059ed8 | 0;
-  B = 0x367cd507 | 0;
-  C = 0x3070dd17 | 0;
-  D = 0xf70e5939 | 0;
-  E = 0xffc00b31 | 0;
-  F = 0x68581511 | 0;
-  G = 0x64f98fa7 | 0;
-  H = 0xbefa4fa4 | 0;
+  protected A = 0xc1059ed8 | 0;
+  protected B = 0x367cd507 | 0;
+  protected C = 0x3070dd17 | 0;
+  protected D = 0xf70e5939 | 0;
+  protected E = 0xffc00b31 | 0;
+  protected F = 0x68581511 | 0;
+  protected G = 0x64f98fa7 | 0;
+  protected H = 0xbefa4fa4 | 0;
   constructor() {
     super();
     this.outputLen = 28;

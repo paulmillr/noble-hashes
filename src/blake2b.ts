@@ -203,7 +203,7 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
 /**
  * BLAKE2b - optimized for 64-bit platforms. JS doesn't have uint64, so it's slower than BLAKE2s.
  * @param msg - message that would be hashed
- * @param opts - dkLen, key, salt, personalization
+ * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
 export const blake2b: CHashO = /* @__PURE__ */ wrapConstructorWithOpts<BLAKE2b, BlakeOpts>(
   (opts) => new BLAKE2b(opts)

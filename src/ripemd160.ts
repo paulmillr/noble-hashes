@@ -106,8 +106,5 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
   }
 }
 
-/**
- * RIPEMD-160 - a hash function from 1990s.
- * @param message - msg that would be hashed
- */
+/** RIPEMD-160 - a legacy hash function from 1990s. */
 export const ripemd160: CHash = /* @__PURE__ */ wrapConstructor(() => new RIPEMD160());
