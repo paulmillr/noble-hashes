@@ -1,5 +1,29 @@
 /**
  * Audited & minimal JS implementation of hash functions, MACs and KDFs. Check out individual modules.
+ * @example
+import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
+import {
+  sha3_224, sha3_256, sha3_384, sha3_512,
+  keccak_224, keccak_256, keccak_384, keccak_512,
+  shake128, shake256
+} from '@noble/hashes/sha3';
+import {
+  cshake128, cshake256,
+  turboshake128, turboshake256,
+  kmac128, kmac256,
+  tuplehash256, parallelhash256,
+  k12, m14, keccakprg
+} from '@noble/hashes/sha3-addons';
+import { ripemd160 } from '@noble/hashes/ripemd160';
+import { blake3 } from '@noble/hashes/blake3';
+import { blake2b } from '@noble/hashes/blake2b';
+import { blake2s } from '@noble/hashes/blake2s';
+import { hmac } from '@noble/hashes/hmac';
+import { hkdf } from '@noble/hashes/hkdf';
+import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
+import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
+import { sha1 } from '@noble/hashes/sha1'; // legacy
+import * as utils from '@noble/hashes/utils';
  * @module
  */
 throw new Error('root module cannot be imported: import submodules instead. Check out README');
