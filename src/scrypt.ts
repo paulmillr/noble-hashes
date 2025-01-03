@@ -1,12 +1,11 @@
-import { anumber } from './_assert.js';
-import { sha256 } from './sha256.js';
-import { pbkdf2 } from './pbkdf2.js';
-import { rotl, asyncLoop, checkOpts, Input, u32, isLE, byteSwap32 } from './utils.js';
-
 /**
  * RFC 7914 Scrypt KDF.
  * @module
  */
+import { anumber } from './_assert.js';
+import { sha256 } from './sha256.js';
+import { pbkdf2 } from './pbkdf2.js';
+import { rotl, asyncLoop, checkOpts, Input, u32, isLE, byteSwap32 } from './utils.js';
 
 // The main Scrypt loop: uses Salsa extensively.
 // Six versions of the function were tried, this is the fastest one.

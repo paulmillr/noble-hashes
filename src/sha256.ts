@@ -1,6 +1,3 @@
-import { HashMD, Chi, Maj } from './_md.js';
-import { rotr, wrapConstructor, CHash } from './utils.js';
-
 /**
  * SHA2-256 a.k.a. sha256. In JS, it is the fastest hash, even faster than Blake3.
  *
@@ -10,6 +7,8 @@ import { rotr, wrapConstructor, CHash } from './utils.js';
  * Check out [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
  * @module
  */
+import { HashMD, Chi, Maj } from './_md.js';
+import { rotr, wrapConstructor, CHash } from './utils.js';
 
 /** Round constants: first 32 bits of fractional parts of the cube roots of the first 64 primes 2..311). */
 // prettier-ignore

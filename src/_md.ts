@@ -1,10 +1,9 @@
-import { aexists, aoutput } from './_assert.js';
-import { Hash, createView, Input, toBytes } from './utils.js';
-
 /**
- * Merkle-Damgard hash utils.
+ * Internal Merkle-Damgard hash utils.
  * @module
  */
+import { aexists, aoutput } from './_assert.js';
+import { Hash, createView, Input, toBytes } from './utils.js';
 
 /**
  * Polyfill for Safari 14

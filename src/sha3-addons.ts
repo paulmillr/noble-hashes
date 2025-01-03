@@ -1,3 +1,15 @@
+/**
+ * SHA3 (keccak) addons.
+ *
+ * * Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
+ *   cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
+ * * [Reduced-round Keccak](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
+ *     * 🦘 K12 aka KangarooTwelve
+ *     * M14 aka MarsupilamiFourteen
+ *     * TurboSHAKE
+ * * [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
+ * @module
+ */
 import { anumber } from './_assert.js';
 import {
   Input,
@@ -11,19 +23,6 @@ import {
   CHashXO,
 } from './utils.js';
 import { Keccak, ShakeOpts } from './sha3.js';
-
-/**
- * SHA3 (keccak) addons.
- *
- * * Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
- *   cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
- * * [Reduced-round Keccak](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
- *     * 🦘 K12 aka KangarooTwelve
- *     * M14 aka MarsupilamiFourteen
- *     * TurboSHAKE
- * * [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
- * @module
- */
 
 // cSHAKE && KMAC (NIST SP800-185)
 const _8n = BigInt(8);

@@ -1,11 +1,10 @@
-import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
-import u64 from './_u64.js';
-import { toBytes, u32, wrapConstructorWithOpts, byteSwapIfBE, CHashO } from './utils.js';
-
 /**
  * Blake2b fast hash, focusing on 64-bit platforms.
  * @module
  */
+import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
+import u64 from './_u64.js';
+import { toBytes, u32, wrapConstructorWithOpts, byteSwapIfBE, CHashO } from './utils.js';
 
 // Same as SHA-512 but LE
 // prettier-ignore

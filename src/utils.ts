@@ -1,9 +1,9 @@
-/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-
 /**
  * Utilities for hex, bytes, CSPRNG.
  * @module
  */
+/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+
 // We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
 // node.js versions earlier than v19 don't declare it in global scope.
 // For node.js, package.json#exports field mapping rewrites import

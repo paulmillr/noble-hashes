@@ -1,7 +1,3 @@
-import { HashMD } from './_md.js';
-import u64 from './_u64.js';
-import { CHash, wrapConstructor } from './utils.js';
-
 /**
  * SHA2-512 a.k.a. sha512 and sha384. It is slower than sha256 in js because u64 operations are slow.
  *
@@ -9,6 +5,9 @@ import { CHash, wrapConstructor } from './utils.js';
  * [the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
  * @module
  */
+import { HashMD } from './_md.js';
+import u64 from './_u64.js';
+import { CHash, wrapConstructor } from './utils.js';
 
 // Round contants (first 32 bits of the fractional parts of the cube roots of the first 80 primes 2..409):
 // prettier-ignore

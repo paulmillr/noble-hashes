@@ -1,11 +1,10 @@
-import { ahash, anumber } from './_assert.js';
-import { hmac } from './hmac.js';
-import { Hash, CHash, Input, createView, toBytes, checkOpts, asyncLoop } from './utils.js';
-
 /**
  * PBKDF (RFC 2898).
  * @module
  */
+import { ahash, anumber } from './_assert.js';
+import { hmac } from './hmac.js';
+import { Hash, CHash, Input, createView, toBytes, checkOpts, asyncLoop } from './utils.js';
 
 export type Pbkdf2Opt = {
   c: number; // Iterations

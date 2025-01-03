@@ -1,3 +1,12 @@
+/**
+ * SHA3 (keccak) hash function, based on a new "Sponge function" design.
+ * Different from older hashes, the internal state is bigger than output size.
+ *
+ * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
+ * [Website](https://keccak.team/keccak.html),
+ * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
+ * @module
+ */
 import { abytes, aexists, anumber, aoutput } from './_assert.js';
 import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.js';
 import {
@@ -13,16 +22,6 @@ import {
   CHash,
   CHashXO,
 } from './utils.js';
-
-/**
- * SHA3 (keccak) hash function, based on a new "Sponge function" design.
- * Different from older hashes, the internal state is bigger than output size.
- *
- * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
- * [Website](https://keccak.team/keccak.html),
- * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
- * @module
- */
 
 // Various per round constants calculations
 const SHA3_PI: number[] = [];

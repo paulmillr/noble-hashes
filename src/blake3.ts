@@ -1,3 +1,17 @@
+/**
+ * Blake3 fast hash is Blake2 with reduced security (round count). Can also be used as MAC & KDF.
+ *
+ * It is advertised as "the fastest cryptographic hash". However, it isn't true in JS.
+ * Why is this so slow? While it should be 6x faster than blake2b, perf diff is only 20%:
+ *
+ * * There is only 30% reduction in number of rounds from blake2s
+ * * Speed-up comes from tree structure,
+ *   which is parallelized using SIMD & threading. These features are not present in JS,
+ *   so we only get overhead from trees.
+ * * Parallelization only happens on 1024-byte chunks: there is no benefit for small inputs.
+ * * It is still possible to make it faster using: a) loop unrolling b) web workers c) wasm
+ * @module
+ */
 import { abytes, aexists, anumber, aoutput } from './_assert.js';
 import { fromBig } from './_u64.js';
 import { BLAKE } from './_blake.js';
@@ -13,21 +27,6 @@ import {
   isLE,
   byteSwap32,
 } from './utils.js';
-
-/**
- * Blake3 fast hash is Blake2 with reduced security (round count). Can also be used as MAC & KDF.
- *
- * It is advertised as "the fastest cryptographic hash". However, it isn't true in JS.
- * Why is this so slow? While it should be 6x faster than blake2b, perf diff is only 20%:
- *
- * * There is only 30% reduction in number of rounds from blake2s
- * * Speed-up comes from tree structure,
- *   which is parallelized using SIMD & threading. These features are not present in JS,
- *   so we only get overhead from trees.
- * * Parallelization only happens on 1024-byte chunks: there is no benefit for small inputs.
- * * It is still possible to make it faster using: a) loop unrolling b) web workers c) wasm
- * @module
- */
 
 // Flag bitset
 const enum B3_Flags {

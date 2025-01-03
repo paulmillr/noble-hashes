@@ -1,10 +1,9 @@
-import { HashMD, Chi, Maj } from './_md.js';
-import { rotl, wrapConstructor, CHash } from './utils.js';
-
 /**
  * SHA1 (RFC 3174) legacy hash function.
  * @module
  */
+import { HashMD, Chi, Maj } from './_md.js';
+import { rotl, wrapConstructor, CHash } from './utils.js';
 
 // Initial state
 const SHA1_IV = /* @__PURE__ */ new Uint32Array([

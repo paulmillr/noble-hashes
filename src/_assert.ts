@@ -1,5 +1,5 @@
 /**
- * Assertion helpers
+ * Internal assertion helpers.
  * @module
  */
 

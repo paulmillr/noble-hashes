@@ -1,7 +1,3 @@
-import { Input, toBytes, u8, u32, nextTick } from './utils.js';
-import { blake2b } from './blake2b.js';
-import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
-
 /**
  * Argon2 from RFC 9106.
  * We suggest to use Scrypt. JS Argon is 2-10x slower than native code because of 64-bitness:
@@ -12,6 +8,9 @@ import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from '
  * * JS arrays do slow bound checks, so reading from `A2_BUF` slows it down
  * @module
  */
+import { Input, toBytes, u8, u32, nextTick } from './utils.js';
+import { blake2b } from './blake2b.js';
+import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
 
 const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];
