@@ -1,5 +1,6 @@
 /**
  * Audited & minimal JS implementation of hash functions, MACs and KDFs. Check out individual modules.
+ * @module
  * @example
 import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
 import {
@@ -24,6 +25,5 @@ import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
 import { sha1 } from '@noble/hashes/sha1'; // legacy
 import * as utils from '@noble/hashes/utils';
- * @module
  */
 throw new Error('root module cannot be imported: import submodules instead. Check out README');

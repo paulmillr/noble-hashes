@@ -1,6 +1,6 @@
 {
   "name": "@noble/hashes",
-  "version": "1.7.0-1",
+  "version": "1.7.0-2",
   "exports": {
     ".": "./src/index.ts",
     "./crypto": "./src/crypto.ts",
