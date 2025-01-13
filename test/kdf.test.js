@@ -1,12 +1,13 @@
-const { deepStrictEqual, throws, rejects } = require('assert');
-const { should, describe } = require('micro-should');
-const { sha256 } = require('../sha256');
-const { sha512 } = require('../sha512');
-const { extract: hkdf_extract, hkdf } = require('../hkdf');
-const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
-const { scrypt, scryptAsync } = require('../scrypt');
-const { repr, utf8ToBytes, hexToBytes, TYPE_TEST, SPACE, EMPTY } = require('./utils');
-const { executeKDFTests } = require('./generator');
+import { deepStrictEqual, throws, rejects } from 'node:assert';
+import { should, describe } from 'micro-should';
+import { sha256 } from '../esm/sha256.js';
+import { sha512 } from '../esm/sha512.js';
+import { extract as hkdf_extract, hkdf } from '../esm/hkdf.js';
+import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
+import { scrypt, scryptAsync } from '../esm/scrypt.js';
+import { utf8ToBytes, hexToBytes } from '../esm/utils.js';
+import { repr, TYPE_TEST, SPACE, EMPTY } from './utils.js';
+import { executeKDFTests } from './generator.js';
 // HKDF test vectors from RFC 5869
 const HKDF_VECTORS = [
   {
@@ -356,4 +357,4 @@ describe('PBKDF2', () => {
 
 executeKDFTests(true);
 
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

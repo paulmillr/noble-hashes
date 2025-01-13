@@ -1,20 +1,10 @@
-const { deepStrictEqual, throws } = require('assert');
-const { describe, should } = require('micro-should');
-const { sha256 } = require('../sha256');
-const { sha512, sha384 } = require('../sha512');
-const { hmac } = require('../hmac');
-const {
-  utf8ToBytes,
-  hexToBytes,
-  bytesToHex,
-  truncate,
-  concatBytes,
-  repr,
-  TYPE_TEST,
-  SPACE,
-  EMPTY,
-} = require('./utils');
-const { Hash } = require('../utils');
+import { deepStrictEqual, throws } from 'node:assert';
+import { describe, should } from 'micro-should';
+import { sha256 } from '../esm/sha256.js';
+import { sha512, sha384 } from '../esm/sha512.js';
+import { hmac } from '../esm/hmac.js';
+import { bytesToHex, hexToBytes, concatBytes, utf8ToBytes } from '../esm/utils.js';
+import { truncate, repr, TYPE_TEST, SPACE, EMPTY } from './utils.js';
 
 // HMAC test vectors from RFC 4231
 const HMAC_VECTORS = [
@@ -240,4 +230,4 @@ describe('hmac', () => {
   });
 });
 
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

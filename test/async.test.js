@@ -1,9 +1,9 @@
-const { deepStrictEqual } = require('assert');
-const { describe, should } = require('micro-should');
-const utils = require('../utils');
-const { scrypt, scryptAsync } = require('../scrypt');
-const { pbkdf2Async } = require('../pbkdf2');
-const { sha256 } = require('../sha256');
+import { deepStrictEqual } from 'node:assert';
+import { describe, should } from 'micro-should';
+import * as utils from '../esm/utils.js';
+import { scrypt, scryptAsync } from '../esm/scrypt.js';
+import { pbkdf2Async } from '../esm/pbkdf2.js';
+import { sha256 } from '../esm/sha256.js';
 
 // Collect statistic about block of event loop by sync code
 class LoopWatcher {
@@ -51,7 +51,7 @@ describe('async', () => {
         let w = new LoopWatcher();
         await KDFS[kdf](ms);
         const info = w.info(true);
-        console.log('\tKDF took', info);
+        // console.log('\tKDF took', info);
         // we compare avg with exepcted+2ms to avoid flaky tests
         deepStrictEqual(info.avg < ms + 2, true, 'avg');
         deepStrictEqual(info.total > ms, true, 'total');
@@ -106,4 +106,4 @@ describe('async', () => {
   });
 });
 
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

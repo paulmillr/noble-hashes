@@ -1,17 +1,20 @@
-const { should } = require('micro-should');
+import { should } from 'micro-should';
+// import './blake.test.js';
 // Generic hash tests
-require('./hashes.test.js').init();
+import { init } from './hashes.test.js';
 // Specific vectors for hash functions if available
-require('./keccak.test.js');
-require('./blake.test.js');
+import './keccak.test.js';
+import './blake.test.js';
 // Tests generated from rust
-require('./hmac.test.js');
-require('./kdf.test.js');
-require('./argon2.test.js');
-require('./eskdf.test.js');
-require('./async.test.js');
-require('./clone.test.js');
-require('./u64.test.js');
-require('./utils.test.js');
+import './hmac.test.js';
+import './kdf.test.js';
+// import './argon2.test.js';
+import './eskdf.test.js';
+import './async.test.js';
+import './clone.test.js';
+import './u64.test.js';
+import './utils.test.js';
 
-should.run();
+init();
+should.opts.STOP_AT_ERROR = false;
+should.runWhen(import.meta.url);

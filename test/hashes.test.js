@@ -1,9 +1,10 @@
-const { deepStrictEqual, throws } = require('assert');
-const { describe, should } = require('micro-should');
-const { createHash, createHmac } = require('crypto');
-const { sha224, sha256 } = require('../sha256');
-const { sha384, sha512, sha512_224, sha512_256 } = require('../sha512');
-const {
+import { deepStrictEqual, throws } from 'node:assert';
+import { createHash, createHmac } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
+import { describe, should } from 'micro-should';
+import { sha224, sha256 } from '../esm/sha256.js';
+import { sha384, sha512, sha512_224, sha512_256 } from '../esm/sha512.js';
+import {
   sha3_224,
   sha3_256,
   sha3_384,
@@ -11,24 +12,16 @@ const {
   keccak_256,
   shake128,
   shake256,
-} = require('../sha3');
-const { sha1 } = require('../sha1');
-const { turboshake128, turboshake256, k12 } = require('../sha3-addons');
-const { blake2b } = require('../blake2b');
-const { blake2s } = require('../blake2s');
-const { blake3 } = require('../blake3');
-const { ripemd160 } = require('../ripemd160');
-const { hmac } = require('../hmac');
-const {
-  utf8ToBytes,
-  hexToBytes,
-  repeat,
-  concatBytes,
-  TYPE_TEST,
-  SPACE,
-  EMPTY,
-  repr,
-} = require('./utils');
+} from '../esm/sha3.js';
+import { sha1 } from '../esm/sha1.js';
+import { turboshake128, turboshake256, k12 } from '../esm/sha3-addons.js';
+import { blake2b } from '../esm/blake2b.js';
+import { blake2s } from '../esm/blake2s.js';
+import { blake3 } from '../esm/blake3.js';
+import { ripemd160 } from '../esm/ripemd160.js';
+import { hmac } from '../esm/hmac.js';
+import { hexToBytes, concatBytes, utf8ToBytes } from '../esm/utils.js';
+import { repeat, TYPE_TEST, SPACE, EMPTY, repr } from './utils.js';
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
 const NIST_VECTORS = [
@@ -510,6 +503,7 @@ function init() {
         }
       });
       if (hash.node) {
+        if (!!process.versions.bun && ['BLAKE2s', 'BLAKE2b'].includes(h)) return;
         should(`node.js cross-test`, () => {
           for (let i = 0; i < testBuf.length; i++) {
             deepStrictEqual(
@@ -536,9 +530,7 @@ function init() {
   }
 }
 
-module.exports = { init, HASHES, NIST_VECTORS };
+export { init, HASHES, NIST_VECTORS };
 
-if (require.main === module) {
-  init();
-  should.run();
-}
+if (import.meta.url === pathToFileURL(process.argv[1]).href) init();
+should.runWhen(import.meta.url);

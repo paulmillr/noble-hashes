@@ -1,6 +1,6 @@
-const { deepStrictEqual } = require('assert');
-const { describe, should } = require('micro-should');
-const u64 = require('../_u64');
+import { deepStrictEqual } from 'node:assert';
+import { describe, should } from 'micro-should';
+import u64 from '../esm/_u64.js';
 
 const U64_MASK = 2n ** 64n - 1n;
 const U32_MASK = (2 ** 32 - 1) | 0;
@@ -83,4 +83,4 @@ describe('u64', () => {
   });
 });
 
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

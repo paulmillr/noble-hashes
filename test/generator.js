@@ -1,14 +1,18 @@
-const { createHash, hkdfSync, pbkdf2Sync } = require('crypto');
-const assert = require('assert');
-const { should } = require('micro-should');
-const { sha256 } = require('../sha256');
-const { sha512 } = require('../sha512');
-const { blake2s } = require('../blake2s');
-const { blake2b } = require('../blake2b');
-const { sha3_256, sha3_512 } = require('../sha3');
-const { hkdf } = require('../hkdf');
-const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
-const { concatBytes } = require('./utils');
+import * as cryp from 'node:crypto';
+import assert from 'node:assert';
+import { describe, should } from 'micro-should';
+import { sha256 } from '../esm/sha256.js';
+import { sha512 } from '../esm/sha512.js';
+import { blake2s } from '../esm/blake2s.js';
+import { blake2b } from '../esm/blake2b.js';
+import { sha3_256, sha3_512 } from '../esm/sha3.js';
+import { hkdf } from '../esm/hkdf.js';
+import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
+import { concatBytes } from '../esm/utils.js';
+
+const { createHash, hkdfSync, pbkdf2Sync } = cryp;
+
+const isBunDeno = Boolean(process.versions.bun || process.versions.deno);
 // Random data, by using hash we trying to achieve uniform distribution of each byte values
 let start = new Uint8Array([1, 2, 3, 4, 5]);
 let RANDOM = new Uint8Array();
@@ -60,173 +64,182 @@ function executeKDFTests(limit = true) {
     return limit ? cases.slice(0, 64) : cases;
   }
 
-  should('hkdf(sha256) generator', async () => {
-    const cases = genl({
-      // nodejs throws if dkLen=0 or ikmLen=0. However this is not enforced by spec.
-      dkLen: integer(1, 4096),
-      ikm: bytes(1, 4096),
-      salt: optional(bytes(0, 4096)),
-      info: optional(bytes(0, 1024)), // Nodejs limits length of info field to 1024 bytes which is not enforced by spec.
+  describe('generator', () => {
+    should('hkdf(sha256) generator', async () => {
+      if (!hkdfSync) return;
+      const cases = genl({
+        // nodejs throws if dkLen=0 or ikmLen=0. However this is not enforced by spec.
+        dkLen: integer(1, 4096),
+        ikm: bytes(1, 4096),
+        salt: optional(bytes(0, 4096)),
+        info: optional(bytes(0, 1024)), // Nodejs limits length of info field to 1024 bytes which is not enforced by spec.
+      });
+      for (let c of cases) {
+        const exp = new Uint8Array( // returns ArrayBuffer
+          hkdfSync(
+            'sha256',
+            c.ikm,
+            c.salt || new Uint8Array(32), // nodejs doesn't support optional salt
+            c.info || new Uint8Array(),
+            c.dkLen
+          )
+        );
+        assert.deepStrictEqual(hkdf(sha256, c.ikm, c.salt, c.info, c.dkLen), exp, `hkdf(${c})`);
+      }
     });
-    for (let c of cases) {
-      const exp = new Uint8Array( // returns ArrayBuffer
-        hkdfSync(
-          'sha256',
-          c.ikm,
-          c.salt || new Uint8Array(32), // nodejs doesn't support optional salt
-          c.info || new Uint8Array(),
-          c.dkLen
-        )
-      );
-      assert.deepStrictEqual(hkdf(sha256, c.ikm, c.salt, c.info, c.dkLen), exp, `hkdf(${c})`);
-    }
-  });
-  should('PBKDF2(sha256) generator', async () => {
-    const cases = genl({
-      c: integer(1, 1024),
-      dkLen: integer(1, 1024), // 0 disallowed in node v22
-      pwd: bytes(0, 1024),
-      salt: bytes(0, 1024),
+    should('PBKDF2(sha256) generator', async () => {
+      const cases = genl({
+        c: integer(1, 1024),
+        dkLen: integer(1, 1024), // 0 disallowed in node v22
+        pwd: bytes(0, 1024),
+        salt: bytes(0, 1024),
+      });
+      for (let c of cases) {
+        if (c.dkLen === 0) continue; // Disallowed in node v22
+        const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
+        const opt = { c: c.c, dkLen: c.dkLen };
+        assert.deepStrictEqual(pbkdf2(sha256, c.pwd, c.salt, opt), exp, `pbkdf2(sha256, ${opt})`);
+        assert.deepStrictEqual(
+          await pbkdf2Async(sha256, c.pwd, c.salt, opt),
+          exp,
+          `pbkdf2Async(sha256, ${opt})`
+        );
+      }
     });
-    for (let c of cases) {
-      if (c.dkLen === 0) continue; // Disallowed in node v22
-      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
-      const opt = { c: c.c, dkLen: c.dkLen };
-      assert.deepStrictEqual(pbkdf2(sha256, c.pwd, c.salt, opt), exp, `pbkdf2(sha256, ${opt})`);
-      assert.deepStrictEqual(
-        await pbkdf2Async(sha256, c.pwd, c.salt, opt),
-        exp,
-        `pbkdf2Async(sha256, ${opt})`
-      );
-    }
-  });
 
-  should('PBKDF2(sha512) generator', async () => {
-    const cases = genl({
-      c: integer(1, 1024),
-      dkLen: integer(1, 1024),
-      pwd: bytes(0, 1024),
-      salt: bytes(0, 1024),
+    should('PBKDF2(sha512) generator', async () => {
+      const cases = genl({
+        c: integer(1, 1024),
+        dkLen: integer(1, 1024),
+        pwd: bytes(0, 1024),
+        salt: bytes(0, 1024),
+      });
+      for (const c of cases) {
+        const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha512'));
+        const opt = { c: c.c, dkLen: c.dkLen };
+        assert.deepStrictEqual(pbkdf2(sha512, c.pwd, c.salt, opt), exp, `pbkdf2(sha512, ${opt})`);
+        assert.deepStrictEqual(
+          await pbkdf2Async(sha512, c.pwd, c.salt, opt),
+          exp,
+          `pbkdf2Async(sha512, ${opt})`
+        );
+      }
     });
-    for (const c of cases) {
-      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha512'));
-      const opt = { c: c.c, dkLen: c.dkLen };
-      assert.deepStrictEqual(pbkdf2(sha512, c.pwd, c.salt, opt), exp, `pbkdf2(sha512, ${opt})`);
-      assert.deepStrictEqual(
-        await pbkdf2Async(sha512, c.pwd, c.salt, opt),
-        exp,
-        `pbkdf2Async(sha512, ${opt})`
-      );
-    }
-  });
 
-  should('PBKDF2(sha3_256) generator', async () => {
-    const cases = genl({
-      c: integer(1, 1024),
-      dkLen: integer(1, 1024),
-      pwd: bytes(0, 1024),
-      salt: bytes(0, 1024),
+    should('PBKDF2(sha3_256) generator', async () => {
+      if (isBunDeno) return; // skip
+      const cases = genl({
+        c: integer(1, 1024),
+        dkLen: integer(1, 1024),
+        pwd: bytes(0, 1024),
+        salt: bytes(0, 1024),
+      });
+      for (let c of cases) {
+        const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-256'));
+        const opt = { c: c.c, dkLen: c.dkLen };
+        assert.deepStrictEqual(
+          pbkdf2(sha3_256, c.pwd, c.salt, opt),
+          exp,
+          `pbkdf2(sha3_256, ${opt})`
+        );
+        assert.deepStrictEqual(
+          await pbkdf2Async(sha3_256, c.pwd, c.salt, opt),
+          exp,
+          `pbkdf2Async(sha3_256, ${opt})`
+        );
+      }
     });
-    for (let c of cases) {
-      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-256'));
-      const opt = { c: c.c, dkLen: c.dkLen };
-      assert.deepStrictEqual(pbkdf2(sha3_256, c.pwd, c.salt, opt), exp, `pbkdf2(sha3_256, ${opt})`);
-      assert.deepStrictEqual(
-        await pbkdf2Async(sha3_256, c.pwd, c.salt, opt),
-        exp,
-        `pbkdf2Async(sha3_256, ${opt})`
-      );
-    }
-  });
 
-  should('PBKDF2(sha3_512) generator', async () => {
-    const cases = genl({
-      c: integer(1, 1024),
-      dkLen: integer(1, 1024),
-      pwd: bytes(0, 1024),
-      salt: bytes(0, 1024),
+    should('PBKDF2(sha3_512) generator', async () => {
+      if (isBunDeno) return; // skip
+      const cases = genl({
+        c: integer(1, 1024),
+        dkLen: integer(1, 1024),
+        pwd: bytes(0, 1024),
+        salt: bytes(0, 1024),
+      });
+      for (let c of cases) {
+        const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-512'));
+        const opt = { c: c.c, dkLen: c.dkLen };
+        assert.deepStrictEqual(
+          pbkdf2(sha3_512, c.pwd, c.salt, opt),
+          exp,
+          `pbkdf2(sha3_512, ${opt})`
+        );
+        assert.deepStrictEqual(
+          await pbkdf2Async(sha3_512, c.pwd, c.salt, opt),
+          exp,
+          `pbkdf2Async(sha3_512, ${opt})`
+        );
+      }
     });
-    for (let c of cases) {
-      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-512'));
-      const opt = { c: c.c, dkLen: c.dkLen };
-      assert.deepStrictEqual(pbkdf2(sha3_512, c.pwd, c.salt, opt), exp, `pbkdf2(sha3_512, ${opt})`);
-      assert.deepStrictEqual(
-        await pbkdf2Async(sha3_512, c.pwd, c.salt, opt),
-        exp,
-        `pbkdf2Async(sha3_512, ${opt})`
-      );
-    }
-  });
 
-  // Disable because openssl 3 deprecated ripemd
-  // should('PBKDF2(ripemd160) generator', async () => {
-  //   const cases = genl({
-  //     c: integer(1, 1024),
-  //     dkLen: integer(0, 1024),
-  //     pwd: bytes(0, 1024),
-  //     salt: bytes(0, 1024),
-  //   });
-  //   for (let c of cases) {
-  //     const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
-  //     const opt = { c: c.c, dkLen: c.dkLen };
-  //     assert.deepStrictEqual(
-  //       pbkdf2(ripemd160, c.pwd, c.salt, opt),
-  //       exp,
-  //       `pbkdf2(ripemd160, ${opt})`
-  //     );
-  //     assert.deepStrictEqual(
-  //       await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
-  //       exp,
-  //       `pbkdf2Async(ripemd160, ${opt})`
-  //     );
-  //   }
-  // });
+    // Disable because openssl 3 deprecated ripemd
+    // should('PBKDF2(ripemd160) generator', async () => {
+    //   const cases = genl({
+    //     c: integer(1, 1024),
+    //     dkLen: integer(0, 1024),
+    //     pwd: bytes(0, 1024),
+    //     salt: bytes(0, 1024),
+    //   });
+    //   for (let c of cases) {
+    //     const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
+    //     const opt = { c: c.c, dkLen: c.dkLen };
+    //     assert.deepStrictEqual(
+    //       pbkdf2(ripemd160, c.pwd, c.salt, opt),
+    //       exp,
+    //       `pbkdf2(ripemd160, ${opt})`
+    //     );
+    //     assert.deepStrictEqual(
+    //       await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
+    //       exp,
+    //       `pbkdf2Async(ripemd160, ${opt})`
+    //     );
+    //   }
+    // });
 
-  should('PBKDF2(blake2s) generator', async () => {
-    const cases = genl({
-      c: integer(1, 1024),
-      dkLen: integer(1, 1024),
-      pwd: bytes(0, 1024),
-      salt: bytes(0, 1024),
+    should('PBKDF2(blake2s) generator', async () => {
+      if (isBunDeno) return; // skip
+      const cases = genl({
+        c: integer(1, 1024),
+        dkLen: integer(1, 1024),
+        pwd: bytes(0, 1024),
+        salt: bytes(0, 1024),
+      });
+      for (let c of cases) {
+        const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2s256'));
+        const opt = { c: c.c, dkLen: c.dkLen };
+        assert.deepStrictEqual(pbkdf2(blake2s, c.pwd, c.salt, opt), exp, `pbkdf2(blake2s, ${opt})`);
+        assert.deepStrictEqual(
+          await pbkdf2Async(blake2s, c.pwd, c.salt, opt),
+          exp,
+          `pbkdf2Async(blake2s, ${opt})`
+        );
+      }
     });
-    for (let c of cases) {
-      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2s256'));
-      const opt = { c: c.c, dkLen: c.dkLen };
-      assert.deepStrictEqual(pbkdf2(blake2s, c.pwd, c.salt, opt), exp, `pbkdf2(blake2s, ${opt})`);
-      assert.deepStrictEqual(
-        await pbkdf2Async(blake2s, c.pwd, c.salt, opt),
-        exp,
-        `pbkdf2Async(blake2s, ${opt})`
-      );
-    }
-  });
 
-  should('PBKDF2(blake2b) generator', async () => {
-    const cases = genl({
-      c: integer(1, 1024),
-      dkLen: integer(1, 1024),
-      pwd: bytes(0, 1024),
-      salt: bytes(0, 1024),
+    should('PBKDF2(blake2b) generator', async () => {
+      if (isBunDeno) return; // skip
+      const cases = genl({
+        c: integer(1, 1024),
+        dkLen: integer(1, 1024),
+        pwd: bytes(0, 1024),
+        salt: bytes(0, 1024),
+      });
+      for (let c of cases) {
+        const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2b512'));
+        const opt = { c: c.c, dkLen: c.dkLen };
+        assert.deepStrictEqual(pbkdf2(blake2b, c.pwd, c.salt, opt), exp, `pbkdf2(blake2b, ${opt})`);
+        assert.deepStrictEqual(
+          await pbkdf2Async(blake2b, c.pwd, c.salt, opt),
+          exp,
+          `pbkdf2Async(blake2b, ${opt})`
+        );
+      }
     });
-    for (let c of cases) {
-      const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2b512'));
-      const opt = { c: c.c, dkLen: c.dkLen };
-      assert.deepStrictEqual(pbkdf2(blake2b, c.pwd, c.salt, opt), exp, `pbkdf2(blake2b, ${opt})`);
-      assert.deepStrictEqual(
-        await pbkdf2Async(blake2b, c.pwd, c.salt, opt),
-        exp,
-        `pbkdf2Async(blake2b, ${opt})`
-      );
-    }
   });
 }
 
-module.exports = {
-  optional,
-  integer,
-  bytes,
-  gen,
-  RANDOM,
-  serializeCase,
-  executeKDFTests,
-};
+export { optional, integer, bytes, gen, RANDOM, serializeCase, executeKDFTests };
+
+should.runWhen(import.meta.url);

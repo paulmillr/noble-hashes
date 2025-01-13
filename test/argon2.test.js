@@ -1,8 +1,10 @@
-const { deepStrictEqual, throws } = require('assert');
-const { describe, should } = require('micro-should');
-const { argon2i, argon2d, argon2id } = require('../argon2');
-const { argon2iAsync, argon2dAsync, argon2idAsync } = require('../argon2');
-const { hexToBytes, bytesToHex } = require('./utils');
+import { deepStrictEqual, throws } from 'node:assert';
+import { describe, should } from 'micro-should';
+import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
+import { argon2iAsync, argon2dAsync, argon2idAsync } from '../esm/argon2.js';
+import { hexToBytes, bytesToHex } from '../esm/utils.js';
+
+// TODO: uncomment verySlow vectors
 
 const asyncMap = new Map([
   [argon2i, argon2iAsync],
@@ -412,4 +414,4 @@ describe('Argon2', () => {
   }
 });
 
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

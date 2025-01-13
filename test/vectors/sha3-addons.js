@@ -1,4 +1,4 @@
-const {
+import {
   k12,
   m14,
   cshake128,
@@ -17,8 +17,9 @@ const {
   parallelhash256xof,
   turboshake128,
   turboshake256,
-} = require('../../sha3-addons');
-const { pattern, hexToBytes, EMPTY, times } = require('../utils');
+} from '../../esm/sha3-addons.js';
+import { hexToBytes } from '../../esm/utils.js';
+import { pattern, EMPTY, times } from '../utils.js';
 const fromHex = (hex) => hexToBytes(hex.replace(/ |\n/gm, ''));
 
 const K12_VECTORS = [
@@ -1089,7 +1090,7 @@ const VECTORS_K12 = [
   },
 ];
 
-module.exports = {
+export {
   K12_VECTORS,
   M14_VECTORS,
   CSHAKE_VESTORS,

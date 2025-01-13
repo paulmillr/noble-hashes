@@ -1,13 +1,14 @@
-const { deepStrictEqual, throws } = require('assert');
-const { describe, should } = require('micro-should');
-const { blake2b } = require('../blake2b');
-const { blake2s } = require('../blake2s');
-const { TYPE_TEST, pattern, concatBytes } = require('./utils');
-const blake2_vectors = require('./vectors/blake2-kat.json');
-const blake2_python = require('./vectors/blake2-python.json');
-const blake3_vectors = require('./vectors/blake3.json');
-const { blake3 } = require('../blake3');
-const { hexToBytes, bytesToHex } = require('../utils');
+import { deepStrictEqual, throws } from 'node:assert';
+import { describe, should } from 'micro-should';
+import { blake2b } from '../esm/blake2b.js';
+import { blake2s } from '../esm/blake2s.js';
+import { blake3 } from '../esm/blake3.js';
+import { hexToBytes, bytesToHex, concatBytes } from '../esm/utils.js';
+import { TYPE_TEST, pattern, json } from './utils.js';
+
+const blake2_vectors = json('./vectors/blake2-kat.json');
+const blake2_python = json('./vectors/blake2-python.json');
+const blake3_vectors = json('./vectors/blake3.json');
 
 describe('blake', () => {
   should('Blake2 vectors', () => {
@@ -174,4 +175,4 @@ describe('blake', () => {
   });
 });
 
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

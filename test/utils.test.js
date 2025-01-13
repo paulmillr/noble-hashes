@@ -1,23 +1,13 @@
-const { deepStrictEqual, throws } = require('assert');
-const fc = require('fast-check');
-const { describe, should } = require('micro-should');
-const { optional, integer, gen } = require('./generator');
-const { TYPE_TEST, pattern } = require('./utils');
-const {
-  byteSwap,
-  byteSwapIfBE,
-  byteSwap32,
-  isLE,
-  bytesToHex,
-  concatBytes,
-  hexToBytes,
-  createView,
-  isBytes,
-  randomBytes,
-} = require('../utils');
-const assert = require('../_assert');
-const { sha256 } = require('../sha256');
-const { setBigUint64 } = require('../_md');
+import { deepStrictEqual, throws } from 'node:assert';
+import fc from 'fast-check';
+import { beforeEach, describe, should } from 'micro-should';
+import { optional, integer, gen } from './generator.js';
+import { TYPE_TEST, pattern } from './utils.js';
+import { byteSwap, byteSwapIfBE, byteSwap32, isLE, createView, isBytes } from '../esm/utils.js';
+import { bytesToHex, hexToBytes, concatBytes, randomBytes } from '../esm/utils.js';
+import * as assert from '../esm/_assert.js';
+import { sha256 } from '../esm/sha256.js';
+import { setBigUint64 } from '../esm/_md.js';
 
 describe('utils', () => {
   const staticHexVectors = [
@@ -45,7 +35,8 @@ describe('utils', () => {
         if (hex.length % 2 !== 0) return;
         deepStrictEqual(hex, bytesToHex(hexToBytes(hex)));
         deepStrictEqual(hex, bytesToHex(hexToBytes(hex.toUpperCase())));
-        deepStrictEqual(hexToBytes(hex), Uint8Array.from(Buffer.from(hex, 'hex')));
+        if (typeof Buffer !== 'undefined')
+          deepStrictEqual(hexToBytes(hex), Uint8Array.from(Buffer.from(hex, 'hex')));
       })
     )
   );
@@ -67,7 +58,7 @@ describe('utils', () => {
   should('concatBytes random', () =>
     fc.assert(
       fc.property(fc.uint8Array(), fc.uint8Array(), fc.uint8Array(), (a, b, c) => {
-        const expected = Uint8Array.from(Buffer.concat([a, b, c]));
+        const expected = Uint8Array.from([...a, ...b, ...c]);
         deepStrictEqual(concatBytes(a.slice(), b.slice(), c.slice()), expected);
       })
     )
@@ -207,6 +198,7 @@ describe('utils etc', () => {
     }
   });
   should('randomBytes', () => {
+    if (typeof crypto === 'undefined') return;
     const t = randomBytes(32);
     deepStrictEqual(t instanceof Uint8Array, true);
     deepStrictEqual(t.length, 32);
@@ -216,7 +208,7 @@ describe('utils etc', () => {
   });
   should('isBytes', () => {
     deepStrictEqual(isBytes(new Uint8Array(0)), true);
-    deepStrictEqual(isBytes(Buffer.alloc(10)), true);
+    if (typeof Buffer !== 'undefined') deepStrictEqual(isBytes(Buffer.alloc(10)), true);
     deepStrictEqual(isBytes(''), false);
     deepStrictEqual(isBytes([1, 2, 3]), false);
   });
@@ -232,7 +224,7 @@ describe('assert', () => {
   });
   should('abytes', () => {
     deepStrictEqual(assert.abytes(new Uint8Array(0)), undefined);
-    deepStrictEqual(assert.abytes(Buffer.alloc(10)), undefined);
+    if (typeof Buffer !== 'undefined') deepStrictEqual(assert.abytes(Buffer.alloc(10)), undefined);
     deepStrictEqual(assert.abytes(new Uint8Array(10)), undefined);
     assert.abytes(new Uint8Array(11), 11, 12);
     assert.abytes(new Uint8Array(12), 12, 12);
@@ -255,4 +247,4 @@ describe('assert', () => {
   });
 });
 
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

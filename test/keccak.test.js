@@ -1,7 +1,7 @@
-const { deepStrictEqual, throws } = require('assert');
-const { createHash } = require('crypto');
-const { describe, should } = require('micro-should');
-const {
+import { deepStrictEqual, throws } from 'node:assert';
+import { createHash } from 'node:crypto';
+import { describe, should } from 'micro-should';
+import {
   sha3_224,
   sha3_256,
   sha3_384,
@@ -13,8 +13,8 @@ const {
   keccak_384,
   keccak_512,
   Keccak,
-} = require('../sha3');
-const {
+} from '../esm/sha3.js';
+import {
   k12,
   m14,
   cshake128,
@@ -34,9 +34,10 @@ const {
   keccakprg,
   turboshake128,
   turboshake256,
-} = require('../sha3-addons');
-const { TYPE_TEST, concatBytes, jsonGZ, bytesToHex, hexToBytes } = require('./utils.js');
-const {
+} from '../esm/sha3-addons.js';
+import { bytesToHex, hexToBytes, concatBytes } from '../esm/utils.js';
+import { TYPE_TEST, jsonGZ } from './utils.js';
+import {
   K12_VECTORS,
   M14_VECTORS,
   CSHAKE_VESTORS,
@@ -45,14 +46,20 @@ const {
   PARALLEL_VECTORS,
   VECTORS_TURBO,
   VECTORS_K12,
-} = require('./vectors/sha3-addons.js');
-const fs = require('fs');
+} from './vectors/sha3-addons.js';
+import { readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const GEN_VECTORS = jsonGZ('vectors/sha3-addons.json.gz').v;
 // Generated from test cases of KeccakPRG in XKCP
 const PRG_VECTORS = jsonGZ('vectors/sha3-addon-keccak-prg.json.gz');
 
+const _dirname = dirname(fileURLToPath(import.meta.url));
+const isBun = !!process.versions.bun;
+
 function getVectors(name) {
-  const vectors = fs.readFileSync(`${__dirname}/vectors/${name}.txt`, 'utf8').split('\n\n');
+  const vectors = readFileSync(`${_dirname}/vectors/${name}.txt`, 'utf8').split('\n\n');
   const res = [];
   for (const v of vectors) {
     if (v.startsWith('#')) continue;
@@ -128,6 +135,7 @@ describe('sha3', () => {
   });
 
   should('shake128 cross-test', () => {
+    if (isBun) return; // bun is buggy
     for (let i = 0; i < 4096; i++) {
       const node = Uint8Array.from(createHash('shake128', { outputLength: i }).digest());
       deepStrictEqual(shake128('', { dkLen: i }), node);
@@ -135,6 +143,7 @@ describe('sha3', () => {
   });
 
   should('shake256 cross-test', () => {
+    if (isBun) return; // bun is buggy
     for (let i = 0; i < 4096; i++) {
       const node = Uint8Array.from(createHash('shake256', { outputLength: i }).digest());
       deepStrictEqual(shake256('', { dkLen: i }), node);
@@ -413,4 +422,4 @@ describe('sha3-addons', () => {
   });
 });
 
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

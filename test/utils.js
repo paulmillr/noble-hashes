@@ -1,15 +1,26 @@
-const { readFileSync } = require('fs');
-const { gunzipSync } = require('zlib');
-const { bytesToHex, concatBytes, hexToBytes } = require('../utils.js');
-const utf8ToBytes = (str) => new TextEncoder().encode(str);
-const truncate = (buf, length) => (length ? buf.slice(0, length) : buf);
+import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import { dirname, join as joinPath } from 'node:path';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
-const repeat = (buf, len) => {
-  // too slow: Uint8Array.from({ length: len * buf.length }, (_, i) => buf[i % buf.length]);
-  let out = new Uint8Array(len * buf.length);
-  for (let i = 0; i < len; i++) out.set(buf, i * buf.length);
-  return out;
-};
+export const _dirname = dirname(fileURLToPath(import.meta.url));
+
+export function jsonGZ(path) {
+  const unz = gunzipSync(readFileSync(joinPath(_dirname, path)));
+  return JSON.parse(unz.toString('utf8'));
+}
+
+export function json(path) {
+  try {
+    // Node.js
+    return JSON.parse(readFileSync(joinPath(_dirname, path), { encoding: 'utf-8' }));
+  } catch (error) {
+    // Bundler
+    const file = path.replace(/^\.\//, '').replace(/\.json$/, '');
+    if (path !== './' + file + '.json') throw new Error('Can not load non-json file');
+    // return require('./' + file + '.json'); // in this form so that bundler can glob this
+  }
+}
 
 // Everything except undefined, string, Uint8Array
 const TYPE_TEST_BASE = [
@@ -68,7 +79,7 @@ const TYPE_TEST_NOT_HEX = [
 ];
 const TYPE_TEST_NOT_INT = [-0.0, 0, 1];
 
-const TYPE_TEST = {
+export const TYPE_TEST = {
   int: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_BOOL, TYPE_TEST_NOT_BYTES),
   bytes: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT, TYPE_TEST_NOT_BOOL),
   boolean: TYPE_TEST_BASE.concat(TYPE_TEST_NOT_INT, TYPE_TEST_NOT_BYTES),
@@ -82,68 +93,70 @@ const TYPE_TEST = {
   ),
 };
 
-function repr(item) {
+export const SPACE = {
+  str: ' ',
+  bytes: new Uint8Array([0x20]),
+};
+export const EMPTY = {
+  str: '',
+  bytes: new Uint8Array([]),
+};
+
+export const repeat = (buf, len) => {
+  // too slow: Uint8Array.from({ length: len * buf.length }, (_, i) => buf[i % buf.length]);
+  let out = new Uint8Array(len * buf.length);
+  for (let i = 0; i < len; i++) out.set(buf, i * buf.length);
+  return out;
+};
+export const truncate = (buf, length) => (length ? buf.slice(0, length) : buf);
+export const times = (byte, n) => new Uint8Array(n).fill(byte);
+export const pattern = (toByte, len) =>
+  Uint8Array.from({ length: len }, (i, j) => j % (toByte + 1));
+
+export const getTypeTests = () => [
+  [0, '0'],
+  [123, '123'],
+  [123.456, '123.456'],
+  [-5n, '-5n'],
+  [1.0000000000001, '1.0000000000001'],
+  [10e9999, '10e9999'],
+  [Infinity, 'Infinity'],
+  [-Infinity, '-Infinity'],
+  [NaN, 'NaN'],
+  [true, 'true'],
+  [false, 'false'],
+  [null, 'null'],
+  [undefined, 'undefined'],
+  ['', '""'],
+  ['1', '"1"'],
+  ['1 ', '"1 "'],
+  [' 1', '" 1"'],
+  ['0xbe', '"0xbe"'],
+  ['keys', '"keys"'],
+  [new String('1234'), 'String(1234)'],
+  [new Uint8Array([]), 'ui8a([])'],
+  [new Uint8Array([0]), 'ui8a([0])'],
+  [new Uint8Array([1]), 'ui8a([1])'],
+  // [new Uint8Array(32).fill(1), 'ui8a(32*[1])'],
+  [new Uint8Array(4096).fill(1), 'ui8a(4096*[1])'],
+  [new Uint16Array(32).fill(1), 'ui16a(32*[1])'],
+  [new Uint32Array(32).fill(1), 'ui32a(32*[1])'],
+  [new Float32Array(32), 'f32a(32*0)'],
+  [new BigUint64Array(32).fill(1n), 'ui64a(32*[1])'],
+  [new ArrayBuffer(100), 'arraybuf'],
+  [new DataView(new ArrayBuffer(100)), 'dataview'],
+  [{ constructor: { name: 'Uint8Array' }, length: '1e30' }, 'fake(ui8a)'],
+  [Array(32).fill(1), 'array'],
+  [new Set([1, 2, 3]), 'set'],
+  [new Map([['aa', 'bb']]), 'map'],
+  [() => {}, 'fn'],
+  [async () => {}, 'fn async'],
+  [class Test {}, 'class'],
+  [Symbol.for('a'), 'symbol("a")'],
+];
+
+export function repr(item) {
   if (item && item.isProxy) return '[proxy]';
   if (typeof item === 'symbol') return item.toString();
   return `${item}`;
 }
-
-function median(list) {
-  const values = list.slice().sort((a, b) => a - b);
-  const half = (values.length / 2) | 0;
-  return values.length % 2 ? values[half] : (values[half - 1] + values[half]) / 2.0;
-}
-
-function stats(list) {
-  let [min, max, cnt, sum, absSum] = [+Infinity, -Infinity, 0, 0, 0];
-  for (let value of list) {
-    const num = Number(value);
-    min = Math.min(min, num);
-    max = Math.max(max, num);
-    cnt++;
-    sum += num;
-    absSum += Math.abs(num);
-  }
-  const sumDiffPercent = (absSum / sum) * 100;
-  const difference = [];
-  for (let i = 1; i < list.length; i++) difference.push(list[i] - list[i - 1]);
-  return {
-    min,
-    max,
-    avg: sum / cnt,
-    sum,
-    median: median(list),
-    absSum,
-    cnt,
-    sumDiffPercent,
-    difference,
-  };
-}
-
-const times = (byte, n) => new Uint8Array(n).fill(byte);
-const pattern = (toByte, len) => Uint8Array.from({ length: len }, (i, j) => j % (toByte + 1));
-
-const jsonGZ = (path) => JSON.parse(gunzipSync(readFileSync(`${__dirname}/${path}`)));
-
-module.exports = {
-  utf8ToBytes,
-  hexToBytes,
-  bytesToHex,
-  concatBytes,
-  truncate,
-  repeat,
-  TYPE_TEST,
-  repr,
-  SPACE: {
-    str: ' ',
-    bytes: new Uint8Array([0x20]),
-  },
-  EMPTY: {
-    str: '',
-    bytes: new Uint8Array([]),
-  },
-  stats,
-  times,
-  pattern,
-  jsonGZ,
-};

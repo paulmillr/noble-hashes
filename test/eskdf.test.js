@@ -1,8 +1,9 @@
-const { equal, rejects, throws, deepStrictEqual } = require('assert');
-const { describe, should } = require('micro-should');
-const { eskdf } = require('../eskdf');
-const { bytesToHex: toHex } = require('../utils');
-const vectors = require('./vectors/eskdf.json');
+import { equal, rejects, throws, deepStrictEqual } from 'node:assert';
+import { describe, should } from 'micro-should';
+import { eskdf } from '../esm/eskdf.js';
+import { bytesToHex as toHex } from '../esm/utils.js';
+import { json } from './utils.js';
+const vectors = json('./vectors/eskdf.json');
 
 describe('eskdf', () => {
   for (let v of vectors.derive_main_seed.valid) {
@@ -82,7 +83,4 @@ describe('eskdf', () => {
   });
 });
 
-// should.run();
-if (require.main === module) should.run();
-
-// if (require.main === module) should.run();
+should.runWhen(import.meta.url);

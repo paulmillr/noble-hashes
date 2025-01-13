@@ -1,19 +1,19 @@
-const { deepStrictEqual } = require('assert');
-const { scryptSync } = require('crypto');
-const { describe, should } = require('micro-should');
-const { HASHES } = require('./hashes.test');
-const { bytes, integer, gen, RANDOM, serializeCase, executeKDFTests } = require('./generator');
-const { sha256 } = require('../sha256');
-const { sha512 } = require('../sha512');
-const { cshake128 } = require('../sha3-addons');
-const { hmac } = require('../hmac');
-const { hkdf } = require('../hkdf');
-const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
-const { scrypt, scryptAsync } = require('../scrypt');
-const { argon2i, argon2d, argon2id } = require('../argon2');
-const { bytesToHex, hexToBytes, pattern } = require('./utils.js');
-
-const argon2_vectors = require('./vectors/argon2.json');
+import { deepStrictEqual } from 'node:assert';
+import { scryptSync } from 'node:crypto';
+import { describe, should } from 'micro-should';
+import { HASHES } from './hashes.test.js';
+import { bytes, integer, gen, RANDOM, serializeCase, executeKDFTests } from './generator.js';
+import { sha256 } from '../esm/sha256.js';
+import { sha512 } from '../esm/sha512.js';
+import { cshake128 } from '../esm/sha3-addons.js';
+import { hmac } from '../esm/hmac.js';
+import { hkdf } from '../esm/hkdf.js';
+import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
+import { scrypt, scryptAsync } from '../esm/scrypt.js';
+import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
+import { bytesToHex, hexToBytes } from '../esm/utils.js';
+import { json, pattern } from './utils.js';
+const argon2_vectors = json('./vectors/argon2.json');
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -300,4 +300,4 @@ describe('argon2 crosstest', () => {
 });
 
 // non parallel: 14h, parallel: ~1h
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);

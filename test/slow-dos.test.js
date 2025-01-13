@@ -1,14 +1,14 @@
-const { deepStrictEqual, rejects, throws } = require('assert');
-const { should } = require('micro-should');
-const { RANDOM } = require('./generator');
-const { HASHES } = require('./hashes.test');
-const { stats } = require('./utils');
-const { sha256 } = require('../sha256');
-const { hmac } = require('../hmac');
-const { hkdf } = require('../hkdf');
-const { pbkdf2, pbkdf2Async } = require('../pbkdf2');
-const { scrypt, scryptAsync } = require('../scrypt');
-const { createView } = require('../utils');
+import { deepStrictEqual, rejects, throws } from 'node:assert';
+import { should } from 'micro-should';
+import { RANDOM } from './generator';
+import { HASHES } from './hashes.test';
+import { stats } from './utils';
+import { sha256 } from '../esm/sha256.js';
+import { hmac } from '../esm/hmac.js';
+import { hkdf } from '../esm/hkdf.js';
+import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
+import { scrypt, scryptAsync } from '../esm/scrypt.js';
+import { createView } from '../esm/utils.js';
 
 const getTime = () => Number(process.hrtime.bigint());
 
@@ -195,4 +195,4 @@ should(
 );
 
 // takes ~20min
-if (require.main === module) should.run();
+should.runWhen(import.meta.url);
