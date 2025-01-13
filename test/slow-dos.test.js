@@ -1,8 +1,8 @@
-import { deepStrictEqual, rejects, throws } from 'node:assert';
+import { deepStrictEqual, rejects } from 'node:assert';
 import { should } from 'micro-should';
-import { RANDOM } from './generator';
-import { HASHES } from './hashes.test';
-import { stats } from './utils';
+import { RANDOM } from './generator.js';
+import { HASHES } from './hashes.test.js';
+import { stats } from './utils.js';
 import { sha256 } from '../esm/sha256.js';
 import { hmac } from '../esm/hmac.js';
 import { hkdf } from '../esm/hkdf.js';

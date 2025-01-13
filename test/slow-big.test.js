@@ -13,6 +13,7 @@ import { scrypt, scryptAsync } from '../esm/scrypt.js';
 import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
 import { bytesToHex, hexToBytes } from '../esm/utils.js';
 import { json, pattern } from './utils.js';
+
 const argon2_vectors = json('./vectors/argon2.json');
 
 const KB = 1024;
