@@ -18,10 +18,10 @@
     "build:clean": "rm -f *.{js,d.ts,js.map,d.ts.map} esm/*.{js,js.map,d.ts.map}",
     "lint": "prettier --check 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
-    "test": "node test/index.js",
+    "test": "node --import ./test/esm-register.js test/index.js",
     "test:dos": "node test/slow-dos.test.js",
     "test:big": "node test/slow-big.test.js",
-    "test:coverage": "c8 node test/index.js"
+    "test:coverage": "c8 npm test"
   },
   "author": "Paul Miller (https://paulmillr.com)",
   "homepage": "https://paulmillr.com/noble/",
@@ -41,6 +41,9 @@
   },
   "engines": {
     "node": "^14.21.3 || >=16"
+  },
+  "imports": {
+    "@noble/hashes/crypto": "../esm/crypto.js"
   },
   "exports": {
     ".": {

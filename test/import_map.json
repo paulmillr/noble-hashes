@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@noble/hashes/crypto": "../src/crypto.ts"
+  }
+}
