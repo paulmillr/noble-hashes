@@ -301,4 +301,5 @@ describe('argon2 crosstest', () => {
 });
 
 // non parallel: 14h, parallel: ~1h
+process.env.MSHOULD_FAST = '1';
 should.runWhen(import.meta.url);
