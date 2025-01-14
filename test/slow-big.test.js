@@ -314,4 +314,4 @@ describe('argon2 crosstest', () => {
 });
 
 // non parallel: 14h, parallel: ~1h
-should.runWhen(import.meta.url);
+should.run(true);
