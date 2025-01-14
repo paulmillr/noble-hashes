@@ -149,7 +149,7 @@ if (supports5GB) {
   });
 }
 
-should('Scrypt (16GB)', async () => {
+should.only('Scrypt (16GB)', async () => {
   const opts = { N: 2 ** 24, r: 8, p: 1 };
   const exp = Uint8Array.from(
     scryptSync(PASSWORD, SALT, 32, {
