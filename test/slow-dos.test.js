@@ -195,5 +195,4 @@ should(
 );
 
 // takes ~20min
-process.env.MSHOULD_FAST = '1';
 should.runWhen(import.meta.url);
