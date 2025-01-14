@@ -133,35 +133,6 @@ should('Scrypt (4GB)', async () => {
   deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
 });
 
-// 22: 0b4de6108452441913a780b56461c011c3480e29c82dc47aa0af59321e039b9c
-// 23: 5380409ca2367f95520267c162a46a9b24e65797f8675a9dad7bdfa2b4f4ea17
-// 24: 6ce62287b7938f0a1dc838d158d4b6753ddb0bc2c66a88e32d506913dace9865
-// 25: 6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1
-// 26: 1740d229ad1f230b75483687b1f167ef804203c261c4f2c3de7eed12226b857a
-// 27: 8ed4c994fab397a1c87c0f15ec810f0ca3ec8e9100bb3f49604a910527ad14df
-if (supports5GB) {
-  should('Scrypt (2**25)', async () => {
-    const opts = { N: 2 ** 25, r: 2, p: 2 };
-    const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
-    const nobleOpts = { ...opts, maxmem: 9 * GB };
-    deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
-    deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
-  });
-}
-
-should.only('Scrypt (16GB)', async () => {
-  const opts = { N: 2 ** 24, r: 8, p: 1 };
-  const exp = Uint8Array.from(
-    scryptSync(PASSWORD, SALT, 32, {
-      ...opts,
-      maxmem: 17 * GB,
-    })
-  );
-  const nobleOpts = { ...opts, maxmem: 17 * GB };
-  deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
-  deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
-});
-
 // Takes 10h
 const SCRYPT_CASES = gen({
   N: integer(1, 10),
@@ -251,6 +222,33 @@ if (supports5GB) {
     deepStrictEqual(scrypt(ZERO_5GB, ZERO_5GB, optS), expS, `5GB scrypt(${optS})`);
     deepStrictEqual(await scryptAsync(ZERO_5GB, ZERO_5GB, optS), expS, `5GB scryptAsync(${optS})`);
   });
+
+  // 22: 0b4de6108452441913a780b56461c011c3480e29c82dc47aa0af59321e039b9c
+  // 23: 5380409ca2367f95520267c162a46a9b24e65797f8675a9dad7bdfa2b4f4ea17
+  // 24: 6ce62287b7938f0a1dc838d158d4b6753ddb0bc2c66a88e32d506913dace9865
+  // 25: 6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1
+  // 26: 1740d229ad1f230b75483687b1f167ef804203c261c4f2c3de7eed12226b857a
+  // 27: 8ed4c994fab397a1c87c0f15ec810f0ca3ec8e9100bb3f49604a910527ad14df
+  should('Scrypt (2**25)', async () => {
+    const opts = { N: 2 ** 25, r: 2, p: 2 };
+    const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
+    const nobleOpts = { ...opts, maxmem: 9 * GB };
+    deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
+    deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
+  });
+
+  should('Scrypt (16GB)', async () => {
+    const opts = { N: 2 ** 24, r: 8, p: 1 };
+    const exp = Uint8Array.from(
+      scryptSync(PASSWORD, SALT, 32, {
+        ...opts,
+        maxmem: 17 * GB,
+      })
+    );
+    const nobleOpts = { ...opts, maxmem: 17 * GB };
+    deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
+    deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
+  });
 }
 
 // cross-test
@@ -314,4 +312,4 @@ describe('argon2 crosstest', () => {
 });
 
 // non parallel: 14h, parallel: ~1h
-should.run(true);
+should.runWhen(import.meta.url);
