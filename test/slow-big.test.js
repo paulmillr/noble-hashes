@@ -236,7 +236,11 @@ if (supports5GB) {
       '1445d2aa24bf84d7f69269a7e088f7130b00901860de454415c947f0cb87ea892d84ccb1757e973a649d09f32f965f4aa223dba690c0cea0ef0359c325cd9501'
     );
     deepStrictEqual(pbkdf2(sha512, ZERO_5GB, ZERO_5GB, optP), expP, `5GB pbkdf2(${optP})`);
-    deepStrictEqual(await pbkdf2Async(sha512, ZERO_5GB, ZERO_5GB, optP), expP, `5GB pbkdf2Async(${optP})`);
+    deepStrictEqual(
+      await pbkdf2Async(sha512, ZERO_5GB, ZERO_5GB, optP),
+      expP,
+      `5GB pbkdf2Async(${optP})`
+    );
 
     // scrypt
     // This doesn't work in node, python: ~1.5h, noble: ~5min
