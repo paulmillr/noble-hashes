@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { dirname, join as joinPath } from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 export const _dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -20,6 +20,37 @@ export function json(path) {
     if (path !== './' + file + '.json') throw new Error('Can not load non-json file');
     // return require('./' + file + '.json'); // in this form so that bundler can glob this
   }
+}
+
+function median(list) {
+  const values = list.slice().sort((a, b) => a - b);
+  const half = (values.length / 2) | 0;
+  return values.length % 2 ? values[half] : (values[half - 1] + values[half]) / 2.0;
+}
+export function stats(list) {
+  let [min, max, cnt, sum, absSum] = [+Infinity, -Infinity, 0, 0, 0];
+  for (let value of list) {
+    const num = Number(value);
+    min = Math.min(min, num);
+    max = Math.max(max, num);
+    cnt++;
+    sum += num;
+    absSum += Math.abs(num);
+  }
+  const sumDiffPercent = (absSum / sum) * 100;
+  const difference = [];
+  for (let i = 1; i < list.length; i++) difference.push(list[i] - list[i - 1]);
+  return {
+    min,
+    max,
+    avg: sum / cnt,
+    sum,
+    median: median(list),
+    absSum,
+    cnt,
+    sumDiffPercent,
+    difference,
+  };
 }
 
 // Everything except undefined, string, Uint8Array
