@@ -139,13 +139,15 @@ should('Scrypt (4GB)', async () => {
 // 25: 6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1
 // 26: 1740d229ad1f230b75483687b1f167ef804203c261c4f2c3de7eed12226b857a
 // 27: 8ed4c994fab397a1c87c0f15ec810f0ca3ec8e9100bb3f49604a910527ad14df
-should('Scrypt (2**25)', async () => {
-  const opts = { N: 2 ** 25, r: 2, p: 2 };
-  const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
-  const nobleOpts = { ...opts, maxmem: 9 * GB };
-  deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
-  deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
-});
+if (supports5GB) {
+  should('Scrypt (2**25)', async () => {
+    const opts = { N: 2 ** 25, r: 2, p: 2 };
+    const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
+    const nobleOpts = { ...opts, maxmem: 9 * GB };
+    deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
+    deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
+  });
+}
 
 should('Scrypt (16GB)', async () => {
   const opts = { N: 2 ** 24, r: 8, p: 1 };
