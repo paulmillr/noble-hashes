@@ -1,5 +1,5 @@
 /**
- * Argon2 from RFC 9106.
+ * Argon2 KDF from RFC 9106. Can be used to create a key from password and salt.
  * We suggest to use Scrypt. JS Argon is 2-10x slower than native code because of 64-bitness:
  * * argon uses uint64, but JS doesn't have fast uint64array
  * * uint64 multiplication is 1/3 of time

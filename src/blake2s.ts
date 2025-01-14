@@ -1,13 +1,15 @@
 /**
- * Blake2s fast hash, focusing on 8-bit to 32-bit platforms.
+ * Blake2s hash function. Focuses on 8-bit to 32-bit platforms. blake2b for 64-bit, but in JS it is slower.
  * @module
  */
 import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
 import { fromBig } from './_u64.js';
 import { CHashO, rotr, toBytes, wrapConstructorWithOpts, u32, byteSwapIfBE } from './utils.js';
 
-// Initial state: same as SHA256
-// first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
+/**
+ * Initial state: same as SHA256. First 32 bits of the fractional parts of the square roots
+ * of the first 8 primes 2..19.
+ */
 // prettier-ignore
 export const B2S_IV: Uint32Array = /* @__PURE__ */ new Uint32Array([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
@@ -143,7 +145,7 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
 }
 
 /**
- * BLAKE2s - optimized for 32-bit platforms. JS doesn't have uint64, so it's faster than BLAKE2b.
+ * Blake2s hash function. Focuses on 8-bit to 32-bit platforms. blake2b for 64-bit, but in JS it is slower.
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */

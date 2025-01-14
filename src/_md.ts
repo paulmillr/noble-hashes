@@ -5,9 +5,7 @@
 import { aexists, aoutput } from './_assert.js';
 import { Hash, createView, Input, toBytes } from './utils.js';
 
-/**
- * Polyfill for Safari 14
- */
+/** Polyfill for Safari 14. https://caniuse.com/mdn-javascript_builtins_dataview_setbiguint64 */
 export function setBigUint64(
   view: DataView,
   byteOffset: number,
@@ -25,15 +23,15 @@ export function setBigUint64(
   view.setUint32(byteOffset + l, wl, isLE);
 }
 
-/**
- * Choice: a ? b : c
- */
-export const Chi = (a: number, b: number, c: number): number => (a & b) ^ (~a & c);
+/** Choice: a ? b : c */
+export function Chi(a: number, b: number, c: number): number {
+  return (a & b) ^ (~a & c);
+}
 
-/**
- * Majority function, true if any two inputs is true
- */
-export const Maj = (a: number, b: number, c: number): number => (a & b) ^ (a & c) ^ (b & c);
+/** Majority function, true if any two inputs is true. */
+export function Maj(a: number, b: number, c: number): number {
+  return (a & b) ^ (a & c) ^ (b & c);
+}
 
 /**
  * Merkle-Damgard hash construction base class.

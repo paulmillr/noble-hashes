@@ -5,6 +5,8 @@
  * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
  * [Website](https://keccak.team/keccak.html),
  * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
+ *
+ * Check out `sha3-addons` module for cSHAKE, k12, and others.
  * @module
  */
 import { abytes, aexists, anumber, aoutput } from './_assert.js';

@@ -1,5 +1,5 @@
 /**
- * RFC 7914 Scrypt KDF.
+ * RFC 7914 Scrypt KDF. Can be used to create a key from password and salt.
  * @module
  */
 import { anumber } from './_assert.js';

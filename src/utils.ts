@@ -23,31 +23,39 @@ export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
 
 // Cast array to different type
-export const u8 = (arr: TypedArray): Uint8Array =>
-  new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-export const u32 = (arr: TypedArray): Uint32Array =>
-  new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
+export function u8(arr: TypedArray): Uint8Array {
+  return new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+}
+export function u32(arr: TypedArray): Uint32Array {
+  return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
+}
 
 // Cast array to view
-export const createView = (arr: TypedArray): DataView =>
-  new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+export function createView(arr: TypedArray): DataView {
+  return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+}
 
 /** The rotate right (circular right shift) operation for uint32 */
-export const rotr = (word: number, shift: number): number =>
-  (word << (32 - shift)) | (word >>> shift);
+export function rotr(word: number, shift: number): number {
+  return (word << (32 - shift)) | (word >>> shift);
+}
 /** The rotate left (circular left shift) operation for uint32 */
-export const rotl = (word: number, shift: number): number =>
-  (word << shift) | ((word >>> (32 - shift)) >>> 0);
+export function rotl(word: number, shift: number): number {
+  return (word << shift) | ((word >>> (32 - shift)) >>> 0);
+}
 
 /** Is current platform little-endian? Most are. Big-Endian platform: IBM */
 export const isLE: boolean = /* @__PURE__ */ (() =>
   new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
 // The byte swap operation for uint32
-export const byteSwap = (word: number): number =>
-  ((word << 24) & 0xff000000) |
-  ((word << 8) & 0xff0000) |
-  ((word >>> 8) & 0xff00) |
-  ((word >>> 24) & 0xff);
+export function byteSwap(word: number): number {
+  return (
+    ((word << 24) & 0xff000000) |
+    ((word << 8) & 0xff0000) |
+    ((word >>> 8) & 0xff00) |
+    ((word >>> 24) & 0xff)
+  );
+}
 /** Conditionally byte swap if on a big-endian platform */
 export const byteSwapIfBE: (n: number) => number = isLE
   ? (n: number) => n
@@ -109,12 +117,14 @@ export function hexToBytes(hex: string): Uint8Array {
   return array;
 }
 
-// There is no setImmediate in browser and setTimeout is slow.
-// call of async fn will return Promise, which will be fullfiled only on
-// next scheduler queue processing step and this is exactly what we need.
+/**
+ * There is no setImmediate in browser and setTimeout is slow.
+ * Call of async fn will return Promise, which will be fullfiled only on
+ * next scheduler queue processing step and this is exactly what we need.
+ */
 export const nextTick = async (): Promise<void> => {};
 
-// Returns control to thread each 'tick' ms to avoid blocking
+/** Returns control to thread each 'tick' ms to avoid blocking. */
 export async function asyncLoop(
   iters: number,
   tick: number,
@@ -176,7 +186,7 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   return res;
 }
 
-// For runtime check if class implements interface
+/** For runtime check if class implements interface */
 export abstract class Hash<T extends Hash<T>> {
   abstract blockLen: number; // Bytes per block
   abstract outputLen: number; // Bytes in output
@@ -226,10 +236,14 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   return merged as T1 & T2;
 }
 
+/** Hash function */
 export type CHash = ReturnType<typeof wrapConstructor>;
+/** Hash function with output */
 export type CHashO = ReturnType<typeof wrapConstructorWithOpts>;
+/** XOF with output */
 export type CHashXO = ReturnType<typeof wrapXOFConstructorWithOpts>;
 
+/** Wraps hash function, creating an interface on top of it */
 export function wrapConstructor<T extends Hash<T>>(
   hashCons: () => Hash<T>
 ): {
@@ -278,9 +292,7 @@ export function wrapXOFConstructorWithOpts<H extends HashXOF<H>, T extends Objec
   return hashC;
 }
 
-/**
- * Secure PRNG. Uses `crypto.getRandomValues`, which defers to OS.
- */
+/** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
 export function randomBytes(bytesLength = 32): Uint8Array {
   if (crypto && typeof crypto.getRandomValues === 'function') {
     return crypto.getRandomValues(new Uint8Array(bytesLength));

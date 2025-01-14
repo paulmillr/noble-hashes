@@ -5,9 +5,8 @@
  * Why is this so slow? While it should be 6x faster than blake2b, perf diff is only 20%:
  *
  * * There is only 30% reduction in number of rounds from blake2s
- * * Speed-up comes from tree structure,
- *   which is parallelized using SIMD & threading. These features are not present in JS,
- *   so we only get overhead from trees.
+ * * Speed-up comes from tree structure, which is parallelized using SIMD & threading.
+ *   These features are not present in JS, so we only get overhead from trees.
  * * Parallelization only happens on 1024-byte chunks: there is no benefit for small inputs.
  * * It is still possible to make it faster using: a) loop unrolling b) web workers c) wasm
  * @module

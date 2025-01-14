@@ -1,5 +1,5 @@
 /**
- * PBKDF (RFC 2898).
+ * PBKDF (RFC 2898). Can be used to create a key from password and salt.
  * @module
  */
 import { ahash, anumber } from './_assert.js';

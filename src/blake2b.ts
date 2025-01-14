@@ -1,5 +1,5 @@
 /**
- * Blake2b fast hash, focusing on 64-bit platforms.
+ * Blake2b hash function. Focuses on 64-bit platforms, but in JS speed different from Blake2s is negligible.
  * @module
  */
 import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
@@ -200,7 +200,7 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
 }
 
 /**
- * BLAKE2b - optimized for 64-bit platforms. JS doesn't have uint64, so it's slower than BLAKE2s.
+ * Blake2b hash function. Focuses on 64-bit platforms, but in JS speed different from Blake2s is negligible.
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */

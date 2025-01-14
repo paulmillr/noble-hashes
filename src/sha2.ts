@@ -1,5 +1,5 @@
 /**
- * SHA2. A.k.a. sha256, sha512, sha512_256, etc.
+ * SHA2 hash function. A.k.a. sha256, sha512, sha512_256, etc.
  * @module
  */
 // Usually you either use sha256, or sha512. We re-export them as sha2 for naming consistency.

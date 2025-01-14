@@ -1,5 +1,5 @@
 /**
- * BigUint64Array is too slow as per 2024, so we implement it using Uint32Array.
+ * Internal helpers for u64. BigUint64Array is too slow as per 2025, so we implement it using Uint32Array.
  * @todo re-check https://issues.chromium.org/issues/42212588
  * @module
  */

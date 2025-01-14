@@ -3,11 +3,11 @@
  *
  * * Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
  *   cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
- * * [Reduced-round Keccak](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
+ * * Reduced-round Keccak [(draft)](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
  *     * 🦘 K12 aka KangarooTwelve
  *     * M14 aka MarsupilamiFourteen
  *     * TurboSHAKE
- * * [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
+ * * KeccakPRG: Pseudo-random generator based on Keccak [(pdf)](https://keccak.team/files/CSF-0.1.pdf)
  * @module
  */
 import { anumber } from './_assert.js';
