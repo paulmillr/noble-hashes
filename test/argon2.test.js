@@ -4,7 +4,7 @@ import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
 import { argon2iAsync, argon2dAsync, argon2idAsync } from '../esm/argon2.js';
 import { hexToBytes, bytesToHex } from '../esm/utils.js';
 
-// TODO: uncomment verySlow vectors
+// Some vectors are very slow and are ran in slow-big.test.js.
 
 const asyncMap = new Map([
   [argon2i, argon2iAsync],
@@ -297,57 +297,6 @@ let VECTORS = [
     exp: 'bdf32b05ccc42eb15d58fd19b1f856b113da1e9a5874fdcc544308565aa8141c',
   },
 ];
-
-const verySlow = [
-  {
-    fn: argon2i,
-    version: 0x10,
-    t: 2,
-    m: 262144,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: '3e689aaa3d28a77cf2bc72a51ac53166761751182f1ee292e3f677a7da4c2467',
-  },
-  {
-    fn: argon2i,
-    t: 2,
-    m: 262144,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: '296dbae80b807cdceaad44ae741b506f14db0959267b183b118f9b24229bc7cb',
-  },
-  {
-    fn: argon2i,
-    t: 2,
-    m: 1048576,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: 'd1587aca0922c3b5d6a83edab31bee3c4ebaef342ed6127a55d19b2351ad1f41',
-  },
-  {
-    fn: argon2i,
-    version: 0x10,
-    t: 2,
-    m: 1048576,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: '9690ec55d28d3ed32562f2e73ea62b02b018757643a2ae6e79528459de8106e9',
-  },
-  {
-    fn: argon2i,
-    t: 1,
-    m: 65536,
-    p: 1,
-    password: 'password',
-    salt: 'somesalt',
-    exp: 'd168075c4d985e13ebeae560cf8b94c3b5d8a16c51916b6f4ac2da3ac11bbecf',
-  },
-];
-// VECTORS = VECTORS.concat(verySlow);
 
 describe('Argon2', () => {
   should('types', async () => {

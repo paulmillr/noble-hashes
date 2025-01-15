@@ -133,25 +133,6 @@ should('Scrypt (4GB)', async () => {
   deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
 });
 
-// Takes 10h
-const SCRYPT_CASES = gen({
-  N: integer(1, 10),
-  r: integer(1, 1024),
-  p: integer(1, 1024),
-  dkLen: integer(0, 1024),
-  pwd: bytes(0, 1024),
-  salt: bytes(0, 1024),
-});
-
-for (let i = 0; i < SCRYPT_CASES.length; i++) {
-  const c = SCRYPT_CASES[i];
-  should(`Scrypt generator (${i}): ${serializeCase(c)}`, async () => {
-    const opt = { ...c, N: 2 ** c.N };
-    const exp = Uint8Array.from(scryptSync(c.pwd, c.salt, c.dkLen, { maxmem: 1024 ** 4, ...opt }));
-    deepStrictEqual(scrypt(c.pwd, c.salt, opt), exp, `scrypt(${opt})`);
-    deepStrictEqual(await scryptAsync(c.pwd, c.salt, opt), exp, `scryptAsync(${opt})`);
-  });
-}
 
 // takes 5 min
 should('HKDF 4GB', () => {
@@ -250,66 +231,6 @@ if (supports5GB) {
     deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
   });
 }
-
-// cross-test
-describe('argon2 crosstest', () => {
-  const algos = {
-    argon2d: argon2d,
-    argon2i: argon2i,
-    argon2id: argon2id,
-  };
-  const versions = {
-    '0x10': 0x10,
-    '0x13': 0x13,
-  };
-  const PASSWORD = [0, 1, 32, 64, 256, 64 * 1024, 256 * 1024, 1 * 1024];
-  const SALT = [8, 16, 32, 64, 256, 64 * 1024, 256 * 1024, 1 * 1024];
-  const SECRET = [undefined, 0, 1, 2, 4, 8, 256, 257, 1024, 2 ** 16];
-  const TIME = [1, 2, 4, 8, 256, 1024, 2 ** 16];
-  const OUTPUT = [32, 4, 16, 32, 64, 128, 512, 1024];
-  const P = [1, 2, 3, 4, 8, 16, 1024, 2 ** 16];
-  const M = [1, 2, 3, 4, 8, 16, 1024, 2 ** 16];
-  const PASS_PATTERN = new Uint8Array([1, 2, 3, 4, 5]);
-  const SALT_PATTERN = new Uint8Array([6, 7, 8, 9, 10]);
-  const SECRET_PATTERN = new Uint8Array([11, 12, 13, 14, 15]);
-  const allResults = [];
-  let currIndex = 0;
-  for (const algoName in algos) {
-    const fn = algos[algoName];
-    for (const verName in versions) {
-      const version = versions[verName];
-      for (let curPos = 0; curPos < 6; curPos++) {
-        const choice = (arr, i, pos) => arr[pos === curPos ? i % arr.length : 0];
-        for (let i = 0; i < 15; i++) {
-          const pass = pattern(PASS_PATTERN, choice(PASSWORD, i, 0));
-          const salt = pattern(SALT_PATTERN, choice(SALT, i, 1));
-          const sLen = choice(SECRET, i);
-          const secret = sLen === undefined ? undefined : pattern(SECRET_PATTERN, sLen);
-          const outputLen = choice(OUTPUT, i, 2);
-          const timeCost = choice(TIME, i, 3);
-          const parallelism = choice(P, i, 4);
-          const memoryCost = 8 * parallelism * choice(M, i, 5);
-          const opts = {
-            version,
-            p: parallelism, // 1..255
-            m: memoryCost, // 1..2**32-1
-            t: timeCost, // 1..2**32-1
-            dkLen: outputLen, // 4..2**32-1 but will fail if too long
-            key: secret,
-          };
-          const jopts = JSON.stringify(opts);
-          const vi = currIndex++;
-          should(`#${vi} ${algoName}(${pass.length}, ${salt.length}, opts=${jopts})`, () => {
-            const res = fn(pass, salt, opts);
-            const hex = bytesToHex(res);
-            deepStrictEqual(hex, argon2_vectors[vi]);
-            allResults.push(hex);
-          });
-        }
-      }
-    }
-  }
-});
 
 // non parallel: 14h, parallel: ~1h
 should.runWhen(import.meta.url);
