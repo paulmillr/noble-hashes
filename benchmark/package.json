@@ -22,6 +22,7 @@
     "@stablelib/sha384": "1.0.1",
     "@stablelib/sha512": "1.0.1",
     "@stablelib/sha512_256": "1.0.1",
+    "blake-hash": "2.0.0",
     "create-hash": "1.2.0",
     "create-hmac": "1.1.7",
     "fast-sha256": "1.3.0",

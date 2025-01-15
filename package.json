@@ -21,6 +21,7 @@
     "test": "node --import ./test/esm-register.js test/index.js",
     "test:dos": "node --import ./test/esm-register.js test/slow-dos.test.js",
     "test:big": "node --import ./test/esm-register.js test/slow-big.test.js",
+    "test:slowkdf": "node --import ./test/esm-register.js test/slow-kdf.test.js",
     "test:coverage": "c8 npm test"
   },
   "author": "Paul Miller (https://paulmillr.com)",
@@ -66,6 +67,10 @@
     "./argon2": {
       "import": "./esm/argon2.js",
       "require": "./argon2.js"
+    },
+    "./blake1": {
+      "import": "./esm/blake1.js",
+      "require": "./blake1.js"
     },
     "./blake2b": {
       "import": "./esm/blake2b.js",

@@ -4,17 +4,14 @@ import { pathToFileURL } from 'node:url';
 import { describe, should } from 'micro-should';
 import { sha224, sha256 } from '../esm/sha256.js';
 import { sha384, sha512, sha512_224, sha512_256 } from '../esm/sha512.js';
+// prettier-ignore
 import {
-  sha3_224,
-  sha3_256,
-  sha3_384,
-  sha3_512,
-  keccak_256,
-  shake128,
-  shake256,
+  sha3_224, sha3_256, sha3_384, sha3_512,
+  keccak_256, shake128, shake256,
 } from '../esm/sha3.js';
 import { sha1 } from '../esm/sha1.js';
 import { turboshake128, turboshake256, k12 } from '../esm/sha3-addons.js';
+import { blake224, blake256, blake384, blake512 } from '../esm/blake1.js';
 import { blake2b } from '../esm/blake2b.js';
 import { blake2s } from '../esm/blake2s.js';
 import { blake3 } from '../esm/blake3.js';
@@ -277,6 +274,50 @@ const HASHES = {
       '968e0649d7d6c50659a8160b6ece6745835991af33ab94b448128b35c36210de1e4acee6dceae86a57c7536bba6b80f54eee3727a8d9e6b2820f24147cc556d6',
       '0aa038b43fc43173b2a0c89a95576640dd1e349c4fa4f1ca394e9de6b49911771bbc7c1dc7106d6c8810f1bc93911ce61d2966e8d6a80106c8b3aa247b054c20',
       '3c7ded415bd33e955359fb9e9cfc376cf76fd1331d926030ac6926cf29b04621a8817e285cf387327e5922ef630096eed8a5187c3126a10df443deff3b6d8f49',
+    ],
+  },
+  BLAKE224: {
+    fn: blake224,
+    obj: blake224.create,
+    nist: [
+      '7c270941a0b4a412db099b710da90112ce49f8510add4f896c07ace4',
+      '7dc5313b1c04512a174bd6503b89607aecbee0903d40a8a569c94eed',
+      '3971b847607707daed53cc7a05b5374ebe368f094aa1a77a516fb359',
+      '91198a1d082ca0dc8a2c3f5ee105f82eaa94850843df278e256467ca',
+      '738443f8093ae703ebe4fe991b4f00208701e2e7be1275fd1bd84ef1',
+    ],
+  },
+  BLAKE256: {
+    fn: blake256,
+    obj: blake256.create,
+    nist: [
+      '1833a9fa7cf4086bd5fda73da32e5a1d75b4c3f89d5c436369f9d78bb2da5c28',
+      '716f6e863f744b9ac22c97ec7b76ea5f5908bc5b2f67c61510bfc4751384ea7a',
+      'adb13cb0da78463d36fcf40def3f291b3f0673e78127bdb70942cdd640b907b4',
+      '8f69d890786569cc878e9995a0ebf5e319746482ab56b8184fec5267190e6ade',
+      '22be6de4aa4214c9403f10598f0a6b0e834570251a13bc27589437f7139a5d44',
+    ],
+  },
+  BLAKE384: {
+    fn: blake384,
+    obj: blake384.create,
+    nist: [
+      'fcbbe2a60f9d4bfabf2e018cc3b1628d520d6b325d5e90a8d196f3948811a952823349236daf0c49be6a214ede021aaa',
+      'c6cbd89c926ab525c242e6621f2f5fa73aa4afe3d9e24aed727faaadd6af38b620bdb623dd2b4788b1c8086984af8706',
+      '3d8e2c7dfd6cd5e9022bb439ad1cb41b60d034ac9e53c61e3b8eeb406bb10a5587b2034824f840d21b9c8d6032420655',
+      '3b21598562da076378b2b8794e919172502d8a6661a503a6b846457376ce2ba546f4d4a7df2c4d8a875a89b0b4647e10',
+      '22ccce05b0ac1ceda1b0b0dc0021e6a3957779260cd2fae8a21c3d5432ce204f1df2d62a00d8f505cae6e70e3be18701',
+    ],
+  },
+  BLAKE512: {
+    fn: blake512,
+    obj: blake512.create,
+    nist: [
+      '14266c7c704a3b58fb421ee69fd005fcc6eeff742136be67435df995b7c986e7cbde4dbde135e7689c354d2bc5b8d260536c554b4f84c118e61efc576fed7cd3',
+      'a8cfbbd73726062df0c6864dda65defe58ef0cc52a5625090fa17601e1eecd1b628e94f396ae402a00acc9eab77b4d4c2e852aaaa25a636d80af3fc7913ef5b8',
+      'e2f082d394ad768d5933fb9c154a49430a8eece5495505808e274d698f29b2a0067e18e825fb95291a10b2cf747f025f74f671b58e796eae143c21bc5e93bae6',
+      '01d505517d225e4e1975185ea4643c0777943f42bf2f049ce3b276c280bcc01cfc4fc490e85a177ff7ce2669ada37e143726d3e59a8ce8459f04051e33ca5f3a',
+      'e5d3ecf60cbf8ed8b44307ae6606f4c8eae0a602c2a393f529cf405a1384c791c3ce58f54838a76b89a6455e988d63f98222ea82bf26e11e970516fb7c62b41d',
     ],
   },
   BLAKE2s: {

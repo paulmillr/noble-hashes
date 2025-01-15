@@ -32,11 +32,11 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 
 ## Usage
 
-> npm install @noble/hashes
+> `npm install @noble/hashes`
 
-> deno add jsr:@noble/hashes
+> `deno add jsr:@noble/hashes`
 
-> deno doc jsr:@noble/hashes  # command-line documentation
+> `deno doc jsr:@noble/hashes`  # command-line documentation
 
 We support all major platforms and runtimes.
 For React Native, you may need a [polyfill for getRandomValues](https://github.com/LinusU/react-native-get-random-values).
@@ -55,7 +55,7 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
   - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
   - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
   - [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
-  - [ripemd160](#ripemd160) | [blake2b, blake2s, blake3](#blake2b-blake2s-blake3) | [sha1: legacy hash](#sha1-legacy-hash)
+  - [ripemd160](#ripemd160) | [blake, blake2b, blake2s, blake3](#blake-blake2b-blake2s-blake3) | [sha1: legacy hash](#sha1-legacy-hash)
   - MACs: [hmac](#hmac) (also sha3-addons [kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake), blake3 [key mode](#blake2b-blake2s-blake3))
   - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
   - [utils](#utils)
@@ -193,12 +193,18 @@ const hash9 = ripemd160
 See [RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286),
 [Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
 
-#### blake2b, blake2s, blake3
+#### blake, blake2b, blake2s, blake3
 
 ```typescript
+import { blake224, blake256, blake384, blake512 } from '@noble/hashes/blake1';
 import { blake2b } from '@noble/hashes/blake2b';
 import { blake2s } from '@noble/hashes/blake2s';
 import { blake3 } from '@noble/hashes/blake3';
+
+const h_b1_224 = blake224('abc');
+const h_b1_256 = blake256('abc');
+const h_b1_384 = blake384('abc');
+const h_b1_512 = blake512('abc');
 
 const h10a = blake2s('abc');
 const b2params = { key: new Uint8Array([1]), personalization: t, salt: t, dkLen: 32 };
@@ -214,7 +220,9 @@ const h11_mac = blake3('abc', { key: new Uint8Array(32) });
 const h11_kdf = blake3('abc', { context: 'application name' });
 ```
 
-See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net).
+* Blake1 is legacy hash, one of SHA3 proposals. It is rarely used anywhere. See [pdf](https://www.aumasson.jp/blake/blake.pdf).
+* Blake2 is popular fast hash. blake2b focuses on 64-bit platforms while blake2s is for 8-bit to 32-bit ones. See  [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net)
+* Blake3 is faster, reduced-round blake2. See [Website & specs](https://blake3.io)
 
 #### sha1: legacy hash
 

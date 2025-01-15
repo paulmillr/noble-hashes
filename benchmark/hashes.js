@@ -4,6 +4,7 @@ import { sha256, sha384, sha512 } from '@noble/hashes/sha2';
 // import { sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
 import { sha3_256 } from '@noble/hashes/sha3';
 import { k12, m14 } from '@noble/hashes/sha3-addons';
+import { blake256, blake512 } from '@noble/hashes/blake1';
 import { blake2b } from '@noble/hashes/blake2b';
 import { blake2s } from '@noble/hashes/blake2s';
 import { blake3 } from '@noble/hashes/blake3';
@@ -22,6 +23,7 @@ import stable2_512 from '@stablelib/sha512';
 import stable3 from '@stablelib/sha3';
 import stableb2b from '@stablelib/blake2b';
 import stableb2s from '@stablelib/blake2s';
+import _blakehash from 'blake-hash/js.js';
 import jssha3 from 'js-sha3';
 import nobleUnrolled from 'unrolled-nbl-hashes-sha3';
 import { SHA3 as _SHA3 } from 'sha3';
@@ -30,6 +32,14 @@ import wasm_ from 'hash-wasm';
 const wasm = {};
 const wrapBuf = (arrayBuffer) => new Uint8Array(arrayBuffer);
 const ONLY_NOBLE = process.argv[2] === 'noble';
+
+const blake_hash = (name) => {
+  return (buf) => {
+    const h = _blakehash(name);
+    h.update(Buffer.from(buf));
+    return Uint8Array.from(h.digest());
+  };
+};
 
 const HASHES = {
   SHA256: {
@@ -67,6 +77,14 @@ const HASHES = {
   },
   Kangaroo12: { noble: (buf) => k12(buf) },
   Marsupilami14: { noble: (buf) => m14(buf) },
+  Blake256: {
+    'blake-hash': blake_hash('blake256'),
+    noble: blake256,
+  },
+  Blake512: {
+    'blake-hash': blake_hash('blake512'),
+    noble: blake512,
+  },
   BLAKE2b: {
     node: (buf) => crypto_createHash('blake2b512').update(buf).digest(),
     'hash-wasm': (buf) => wasm.blake2b.init().update(buf).digest(),
