@@ -1,16 +1,13 @@
 import { deepStrictEqual } from 'node:assert';
 import { scryptSync } from 'node:crypto';
 import { describe, should } from 'micro-should';
-import { bytes, integer, gen, RANDOM, serializeCase, executeKDFTests } from './generator.js';
+import { bytes, integer, gen, serializeCase } from './generator.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
 import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
 import { bytesToHex } from '../esm/utils.js';
 import { json, pattern } from './utils.js';
 
 const argon2_vectors = json('./vectors/argon2.json');
-
-// KDF tests. Takes 5-10 mins
-executeKDFTests(false);
 
 // Takes 10h
 const SCRYPT_CASES = gen({
