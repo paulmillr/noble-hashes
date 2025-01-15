@@ -7,9 +7,6 @@ import { blake3 } from '../esm/blake3.js';
 import { hexToBytes, bytesToHex, utf8ToBytes, concatBytes } from '../esm/utils.js';
 import { TYPE_TEST, pattern, json } from './utils.js';
 
-const blake2_vectors = json('./vectors/blake2-kat.json');
-const blake2_python = json('./vectors/blake2-python.json');
-const blake3_vectors = json('./vectors/blake3.json');
 const blake1_vectors = [
   {
     input: new Uint8Array(0),
@@ -125,7 +122,8 @@ describe('blake', () => {
     throws(() => blake256.create({ salt: new Uint8Array(0) }));
   });
   should('Blake2 vectors', () => {
-    for (const v of blake2_vectors) {
+    const blake2_kat_vectors = json('./vectors/blake2-kat.json');
+    for (const v of blake2_kat_vectors) {
       const hash = { blake2s: blake2s, blake2b: blake2b }[v.hash];
       if (!hash) continue;
       const [input, exp] = [v.in, v.out].map(hexToBytes);
@@ -135,6 +133,7 @@ describe('blake', () => {
   });
   // NodeJS blake2 doesn't support personalization and salt, so we generated vectors using python: see vectors/blake2-gen.py
   should('Blake2 python', () => {
+    const blake2_python = json('./vectors/blake2-python.json');
     for (const v of blake2_python) {
       const hash = { blake2s: blake2s, blake2b: blake2b }[v.hash];
       const opt = { dkLen: v.dkLen };
@@ -242,7 +241,15 @@ describe('blake', () => {
       for (const dkLen of TYPE_TEST.int) throws(() => blake3('test', { dkLen }));
     });
 
+    should('not allow using both key + context', () => {
+      // not allow specifying both key / context
+      throws(() => {
+        blake3('test', { context: 'string', key: 'key' });
+      });
+    });
+
     should('vectors', () => {
+      const blake3_vectors = json('./vectors/blake3.json');
       for (let i = 0; i < blake3_vectors.cases.length; i++) {
         const v = blake3_vectors.cases[i];
         const res_hash = blake3(pattern(0xfa, v.input_len), { dkLen: v.hash.length / 2 });
@@ -278,12 +285,6 @@ describe('blake', () => {
       const out = [];
       for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
       deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size');
-    });
-
-    should('not allow specifying both key / context', () => {
-      throws(() => {
-        blake3('test', { context: blake3_vectors.context_string, key: blake3_vectors.key });
-      });
     });
   });
 });

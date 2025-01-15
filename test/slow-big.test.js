@@ -1,8 +1,8 @@
 import { deepStrictEqual } from 'node:assert';
-import { scryptSync } from 'node:crypto';
-import { describe, should } from 'micro-should';
+import { scryptSync as nodeScryptSync } from 'node:crypto';
+import { should } from 'micro-should';
 import { HASHES } from './hashes.test.js';
-import { bytes, integer, gen, RANDOM, serializeCase, executeKDFTests } from './generator.js';
+import { RANDOM, executeKDFTests } from './generator.js';
 import { sha256 } from '../esm/sha256.js';
 import { sha512 } from '../esm/sha512.js';
 import { cshake128 } from '../esm/sha3-addons.js';
@@ -10,11 +10,7 @@ import { hmac } from '../esm/hmac.js';
 import { hkdf } from '../esm/hkdf.js';
 import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
-import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
 import { bytesToHex, hexToBytes } from '../esm/utils.js';
-import { json, pattern } from './utils.js';
-
-const argon2_vectors = json('./vectors/argon2.json');
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -108,7 +104,7 @@ const opts_2gb = [
 for (const opts of opts_2gb) {
   should(`Scrypt (2GB): ${opts}`, async () => {
     const exp = Uint8Array.from(
-      scryptSync(PASSWORD, SALT, 32, {
+      nodeScryptSync(PASSWORD, SALT, 32, {
         ...opts,
         maxmem: 16 * 1024 ** 3,
       })
@@ -123,7 +119,7 @@ for (const opts of opts_2gb) {
 should('Scrypt (4GB)', async () => {
   const opts = { N: 2 ** 15, r: 1024, p: 1 };
   const exp = Uint8Array.from(
-    scryptSync(PASSWORD, SALT, 32, {
+    nodeScryptSync(PASSWORD, SALT, 32, {
       ...opts,
       maxmem: 4 * 1024 ** 3 + 128 * 1024 + 128 * 1024 * 2, // 8 GB (V) + 128kb (B) + 256kb (XY)
     })
@@ -220,7 +216,7 @@ if (supports5GB) {
   should('Scrypt (16GB)', async () => {
     const opts = { N: 2 ** 24, r: 8, p: 1 };
     const exp = Uint8Array.from(
-      scryptSync(PASSWORD, SALT, 32, {
+      nodeScryptSync(PASSWORD, SALT, 32, {
         ...opts,
         maxmem: 17 * GB,
       })

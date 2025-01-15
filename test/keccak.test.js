@@ -51,10 +51,6 @@ import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const GEN_VECTORS = jsonGZ('vectors/sha3-addons.json.gz').v;
-// Generated from test cases of KeccakPRG in XKCP
-const PRG_VECTORS = jsonGZ('vectors/sha3-addon-keccak-prg.json.gz');
-
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const isBun = !!process.versions.bun;
 
@@ -219,6 +215,9 @@ describe('sha3-addons', () => {
   });
 
   should('keccakprg', () => {
+    // Generated from test cases of KeccakPRG in XKCP
+    const PRG_VECTORS = jsonGZ('vectors/sha3-addon-keccak-prg.json.gz');
+
     for (let i = 0; i < PRG_VECTORS.length; i++) {
       const v = PRG_VECTORS[i];
       const input = fromHex(v.input);
@@ -336,6 +335,8 @@ describe('sha3-addons', () => {
   });
 
   should('various vectors for cshake, hmac, k12, p, t', () => {
+    const GEN_VECTORS = jsonGZ('vectors/sha3-addons.json.gz').v;
+
     const tupleData = (hex) => {
       const data = hex ? fromHex(hex) : new Uint8Array([]);
       const tuples = [];
