@@ -133,7 +133,6 @@ should('Scrypt (4GB)', async () => {
   deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
 });
 
-
 // takes 5 min
 should('HKDF 4GB', () => {
   const exp = hexToBytes('411cd96b5326af15c28c6f63e73c1f87b49e6cd0e21a0f7989a993d6d796e0dd');
