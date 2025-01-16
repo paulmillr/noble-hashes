@@ -4,10 +4,19 @@ import { describe, should } from 'micro-should';
 import { bytes, integer, gen, serializeCase } from './generator.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
 import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
+import { argon2iAsync, argon2dAsync, argon2idAsync } from '../esm/argon2.js';
 import { bytesToHex } from '../esm/utils.js';
 import { json, pattern } from './utils.js';
 
 const argon2_vectors = json('./vectors/argon2.json');
+
+// Some vectors are very slow and are ran in slow-big.test.js.
+
+const asyncMap = new Map([
+  [argon2i, argon2iAsync],
+  [argon2d, argon2dAsync],
+  [argon2id, argon2idAsync],
+]);
 
 // Takes 10h
 const SCRYPT_CASES = gen({
@@ -83,7 +92,7 @@ for (let i = 0; i < verySlowArgon.length; i++) {
   const v = verySlowArgon[i];
   const ver = v.version || 0x13;
   const str = `m=${v.m}, t=${v.t}, p=${v.p}`;
-  const title = `${v.fn.name}/v${ver} ${str} (#${i})`;
+  const title = `argon #${i} ${v.fn.name}/v${ver} ${str}`;
   should(title, () => {
     const res = bytesToHex(
       v.fn(v.password, v.salt, {

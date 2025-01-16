@@ -21,7 +21,7 @@
     "test": "node --import ./test/esm-register.js test/index.js",
     "test:dos": "node --import ./test/esm-register.js test/slow-dos.test.js",
     "test:big": "node --import ./test/esm-register.js test/slow-big.test.js",
-    "test:slowkdf": "node --import ./test/esm-register.js test/slow-kdf.test.js",
+    "test:kdf": "node --import ./test/esm-register.js test/slow-kdf.test.js",
     "test:coverage": "c8 npm test"
   },
   "author": "Paul Miller (https://paulmillr.com)",
