@@ -5,7 +5,7 @@
  * @module
  */
 import { HashMD } from './_md.js';
-import { rotl, wrapConstructor, CHash } from './utils.js';
+import { rotl, wrapConstructor, type CHash } from './utils.js';
 
 const Rho = /* @__PURE__ */ new Uint8Array([7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8]);
 const Id = /* @__PURE__ */ new Uint8Array(new Array(16).fill(0).map((_, i) => i));

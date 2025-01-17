@@ -11,18 +11,18 @@
  * @module
  */
 import { anumber } from './_assert.js';
+import { Keccak, type ShakeOpts } from './sha3.js';
 import {
-  Input,
-  toBytes,
-  wrapConstructorWithOpts,
-  u32,
+  type CHashO,
+  type CHashXO,
   Hash,
-  HashXOF,
+  type HashXOF,
+  type Input,
+  toBytes,
+  u32,
+  wrapConstructorWithOpts,
   wrapXOFConstructorWithOpts,
-  CHashO,
-  CHashXO,
 } from './utils.js';
-import { Keccak, ShakeOpts } from './sha3.js';
 
 // cSHAKE && KMAC (NIST SP800-185)
 const _8n = BigInt(8);

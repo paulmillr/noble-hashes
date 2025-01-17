@@ -4,8 +4,8 @@
  * @module
  */
 import { ahash, anumber } from './_assert.js';
-import { CHash, Input, toBytes } from './utils.js';
 import { hmac } from './hmac.js';
+import { type CHash, type Input, toBytes } from './utils.js';
 
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`

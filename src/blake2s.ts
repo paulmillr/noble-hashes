@@ -2,9 +2,9 @@
  * Blake2s hash function. Focuses on 8-bit to 32-bit platforms. blake2b for 64-bit, but in JS it is slower.
  * @module
  */
-import { BLAKE, BlakeOpts, SIGMA } from './_blake.js';
+import { BLAKE, type BlakeOpts, SIGMA } from './_blake.js';
 import { fromBig } from './_u64.js';
-import { CHashO, rotr, toBytes, wrapConstructorWithOpts, u32, byteSwapIfBE } from './utils.js';
+import { byteSwapIfBE, type CHashO, rotr, toBytes, u32, wrapConstructorWithOpts } from './utils.js';
 
 /**
  * Initial state: same as SHA256. First 32 bits of the fractional parts of the square roots

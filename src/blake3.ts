@@ -12,19 +12,19 @@
  * @module
  */
 import { abytes, aexists, anumber, aoutput } from './_assert.js';
-import { fromBig } from './_u64.js';
 import { BLAKE } from './_blake.js';
-import { compress, B2S_IV } from './blake2s.js';
+import { fromBig } from './_u64.js';
+import { B2S_IV, compress } from './blake2s.js';
 import {
-  CHashXO,
-  Input,
-  u8,
-  u32,
-  toBytes,
-  HashXOF,
-  wrapXOFConstructorWithOpts,
-  isLE,
   byteSwap32,
+  type CHashXO,
+  type HashXOF,
+  type Input,
+  isLE,
+  toBytes,
+  u32,
+  u8,
+  wrapXOFConstructorWithOpts,
 } from './utils.js';
 
 // Flag bitset

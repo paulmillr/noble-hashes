@@ -2,8 +2,8 @@
  * Internal helpers for blake hash.
  * @module
  */
-import { anumber, aexists, aoutput } from './_assert.js';
-import { Hash, Input, toBytes, u32, isLE, byteSwap32, byteSwapIfBE } from './utils.js';
+import { aexists, anumber, aoutput } from './_assert.js';
+import { type Input, byteSwap32, byteSwapIfBE, Hash, isLE, toBytes, u32 } from './utils.js';
 
 /**
  * Internal blake variable.

@@ -12,17 +12,17 @@
 import { abytes, aexists, anumber, aoutput } from './_assert.js';
 import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.js';
 import {
+  byteSwap32,
   Hash,
-  u32,
-  Input,
+  isLE,
   toBytes,
+  u32,
   wrapConstructor,
   wrapXOFConstructorWithOpts,
-  HashXOF,
-  isLE,
-  byteSwap32,
-  CHash,
-  CHashXO,
+  type CHash,
+  type CHashXO,
+  type HashXOF,
+  type Input,
 } from './utils.js';
 
 // Various per round constants calculations

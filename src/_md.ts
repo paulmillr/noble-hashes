@@ -3,7 +3,7 @@
  * @module
  */
 import { aexists, aoutput } from './_assert.js';
-import { Hash, createView, Input, toBytes } from './utils.js';
+import { type Input, Hash, createView, toBytes } from './utils.js';
 
 /** Polyfill for Safari 14. https://caniuse.com/mdn-javascript_builtins_dataview_setbiguint64 */
 export function setBigUint64(
