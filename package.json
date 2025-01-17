@@ -14,15 +14,17 @@
     "bench": "node benchmark/noble.js",
     "bench:compare": "node benchmark/hashes.js; node benchmark/kdf.js",
     "bench:install": "cd benchmark; npm install; npm install .. --install-links",
-    "build": "npm run build:clean; tsc && tsc -p tsconfig.esm.json",
+    "build": "npm run build:clean; tsc && tsc -p tsconfig.cjs.json",
     "build:clean": "rm -f *.{js,d.ts,js.map,d.ts.map} esm/*.{js,js.map,d.ts.map}",
     "lint": "prettier --check 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "test": "node --import ./test/esm-register.js test/index.js",
+    "test:bun": "node test/index.js",
+    "test:deno": "deno --allow-env --allow-read --import-map=./test/import_map.json test/index.js",
     "test:dos": "node --import ./test/esm-register.js test/slow-dos.test.js",
     "test:big": "node --import ./test/esm-register.js test/slow-big.test.js",
     "test:kdf": "node --import ./test/esm-register.js test/slow-kdf.test.js",
-    "test:coverage": "c8 npm test"
+    "test:coverage": "npm install --no-save c8@10.1.2 && npx c8 npm test"
   },
   "author": "Paul Miller (https://paulmillr.com)",
   "homepage": "https://paulmillr.com/noble/",
@@ -33,7 +35,6 @@
   "license": "MIT",
   "devDependencies": {
     "@paulmillr/jsbt": "0.2.1",
-    "c8": "10.1.2",
     "fast-check": "3.0.0",
     "micro-bmark": "0.3.1",
     "micro-should": "0.5.0",

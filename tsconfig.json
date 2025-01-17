@@ -1,14 +1,15 @@
 {
-  "extends": "@paulmillr/jsbt/tsconfig.cjs.json",
+  "extends": "@paulmillr/jsbt/tsconfig.esm.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "outDir": ".",
+    "outDir": "esm",
     "paths": {
       "@noble/hashes/crypto": [
         "src/crypto.ts"
       ]
     },
-    "isolatedDeclarations": true
+    "isolatedDeclarations": true,
+    "verbatimModuleSyntax": true
   },
   "include": [
     "src"
