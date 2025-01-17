@@ -1,13 +1,23 @@
-import { deepStrictEqual, throws } from 'node:assert';
 import fc from 'fast-check';
-import { beforeEach, describe, should } from 'micro-should';
-import { optional, integer, gen } from './generator.js';
-import { TYPE_TEST, pattern } from './utils.js';
-import { byteSwap, byteSwapIfBE, byteSwap32, isLE, createView, isBytes } from '../esm/utils.js';
-import { bytesToHex, hexToBytes, concatBytes, randomBytes } from '../esm/utils.js';
+import { describe, should } from 'micro-should';
+import { deepStrictEqual, throws } from 'node:assert';
 import * as assert from '../esm/_assert.js';
-import { sha256 } from '../esm/sha256.js';
 import { setBigUint64 } from '../esm/_md.js';
+import { sha256 } from '../esm/sha256.js';
+import {
+  byteSwap,
+  byteSwap32,
+  byteSwapIfBE,
+  bytesToHex,
+  concatBytes,
+  createView,
+  hexToBytes,
+  isBytes,
+  isLE,
+  randomBytes,
+} from '../esm/utils.js';
+import { gen, integer, optional } from './generator.js';
+import { TYPE_TEST, pattern } from './utils.js';
 
 describe('utils', () => {
   const staticHexVectors = [

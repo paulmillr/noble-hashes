@@ -1,8 +1,14 @@
-import { deepStrictEqual, throws } from 'node:assert';
 import { describe, should } from 'micro-should';
-import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
-import { argon2iAsync, argon2dAsync, argon2idAsync } from '../esm/argon2.js';
-import { hexToBytes, bytesToHex } from '../esm/utils.js';
+import { deepStrictEqual, throws } from 'node:assert';
+import {
+  argon2d,
+  argon2dAsync,
+  argon2i,
+  argon2iAsync,
+  argon2id,
+  argon2idAsync,
+} from '../esm/argon2.js';
+import { bytesToHex, hexToBytes } from '../esm/utils.js';
 
 // Some vectors are very slow and are ran in slow-big.test.js.
 
