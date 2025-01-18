@@ -7,9 +7,7 @@
       "@noble/hashes/crypto": [
         "src/crypto.ts"
       ]
-    },
-    "isolatedDeclarations": true,
-    "verbatimModuleSyntax": true
+    }
   },
   "include": [
     "src"

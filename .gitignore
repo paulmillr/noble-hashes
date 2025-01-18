@@ -5,4 +5,4 @@ node_modules
 *.d.ts.map
 *.js.map
 *.tgz
-/build
+/test/build
