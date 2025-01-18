@@ -1,9 +1,9 @@
-const bench = require('micro-bmark');
-const { run, mark } = bench; // or bench.mark
-const crypto = require('crypto');
-const { sha256 } = require('../sha256');
-const { hmac } = require('../hmac');
-const { concatBytes } = require('../utils');
+import bench from 'micro-bmark';
+import crypto from 'node:crypto';
+
+import { hmac } from '@noble/hashes/hmac';
+import { sha256 } from '@noble/hashes/sha256';
+import { concatBytes } from '@noble/hashes/utils';
 
 const hmac256 = (key, ...msgs) => {
   const h = crypto.createHmac('sha256', key);
@@ -37,10 +37,16 @@ const CASES = [
 
 const FNS = [hmac256, hmac256noble];
 const samples = 20000;
+const { mark } = bench; // or bench.mark
 
-run(async () => {
+async function main() {
   for (const c of CASES) {
     console.log(`==== ${c.key.length} (${c.msgs.map((i) => i.length)}) ====`);
     for (const fn of FNS) await mark(`${fn.name}`, samples, () => fn(c.key, ...c.msgs));
   }
-});
+}
+
+import url from 'node:url';
+if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {
+  main();
+}

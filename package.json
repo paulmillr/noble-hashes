@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "bench": "node benchmark/noble.js",
-    "bench:compare": "node benchmark/hashes.js; node benchmark/kdf.js",
+    "bench:compare": "MBENCH_DIMS='algorithm,buffer,library' node benchmark/hashes.js",
     "bench:install": "cd benchmark; npm install; npm install .. --install-links",
     "build": "npm run build:clean; tsc && tsc -p tsconfig.cjs.json",
     "build:clean": "rm -f *.{js,d.ts,js.map,d.ts.map} esm/*.{js,js.map,d.ts.map}",
@@ -34,9 +34,9 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@paulmillr/jsbt": "0.3.0",
+    "@paulmillr/jsbt": "0.3.1",
     "fast-check": "3.0.0",
-    "micro-bmark": "0.3.1",
+    "micro-bmark": "0.4.0",
     "micro-should": "0.5.1",
     "prettier": "3.3.2",
     "typescript": "5.5.2"
