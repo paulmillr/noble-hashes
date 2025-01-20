@@ -36,7 +36,7 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 
 > `deno add jsr:@noble/hashes`
 
-> `deno doc jsr:@noble/hashes`  # command-line documentation
+> `deno doc jsr:@noble/hashes` # command-line documentation
 
 We support all major platforms and runtimes.
 For React Native, you may need a [polyfill for getRandomValues](https://github.com/LinusU/react-native-get-random-values).
@@ -45,7 +45,6 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
 import { sha256 } from '@noble/hashes/sha2'; // ECMAScript modules (ESM) and Common.js
-// u8a is accepted
 console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
 // strings are also accepted and auto-encoded into u8a
 console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
@@ -61,7 +60,6 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
   - [utils](#utils)
   - [All available imports](#all-available-imports)
 - [Security](#security) | [Speed](#speed) | [Contributing & testing](#contributing--testing) | [License](#license)
-
 
 ### Implementations
 
@@ -80,11 +78,11 @@ Hash functions:
 - support little-endian architecture; also experimentally big-endian
 - can hash up to 4GB per chunk, with any amount of chunks
 - can be constructed via `hash.create()` method
-    - the result is `Hash` subclass instance, which has `update()` and `digest()` methods
-    - `digest()` finalizes the hash and makes it no longer usable
+  - the result is `Hash` subclass instance, which has `update()` and `digest()` methods
+  - `digest()` finalizes the hash and makes it no longer usable
 - some of them can receive `options`:
-    - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
-    - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
+  - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
+  - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
 
 #### sha2: sha256, sha384, sha512 and others
 
@@ -220,9 +218,9 @@ const h11_mac = blake3('abc', { key: new Uint8Array(32) });
 const h11_kdf = blake3('abc', { context: 'application name' });
 ```
 
-* Blake1 is legacy hash, one of SHA3 proposals. It is rarely used anywhere. See [pdf](https://www.aumasson.jp/blake/blake.pdf).
-* Blake2 is popular fast hash. blake2b focuses on 64-bit platforms while blake2s is for 8-bit to 32-bit ones. See  [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net)
-* Blake3 is faster, reduced-round blake2. See [Website & specs](https://blake3.io)
+- Blake1 is legacy hash, one of SHA3 proposals. It is rarely used anywhere. See [pdf](https://www.aumasson.jp/blake/blake.pdf).
+- Blake2 is popular fast hash. blake2b focuses on 64-bit platforms while blake2s is for 8-bit to 32-bit ones. See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net)
+- Blake3 is faster, reduced-round blake2. See [Website & specs](https://blake3.io)
 
 #### sha1: legacy hash
 
@@ -313,26 +311,25 @@ Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
 - `onProgress` can be used with async version of the function to report progress to a user.
 - `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `N * r * p * 128 + (128 * r * p)`
 
-Time it takes to derive Scrypt key under different values of N (2**N) on Apple M2 (mobile phones can be 1x-4x slower):
+Time it takes to derive Scrypt key under different values of N (2\*\*N) on Apple M2 (mobile phones can be 1x-4x slower):
 
-| N pow  | Time  |
-|----|-------|
-| 16 | 0.17s |
-| 17 | 0.35s |
-| 18 | 0.7s  |
-| 19 | 1.4s  |
-| 20 | 2.9s  |
-| 21 | 5.6s  |
-| 22 | 11s   |
-| 23 | 26s   |
-| 24 | 56s   |
+| N pow | Time  |
+| ----- | ----- |
+| 16    | 0.17s |
+| 17    | 0.35s |
+| 18    | 0.7s  |
+| 19    | 1.4s  |
+| 20    | 2.9s  |
+| 21    | 5.6s  |
+| 22    | 11s   |
+| 23    | 26s   |
+| 24    | 56s   |
 
 > [!NOTE]
 > We support N larger than `2**20` where available, however,
 > not all JS engines support >= 2GB ArrayBuffer-s.
 > When using such N, you'll need to manually adjust `maxmem`, using formula above.
 > Other JS implementations don't support large N-s.
-
 
 #### argon2
 
@@ -549,12 +546,12 @@ The current performance is good enough when compared to other projects; SHA256 t
 
 `test/misc` directory contains implementations of loop unrolling and md5.
 
-* `npm install && npm run build && npm test` will build the code and run tests.
-* `npm run lint` / `npm run format` will run linter / fix linter issues.
-* `npm run bench` will run benchmarks, which may need their deps first (`npm run bench:install`)
-* `cd build && npm install && npm run build:release` will build single file
-* There is **additional** 20-min DoS test `npm run test:dos` and 2-hour "big" multicore test `npm run test:big`.
-See [our approach to testing](./test/README.md)
+- `npm install && npm run build && npm test` will build the code and run tests.
+- `npm run lint` / `npm run format` will run linter / fix linter issues.
+- `npm run bench` will run benchmarks, which may need their deps first (`npm run bench:install`)
+- `cd build && npm install && npm run build:release` will build single file
+- There is **additional** 20-min DoS test `npm run test:dos` and 2-hour "big" multicore test `npm run test:big`.
+  See [our approach to testing](./test/README.md)
 
 Check out [github.com/paulmillr/guidelines](https://github.com/paulmillr/guidelines)
 for general coding practices and rules.
