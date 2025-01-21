@@ -1,16 +1,16 @@
+import { should } from 'micro-should';
 import { deepStrictEqual } from 'node:assert';
 import { scryptSync as nodeScryptSync } from 'node:crypto';
-import { should } from 'micro-should';
-import { HASHES } from './hashes.test.js';
-import { RANDOM, executeKDFTests } from './generator.js';
-import { sha256 } from '../esm/sha256.js';
-import { sha512 } from '../esm/sha512.js';
-import { cshake128 } from '../esm/sha3-addons.js';
-import { hmac } from '../esm/hmac.js';
 import { hkdf } from '../esm/hkdf.js';
+import { hmac } from '../esm/hmac.js';
 import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
+import { sha256 } from '../esm/sha256.js';
+import { cshake128 } from '../esm/sha3-addons.js';
+import { sha512 } from '../esm/sha512.js';
 import { bytesToHex, hexToBytes } from '../esm/utils.js';
+import { RANDOM, executeKDFTests } from './generator.js';
+import { HASHES } from './hashes.test.js';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -18,12 +18,16 @@ const GB = 1024 * MB;
 
 // 4gb, nodejs/v8 limit. Safari: 2*32-1. Firefox: 2**31-2
 const ZERO_4GB = new Uint8Array(4 * GB);
-let supports5GB = false;
-try {
-  let ZERO_5GB = new Uint8Array(5 * GB); // catches u32 overflow in ints
-  ZERO_5GB = null; // clean up ram immediately
-  supports5GB = true;
-} catch (error) {}
+function supportsXgb(x) {
+  try {
+    let ZERO_xGB = new Uint8Array(x * GB); // catches u32 overflow in ints
+    ZERO_xGB = null; // clean up ram immediately
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+let supports5GB = supportsXgb(5);
 const ZERO_1MB = new Uint8Array(1 * MB);
 // Scrypt stuff
 const PASSWORD = new Uint8Array([1, 2, 3]);
@@ -206,6 +210,7 @@ if (supports5GB) {
   // 26: 1740d229ad1f230b75483687b1f167ef804203c261c4f2c3de7eed12226b857a
   // 27: 8ed4c994fab397a1c87c0f15ec810f0ca3ec8e9100bb3f49604a910527ad14df
   should('Scrypt (2**25)', async () => {
+    if (!supportsXgb(9)) return;
     const opts = { N: 2 ** 25, r: 2, p: 2 };
     const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
     const nobleOpts = { ...opts, maxmem: 9 * GB };
@@ -214,6 +219,7 @@ if (supports5GB) {
   });
 
   should('Scrypt (16GB)', async () => {
+    if (!supportsXgb(17)) return;
     const opts = { N: 2 ** 24, r: 8, p: 1 };
     const exp = Uint8Array.from(
       nodeScryptSync(PASSWORD, SALT, 32, {
