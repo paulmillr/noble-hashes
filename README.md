@@ -64,25 +64,16 @@ import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
 import * as utils from '@noble/hashes/utils'; // bytesToHex, hexToBytes, etc
 ```
 
-- [Implementations](#implementations)
-  - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
-  - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
-  - [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
-  - [ripemd160](#ripemd160) | [blake, blake2b, blake2s, blake3](#blake-blake2b-blake2s-blake3) | [sha1: legacy hash](#sha1-legacy-hash)
-  - MACs: [hmac](#hmac) (also sha3-addons [kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake), blake3 [key mode](#blake2b-blake2s-blake3))
-  - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
-  - [utils](#utils)
+- [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
+- [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
+- [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
+- [ripemd160](#ripemd160) | [blake, blake2b, blake2s, blake3](#blake-blake2b-blake2s-blake3) | [sha1](#sha1)
+- MACs: [hmac](#hmac) (also sha3-addons [kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake), blake3 [key mode](#blake2b-blake2s-blake3))
+- KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
+- [utils](#utils)
 - [Security](#security) | [Speed](#speed) | [Contributing & testing](#contributing--testing) | [License](#license)
 
 ### Implementations
-
-```ts
-// function hash(message: Uint8Array | string): Uint8Array;
-hash(new Uint8Array([1, 3]));
-hash('string'); // == hash(new TextEncoder().encode('string'));
-// prettier-ignore
-hash.create().update(new Uint8Array([1, 3])).digest();
-```
 
 Hash functions:
 
@@ -235,9 +226,9 @@ const h11_kdf = blake3('abc', { context: 'application name' });
 - Blake2 is popular fast hash. blake2b focuses on 64-bit platforms while blake2s is for 8-bit to 32-bit ones. See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net)
 - Blake3 is faster, reduced-round blake2. See [Website & specs](https://blake3.io)
 
-#### sha1: legacy hash
+#### sha1
 
-SHA1 was cryptographically broken, however, it was not broken for cases like HMAC.
+SHA1 is legacy hash, which was cryptographically broken, however, it was not broken for cases like HMAC.
 
 See [RFC4226 B.2](https://datatracker.ietf.org/doc/html/rfc4226#appendix-B.2).
 
