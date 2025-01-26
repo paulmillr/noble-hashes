@@ -44,11 +44,11 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
-import { sha256 } from '@noble/hashes/sha2'; // ECMAScript modules (ESM) and Common.js
+import { sha256 } from '@noble/hashes/sha2'; // ESM & Common.js
 sha256(new Uint8Array([1, 2, 3]); // returns Uint8Array
 sha256('abc'); // == sha256(new TextEncoder().encode('abc'))
 
-// Other imports
+// Available modules
 import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
 import { sha3_256, sha3_512, keccak_256, keccak_512, shake128, shake256 } from '@noble/hashes/sha3';
 import * as sha3_addons from '@noble/hashes/sha3-addons';
@@ -61,7 +61,7 @@ import { hmac } from '@noble/hashes/hmac';
 import { hkdf } from '@noble/hashes/hkdf';
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
-import * as utils from '@noble/hashes/utils';
+import * as utils from '@noble/hashes/utils'; // bytesToHex, hexToBytes, etc
 ```
 
 - [Implementations](#implementations)
