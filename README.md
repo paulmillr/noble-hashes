@@ -45,9 +45,23 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
 import { sha256 } from '@noble/hashes/sha2'; // ECMAScript modules (ESM) and Common.js
-console.log(sha256(new Uint8Array([1, 2, 3]))); // Uint8Array(32) [3, 144, 88, 198, 242...]
-// strings are also accepted and auto-encoded into u8a
-console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
+sha256(new Uint8Array([1, 2, 3]); // returns Uint8Array
+sha256('abc'); // == sha256(new TextEncoder().encode('abc'))
+
+// Other imports
+import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
+import { sha3_256, sha3_512, keccak_256, keccak_512, shake128, shake256 } from '@noble/hashes/sha3';
+import * as sha3_addons from '@noble/hashes/sha3-addons';
+import { ripemd160 } from '@noble/hashes/ripemd160';
+import { blake3 } from '@noble/hashes/blake3';
+import { blake2b } from '@noble/hashes/blake2b';
+import { blake2s } from '@noble/hashes/blake2s';
+import { blake256, blake512 } from '@noble/hashes/blake1';
+import { hmac } from '@noble/hashes/hmac';
+import { hkdf } from '@noble/hashes/hkdf';
+import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
+import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
+import * as utils from '@noble/hashes/utils';
 ```
 
 - [Implementations](#implementations)
@@ -58,7 +72,6 @@ console.log(sha256('abc')); // == sha256(new TextEncoder().encode('abc'))
   - MACs: [hmac](#hmac) (also sha3-addons [kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake), blake3 [key mode](#blake2b-blake2s-blake3))
   - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
   - [utils](#utils)
-  - [All available imports](#all-available-imports)
 - [Security](#security) | [Speed](#speed) | [Contributing & testing](#contributing--testing) | [License](#license)
 
 ### Implementations
@@ -355,40 +368,6 @@ console.log(toHex(randomBytes(32)));
 - `bytesToHex` will convert `Uint8Array` to a hex string
 - `randomBytes(bytes)` will produce cryptographically secure random `Uint8Array` of length `bytes`
 
-#### All available imports
-
-```js
-import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
-// prettier-ignore
-import {
-  sha3_224, sha3_256, sha3_384, sha3_512,
-  keccak_224, keccak_256, keccak_384, keccak_512,
-  shake128, shake256
-} from '@noble/hashes/sha3';
-// prettier-ignore
-import {
-  cshake128, cshake256,
-  turboshake128, turboshake256,
-  kmac128, kmac256,
-  tuplehash256, parallelhash256,
-  k12, m14, keccakprg
-} from '@noble/hashes/sha3-addons';
-import { ripemd160 } from '@noble/hashes/ripemd160';
-import { blake3 } from '@noble/hashes/blake3';
-import { blake2b } from '@noble/hashes/blake2b';
-import { blake2s } from '@noble/hashes/blake2s';
-import { hmac } from '@noble/hashes/hmac';
-import { hkdf } from '@noble/hashes/hkdf';
-import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
-import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
-
-import { sha1 } from '@noble/hashes/sha1'; // legacy
-
-// small utility method that converts bytes to hex
-import { bytesToHex as toHex } from '@noble/hashes/utils';
-console.log(toHex(sha256('abc'))); // ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
-```
-
 ## Security
 
 The library has been independently audited:
@@ -400,7 +379,7 @@ The library has been independently audited:
   - The audit has been funded by [Ethereum Foundation](https://ethereum.org/en/) with help of [Nomic Labs](https://nomiclabs.io)
 
 It is tested against property-based, cross-library and Wycheproof vectors,
-and has fuzzing by [Guido Vranken's cryptofuzz](https://github.com/guidovranken/cryptofuzz).
+and is being fuzzed in [the separate repo](https://github.com/paulmillr/fuzzing).
 
 If you see anything unusual: investigate and report.
 
