@@ -49,16 +49,27 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
   abstract compress(view: DataView, offset: number, withLength?: boolean): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
+
+  readonly blockLen: number;
+  readonly outputLen: number;
+  private lengthFlag: number;
+  private counterLen: number;
+  protected constants: Uint32Array;
+
   constructor(
-    readonly blockLen: number,
-    readonly outputLen: number,
-    private lengthFlag: number,
-    private counterLen: number,
+    blockLen: number,
+    outputLen: number,
+    lengthFlag: number,
+    counterLen: number,
     saltLen: number,
-    protected constants: Uint32Array,
+    constants: Uint32Array,
     opts: BlakeOpts = {}
   ) {
     super();
+    this.blockLen = blockLen;
+    this.outputLen = outputLen;
+    this.lengthFlag = lengthFlag;
+    this.counterLen = counterLen;
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
     if (opts.salt) {
@@ -73,6 +84,7 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
       }
     } else {
       this.salt = EMPTY_SALT;
+      this.constants = constants;
     }
   }
   update(data: Input): this {
@@ -385,12 +397,7 @@ class Blake1_64 extends Blake1<Blake1_64> {
   private v6h: number;
   private v7l: number;
   private v7h: number;
-  constructor(
-    public outputLen: number,
-    IV: Uint32Array,
-    lengthFlag: number,
-    opts: BlakeOpts = {}
-  ) {
+  constructor(outputLen: number, IV: Uint32Array, lengthFlag: number, opts: BlakeOpts = {}) {
     super(128, outputLen, lengthFlag, 16, 8, C512, opts);
     this.v0l = IV[0] | 0;
     this.v0h = IV[1] | 0;

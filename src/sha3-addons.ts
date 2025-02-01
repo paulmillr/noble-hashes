@@ -214,18 +214,20 @@ type ParallelOpts = cShakeOpts & { blockLen?: number };
 
 export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
   private leafHash?: Hash<Keccak>;
+  protected leafCons: () => Hash<Keccak>;
   private chunkPos = 0; // Position of current block in chunk
   private chunksDone = 0; // How many chunks we already have
   private chunkLen: number;
   constructor(
     blockLen: number,
     outputLen: number,
-    protected leafCons: () => Hash<Keccak>,
+    leafCons: () => Hash<Keccak>,
     enableXOF: boolean,
     opts: ParallelOpts = {}
   ) {
     super(blockLen, 0x1f, outputLen, enableXOF);
     cshakePers(this, { NISTfn: 'ParallelHash', personalization: opts.personalization });
+    this.leafCons = leafCons;
     let { blockLen: B } = opts;
     B ||= 8;
     anumber(B);
@@ -344,17 +346,19 @@ const EMPTY = new Uint8Array([]);
 export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
   readonly chunkLen = 8192;
   private leafHash?: Keccak;
+  protected leafLen: number;
   private personalization: Uint8Array;
   private chunkPos = 0; // Position of current block in chunk
   private chunksDone = 0; // How many chunks we already have
   constructor(
     blockLen: number,
-    protected leafLen: number,
+    leafLen: number,
     outputLen: number,
     rounds: number,
     opts: KangarooOpts
   ) {
     super(blockLen, 0x07, outputLen, true, rounds);
+    this.leafLen = leafLen;
     const { personalization } = opts;
     this.personalization = toBytesOptional(personalization);
   }

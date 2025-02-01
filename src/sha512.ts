@@ -59,8 +59,8 @@ export class SHA512 extends HashMD<SHA512> {
   protected Hh: number = 0x5be0cd19 | 0;
   protected Hl: number = 0x137e2179 | 0;
 
-  constructor() {
-    super(128, 64, 16, false);
+  constructor(outputLen: number = 64) {
+    super(128, outputLen, 16, false);
   }
   // prettier-ignore
   protected get(): [
@@ -192,8 +192,7 @@ export class SHA512_224 extends SHA512 {
   protected Hl: number = 0x91d692a1 | 0;
 
   constructor() {
-    super();
-    this.outputLen = 28;
+    super(28);
   }
 }
 
@@ -217,8 +216,7 @@ export class SHA512_256 extends SHA512 {
   protected Hl: number = 0x81c52ca2 | 0;
 
   constructor() {
-    super();
-    this.outputLen = 32;
+    super(32);
   }
 }
 
@@ -242,8 +240,7 @@ export class SHA384 extends SHA512 {
   protected Hl: number = 0xbefa4fa4 | 0;
 
   constructor() {
-    super();
-    this.outputLen = 48;
+    super(48);
   }
 }
 

@@ -43,6 +43,12 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
   protected abstract set(...args: number[]): void;
   abstract destroy(): void;
   protected abstract roundClean(): void;
+
+  readonly blockLen: number;
+  readonly outputLen: number;
+  readonly padOffset: number;
+  readonly isLE: boolean;
+
   // For partial updates less than block size
   protected buffer: Uint8Array;
   protected view: DataView;
@@ -51,13 +57,12 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
   protected pos = 0;
   protected destroyed = false;
 
-  constructor(
-    readonly blockLen: number,
-    public outputLen: number,
-    readonly padOffset: number,
-    readonly isLE: boolean
-  ) {
+  constructor(blockLen: number, outputLen: number, padOffset: number, isLE: boolean) {
     super();
+    this.blockLen = blockLen;
+    this.outputLen = outputLen;
+    this.padOffset = padOffset;
+    this.isLE = isLE;
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
   }

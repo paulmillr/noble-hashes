@@ -46,8 +46,8 @@ export class SHA256 extends HashMD<SHA256> {
   protected G: number = SHA256_IV[6] | 0;
   protected H: number = SHA256_IV[7] | 0;
 
-  constructor() {
-    super(64, 32, 8, false);
+  constructor(outputLen: number = 32) {
+    super(64, outputLen, 8, false);
   }
   protected get(): [number, number, number, number, number, number, number, number] {
     const { A, B, C, D, E, F, G, H } = this;
@@ -125,8 +125,7 @@ class SHA224 extends SHA256 {
   protected G = 0x64f98fa7 | 0;
   protected H = 0xbefa4fa4 | 0;
   constructor() {
-    super();
-    this.outputLen = 28;
+    super(28);
   }
 }
 

@@ -50,10 +50,12 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
   protected pos: number = 0;
   protected finished = false;
   protected destroyed = false;
+  readonly blockLen: number;
+  readonly outputLen: number;
 
   constructor(
-    readonly blockLen: number,
-    public outputLen: number,
+    blockLen: number,
+    outputLen: number,
     opts: BlakeOpts | undefined = {},
     keyLen: number,
     saltLen: number,
@@ -70,6 +72,8 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
       throw new Error('salt must be undefined or ' + saltLen);
     if (opts.personalization !== undefined && opts.personalization.length !== persLen)
       throw new Error('personalization must be undefined or ' + persLen);
+    this.blockLen = blockLen;
+    this.outputLen = outputLen;
     this.buffer = new Uint8Array(blockLen);
     this.buffer32 = u32(this.buffer);
   }
@@ -139,6 +143,7 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     to.length = length;
     to.finished = finished;
     to.destroyed = destroyed;
+    // @ts-ignore
     to.outputLen = outputLen;
     to.buffer.set(buffer);
     to.pos = pos;

@@ -28,15 +28,15 @@ import {
 } from './utils.js';
 
 // Flag bitset
-const enum B3_Flags {
-  CHUNK_START = 1 << 0,
-  CHUNK_END = 1 << 1,
-  PARENT = 1 << 2,
-  ROOT = 1 << 3,
-  KEYED_HASH = 1 << 4,
-  DERIVE_KEY_CONTEXT = 1 << 5,
-  DERIVE_KEY_MATERIAL = 1 << 6,
-}
+const B3_Flags = {
+  CHUNK_START: 1 << 0,
+  CHUNK_END: 1 << 1,
+  PARENT: 1 << 2,
+  ROOT: 1 << 3,
+  KEYED_HASH: 1 << 4,
+  DERIVE_KEY_CONTEXT: 1 << 5,
+  DERIVE_KEY_MATERIAL: 1 << 6,
+} as const;
 
 const SIGMA: Uint8Array = /* @__PURE__ */ (() => {
   const Id = Array.from({ length: 16 }, (_, i) => i);
@@ -72,8 +72,8 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   private enableXOF = true;
 
   constructor(opts: Blake3Opts = {}, flags = 0) {
-    super(64, opts.dkLen === undefined ? 32 : opts.dkLen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
-    this.outputLen = opts.dkLen === undefined ? 32 : opts.dkLen;
+    const olen = opts.dkLen === undefined ? 32 : opts.dkLen;
+    super(64, olen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
     anumber(this.outputLen);
     if (opts.key !== undefined && opts.context !== undefined)
       throw new Error('Blake3: only key or context can be specified at same time');

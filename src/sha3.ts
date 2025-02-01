@@ -107,15 +107,27 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
   protected finished = false;
   protected state32: Uint32Array;
   protected destroyed = false;
+
+  public blockLen: number;
+  public suffix: number;
+  public outputLen: number;
+  protected enableXOF = false;
+  protected rounds: number;
+
   // NOTE: we accept arguments in bytes instead of bits here.
   constructor(
-    public blockLen: number,
-    public suffix: number,
-    public outputLen: number,
-    protected enableXOF = false,
-    protected rounds: number = 24
+    blockLen: number,
+    suffix: number,
+    outputLen: number,
+    enableXOF = false,
+    rounds: number = 24
   ) {
     super();
+    this.blockLen = blockLen;
+    this.suffix = suffix;
+    this.outputLen = outputLen;
+    this.enableXOF = enableXOF;
+    this.rounds = rounds;
     // Can be passed from user as dkLen
     anumber(outputLen);
     // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
