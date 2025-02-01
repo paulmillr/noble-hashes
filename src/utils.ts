@@ -68,15 +68,15 @@ export function byteSwap32(arr: Uint32Array): void {
   }
 }
 
-// Array where index 0xf0 (240) is mapped to string 'f0'
-const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
-  i.toString(16).padStart(2, '0')
-);
-
 // Built-in hex conversion https://caniuse.com/mdn-javascript_builtins_uint8array_fromhex
 const hasHexBuiltin: boolean =
   // @ts-ignore
   typeof Uint8Array.from([]).toHex === 'function' && typeof Uint8Array.fromHex === 'function';
+
+// Array where index 0xf0 (240) is mapped to string 'f0'
+const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
+  i.toString(16).padStart(2, '0')
+);
 
 /**
  * Convert byte array to hex string. Uses built-in function, when available.
