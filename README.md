@@ -51,7 +51,7 @@ sha256('abc'); // == sha256(new TextEncoder().encode('abc'))
 // Available modules
 import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
 import { sha3_256, sha3_512, keccak_256, keccak_512, shake128, shake256 } from '@noble/hashes/sha3';
-import * as sha3_addons from '@noble/hashes/sha3-addons';
+import { cshake256, turboshake256, kmac256, tuplehash256, k12, m14, keccakprg } from '@noble/hashes/sha3-addons';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { blake3 } from '@noble/hashes/blake3';
 import { blake2b } from '@noble/hashes/blake2b';
