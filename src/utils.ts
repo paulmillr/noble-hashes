@@ -72,12 +72,20 @@ export function byteSwap32(arr: Uint32Array): void {
 const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
   i.toString(16).padStart(2, '0')
 );
+
+// Built-in hex conversion https://caniuse.com/mdn-javascript_builtins_uint8array_fromhex
+const hasHexBuiltin: boolean =
+  // @ts-ignore
+  typeof Uint8Array.from([]).toHex === 'function' && typeof Uint8Array.fromHex === 'function';
+
 /**
- * Convert byte array to hex string.
+ * Convert byte array to hex string. Uses built-in function, when available.
  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
  */
 export function bytesToHex(bytes: Uint8Array): string {
   abytes(bytes);
+  // @ts-ignore
+  if (hasHexBuiltin) return bytes.toHex();
   // pre-caching improves the speed 6x
   let hex = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -96,11 +104,13 @@ function asciiToBase16(ch: number): number | undefined {
 }
 
 /**
- * Convert hex string to byte array.
+ * Convert hex string to byte array. Uses built-in function, when available.
  * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
  */
 export function hexToBytes(hex: string): Uint8Array {
   if (typeof hex !== 'string') throw new Error('hex string expected, got ' + typeof hex);
+  // @ts-ignore
+  if (hasHexBuiltin) return Uint8Array.fromHex(hex);
   const hl = hex.length;
   const al = hl / 2;
   if (hl % 2) throw new Error('hex string expected, got unpadded hex of length ' + hl);
