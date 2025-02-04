@@ -132,8 +132,8 @@ export class SHA512 extends HashMD<SHA512> {
       // S0 := (a rightrotate 28) xor (a rightrotate 34) xor (a rightrotate 39)
       const sigma0h = u64.rotrSH(Ah, Al, 28) ^ u64.rotrBH(Ah, Al, 34) ^ u64.rotrBH(Ah, Al, 39);
       const sigma0l = u64.rotrSL(Ah, Al, 28) ^ u64.rotrBL(Ah, Al, 34) ^ u64.rotrBL(Ah, Al, 39);
-      const MAJh = (Ah & Bh) ^ (Ah & Ch) ^ (Bh & Ch);
-      const MAJl = (Al & Bl) ^ (Al & Cl) ^ (Bl & Cl);
+      const MAJh = (Ah & Bh) | (Ch & (Ah | Bh));
+      const MAJl = (Al & Bl) | (Cl & (Al | Bl));
       Hh = Gh | 0;
       Hl = Gl | 0;
       Gh = Fh | 0;

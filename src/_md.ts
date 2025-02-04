@@ -30,7 +30,7 @@ export function Chi(a: number, b: number, c: number): number {
 
 /** Majority function, true if any two inputs is true. */
 export function Maj(a: number, b: number, c: number): number {
-  return (a & b) ^ (a & c) ^ (b & c);
+  return (a & b) | (c & (a | b));
 }
 
 /**
