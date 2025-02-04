@@ -25,7 +25,7 @@ export function setBigUint64(
 
 /** Choice: a ? b : c */
 export function Chi(a: number, b: number, c: number): number {
-  return (a & b) ^ (~a & c);
+  return c ^ (a & (b ^ c));
 }
 
 /** Majority function, true if any two inputs is true. */
