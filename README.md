@@ -67,7 +67,7 @@ import * as utils from '@noble/hashes/utils'; // bytesToHex, hexToBytes, etc
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
 - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
 - [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
-- [ripemd160](#ripemd160) | [blake, blake2b, blake2s, blake3](#blake-blake2b-blake2s-blake3) | [sha1](#sha1)
+- [ripemd160](#ripemd160) | [blake, blake2b, blake2s, blake3](#blake-blake2b-blake2s-blake3) | [legacy: sha1, md5](#legacy)
 - MACs: [hmac](#hmac) | [sha3-addons kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake) | [blake3 key mode](#blake2b-blake2s-blake3)
 - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
 - [utils](#utils)
@@ -184,7 +184,6 @@ const rand1b = p.fetch(1);
 
 ```typescript
 import { ripemd160 } from '@noble/hashes/ripemd160';
-// function ripemd160(data: Uint8Array): Uint8Array;
 const hash8 = ripemd160('abc');
 const hash9 = ripemd160
   .create()
@@ -226,17 +225,19 @@ const h11_kdf = blake3('abc', { context: 'application name' });
 - Blake2 is popular fast hash. blake2b focuses on 64-bit platforms while blake2s is for 8-bit to 32-bit ones. See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net)
 - Blake3 is faster, reduced-round blake2. See [Website & specs](https://blake3.io)
 
-#### sha1
+#### legacy: sha1, md5
 
-SHA1 is legacy hash, which was cryptographically broken, however, it was not broken for cases like HMAC.
+SHA1 (RFC 3174) and MD5 (RFC 1321) legacy, broken hash functions.
+Don't use them in a new protocol. What "broken" means:
 
-See [RFC4226 B.2](https://datatracker.ietf.org/doc/html/rfc4226#appendix-B.2).
-
-Don't use it for a new protocol.
+- Collisions can be made with 2^18 effort in MD5, 2^60 in SHA1.
+- No practical pre-image attacks (only theoretical, 2^123.4)
+- HMAC seems kinda ok: https://datatracker.ietf.org/doc/html/rfc6151
 
 ```typescript
-import { sha1 } from '@noble/hashes/sha1';
-const h12 = sha1('def');
+import { sha1, md5 } from '@noble/hashes/legacy';
+const h12s = sha1('def');
+const h12m = md5('xcb');
 ```
 
 #### hmac

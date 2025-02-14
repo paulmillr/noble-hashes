@@ -1,24 +1,29 @@
+import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { describe, should } from 'micro-should';
 import { sha224, sha256 } from '../esm/sha256.js';
 import { sha384, sha512, sha512_224, sha512_256 } from '../esm/sha512.js';
 // prettier-ignore
-import {
-  sha3_224, sha3_256, sha3_384, sha3_512,
-  keccak_256, shake128, shake256,
-} from '../esm/sha3.js';
-import { sha1 } from '../esm/sha1.js';
-import { turboshake128, turboshake256, k12 } from '../esm/sha3-addons.js';
 import { blake224, blake256, blake384, blake512 } from '../esm/blake1.js';
 import { blake2b } from '../esm/blake2b.js';
 import { blake2s } from '../esm/blake2s.js';
 import { blake3 } from '../esm/blake3.js';
-import { ripemd160 } from '../esm/ripemd160.js';
 import { hmac } from '../esm/hmac.js';
-import { hexToBytes, concatBytes, utf8ToBytes } from '../esm/utils.js';
-import { repeat, TYPE_TEST, SPACE, EMPTY, repr } from './utils.js';
+import { md5, sha1 } from '../esm/legacy.js';
+import { ripemd160 } from '../esm/ripemd160.js';
+import { k12, turboshake128, turboshake256 } from '../esm/sha3-addons.js';
+import {
+  keccak_256,
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+  shake128,
+  shake256,
+} from '../esm/sha3.js';
+import { concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
+import { EMPTY, repeat, repr, SPACE, TYPE_TEST } from './utils.js';
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
 const NIST_VECTORS = [
@@ -401,6 +406,19 @@ const HASHES = {
       '52783243c1697bdbe16d37f97f68f08325dc1528',
     ],
   },
+  MD5: {
+    fn: md5,
+    obj: md5.create,
+    node: (buf) => Uint8Array.from(createHash('md5').update(buf).digest()),
+    node_obj: () => createHash('md5'),
+    nist: [
+      '90015098 3cd24fb0d 6963f7d2 8e17f72',
+      'd41d8cd9 8f00b204e 9800998e cf8427e',
+      '8215ef07 96a20bcaa ae116d38 76c664a',
+      '03dd8807 a93175fb0 62dfb55d c7d359c',
+      '7707d6ae 4e027c70e ea2a935c 2296f21',
+    ],
+  },
   // Hmac as hash
   'HMAC-SHA256': {
     fn: hmac.bind(null, sha256, new Uint8Array()),
@@ -571,7 +589,7 @@ function init() {
   }
 }
 
-export { init, HASHES, NIST_VECTORS };
+export { HASHES, init, NIST_VECTORS };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) init();
 should.runWhen(import.meta.url);
