@@ -5,9 +5,9 @@
  * [the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
  * @module
  */
-import { HashMD } from './_md.js';
-import u64 from './_u64.js';
-import { type CHash, wrapConstructor } from './utils.js';
+import { HashMD } from './_md.ts';
+import u64 from './_u64.ts';
+import { type CHash, wrapConstructor } from './utils.ts';
 
 // Round contants (first 32 bits of the fractional parts of the cube roots of the first 80 primes 2..409):
 // prettier-ignore

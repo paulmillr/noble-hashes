@@ -2,9 +2,9 @@
  * Blake2b hash function. Focuses on 64-bit platforms, but in JS speed different from Blake2s is negligible.
  * @module
  */
-import { BLAKE, type BlakeOpts, SIGMA } from './_blake.js';
-import u64 from './_u64.js';
-import { byteSwapIfBE, type CHashO, toBytes, u32, wrapConstructorWithOpts } from './utils.js';
+import { BLAKE, type BlakeOpts, SIGMA } from './_blake.ts';
+import u64 from './_u64.ts';
+import { byteSwapIfBE, type CHashO, toBytes, u32, wrapConstructorWithOpts } from './utils.ts';
 
 // Same as SHA-512 but LE
 // prettier-ignore

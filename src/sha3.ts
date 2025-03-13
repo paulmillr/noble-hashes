@@ -9,8 +9,8 @@
  * Check out `sha3-addons` module for cSHAKE, k12, and others.
  * @module
  */
-import { abytes, aexists, anumber, aoutput } from './_assert.js';
-import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.js';
+import { abytes, aexists, anumber, aoutput } from './_assert.ts';
+import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 import {
   byteSwap32,
   Hash,
@@ -23,7 +23,7 @@ import {
   type CHashXO,
   type HashXOF,
   type Input,
-} from './utils.js';
+} from './utils.ts';
 
 // Various per round constants calculations
 const SHA3_PI: number[] = [];

@@ -2,8 +2,8 @@
  * HMAC: RFC2104 message authentication code.
  * @module
  */
-import { abytes, aexists, ahash } from './_assert.js';
-import { Hash, toBytes, type CHash, type Input } from './utils.js';
+import { abytes, aexists, ahash } from './_assert.ts';
+import { Hash, toBytes, type CHash, type Input } from './utils.ts';
 
 export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   oHash: T;

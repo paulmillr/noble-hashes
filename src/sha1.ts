@@ -4,4 +4,4 @@
  * @deprecated
  */
 
-export { SHA1, sha1 } from './legacy.js';
+export { SHA1, sha1 } from './legacy.ts';

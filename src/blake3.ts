@@ -11,10 +11,10 @@
  * * It is still possible to make it faster using: a) loop unrolling b) web workers c) wasm
  * @module
  */
-import { abytes, aexists, anumber, aoutput } from './_assert.js';
-import { BLAKE } from './_blake.js';
-import { fromBig } from './_u64.js';
-import { B2S_IV, compress } from './blake2s.js';
+import { abytes, aexists, anumber, aoutput } from './_assert.ts';
+import { BLAKE } from './_blake.ts';
+import { fromBig } from './_u64.ts';
+import { B2S_IV, compress } from './blake2s.ts';
 import {
   byteSwap32,
   type CHashXO,
@@ -25,7 +25,7 @@ import {
   u32,
   u8,
   wrapXOFConstructorWithOpts,
-} from './utils.js';
+} from './utils.ts';
 
 // Flag bitset
 const B3_Flags = {

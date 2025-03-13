@@ -10,8 +10,8 @@
  * * KeccakPRG: Pseudo-random generator based on Keccak [(pdf)](https://keccak.team/files/CSF-0.1.pdf)
  * @module
  */
-import { anumber } from './_assert.js';
-import { Keccak, type ShakeOpts } from './sha3.js';
+import { anumber } from './_assert.ts';
+import { Keccak, type ShakeOpts } from './sha3.ts';
 import {
   type CHashO,
   type CHashXO,
@@ -22,7 +22,7 @@ import {
   u32,
   wrapConstructorWithOpts,
   wrapXOFConstructorWithOpts,
-} from './utils.js';
+} from './utils.ts';
 
 // cSHAKE && KMAC (NIST SP800-185)
 const _8n = BigInt(8);

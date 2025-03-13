@@ -2,8 +2,8 @@
  * Internal Merkle-Damgard hash utils.
  * @module
  */
-import { aexists, aoutput } from './_assert.js';
-import { type Input, Hash, createView, toBytes } from './utils.js';
+import { aexists, aoutput } from './_assert.ts';
+import { type Input, Hash, createView, toBytes } from './utils.ts';
 
 /** Polyfill for Safari 14. https://caniuse.com/mdn-javascript_builtins_dataview_setbiguint64 */
 export function setBigUint64(

@@ -7,8 +7,8 @@
  * Check out [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
  * @module
  */
-import { Chi, HashMD, Maj } from './_md.js';
-import { type CHash, rotr, wrapConstructor } from './utils.js';
+import { Chi, HashMD, Maj } from './_md.ts';
+import { type CHash, rotr, wrapConstructor } from './utils.ts';
 
 /** Round constants: first 32 bits of fractional parts of the cube roots of the first 64 primes 2..311). */
 // prettier-ignore

@@ -3,9 +3,9 @@
  * See https://soatok.blog/2021/11/17/understanding-hkdf/.
  * @module
  */
-import { ahash, anumber } from './_assert.js';
-import { hmac } from './hmac.js';
-import { type CHash, type Input, toBytes } from './utils.js';
+import { ahash, anumber } from './_assert.ts';
+import { hmac } from './hmac.ts';
+import { type CHash, type Input, toBytes } from './utils.ts';
 
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`

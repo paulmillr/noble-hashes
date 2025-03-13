@@ -22,12 +22,12 @@
  * - blake512: G1b: rotr 24 -> 25, G2b: rotr 63 -> 11
  * @module
  */
-import { aexists, aoutput } from './_assert.js';
-import { SIGMA } from './_blake.js';
-import { setBigUint64 } from './_md.js';
-import u64, { fromBig } from './_u64.js';
-import { B2S_IV, G1s, G2s } from './blake2s.js';
-import { Hash, type Input, createView, toBytes, wrapConstructorWithOpts } from './utils.js';
+import { aexists, aoutput } from './_assert.ts';
+import { SIGMA } from './_blake.ts';
+import { setBigUint64 } from './_md.ts';
+import u64, { fromBig } from './_u64.ts';
+import { B2S_IV, G1s, G2s } from './blake2s.ts';
+import { Hash, type Input, createView, toBytes, wrapConstructorWithOpts } from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */
 export type BlakeOpts = {

@@ -11,8 +11,8 @@
 // Makes the utils un-importable in browsers without a bundler.
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 import { crypto } from '@noble/hashes/crypto';
-import { abytes } from './_assert.js';
-// export { isBytes } from './_assert.js';
+import { abytes } from './_assert.ts';
+// export { isBytes } from './_assert.ts';
 // We can't reuse isBytes from _assert, because somehow this causes huge perf issues
 export function isBytes(a: unknown): a is Uint8Array {
   return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');

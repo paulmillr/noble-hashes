@@ -15,8 +15,8 @@ MD5 architecture is similar to SHA1, with some differences:
 - per round constants: more memory accesses, additional speed-up for unroll
  * @module
  */
-import { Chi, HashMD, Maj } from './_md.js';
-import { type CHash, rotl, wrapConstructor } from './utils.js';
+import { Chi, HashMD, Maj } from './_md.ts';
+import { type CHash, rotl, wrapConstructor } from './utils.ts';
 
 /** Initial SHA1 state */
 const SHA1_IV = /* @__PURE__ */ new Uint32Array([

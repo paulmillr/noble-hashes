@@ -8,9 +8,9 @@
  * * JS arrays do slow bound checks, so reading from `A2_BUF` slows it down
  * @module
  */
-import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.js';
-import { blake2b } from './blake2b.js';
-import { type Input, nextTick, toBytes, u32, u8 } from './utils.js';
+import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.ts';
+import { blake2b } from './blake2b.ts';
+import { type Input, nextTick, toBytes, u32, u8 } from './utils.ts';
 
 const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];
