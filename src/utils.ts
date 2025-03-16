@@ -3,14 +3,6 @@
  * @module
  */
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-
-// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
-// node.js versions earlier than v19 don't declare it in global scope.
-// For node.js, package.json#exports field mapping rewrites import
-// from `crypto` to `cryptoNode`, which imports native module.
-// Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-import { crypto } from '@noble/hashes/crypto';
 import { abytes } from './_assert.ts';
 // export { isBytes } from './_assert.ts';
 // We can't reuse isBytes from _assert, because somehow this causes huge perf issues
@@ -154,6 +146,7 @@ export async function asyncLoop(
 // Global symbols in both browsers and Node.js since v11
 // See https://github.com/microsoft/TypeScript/issues/31535
 declare const TextEncoder: any;
+declare const TextDecoder: any;
 
 /**
  * Convert JS string to byte array.
@@ -164,6 +157,15 @@ export function utf8ToBytes(str: string): Uint8Array {
   return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
 
+/**
+ * Convert JS byte array to string.
+ * @example bytesToUtf8(new Uint8Array([97, 98, 99])) // 'abc'
+ */
+export function bytesToUtf8(bytes: Uint8Array): string {
+  abytes(bytes);
+  return new TextDecoder().decode(bytes);
+}
+
 /** Accepted input of hash functions. Strings are converted to byte arrays. */
 export type Input = Uint8Array | string;
 /**
@@ -171,8 +173,8 @@ export type Input = Uint8Array | string;
  * Warning: when Uint8Array is passed, it would NOT get copied.
  * Keep in mind for future mutable operations.
  */
-export function toBytes(data: Input): Uint8Array {
-  if (typeof data === 'string') data = utf8ToBytes(data);
+export function toBytes(data: Uint8Array): Uint8Array {
+  // if (typeof data === 'string') data = utf8ToBytes(data);
   abytes(data);
   return data;
 }
@@ -302,14 +304,15 @@ export function wrapXOFConstructorWithOpts<H extends HashXOF<H>, T extends Objec
   return hashC;
 }
 
+declare const globalThis: any;
+
+// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
+// node.js versions earlier than v19 don't declare it in global scope.
 /** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
 export function randomBytes(bytesLength = 32): Uint8Array {
+  const crypto = typeof globalThis === 'object' && 'crypto' in globalThis && globalThis.crypto;
   if (crypto && typeof crypto.getRandomValues === 'function') {
     return crypto.getRandomValues(new Uint8Array(bytesLength));
-  }
-  // Legacy Node.js compatibility
-  if (crypto && typeof crypto.randomBytes === 'function') {
-    return crypto.randomBytes(bytesLength);
   }
   throw new Error('crypto.getRandomValues must be defined');
 }
