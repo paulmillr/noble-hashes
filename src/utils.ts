@@ -309,7 +309,7 @@ export function randomBytes(bytesLength = 32): Uint8Array {
   }
   // Legacy Node.js compatibility
   if (crypto && typeof crypto.randomBytes === 'function') {
-    return crypto.randomBytes(bytesLength);
+    return Uint8Array.from(crypto.randomBytes(bytesLength));
   }
   throw new Error('crypto.getRandomValues must be defined');
 }
