@@ -445,67 +445,64 @@ Australian ASD prohibits SHA256 and similar hashes [after 2030](https://www.cybe
 
     npm run bench
 
-Benchmarks measured on Apple M2 with node v22.
+Benchmarks measured on Apple M4.
 
 ```
-32B
-sha256 x 1,377,410 ops/sec @ 726ns/op
-sha384 x 518,403 ops/sec @ 1μs/op
-sha512 x 518,941 ops/sec @ 1μs/op
-sha3_256 x 188,608 ops/sec @ 5μs/op
-sha3_512 x 190,114 ops/sec @ 5μs/op
-k12 x 324,254 ops/sec @ 3μs/op
-m14 x 286,204 ops/sec @ 3μs/op
-blake2b x 352,236 ops/sec @ 2μs/op
-blake2s x 586,510 ops/sec @ 1μs/op
-blake3 x 681,198 ops/sec @ 1μs/op
-ripemd160 x 1,275,510 ops/sec @ 784ns/op
+# 32B
+sha256 x 1,968,503 ops/sec @ 508ns/op
+sha512 x 740,740 ops/sec @ 1μs/op
+sha3_256 x 287,686 ops/sec @ 3μs/op
+sha3_512 x 288,267 ops/sec @ 3μs/op
+k12 x 476,190 ops/sec @ 2μs/op
+m14 x 423,190 ops/sec @ 2μs/op
+blake2b x 464,252 ops/sec @ 2μs/op
+blake2s x 766,871 ops/sec @ 1μs/op
+blake3 x 879,507 ops/sec @ 1μs/op
+ripemd160 x 1,757,469 ops/sec @ 569ns/op
 
-1MB
-sha256 x 197 ops/sec @ 5ms/op
-sha384 x 86 ops/sec @ 11ms/op
-sha512 x 86 ops/sec @ 11ms/op
-sha3_256 x 25 ops/sec @ 39ms/op
-sha3_512 x 13 ops/sec @ 74ms/op
-k12 x 58 ops/sec @ 17ms/op
-m14 x 41 ops/sec @ 24ms/op
-blake2b x 50 ops/sec @ 19ms/op
-blake2s x 44 ops/sec @ 22ms/op
-blake3 x 57 ops/sec @ 17ms/op
-ripemd160 x 193 ops/sec @ 5ms/op
+# 1MB
+sha256 x 331 ops/sec @ 3ms/op
+sha512 x 129 ops/sec @ 7ms/op
+sha3_256 x 38 ops/sec @ 25ms/op
+sha3_512 x 20 ops/sec @ 47ms/op
+k12 x 88 ops/sec @ 11ms/op
+m14 x 62 ops/sec @ 15ms/op
+blake2b x 69 ops/sec @ 14ms/op
+blake2s x 57 ops/sec @ 17ms/op
+blake3 x 72 ops/sec @ 13ms/op
+ripemd160 x 264 ops/sec @ 3ms/op
 
 # MAC
-hmac(sha256) x 404,203 ops/sec @ 2μs/op
-hmac(sha512) x 137,136 ops/sec @ 7μs/op
-kmac256 x 58,799 ops/sec @ 17μs/op
-blake3(key) x 619,962 ops/sec @ 1μs/op
+hmac(sha256) x 599,880 ops/sec @ 1μs/op
+hmac(sha512) x 197,122 ops/sec @ 5μs/op
+kmac256 x 87,981 ops/sec @ 11μs/op
+blake3(key) x 796,812 ops/sec @ 1μs/op
 
 # KDF
-hkdf(sha256) x 180,538 ops/sec @ 5μs/op
-blake3(context) x 336,247 ops/sec @ 2μs/op
-pbkdf2(sha256, c: 2 ** 18) x 3 ops/sec @ 292ms/op
-pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 920ms/op
-scrypt(n: 2 ** 18, r: 8, p: 1) x 1 ops/sec @ 605ms/op
-argon2id(t: 1, m: 256MB) x 0 ops/sec @ 4021ms/op
+hkdf(sha256) x 259,942 ops/sec @ 3μs/op
+blake3(context) x 424,808 ops/sec @ 2μs/op
+pbkdf2(sha256, c: 2 ** 18) x 5 ops/sec @ 197ms/op
+pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
+scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 400ms/op
+argon2id(t: 1, m: 256MB) 2881ms
 ```
 
 Compare to native node.js implementation that uses C bindings instead of pure-js code:
 
 ```
-SHA256 32B node x 1,302,083 ops/sec @ 768ns/op
-SHA384 32B node x 975,609 ops/sec @ 1μs/op
-SHA512 32B node x 983,284 ops/sec @ 1μs/op
-SHA3-256 32B node x 910,746 ops/sec @ 1μs/op
-# keccak, k12, m14 are not implemented
-BLAKE2b 32B node x 967,117 ops/sec @ 1μs/op
-BLAKE2s 32B node x 1,055,966 ops/sec @ 947ns/op
-# BLAKE3 is not implemented
-RIPEMD160 32B node x 1,002,004 ops/sec @ 998ns/op
-HMAC-SHA256 32B node x 919,963 ops/sec @ 1μs/op
-HKDF-SHA256 32 node x 369,276 ops/sec @ 2μs/op
-PBKDF2-HMAC-SHA256 262144 node x 25 ops/sec @ 39ms/op
-PBKDF2-HMAC-SHA512 262144 node x 7 ops/sec @ 132ms/op
-Scrypt r: 8, p: 1, n: 262144 node x 1 ops/sec @ 523ms/op
+# native (node) 32B
+sha256 x 2,267,573 ops/sec
+sha512 x 983,284 ops/sec
+sha3_256 x 1,522,070 ops/sec
+blake2b x 1,512,859 ops/sec
+blake2s x 1,821,493 ops/sec
+ripemd160 x 1,855,287 ops/sec
+hmac(sha256) x 1,085,776 ops/sec
+hkdf(sha256) x 312,109 ops/sec
+# native (node) KDF
+pbkdf2(sha256, c: 2 ** 18) x 5 ops/sec @ 197ms/op
+pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
+scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 378ms/op
 ```
 
 It is possible to [make this library 4x+ faster](./benchmark/README.md) by
