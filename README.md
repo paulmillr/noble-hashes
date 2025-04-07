@@ -49,7 +49,7 @@ sha256(new Uint8Array([1, 2, 3]); // returns Uint8Array
 sha256('abc'); // == sha256(new TextEncoder().encode('abc'))
 
 // Available modules
-import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
+import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2';
 import { sha3_256, sha3_512, keccak_256, keccak_512, shake128, shake256 } from '@noble/hashes/sha3';
 import { cshake256, turboshake256, kmac256, tuplehash256, k12, m14, keccakprg } from '@noble/hashes/sha3-addons';
 import { ripemd160 } from '@noble/hashes/ripemd160';
@@ -91,7 +91,7 @@ Hash functions:
 #### sha2: sha256, sha384, sha512 and others
 
 ```typescript
-import { sha256, sha384, sha512, sha224, sha512_256, sha512_384 } from '@noble/hashes/sha2';
+import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2';
 // also available as aliases:
 // import ... from '@noble/hashes/sha256'
 // import ... from '@noble/hashes/sha512'
@@ -105,7 +105,7 @@ const h1b = sha256
   .update(Uint8Array.from([1, 2, 3]))
   .digest();
 
-for (let hash of [sha384, sha512, sha224, sha512_256, sha512_384]) {
+for (let hash of [sha384, sha512, sha224, sha512_224, sha512_256]) {
   const res1 = hash('abc');
   const res2 = hash
     .create()
@@ -316,19 +316,19 @@ Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
 - `onProgress` can be used with async version of the function to report progress to a user.
 - `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `N * r * p * 128 + (128 * r * p)`
 
-Time it takes to derive Scrypt key under different values of N (2\*\*N) on Apple M2 (mobile phones can be 1x-4x slower):
+Time it takes to derive Scrypt key under different values of N (2\*\*N) on Apple M4 (mobile phones can be 1x-4x slower):
 
-| N pow | Time  |
-| ----- | ----- |
-| 16    | 0.17s |
-| 17    | 0.35s |
-| 18    | 0.7s  |
-| 19    | 1.4s  |
-| 20    | 2.9s  |
-| 21    | 5.6s  |
-| 22    | 11s   |
-| 23    | 26s   |
-| 24    | 56s   |
+| N pow | Time | RAM   |
+| ----- | ---- | ----- |
+| 16    | 0.1s | 64MB  |
+| 17    | 0.2s | 128MB |
+| 18    | 0.4s | 256MB |
+| 19    | 0.8s | 512MB |
+| 20    | 1.5s | 1GB   |
+| 21    | 3.1s | 2GB   |
+| 22    | 6.2s | 4GB   |
+| 23    | 13s  | 8GB   |
+| 24    | 27s  | 16GB  |
 
 > [!NOTE]
 > We support N larger than `2**20` where available, however,
@@ -443,7 +443,9 @@ Australian ASD prohibits SHA256 and similar hashes [after 2030](https://www.cybe
 
 ## Speed
 
-    npm run bench
+```sh
+npm run bench:install && npm run bench
+```
 
 Benchmarks measured on Apple M4.
 

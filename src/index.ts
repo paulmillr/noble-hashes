@@ -4,7 +4,7 @@
  * @example
 ```js
 import {
-  sha256, sha384, sha512, sha224, sha512_256, sha512_384
+  sha256, sha384, sha512, sha224, sha512_224, sha512_256
 } from '@noble/hashes/sha2';
 import {
   sha3_224, sha3_256, sha3_384, sha3_512,
