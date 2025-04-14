@@ -1,6 +1,6 @@
 {
   "name": "@noble/hashes",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
   "files": [
     "/*.js",
@@ -98,6 +98,10 @@
     "./hmac": {
       "import": "./esm/hmac.js",
       "require": "./hmac.js"
+    },
+    "./legacy": {
+      "import": "./esm/legacy.js",
+      "require": "./legacy.js"
     },
     "./pbkdf2": {
       "import": "./esm/pbkdf2.js",

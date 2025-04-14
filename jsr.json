@@ -1,6 +1,6 @@
 {
   "name": "@noble/hashes",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "exports": {
     ".": "./src/index.ts",
     "./crypto": "./src/crypto.ts",
@@ -14,6 +14,7 @@
     "./eskdf": "./src/eskdf.ts",
     "./hkdf": "./src/hkdf.ts",
     "./hmac": "./src/hmac.ts",
+    "./legacy": "./src/legacy.ts",
     "./pbkdf2": "./src/pbkdf2.ts",
     "./ripemd160": "./src/ripemd160.ts",
     "./scrypt": "./src/scrypt.ts",
