@@ -26,7 +26,7 @@ import { hmac } from '@noble/hashes/hmac';
 import { hkdf } from '@noble/hashes/hkdf';
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
-import { sha1 } from '@noble/hashes/sha1'; // legacy
+import { sha1, md5 } from '@noble/hashes/sha1'; // legacy
 import * as utils from '@noble/hashes/utils';
 ```
  */
