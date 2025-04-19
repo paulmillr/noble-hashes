@@ -115,8 +115,9 @@ describe('blake', () => {
         exp: '88cc11889bbbee42095337fe2153c591971f94fbf8fe540d3c7e9f1700ab2d0c',
       },
     ];
-    for (const { input, salt, exp } of VECTORS) {
-      deepStrictEqual(bytesToHex(blake256.create({ salt: salt }).update(input).digest()), exp);
+    for (const { input, salt: salts, exp } of VECTORS) {
+      const salt = utf8ToBytes(salts);
+      deepStrictEqual(bytesToHex(blake256.create({ salt }).update(input).digest()), exp);
     }
     throws(() => blake256.create({ salt: new Uint8Array(100) }));
     throws(() => blake256.create({ salt: new Uint8Array(0) }));
@@ -132,6 +133,9 @@ describe('blake', () => {
     }
   });
   // NodeJS blake2 doesn't support personalization and salt, so we generated vectors using python: see vectors/blake2-gen.py
+
+  const data = utf8ToBytes('data');
+
   should('Blake2 python', () => {
     const blake2_python = json('./vectors/blake2-python.json');
     for (const v of blake2_python) {
@@ -140,53 +144,57 @@ describe('blake', () => {
       if (v.person) opt.personalization = hexToBytes(v.person);
       if (v.salt) opt.salt = hexToBytes(v.salt);
       if (v.key) opt.key = hexToBytes(v.key);
-      deepStrictEqual(bytesToHex(hash('data', opt)), v.digest);
+      deepStrictEqual(bytesToHex(hash(data, opt)), v.digest);
     }
   });
 
   should('BLAKE2s: dkLen', () => {
-    for (const dkLen of TYPE_TEST.int) throws(() => blake2s('test', { dkLen }));
-    throws(() => blake2s('test', { dkLen: 33 }));
+    for (const dkLen of TYPE_TEST.int) throws(() => blake2s(data, { dkLen }));
+    throws(() => blake2s(data, { dkLen: 33 }));
   });
 
   should('BLAKE2b: dkLen', () => {
-    for (const dkLen of TYPE_TEST.int) throws(() => blake2b('test', { dkLen }));
-    throws(() => blake2b('test', { dkLen: 65 }));
+    for (const dkLen of TYPE_TEST.int) throws(() => blake2b(data, { dkLen }));
+    throws(() => blake2b(data, { dkLen: 65 }));
   });
 
-  should(`BLAKE2s: key`, () => {
-    for (const key of TYPE_TEST.bytes) throws(() => blake2s.fn('data', { key }));
-    throws(() => blake2s.fn('data', { key: new Uint8Array(33) }));
-    throws(() => blake2s.fn('data', { key: new Uint8Array(0) }));
+  should('BLAKE2s: key', () => {
+    for (const key of TYPE_TEST.bytes) {
+      throws(() => blake2s(data, { key }));
+    }
+    throws(() => blake2s(data, { key: new Uint8Array(33) }));
+    throws(() => blake2s(data, { key: new Uint8Array(0) }));
   });
 
-  should(`BLAKE2b: key`, () => {
-    for (const key of TYPE_TEST.bytes) throws(() => blake2b.fn('data', { key }));
-    throws(() => blake2b.fn('data', { key: new Uint8Array(65) }));
-    throws(() => blake2b.fn('data', { key: new Uint8Array(0) }));
+  should('BLAKE2b: key', () => {
+    for (const key of TYPE_TEST.bytes) {
+      throws(() => blake2b(data, { key }));
+    }
+    throws(() => blake2b(data, { key: new Uint8Array(65) }));
+    throws(() => blake2b(data, { key: new Uint8Array(0) }));
   });
 
-  should(`BLAKE2s: personalization/salt`, () => {
+  should('BLAKE2s: personalization/salt', () => {
     for (const t of TYPE_TEST.bytes) {
-      throws(() => blake2s.fn('data', { personalization: t }));
-      throws(() => blake2s.fn('data', { salt: t }));
+      throws(() => blake2s(data, { personalization: t }));
+      throws(() => blake2s(data, { salt: t }));
     }
     for (let i = 0; i < 64; i++) {
       if (i == 8) continue;
-      throws(() => blake2s.fn('data', { personalization: Uint8Array(i) }));
-      throws(() => blake2s.fn('data', { salt: Uint8Array(i) }));
+      throws(() => blake2s(data, { personalization: new Uint8Array(i) }));
+      throws(() => blake2s(data, { salt: new Uint8Array(i) }));
     }
   });
 
-  should(`BLAKE2b: personalization/salt`, () => {
+  should('BLAKE2b: personalization/salt', () => {
     for (const t of TYPE_TEST.bytes) {
-      throws(() => blake2b.fn('data', { personalization: t }));
-      throws(() => blake2b.fn('data', { salt: t }));
+      throws(() => blake2b(data, { personalization: t }));
+      throws(() => blake2b(data, { salt: t }));
     }
     for (let i = 0; i < 64; i++) {
       if (i == 16) continue;
-      throws(() => blake2b.fn('data', { personalization: Uint8Array(i) }));
-      throws(() => blake2b.fn('data', { salt: Uint8Array(i) }));
+      throws(() => blake2b(data, { personalization: new Uint8Array(i) }));
+      throws(() => blake2b(data, { salt: new Uint8Array(i) }));
     }
   });
 
@@ -238,13 +246,13 @@ describe('blake', () => {
 
   describe('blake3', () => {
     should('dkLen', () => {
-      for (const dkLen of TYPE_TEST.int) throws(() => blake3('test', { dkLen }));
+      for (const dkLen of TYPE_TEST.int) throws(() => blake3(data, { dkLen }));
     });
 
     should('not allow using both key + context', () => {
       // not allow specifying both key / context
       throws(() => {
-        blake3('test', { context: 'string', key: 'key' });
+        blake3(data, { context: new Uint8Array(32), key: new Uint8Array(32) });
       });
     });
 
@@ -280,7 +288,7 @@ describe('blake', () => {
         h.digest();
         h.xof(10);
       }, 'XOF after digest');
-      const bigOut = blake3('', { dkLen: 130816 });
+      const bigOut = blake3(new Uint8Array(), { dkLen: 130816 });
       const hashxof = blake3.create();
       const out = [];
       for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));

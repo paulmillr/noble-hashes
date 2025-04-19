@@ -114,41 +114,21 @@ describe('hmac', () => {
   for (let i = 0; i < HMAC_VECTORS.length; i++) {
     const t = HMAC_VECTORS[i];
     describe('vector ' + i, () => {
-      should(`sha256 full`, () => {
+      should('sha256 full', () => {
         const h256 = hmac.create(sha256, t.key).update(concatBytes(...t.data));
         deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
       });
-      should(`sha256 partial`, () => {
+      should('sha256 partial', () => {
         const h256 = hmac.create(sha256, t.key);
         for (let d of t.data) h256.update(d);
         deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
       });
-      should(`sha256 partial (cleanup=true)`, () => {
-        const h256 = hmac.create(sha256, t.key, { cleanup: true });
-        for (let d of t.data) h256.update(d);
-        deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
-      });
-      should(`sha256 partial (cleanup=false)`, () => {
-        const h256 = hmac.create(sha256, t.key, { cleanup: false });
-        for (let d of t.data) h256.update(d);
-        deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
-      });
-      should(`sha512 full`, () => {
+      should('sha512 full', () => {
         const h512 = hmac.create(sha512, t.key).update(concatBytes(...t.data));
         deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
       });
-      should(`sha512 partial`, () => {
+      should('sha512 partial', () => {
         const h512 = hmac.create(sha512, t.key);
-        for (let d of t.data) h512.update(d);
-        deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
-      });
-      should(`sha512 partial (cleanup=false)`, () => {
-        const h512 = hmac.create(sha512, t.key, { cleanup: false });
-        for (let d of t.data) h512.update(d);
-        deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
-      });
-      should(`sha512 partial (cleanup=true)`, () => {
-        const h512 = hmac.create(sha512, t.key, { cleanup: true });
         for (let d of t.data) h512.update(d);
         deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
       });

@@ -85,7 +85,7 @@ describe('clone', () => {
         .update(new Uint8Array([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]))
         .digest();
 
-      should(`small`, () => {
+      should('small', () => {
         const s1 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
         const s2 = s1
           ._cloneInto()
@@ -101,7 +101,7 @@ describe('clone', () => {
           's1 same'
         );
       });
-      should(`big`, () => {
+      should('big', () => {
         const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
         const b2 = b1
           ._cloneInto()
@@ -117,7 +117,7 @@ describe('clone', () => {
           'b1 same'
         );
       });
-      should(`small <=> big`, () => {
+      should('small <=> big', () => {
         const s1 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
         const s2 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
         const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));

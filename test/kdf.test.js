@@ -176,8 +176,6 @@ describe('hkdf', () => {
       deepStrictEqual(PRK, t.PRK);
       const OKM = hkdf(t.hash, t.IKM, t.salt, t.info, t.L);
       deepStrictEqual(OKM, t.OKM);
-      deepStrictEqual(hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: true }), t.OKM);
-      deepStrictEqual(hkdf(t.hash, t.IKM, t.salt, t.info, t.L, { cleanup: false }), t.OKM);
     });
   }
 
@@ -220,10 +218,6 @@ describe('scrypt', () => {
       const exp = hexToBytes(t.exp.replace(/ /g, ''));
       deepStrictEqual(scrypt(t.P, t.S, t), exp);
       deepStrictEqual(await scryptAsync(t.P, t.S, t), exp);
-      deepStrictEqual(scrypt(t.P, t.S, { ...t, cleanup: true }), exp);
-      deepStrictEqual(await scryptAsync(t.P, t.S, { ...t, cleanup: true }), exp);
-      deepStrictEqual(scrypt(t.P, t.S, { ...t, cleanup: false }), exp);
-      deepStrictEqual(await scryptAsync(t.P, t.S, { ...t, cleanup: false }), exp);
     });
   }
 
@@ -297,10 +291,6 @@ describe('PBKDF2', () => {
       const exp = hexToBytes(t.exp.replace(/ /g, ''));
       deepStrictEqual(pbkdf2(t.hash, t.P, t.S, t), exp);
       deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, t), exp);
-      deepStrictEqual(pbkdf2(t.hash, t.P, t.S, { ...t, cleanup: true }), exp);
-      deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, { ...t, cleanup: true }), exp);
-      deepStrictEqual(pbkdf2(t.hash, t.P, t.S, { ...t, cleanup: false }), exp);
-      deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, { ...t, cleanup: false }), exp);
     });
   }
 

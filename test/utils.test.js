@@ -77,7 +77,7 @@ describe('utils', () => {
 
 describe('utils etc', () => {
   // Here goes test for tests...
-  should(`Test generator`, () => {
+  should('Test generator', () => {
     deepStrictEqual(
       gen({
         N: integer(0, 5),

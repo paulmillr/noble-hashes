@@ -36,7 +36,7 @@ import {
   shake128,
   shake256,
 } from '../esm/sha3.js';
-import { bytesToHex, concatBytes, hexToBytes } from '../esm/utils.js';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
 import { TYPE_TEST, jsonGZ } from './utils.js';
 import {
   CSHAKE_VESTORS,
@@ -51,6 +51,7 @@ import {
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const isBun = !!process.versions.bun;
+const EMPTY = Uint8Array.of();
 
 function getVectors(name) {
   const vectors = readFileSync(`${_dirname}/vectors/${name}.txt`, 'utf8').split('\n\n');
@@ -65,18 +66,18 @@ function getVectors(name) {
   return res;
 }
 
-const fromHex = (hex) => (hex ? hexToBytes(hex.replace(/ |\n/gm, '')) : new Uint8Array());
+const fromHex = (hex) => (hex ? hexToBytes(hex.replace(/ |\n/gm, '')) : EMPTY);
 
 describe('sha3', () => {
   should('SHA3-224', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-224')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
-      const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
+      const msg = +v.Len ? fromHex(v.Msg) : EMPTY;
       deepStrictEqual(sha3_224(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
     }
   });
 
-  should(`SHA3-256`, () => {
+  should('SHA3-256', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-256')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
@@ -84,7 +85,7 @@ describe('sha3', () => {
     }
   });
 
-  should(`SHA3-384`, () => {
+  should('SHA3-384', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-384')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
@@ -92,7 +93,7 @@ describe('sha3', () => {
     }
   });
 
-  should(`SHA3-512`, () => {
+  should('SHA3-512', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-512')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
@@ -125,14 +126,15 @@ describe('sha3', () => {
   });
 
   should('shake128: dkLen', () => {
-    for (const dkLen of TYPE_TEST.int) throws(() => shake128('test', { dkLen }));
+    const input = utf8ToBytes('test');
+    for (const dkLen of TYPE_TEST.int) throws(() => shake128(input, { dkLen }));
   });
 
   should('shake128 cross-test', () => {
     if (isBun) return; // bun is buggy
     for (let i = 0; i < 4096; i++) {
       const node = Uint8Array.from(createHash('shake128', { outputLength: i }).digest());
-      deepStrictEqual(shake128('', { dkLen: i }), node);
+      deepStrictEqual(shake128(EMPTY, { dkLen: i }), node);
     }
   });
 
@@ -140,7 +142,7 @@ describe('sha3', () => {
     if (isBun) return; // bun is buggy
     for (let i = 0; i < 4096; i++) {
       const node = Uint8Array.from(createHash('shake256', { outputLength: i }).digest());
-      deepStrictEqual(shake256('', { dkLen: i }), node);
+      deepStrictEqual(shake256(EMPTY, { dkLen: i }), node);
     }
   });
 });
@@ -156,7 +158,8 @@ describe('sha3-addons', () => {
     }
   });
   should('k12: dkLen', () => {
-    for (const dkLen of TYPE_TEST.int) throws(() => k12('test', { dkLen }));
+    const input = utf8ToBytes('test');
+    for (const dkLen of TYPE_TEST.int) throws(() => k12(input, { dkLen }));
   });
 
   should('m14', () => {
@@ -236,9 +239,9 @@ describe('sha3-addons', () => {
   should('keccakprg invalid usage', () => {
     throws(() => keccakprg(5));
     throws(() => keccakprg(1605));
-    throws(() => keccakprgprg(-5));
+    throws(() => keccakprg(-5));
     throws(() => keccakprg().digest());
-    throws(() => keccakprg().digestInto(new Uint8Array()));
+    throws(() => keccakprg().digestInto(EMPTY));
   });
 
   should('XOF', () => {
@@ -301,16 +304,17 @@ describe('sha3-addons', () => {
         h.xof(10);
       }, 'XOF after digest (kmac)');
     }
+    const key = utf8ToBytes('key');
     for (let f of XOF) {
-      const bigOut = f('', { dkLen: 130816 });
+      const bigOut = f(EMPTY, { dkLen: 130816 });
       const hashxof = f.create();
       const out = [];
       for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
       deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size');
     }
     for (let f of XOF_KMAC) {
-      const bigOut = f('key', '', { dkLen: 130816 });
-      const hashxof = f.create('key');
+      const bigOut = f(key, EMPTY, { dkLen: 130816 });
+      const hashxof = f.create(key);
       const out = [];
       for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
       deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size (kmac)');
@@ -318,11 +322,13 @@ describe('sha3-addons', () => {
   });
 
   should('Basic clone', () => {
-    const objs = [kmac128.create('key').update('123'), keccakprg().feed('123')];
+    const a = utf8ToBytes('key');
+    const b = utf8ToBytes('123');
+    const objs = [kmac128.create(a).update(b), keccakprg().feed(b)];
     for (const o of objs) deepStrictEqual(o.clone(), o);
     const objs2 = [
-      tuplehash128.create().update('123'),
-      parallelhash128.create({ blockLen: 12 }).update('123'),
+      tuplehash128.create().update(b),
+      parallelhash128.create({ blockLen: 12 }).update(b),
     ];
     for (const o of objs2) {
       const clone = o.clone();
@@ -407,10 +413,10 @@ describe('sha3-addons', () => {
   });
   should('turboshake domain separation byte', () => {
     for (const h of [turboshake128, turboshake256]) {
-      throws(() => h('', { D: 0 }));
-      throws(() => h('', { D: 0x80 }));
-      h('', { D: 1 }); // doesn't throw
-      h('', { D: 0x7f }); // doesn't throw
+      throws(() => h(EMPTY, { D: 0 }));
+      throws(() => h(EMPTY, { D: 0x80 }));
+      h(EMPTY, { D: 1 }); // doesn't throw
+      h(EMPTY, { D: 0x7f }); // doesn't throw
     }
   });
 

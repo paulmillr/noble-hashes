@@ -467,27 +467,27 @@ function init() {
           );
         }
       });
-      should(`accept string`, () => {
+      should('accept string', () => {
         const tmp = hash.obj().update('abc').digest();
         deepStrictEqual(tmp, hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
-      should(`accept data in compact call form (string)`, () => {
+      should('accept data in compact call form (string)', () => {
         deepStrictEqual(hash.fn('abc'), hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
-      should(`accept data in compact call form (Uint8Array)`, () => {
+      should('accept data in compact call form (Uint8Array)', () => {
         deepStrictEqual(hash.fn(utf8ToBytes('abc')), hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
-      should(`throw on update after digest`, () => {
+      should('throw on update after digest', () => {
         const tmp = hash.obj();
         tmp.update('abc').digest();
         throws(() => tmp.update('abc'));
       });
-      should(`throw on second digest call in cleanup mode`, () => {
+      should('throw on second digest call', () => {
         const tmp = hash.obj();
         tmp.update('abc').digest();
         throws(() => tmp.digest());
       });
-      should(`throw on wrong argument type`, () => {
+      should('throw on wrong argument type', () => {
         // Allowed only: undefined (for compact form only), string, Uint8Array
         for (const t of TYPE_TEST.bytes) {
           throws(() => hash.fn(t), `compact(${repr(t)})`);
@@ -497,7 +497,7 @@ function init() {
         throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
         for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), `opt(${repr(t)})`);
       });
-      should(`check types`, () => {
+      should('check types', () => {
         deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
         deepStrictEqual(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));
         deepStrictEqual(
@@ -549,7 +549,7 @@ function init() {
       });
       if (hash.node) {
         if (!!process.versions.bun && ['BLAKE2s', 'BLAKE2b'].includes(h)) return;
-        should(`node.js cross-test`, () => {
+        should('node.js cross-test', () => {
           for (let i = 0; i < testBuf.length; i++) {
             deepStrictEqual(
               hash.obj().update(testBuf.subarray(0, i)).digest(),
@@ -557,7 +557,7 @@ function init() {
             );
           }
         });
-        should(`node.js cross-test chained`, () => {
+        should('node.js cross-test chained', () => {
           const b = new Uint8Array([1, 2, 3]);
           let nodeH = hash.node(b);
           let nobleH = hash.fn(b);
@@ -567,7 +567,7 @@ function init() {
             deepStrictEqual(nodeH, nobleH);
           }
         });
-        should(`node.js cross-test partial`, () => {
+        should('node.js cross-test partial', () => {
           deepStrictEqual(hash.fn(BUF_768), hash.node(BUF_768));
         });
       }
