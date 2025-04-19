@@ -6,7 +6,8 @@
 import {
   abytes, aexists, anumber, aoutput,
   byteSwap32, byteSwapIfBE, clean,
-  Hash, isLE, rotr, toBytes, u32, type Input,
+  type Hash, isLE, rotr,
+  u32
 } from './utils.ts';
 
 /**
@@ -37,13 +38,13 @@ export const SIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
 /** Blake hash options. dkLen is output length. key is used in MAC mode. salt is used in KDF mode. */
 export type BlakeOpts = {
   dkLen?: number;
-  key?: Input;
-  salt?: Input;
-  personalization?: Input;
+  key?: Uint8Array;
+  salt?: Uint8Array;
+  personalization?: Uint8Array;
 };
 
 /** Class, from which others are subclassed. */
-export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
+export abstract class BLAKE<T extends BLAKE<T>> implements Hash<T> {
   protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
@@ -65,7 +66,6 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     saltLen: number,
     persLen: number
   ) {
-    super();
     anumber(blockLen);
     anumber(outputLen);
     anumber(keyLen);
@@ -81,9 +81,8 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     this.buffer = new Uint8Array(blockLen);
     this.buffer32 = u32(this.buffer);
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
@@ -153,6 +152,9 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     to.buffer.set(buffer);
     to.pos = pos;
     return to;
+  }
+  clone(): T {
+    return this._cloneInto();
   }
 }
 

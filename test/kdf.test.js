@@ -198,16 +198,6 @@ describe('hkdf', () => {
     throws(() => hkdf(sha256, undefined, '', '', 32), 'hkdf.ikm===undefined');
     for (const t of TYPE_TEST.hash) throws(() => hkdf(t, '', '', '', 32), `hkdf(hash=${repr(t)})`);
 
-    deepStrictEqual(
-      hkdf(sha256, SPACE.str, SPACE.str, SPACE.str),
-      hkdf(sha256, SPACE.bytes, SPACE.bytes, SPACE.bytes),
-      'hkdf.SPACE'
-    );
-    deepStrictEqual(
-      hkdf(sha256, EMPTY.str, EMPTY.str, EMPTY.str),
-      hkdf(sha256, EMPTY.bytes, EMPTY.bytes, EMPTY.bytes),
-      'hkdf.EMPTY'
-    );
     throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
     for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), `hkdf(hash=${repr(t)})`);
   });

@@ -29,8 +29,9 @@ import * as u64 from './_u64.ts';
 import {
   abytes, aexists, aoutput,
   clean, createOptHasher,
-  createView, Hash, toBytes,
-  type CHashO, type Input,
+  createView,
+  type CHashO,
+  type Hash
 } from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */
@@ -41,7 +42,7 @@ export type BlakeOpts = {
 // Empty zero-filled salt
 const EMPTY_SALT = /* @__PURE__ */ new Uint32Array(8);
 
-abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
+abstract class Blake1<T extends Blake1<T>> implements Hash<T> {
   protected finished = false;
   protected length = 0;
   protected pos = 0;
@@ -69,7 +70,6 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     constants: Uint32Array,
     opts: BlakeOpts = {}
   ) {
-    super();
     const { salt } = opts;
     this.blockLen = blockLen;
     this.outputLen = outputLen;
@@ -77,9 +77,8 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     this.counterLen = counterLen;
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
-    if (salt) {
+    if (salt != null) {
       let slt = salt;
-      slt = toBytes(slt);
       abytes(slt);
       if (slt.length !== 4 * saltLen) throw new Error('wrong salt length');
       const salt32 = (this.salt = new Uint32Array(saltLen));
@@ -94,9 +93,8 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
       this.constants = constants;
     }
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     // From _md, but update length before each compress
     const { view, buffer, blockLen } = this;
@@ -177,6 +175,9 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     const res = buffer.slice(0, outputLen);
     this.destroy();
     return res;
+  }
+  clone(): T {
+    return this._cloneInto();
   }
 }
 

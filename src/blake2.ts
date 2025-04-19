@@ -12,7 +12,6 @@ import {
   type CHashO,
   clean,
   createOptHasher as createHashWithOpts,
-  toBytes,
   u32,
 } from './utils.ts';
 
@@ -100,27 +99,27 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
   constructor(opts: BlakeOpts = {}) {
     super(128, opts.dkLen === undefined ? 64 : opts.dkLen, opts, keyLenB, saltLenB, persLenB);
     let { key, personalization, salt } = opts;
-    if (key != null) key = toBytes(key);
     const keyLength = key ? key.length : 0;
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
-    if (salt) {
-      const slt = u32(toBytes(salt));
+    if (salt != null) {
+      abytes(salt);
+      const slt = u32(salt);
       this.v4l ^= byteSwapIfBE(slt[0]);
       this.v4h ^= byteSwapIfBE(slt[1]);
       this.v5l ^= byteSwapIfBE(slt[2]);
       this.v5h ^= byteSwapIfBE(slt[3]);
     }
-    if (personalization) {
-      const pers = u32(toBytes(personalization));
+    if (personalization != null) {
+      abytes(personalization);
+      const pers = u32(personalization);
       this.v6l ^= byteSwapIfBE(pers[0]);
       this.v6h ^= byteSwapIfBE(pers[1]);
       this.v7l ^= byteSwapIfBE(pers[2]);
       this.v7h ^= byteSwapIfBE(pers[3]);
     }
-    if (key) {
+    if (key != null) {
       // Pad to blockLen and update
       let k = key;
-      k = toBytes(k);
       abytes(k);
       const tmp = new Uint8Array(this.blockLen);
       tmp.set(k);
@@ -279,9 +278,9 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
   constructor(opts: BlakeOpts = {}) {
     super(64, opts.dkLen === undefined ? 32 : opts.dkLen, opts, keyLenS, saltLenS, persLenS);
     let { key, personalization, salt } = opts;
-    if (key != null) key = toBytes(key);
-    if (salt != null) salt = toBytes(salt);
-    if (personalization != null) personalization = toBytes(personalization);
+    if (key != null) abytes(key);
+    if (salt != null) abytes(salt);
+    if (personalization != null) abytes(personalization);
     const keyLength = key ? key.length : 0;
     this.v0 ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt) {
@@ -296,10 +295,10 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
     }
     if (key) {
       // Pad to blockLen and update
-      const k = toBytes(key);
+      abytes(key);
       const tmp = new Uint8Array(this.blockLen);
-      abytes(k);
-      tmp.set(k);
+      abytes(key);
+      tmp.set(key);
       this.update(tmp);
     }
   }

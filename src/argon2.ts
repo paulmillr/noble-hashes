@@ -16,7 +16,7 @@ const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];
 
 const ARGON2_SYNC_POINTS = 4;
-const abytesOrZero = (buf?: KDFInput) => {
+const abytesOrZero = (buf?: Uint8Array) => {
   if (buf === undefined) return Uint8Array.of();
   return kdfInputToBytes(buf);
 };
@@ -182,8 +182,8 @@ export type ArgonOpts = {
   m: number; // Memory cost (in KB)
   p: number; // Parallelization parameter
   version?: number; // Default: 0x13 (19)
-  key?: KDFInput; // Optional key
-  personalization?: KDFInput; // Optional arbitrary extra data
+  key?: Uint8Array; // Optional key
+  personalization?: Uint8Array; // Optional arbitrary extra data
   dkLen?: number; // Desired number of returned bytes
   asyncTick?: number; // Maximum time in ms for which async function can block execution
   maxmem?: number;

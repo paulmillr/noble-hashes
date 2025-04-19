@@ -7,7 +7,8 @@ import { sha256 } from './sha2.ts';
 // prettier-ignore
 import {
   anumber, asyncLoop, byteSwap32, checkOpts, clean,
-  isLE, type KDFInput, rotl, u32
+  isLE, rotl, u32,
+  type KDFInput
 } from './utils.ts';
 
 // The main Scrypt loop: uses Salsa extensively.

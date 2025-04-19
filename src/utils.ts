@@ -3,15 +3,6 @@
  * @module
  */
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-
-// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
-// node.js versions earlier than v19 don't declare it in global scope.
-// For node.js, package.json#exports field mapping rewrites import
-// from `crypto` to `cryptoNode`, which imports native module.
-// Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-import { crypto } from '@noble/hashes/crypto';
-
 export function isBytes(a: unknown): a is Uint8Array {
   return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
 }
@@ -215,19 +206,6 @@ export function bytesToUtf8(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
 
-/** Accepted input of hash functions. Strings are converted to byte arrays. */
-export type Input = string | Uint8Array;
-/**
- * Normalizes (non-hex) string or Uint8Array to Uint8Array.
- * Warning: when Uint8Array is passed, it would NOT get copied.
- * Keep in mind for future mutable operations.
- */
-export function toBytes(data: Input): Uint8Array {
-  if (typeof data === 'string') data = utf8ToBytes(data);
-  abytes(data);
-  return data;
-}
-
 /** KDFs can accept string or Uint8Array for user convenience. */
 export type KDFInput = string | Uint8Array;
 /**
@@ -239,7 +217,6 @@ export function kdfInputToBytes(data: KDFInput): Uint8Array {
   abytes(data);
   return data;
 }
-
 /** Copies several Uint8Arrays into one. */
 export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   let sum = 0;
@@ -276,32 +253,21 @@ export type IHash = {
   create: any;
 };
 
-/** For runtime check if class implements interface */
-export abstract class Hash<T extends Hash<T>> {
-  abstract blockLen: number; // Bytes per block
-  abstract outputLen: number; // Bytes in output
-  abstract update(buf: Input): this;
-  // Writes digest into buf
-  abstract digestInto(buf: Uint8Array): void;
-  abstract digest(): Uint8Array;
-  /**
-   * Resets internal state. Makes Hash instance unusable.
-   * Reset is impossible for keyed hashes if key is consumed into state. If digest is not consumed
-   * by user, they will need to manually call `destroy()` when zeroing is necessary.
-   */
-  abstract destroy(): void;
-  /**
-   * Clones hash instance. Unsafe: doesn't check whether `to` is valid. Can be used as `clone()`
-   * when no options are passed.
-   * Reasons to use `_cloneInto` instead of clone: 1) performance 2) reuse instance => all internal
-   * buffers are overwritten => causes buffer overwrite which is used for digest in some cases.
-   * There are no guarantees for clean-up because it's impossible in JS.
-   */
-  abstract _cloneInto(to?: T): T;
-  // Safe version that clones internal state
-  clone(): T {
-    return this._cloneInto();
-  }
+/**
+ * All hashes should implement Hash interface.
+ * * _cloneInto is unsafe internal version of clone made for performance / reusing instances
+ * * destroy resets internal state and makes instance unustable. Not available for keyed hashes when
+ *   key was consumed into state.
+ */
+export interface Hash<T extends Hash<T>> {
+  blockLen: number; // Bytes per block
+  outputLen: number; // Bytes in output
+  update(buf: Uint8Array): this;
+  digestInto(buf: Uint8Array): void;
+  digest(): Uint8Array;
+  destroy(): void;
+  _cloneInto(to?: T): T;
+  clone(): T;
 }
 
 /**
@@ -326,12 +292,12 @@ export type CHashXO = ReturnType<typeof createXOFer>;
 export function createHasher<T extends Hash<T>>(
   hashCons: () => Hash<T>
 ): {
-  (msg: Input): Uint8Array;
+  (msg: Uint8Array): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(): Hash<T>;
 } {
-  const hashC = (msg: Input): Uint8Array => hashCons().update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array): Uint8Array => hashCons().update(msg).digest();
   const tmp = hashCons();
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -342,12 +308,12 @@ export function createHasher<T extends Hash<T>>(
 export function createOptHasher<H extends Hash<H>, T extends Object>(
   hashCons: (opts?: T) => Hash<H>
 ): {
-  (msg: Input, opts?: T): Uint8Array;
+  (msg: Uint8Array, opts?: T): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(opts: T): Hash<H>;
 } {
-  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(msg).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -358,30 +324,26 @@ export function createOptHasher<H extends Hash<H>, T extends Object>(
 export function createXOFer<H extends HashXOF<H>, T extends Object>(
   hashCons: (opts?: T) => HashXOF<H>
 ): {
-  (msg: Input, opts?: T): Uint8Array;
+  (msg: Uint8Array, opts?: T): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(opts: T): HashXOF<H>;
 } {
-  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(msg).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.create = (opts: T) => hashCons(opts);
   return hashC;
 }
-export const wrapConstructor: typeof createHasher = createHasher;
-export const wrapConstructorWithOpts: typeof createOptHasher = createOptHasher;
-export const wrapXOFConstructorWithOpts: typeof createXOFer = createXOFer;
+
+declare const globalThis: any;
 
 /** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
 export function randomBytes(bytesLength = 32): Uint8Array {
+  const crypto = globalThis.crypto;
   if (crypto && typeof crypto.getRandomValues === 'function') {
     return crypto.getRandomValues(new Uint8Array(bytesLength));
-  }
-  // Legacy Node.js compatibility
-  if (crypto && typeof crypto.randomBytes === 'function') {
-    return Uint8Array.from(crypto.randomBytes(bytesLength));
   }
   throw new Error('crypto.getRandomValues must be defined');
 }

@@ -13,8 +13,12 @@ import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  byteSwap32, clean, createHasher, createXOFer, Hash, isLE, toBytes, u32,
-  type CHash, type CHashXO, type HashXOF, type Input,
+  byteSwap32, clean, createHasher, createXOFer,
+  isLE,
+  u32,
+  type CHash, type CHashXO,
+  type Hash,
+  type HashXOF
 } from './utils.ts';
 
 // No __PURE__ annotations in sha3 header:
@@ -96,7 +100,7 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
 }
 
 /** Keccak sponge function. */
-export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
+export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   protected state: Uint8Array;
   protected pos = 0;
   protected posOut = 0;
@@ -118,7 +122,6 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     enableXOF = false,
     rounds: number = 24
   ) {
-    super();
     this.blockLen = blockLen;
     this.suffix = suffix;
     this.outputLen = outputLen;
@@ -143,9 +146,8 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.posOut = 0;
     this.pos = 0;
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     const { blockLen, state } = this;
     const len = data.length;
