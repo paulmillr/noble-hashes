@@ -3,15 +3,6 @@
  * @module
  */
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-
-// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
-// node.js versions earlier than v19 don't declare it in global scope.
-// For node.js, package.json#exports field mapping rewrites import
-// from `crypto` to `cryptoNode`, which imports native module.
-// Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-import { crypto } from '@noble/hashes/crypto';
-
 export function isBytes(a: unknown): a is Uint8Array {
   return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
 }
@@ -357,14 +348,13 @@ export function createXOFer<H extends HashXOF<H>, T extends Object>(
   return hashC;
 }
 
+declare const globalThis: any;
+
 /** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
 export function randomBytes(bytesLength = 32): Uint8Array {
+  const crypto = globalThis.crypto;
   if (crypto && typeof crypto.getRandomValues === 'function') {
     return crypto.getRandomValues(new Uint8Array(bytesLength));
-  }
-  // Legacy Node.js compatibility
-  if (crypto && typeof crypto.randomBytes === 'function') {
-    return Uint8Array.from(crypto.randomBytes(bytesLength));
   }
   throw new Error('crypto.getRandomValues must be defined');
 }
