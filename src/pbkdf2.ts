@@ -6,8 +6,9 @@ import { hmac } from './hmac.ts';
 // prettier-ignore
 import {
   ahash, anumber,
-  asyncLoop, checkOpts, clean, createView, Hash, toBytes,
-  type CHash, type Input,
+  asyncLoop, checkOpts, clean, createView, Hash, kdfInputToBytes,
+  type CHash,
+  type KDFInput
 } from './utils.ts';
 
 export type Pbkdf2Opt = {
@@ -16,7 +17,7 @@ export type Pbkdf2Opt = {
   asyncTick?: number; // Maximum time in ms for which async function can block execution
 };
 // Common prologue and epilogue for sync/async functions
-function pbkdf2Init(hash: CHash, _password: Input, _salt: Input, _opts: Pbkdf2Opt) {
+function pbkdf2Init(hash: CHash, _password: KDFInput, _salt: KDFInput, _opts: Pbkdf2Opt) {
   ahash(hash);
   const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);
   const { c, dkLen, asyncTick } = opts;
@@ -24,8 +25,8 @@ function pbkdf2Init(hash: CHash, _password: Input, _salt: Input, _opts: Pbkdf2Op
   anumber(dkLen);
   anumber(asyncTick);
   if (c < 1) throw new Error('PBKDF2: iterations (c) should be >= 1');
-  const password = toBytes(_password);
-  const salt = toBytes(_salt);
+  const password = kdfInputToBytes(_password);
+  const salt = kdfInputToBytes(_salt);
   // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
   const DK = new Uint8Array(dkLen);
   // U1 = PRF(Password, Salt + INT_32_BE(i))
@@ -57,7 +58,12 @@ function pbkdf2Output<T extends Hash<T>>(
  * @example
  * const key = pbkdf2(sha256, 'password', 'salt', { dkLen: 32, c: Math.pow(2, 18) });
  */
-export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Opt): Uint8Array {
+export function pbkdf2(
+  hash: CHash,
+  password: KDFInput,
+  salt: KDFInput,
+  opts: Pbkdf2Opt
+): Uint8Array {
   const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
   let prfW: any; // Working copy
   const arr = new Uint8Array(4);
@@ -88,8 +94,8 @@ export function pbkdf2(hash: CHash, password: Input, salt: Input, opts: Pbkdf2Op
  */
 export async function pbkdf2Async(
   hash: CHash,
-  password: Input,
-  salt: Input,
+  password: KDFInput,
+  salt: KDFInput,
   opts: Pbkdf2Opt
 ): Promise<Uint8Array> {
   const { c, dkLen, asyncTick, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);

@@ -3,10 +3,11 @@
  * @module
  */
 import { pbkdf2 } from './pbkdf2.ts';
-import { sha256 } from './sha256.ts';
+import { sha256 } from './sha2.ts';
 // prettier-ignore
 import {
-  anumber, asyncLoop, byteSwap32, checkOpts, clean, type Input, isLE, rotl, u32
+  anumber, asyncLoop, byteSwap32, checkOpts, clean,
+  isLE, type KDFInput, rotl, u32
 } from './utils.ts';
 
 // The main Scrypt loop: uses Salsa extensively.
@@ -89,7 +90,7 @@ export type ScryptOpts = {
 };
 
 // Common prologue and epilogue for sync/async functions
-function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
+function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
   // Maxmem - 1GB+1KB by default
   const opts = checkOpts(
     {
@@ -159,7 +160,7 @@ function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
 }
 
 function scryptOutput(
-  password: Input,
+  password: KDFInput,
   dkLen: number,
   B: Uint8Array,
   V: Uint32Array,
@@ -186,7 +187,7 @@ function scryptOutput(
  * @example
  * scrypt('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  */
-export function scrypt(password: Input, salt: Input, opts: ScryptOpts): Uint8Array {
+export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Uint8Array {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
     password,
     salt,
@@ -220,8 +221,8 @@ export function scrypt(password: Input, salt: Input, opts: ScryptOpts): Uint8Arr
  * await scryptAsync('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  */
 export async function scryptAsync(
-  password: Input,
-  salt: Input,
+  password: KDFInput,
+  salt: KDFInput,
   opts: ScryptOpts
 ): Promise<Uint8Array> {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(

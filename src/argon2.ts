@@ -10,15 +10,15 @@
  */
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.ts';
 import { blake2b } from './blake2.ts';
-import { abytes, clean, type Input, nextTick, toBytes, u32, u8 } from './utils.ts';
+import { abytes, clean, kdfInputToBytes, nextTick, u32, u8, type KDFInput } from './utils.ts';
 
 const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];
 
 const ARGON2_SYNC_POINTS = 4;
-const abytesOrZero = (buf?: Input) => {
+const abytesOrZero = (buf?: KDFInput) => {
   if (buf === undefined) return Uint8Array.of();
-  return toBytes(buf);
+  return kdfInputToBytes(buf);
 };
 
 // u32 * u32 = u64
@@ -182,8 +182,8 @@ export type ArgonOpts = {
   m: number; // Memory cost (in KB)
   p: number; // Parallelization parameter
   version?: number; // Default: 0x13 (19)
-  key?: Input; // Optional key
-  personalization?: Input; // Optional arbitrary extra data
+  key?: KDFInput; // Optional key
+  personalization?: KDFInput; // Optional arbitrary extra data
   dkLen?: number; // Desired number of returned bytes
   asyncTick?: number; // Maximum time in ms for which async function can block execution
   maxmem?: number;
@@ -221,9 +221,9 @@ function initOpts(opts: ArgonOpts) {
   return merged;
 }
 
-function argon2Init(password: Input, salt: Input, type: Types, opts: ArgonOpts) {
-  password = toBytes(password);
-  salt = toBytes(salt);
+function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: ArgonOpts) {
+  password = kdfInputToBytes(password);
+  salt = kdfInputToBytes(salt);
   abytes(password);
   abytes(salt);
   if (!isUint32(password.length)) throw new Error('Argon2: password should be less than 4 GB');
@@ -345,7 +345,7 @@ function processBlock(
   block(B, 256 * prev, 256 * refBlock, offset * 256, needXor);
 }
 
-function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
+function argon2(type: Types, password: KDFInput, salt: KDFInput, opts: ArgonOpts) {
   const { mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock } = argon2Init(
     password,
     salt,
@@ -406,16 +406,16 @@ function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
 }
 
 /** argon2d GPU-resistant version. */
-export const argon2d = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
+export const argon2d = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argond2d, password, salt, opts);
 /** argon2i side-channel-resistant version. */
-export const argon2i = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
+export const argon2i = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argon2i, password, salt, opts);
 /** argon2id, combining i+d, the most popular version from RFC 9106 */
-export const argon2id = (password: Input, salt: Input, opts: ArgonOpts): Uint8Array =>
+export const argon2id = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argon2id, password, salt, opts);
 
-async function argon2Async(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
+async function argon2Async(type: Types, password: KDFInput, salt: KDFInput, opts: ArgonOpts) {
   const { mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick } =
     argon2Init(password, salt, type, opts);
   // Pre-loop setup
@@ -479,11 +479,20 @@ async function argon2Async(type: Types, password: Input, salt: Input, opts: Argo
 }
 
 /** argon2d async GPU-resistant version. */
-export const argon2dAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
-  argon2Async(AT.Argond2d, password, salt, opts);
+export const argon2dAsync = (
+  password: KDFInput,
+  salt: KDFInput,
+  opts: ArgonOpts
+): Promise<Uint8Array> => argon2Async(AT.Argond2d, password, salt, opts);
 /** argon2i async side-channel-resistant version. */
-export const argon2iAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
-  argon2Async(AT.Argon2i, password, salt, opts);
+export const argon2iAsync = (
+  password: KDFInput,
+  salt: KDFInput,
+  opts: ArgonOpts
+): Promise<Uint8Array> => argon2Async(AT.Argon2i, password, salt, opts);
 /** argon2id async, combining i+d, the most popular version from RFC 9106 */
-export const argon2idAsync = (password: Input, salt: Input, opts: ArgonOpts): Promise<Uint8Array> =>
-  argon2Async(AT.Argon2id, password, salt, opts);
+export const argon2idAsync = (
+  password: KDFInput,
+  salt: KDFInput,
+  opts: ArgonOpts
+): Promise<Uint8Array> => argon2Async(AT.Argon2id, password, salt, opts);

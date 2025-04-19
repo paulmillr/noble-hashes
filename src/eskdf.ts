@@ -5,7 +5,7 @@ import { hkdf } from './hkdf.ts';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.ts';
 import { scrypt as _scrypt } from './scrypt.ts';
 import { sha256 } from './sha256.ts';
-import { abytes, bytesToHex, clean, createView, hexToBytes, toBytes } from './utils.ts';
+import { abytes, bytesToHex, clean, createView, hexToBytes, kdfInputToBytes } from './utils.ts';
 
 // A tiny KDF for various applications like AES key-gen.
 // Uses HKDF in a non-standard way, so it's not "KDF-secure", only "PRF-secure".
@@ -75,7 +75,7 @@ function getSaltInfo(protocol: string, accountId: AccountID = 0) {
     if (!allowsStr) throw new Error('accountId must be a number');
     if (!strHasLength(accountId, 1, 255))
       throw new Error('accountId must be string of length 1..255');
-    salt = toBytes(accountId);
+    salt = kdfInputToBytes(accountId);
   } else if (Number.isSafeInteger(accountId)) {
     if (accountId < 0 || accountId > Math.pow(2, 32) - 1) throw new Error('invalid accountId');
     // Convert to Big Endian Uint32
@@ -84,7 +84,7 @@ function getSaltInfo(protocol: string, accountId: AccountID = 0) {
   } else {
     throw new Error('accountId must be a number' + (allowsStr ? ' or string' : ''));
   }
-  const info = toBytes(protocol);
+  const info = kdfInputToBytes(protocol);
   return { salt, info };
 }
 
