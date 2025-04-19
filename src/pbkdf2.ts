@@ -2,17 +2,16 @@
  * PBKDF (RFC 2898). Can be used to create a key from password and salt.
  * @module
  */
-import { ahash, anumber } from './_assert.ts';
 import { hmac } from './hmac.ts';
 import {
-  asyncLoop,
+  ahash, anumber, asyncLoop,
   checkOpts,
   clean,
   createView,
   Hash,
   toBytes,
   type CHash,
-  type Input,
+  type Input
 } from './utils.ts';
 
 export type Pbkdf2Opt = {

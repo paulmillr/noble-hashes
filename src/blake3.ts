@@ -11,11 +11,11 @@
  * * It is still possible to make it faster using: a) loop unrolling b) web workers c) wasm
  * @module
  */
-import { abytes, aexists, anumber, aoutput } from './_assert.ts';
 import { BLAKE } from './_blake.ts';
 import { SHA256_IV } from './_md.ts';
 import { fromBig } from './_u64.ts';
 import { compress } from './blake2.ts';
+import { abytes, aexists, anumber, aoutput } from './utils.ts';
 // prettier-ignore
 import {
   byteSwap32,

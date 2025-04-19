@@ -3,17 +3,16 @@
  * b could have been faster, but there is no fast u64 in js, so s is 1.5x faster.
  * @module
  */
-import { abytes } from './_assert.ts';
 import { BLAKE, type BlakeOpts, G1s, G2s, SIGMA } from './_blake.ts';
 import { SHA256_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
 import {
-  byteSwapIfBE,
+  abytes, byteSwapIfBE,
   type CHashO,
   clean,
   createOptHasher as createHashWithOpts,
   toBytes,
-  u32,
+  u32
 } from './utils.ts';
 
 // Same as SHA512_IV, but swapped endianness: LE instead of BE. iv[1] is iv[0], etc.

@@ -10,10 +10,9 @@
  * * KeccakPRG: Pseudo-random generator based on Keccak [(pdf)](https://keccak.team/files/CSF-0.1.pdf)
  * @module
  */
-import { abytes, anumber } from './_assert.ts';
 import { Keccak, type ShakeOpts } from './sha3.ts';
 import {
-  type CHashO,
+  abytes, anumber, type CHashO,
   type CHashXO,
   createOptHasher,
   createXOFer,
@@ -21,7 +20,7 @@ import {
   type HashXOF,
   type Input,
   toBytes,
-  u32,
+  u32
 } from './utils.ts';
 
 // cSHAKE && KMAC (NIST SP800-185)

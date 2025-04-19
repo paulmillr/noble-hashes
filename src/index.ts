@@ -18,15 +18,13 @@ import {
   tuplehash256, parallelhash256,
   k12, m14, keccakprg
 } from '@noble/hashes/sha3-addons';
-import { ripemd160 } from '@noble/hashes/ripemd160';
 import { blake3 } from '@noble/hashes/blake3';
-import { blake2b } from '@noble/hashes/blake2b';
-import { blake2s } from '@noble/hashes/blake2s';
+import { blake2b, blake2s } from '@noble/hashes/blake2';
 import { hmac } from '@noble/hashes/hmac';
 import { hkdf } from '@noble/hashes/hkdf';
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
-import { sha1, md5 } from '@noble/hashes/sha1'; // legacy
+import { md5, ripemd160, sha1 } from '@noble/hashes/legacy';
 import * as utils from '@noble/hashes/utils';
 ```
  */

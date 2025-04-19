@@ -22,18 +22,17 @@
  * - blake512: G1b: rotr 24 -> 25, G2b: rotr 63 -> 11
  * @module
  */
-import { abytes, aexists, aoutput } from './_assert.ts';
 import { G1s, G2s, SIGMA } from './_blake.ts';
 import { setBigUint64, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
 import {
-  clean,
+  abytes, aexists, aoutput, clean,
   createOptHasher as createHashWithOpts,
   createView,
   Hash,
   toBytes,
   type CHashO,
-  type Input,
+  type Input
 } from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */

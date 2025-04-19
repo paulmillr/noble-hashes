@@ -11,11 +11,52 @@
 // Makes the utils un-importable in browsers without a bundler.
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 import { crypto } from '@noble/hashes/crypto';
-import { abytes } from './_assert.ts';
-// export { isBytes } from './_assert.ts';
-// We can't reuse isBytes from _assert, because somehow this causes huge perf issues
+
 export function isBytes(a: unknown): a is Uint8Array {
   return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
+}
+
+/** Asserts something is positive integer. */
+export function anumber(n: number): void {
+  if (!Number.isSafeInteger(n) || n < 0) throw new Error('positive integer expected, got ' + n);
+}
+
+/** Asserts something is Uint8Array. */
+export function abytes(b: Uint8Array | undefined, ...lengths: number[]): void {
+  if (!isBytes(b)) throw new Error('Uint8Array expected');
+  if (lengths.length > 0 && !lengths.includes(b.length))
+    throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
+}
+
+/** Hash interface. */
+export type IHash = {
+  (data: Uint8Array): Uint8Array;
+  blockLen: number;
+  outputLen: number;
+  create: any;
+};
+
+/** Asserts something is hash */
+export function ahash(h: IHash): void {
+  if (typeof h !== 'function' || typeof h.create !== 'function')
+    throw new Error('Hash should be wrapped by utils.createHasher');
+  anumber(h.outputLen);
+  anumber(h.blockLen);
+}
+
+/** Asserts a hash instance has not been destroyed / finished */
+export function aexists(instance: any, checkFinished = true): void {
+  if (instance.destroyed) throw new Error('Hash instance has been destroyed');
+  if (checkFinished && instance.finished) throw new Error('Hash#digest() has already been called');
+}
+
+/** Asserts output is properly-sized byte array */
+export function aoutput(out: any, instance: any): void {
+  abytes(out);
+  const min = instance.outputLen;
+  if (out.length < min) {
+    throw new Error('digestInto() expects output buffer of length at least ' + min);
+  }
 }
 
 // prettier-ignore

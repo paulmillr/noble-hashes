@@ -9,10 +9,9 @@
  * Check out `sha3-addons` module for cSHAKE, k12, and others.
  * @module
  */
-import { abytes, aexists, anumber, aoutput } from './_assert.ts';
 import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 import {
-  byteSwap32,
+  abytes, aexists, anumber, aoutput, byteSwap32,
   clean,
   createHasher,
   createXOFer,
@@ -23,7 +22,7 @@ import {
   type CHash,
   type CHashXO,
   type HashXOF,
-  type Input,
+  type Input
 } from './utils.ts';
 
 // No __PURE__ annotations in sha3 header:

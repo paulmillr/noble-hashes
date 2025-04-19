@@ -2,10 +2,9 @@
  * RFC 7914 Scrypt KDF. Can be used to create a key from password and salt.
  * @module
  */
-import { anumber } from './_assert.ts';
 import { pbkdf2 } from './pbkdf2.ts';
 import { sha256 } from './sha256.ts';
-import { asyncLoop, byteSwap32, checkOpts, clean, type Input, isLE, rotl, u32 } from './utils.ts';
+import { anumber, asyncLoop, byteSwap32, checkOpts, clean, type Input, isLE, rotl, u32 } from './utils.ts';
 
 // The main Scrypt loop: uses Salsa extensively.
 // Six versions of the function were tried, this is the fastest one.

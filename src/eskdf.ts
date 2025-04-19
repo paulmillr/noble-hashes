@@ -1,12 +1,11 @@
 /**
  * Experimental KDF for AES.
  */
-import { abytes } from './_assert.ts';
 import { hkdf } from './hkdf.ts';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.ts';
 import { scrypt as _scrypt } from './scrypt.ts';
 import { sha256 } from './sha256.ts';
-import { bytesToHex, clean, createView, hexToBytes, toBytes } from './utils.ts';
+import { abytes, bytesToHex, clean, createView, hexToBytes, toBytes } from './utils.ts';
 
 // A tiny KDF for various applications like AES key-gen.
 // Uses HKDF in a non-standard way, so it's not "KDF-secure", only "PRF-secure".
