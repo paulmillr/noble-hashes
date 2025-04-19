@@ -1,13 +1,13 @@
-import { deepStrictEqual, throws, rejects } from 'node:assert';
-import { should, describe } from 'micro-should';
-import { sha256 } from '../esm/sha256.js';
-import { sha512 } from '../esm/sha512.js';
-import { extract as hkdf_extract, hkdf } from '../esm/hkdf.js';
+import { describe, should } from 'micro-should';
+import { deepStrictEqual, rejects, throws } from 'node:assert';
+import { hkdf, extract as hkdf_extract } from '../esm/hkdf.js';
 import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
-import { utf8ToBytes, hexToBytes } from '../esm/utils.js';
-import { repr, TYPE_TEST, SPACE, EMPTY } from './utils.js';
+import { sha256 } from '../esm/sha256.js';
+import { sha512 } from '../esm/sha512.js';
+import { hexToBytes, utf8ToBytes } from '../esm/utils.js';
 import { executeKDFTests } from './generator.js';
+import { EMPTY, repr, SPACE, TYPE_TEST } from './utils.js';
 // HKDF test vectors from RFC 5869
 const HKDF_VECTORS = [
   {

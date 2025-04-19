@@ -1,11 +1,11 @@
-import { deepStrictEqual, throws } from 'node:assert';
 import { describe, should } from 'micro-should';
+import { deepStrictEqual, throws } from 'node:assert';
 import { blake224, blake256, blake384, blake512 } from '../esm/blake1.js';
 import { blake2b } from '../esm/blake2b.js';
 import { blake2s } from '../esm/blake2s.js';
 import { blake3 } from '../esm/blake3.js';
-import { hexToBytes, bytesToHex, utf8ToBytes, concatBytes } from '../esm/utils.js';
-import { TYPE_TEST, pattern, json } from './utils.js';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
+import { TYPE_TEST, json, pattern } from './utils.js';
 
 const blake1_vectors = [
   {

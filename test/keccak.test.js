@@ -1,55 +1,53 @@
+import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
 import { createHash } from 'node:crypto';
-import { describe, should } from 'micro-should';
+import { readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
+  cshake128,
+  cshake256,
+  k12,
+  keccakprg,
+  kmac128,
+  kmac128xof,
+  kmac256,
+  kmac256xof,
+  m14,
+  parallelhash128,
+  parallelhash128xof,
+  parallelhash256,
+  parallelhash256xof,
+  tuplehash128,
+  tuplehash256,
+  turboshake128,
+  turboshake256,
+} from '../esm/sha3-addons.js';
+import {
+  Keccak,
+  keccak_224,
+  keccak_256,
+  keccak_384,
+  keccak_512,
   sha3_224,
   sha3_256,
   sha3_384,
   sha3_512,
   shake128,
   shake256,
-  keccak_224,
-  keccak_256,
-  keccak_384,
-  keccak_512,
-  Keccak,
 } from '../esm/sha3.js';
-import {
-  k12,
-  m14,
-  cshake128,
-  cshake256,
-  kmac128,
-  kmac256,
-  kmac128xof,
-  kmac256xof,
-  tuplehash128,
-  tuplehash128xof,
-  tuplehash256,
-  tuplehash256xof,
-  parallelhash128,
-  parallelhash128xof,
-  parallelhash256,
-  parallelhash256xof,
-  keccakprg,
-  turboshake128,
-  turboshake256,
-} from '../esm/sha3-addons.js';
-import { bytesToHex, hexToBytes, concatBytes } from '../esm/utils.js';
+import { bytesToHex, concatBytes, hexToBytes } from '../esm/utils.js';
 import { TYPE_TEST, jsonGZ } from './utils.js';
 import {
-  K12_VECTORS,
-  M14_VECTORS,
   CSHAKE_VESTORS,
+  K12_VECTORS,
   KMAC_VECTORS,
-  TUPLE_VECTORS,
+  M14_VECTORS,
   PARALLEL_VECTORS,
-  VECTORS_TURBO,
+  TUPLE_VECTORS,
   VECTORS_K12,
+  VECTORS_TURBO,
 } from './vectors/sha3-addons.js';
-import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const isBun = !!process.versions.bun;

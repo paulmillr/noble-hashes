@@ -8,6 +8,7 @@
     "./_md": "./src/_md.ts",
     "./argon2": "./src/argon2.ts",
     "./blake1": "./src/blake1.ts",
+    "./blake2": "./src/blake2.ts",
     "./blake2b": "./src/blake2b.ts",
     "./blake2s": "./src/blake2s.ts",
     "./blake3": "./src/blake3.ts",

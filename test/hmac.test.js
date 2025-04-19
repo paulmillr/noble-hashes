@@ -1,10 +1,10 @@
-import { deepStrictEqual, throws } from 'node:assert';
 import { describe, should } from 'micro-should';
-import { sha256 } from '../esm/sha256.js';
-import { sha512, sha384 } from '../esm/sha512.js';
+import { deepStrictEqual, throws } from 'node:assert';
 import { hmac } from '../esm/hmac.js';
-import { bytesToHex, hexToBytes, concatBytes, utf8ToBytes } from '../esm/utils.js';
-import { truncate, repr, TYPE_TEST, SPACE, EMPTY } from './utils.js';
+import { sha256 } from '../esm/sha256.js';
+import { sha384, sha512 } from '../esm/sha512.js';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
+import { EMPTY, repr, SPACE, truncate, TYPE_TEST } from './utils.js';
 
 // HMAC test vectors from RFC 4231
 const HMAC_VECTORS = [

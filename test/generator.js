@@ -1,13 +1,13 @@
-import * as cryp from 'node:crypto';
-import assert from 'node:assert';
 import { describe, should } from 'micro-should';
-import { sha256 } from '../esm/sha256.js';
-import { sha512 } from '../esm/sha512.js';
-import { blake2s } from '../esm/blake2s.js';
+import assert from 'node:assert';
+import * as cryp from 'node:crypto';
 import { blake2b } from '../esm/blake2b.js';
-import { sha3_256, sha3_512 } from '../esm/sha3.js';
+import { blake2s } from '../esm/blake2s.js';
 import { hkdf } from '../esm/hkdf.js';
 import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
+import { sha256 } from '../esm/sha256.js';
+import { sha3_256, sha3_512 } from '../esm/sha3.js';
+import { sha512 } from '../esm/sha512.js';
 import { concatBytes } from '../esm/utils.js';
 
 const { createHash, hkdfSync, pbkdf2Sync } = cryp;
@@ -240,6 +240,6 @@ function executeKDFTests(limit = true) {
   });
 }
 
-export { optional, integer, bytes, gen, RANDOM, serializeCase, executeKDFTests };
+export { bytes, executeKDFTests, gen, integer, optional, RANDOM, serializeCase };
 
 should.runWhen(import.meta.url);

@@ -1,25 +1,24 @@
+import { hexToBytes } from '../../esm/utils.js';
 import {
-  k12,
-  m14,
   cshake128,
   cshake256,
+  k12,
   kmac128,
-  kmac256,
   kmac128xof,
+  kmac256,
   kmac256xof,
-  tuplehash128,
-  tuplehash128xof,
-  tuplehash256,
-  tuplehash256xof,
   parallelhash128,
   parallelhash128xof,
   parallelhash256,
   parallelhash256xof,
+  tuplehash128,
+  tuplehash128xof,
+  tuplehash256,
+  tuplehash256xof,
   turboshake128,
   turboshake256,
-} from '../../esm/sha3-addons.js';
-import { hexToBytes } from '../../esm/utils.js';
-import { pattern, EMPTY, times } from '../utils.js';
+} from '../../sha3-addons.js';
+import { EMPTY, pattern, times } from '../utils.js';
 const fromHex = (hex) => hexToBytes(hex.replace(/ |\n/gm, ''));
 
 const K12_VECTORS = [
@@ -1091,12 +1090,12 @@ const VECTORS_K12 = [
 ];
 
 export {
-  K12_VECTORS,
-  M14_VECTORS,
   CSHAKE_VESTORS,
+  K12_VECTORS,
   KMAC_VECTORS,
-  TUPLE_VECTORS,
+  M14_VECTORS,
   PARALLEL_VECTORS,
-  VECTORS_TURBO,
+  TUPLE_VECTORS,
   VECTORS_K12,
+  VECTORS_TURBO,
 };

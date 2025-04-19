@@ -1,11 +1,17 @@
+import { describe, should } from 'micro-should';
 import { deepStrictEqual } from 'node:assert';
 import { scryptSync } from 'node:crypto';
-import { describe, should } from 'micro-should';
-import { bytes, integer, gen, serializeCase } from './generator.js';
+import {
+  argon2d,
+  argon2dAsync,
+  argon2i,
+  argon2iAsync,
+  argon2id,
+  argon2idAsync,
+} from '../esm/argon2.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
-import { argon2i, argon2d, argon2id } from '../esm/argon2.js';
-import { argon2iAsync, argon2dAsync, argon2idAsync } from '../esm/argon2.js';
 import { bytesToHex } from '../esm/utils.js';
+import { bytes, gen, integer, serializeCase } from './generator.js';
 import { json, pattern } from './utils.js';
 
 const argon2_vectors = json('./vectors/argon2.json');

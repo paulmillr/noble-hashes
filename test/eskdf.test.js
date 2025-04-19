@@ -1,5 +1,5 @@
-import { equal, rejects, throws, deepStrictEqual } from 'node:assert';
 import { describe, should } from 'micro-should';
+import { deepStrictEqual, equal, rejects, throws } from 'node:assert';
 import { eskdf } from '../esm/eskdf.js';
 import { bytesToHex as toHex } from '../esm/utils.js';
 import { json } from './utils.js';

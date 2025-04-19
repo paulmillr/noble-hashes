@@ -1,4 +1,4 @@
-import { scrypt } from '../../esm/scrypt.js';
+import { scrypt } from '../../scrypt.js';
 
 let pass = 'abcabcabc';
 let salt = 'abcababc';
