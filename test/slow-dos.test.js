@@ -4,7 +4,7 @@ import { hkdf } from '../esm/hkdf.js';
 import { hmac } from '../esm/hmac.js';
 import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
-import { sha256 } from '../esm/sha256.js';
+import { sha256 } from '../esm/sha2.js';
 import { createView } from '../esm/utils.js';
 import { RANDOM } from './generator.js';
 import { HASHES } from './hashes.test.js';

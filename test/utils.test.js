@@ -2,7 +2,7 @@ import fc from 'fast-check';
 import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
 import { setBigUint64 } from '../esm/_md.js';
-import { sha256 } from '../esm/sha256.js';
+import { sha256 } from '../esm/sha2.js';
 import * as u from '../esm/utils.js';
 import {
   byteSwap,

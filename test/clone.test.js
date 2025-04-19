@@ -1,14 +1,12 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual } from 'node:assert';
-import { blake2b } from '../esm/blake2b.js';
-import { blake2s } from '../esm/blake2s.js';
+import { blake2b, blake2s } from '../esm/blake2.js';
 import { blake3 } from '../esm/blake3.js';
 import { hmac } from '../esm/hmac.js';
-import { ripemd160 } from '../esm/ripemd160.js';
-import { sha256 } from '../esm/sha256.js';
+import { ripemd160 } from '../esm/legacy.js';
+import { sha256, sha512 } from '../esm/sha2.js';
 import { k12, kmac256 } from '../esm/sha3-addons.js';
 import { sha3_256, shake256 } from '../esm/sha3.js';
-import { sha512 } from '../esm/sha512.js';
 
 // small -- minimal personalization options, big -- all personalization options
 // test that clone works correctly if "to" is same class instance but with completely different personalization

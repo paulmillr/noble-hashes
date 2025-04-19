@@ -1,13 +1,11 @@
 import { describe, should } from 'micro-should';
 import assert from 'node:assert';
 import * as cryp from 'node:crypto';
-import { blake2b } from '../esm/blake2b.js';
-import { blake2s } from '../esm/blake2s.js';
+import { blake2b, blake2s } from '../esm/blake2.js';
 import { hkdf } from '../esm/hkdf.js';
 import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
-import { sha256 } from '../esm/sha256.js';
+import { sha256, sha512 } from '../esm/sha2.js';
 import { sha3_256, sha3_512 } from '../esm/sha3.js';
-import { sha512 } from '../esm/sha512.js';
 import { concatBytes } from '../esm/utils.js';
 
 const { createHash, hkdfSync, pbkdf2Sync } = cryp;

@@ -1,8 +1,7 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
 import { hmac } from '../esm/hmac.js';
-import { sha256 } from '../esm/sha256.js';
-import { sha384, sha512 } from '../esm/sha512.js';
+import { sha256, sha384, sha512 } from '../esm/sha2.js';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
 import { EMPTY, repr, SPACE, truncate, TYPE_TEST } from './utils.js';
 

@@ -2,16 +2,13 @@ import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { sha224, sha256 } from '../esm/sha256.js';
-import { sha384, sha512, sha512_224, sha512_256 } from '../esm/sha512.js';
+import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../esm/sha2.js';
 // prettier-ignore
 import { blake224, blake256, blake384, blake512 } from '../esm/blake1.js';
-import { blake2b } from '../esm/blake2b.js';
-import { blake2s } from '../esm/blake2s.js';
+import { blake2b, blake2s } from '../esm/blake2.js';
 import { blake3 } from '../esm/blake3.js';
 import { hmac } from '../esm/hmac.js';
-import { md5, sha1 } from '../esm/legacy.js';
-import { ripemd160 } from '../esm/ripemd160.js';
+import { md5, ripemd160, sha1 } from '../esm/legacy.js';
 import { k12, turboshake128, turboshake256 } from '../esm/sha3-addons.js';
 import {
   keccak_256,

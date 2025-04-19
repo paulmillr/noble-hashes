@@ -2,7 +2,7 @@ import { describe, should } from 'micro-should';
 import { deepStrictEqual } from 'node:assert';
 import { pbkdf2Async } from '../esm/pbkdf2.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
-import { sha256 } from '../esm/sha256.js';
+import { sha256 } from '../esm/sha2.js';
 import * as utils from '../esm/utils.js';
 
 // Collect statistic about block of event loop by sync code
