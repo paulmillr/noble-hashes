@@ -356,9 +356,6 @@ export function createXOFer<H extends HashXOF<H>, T extends Object>(
   hashC.create = (opts: T) => hashCons(opts);
   return hashC;
 }
-export const wrapConstructor: typeof createHasher = createHasher;
-export const wrapConstructorWithOpts: typeof createOptHasher = createOptHasher;
-export const wrapXOFConstructorWithOpts: typeof createXOFer = createXOFer;
 
 /** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
 export function randomBytes(bytesLength = 32): Uint8Array {
