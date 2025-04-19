@@ -7,12 +7,13 @@ import { BLAKE, type BlakeOpts, G1s, G2s, SIGMA } from './_blake.ts';
 import { SHA256_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
 import {
-  abytes, byteSwapIfBE,
+  abytes,
+  byteSwapIfBE,
   type CHashO,
   clean,
   createOptHasher as createHashWithOpts,
   toBytes,
-  u32
+  u32,
 } from './utils.ts';
 
 // Same as SHA512_IV, but swapped endianness: LE instead of BE. iv[1] is iv[0], etc.
@@ -98,7 +99,8 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
 
   constructor(opts: BlakeOpts = {}) {
     super(128, opts.dkLen === undefined ? 64 : opts.dkLen, opts, keyLenB, saltLenB, persLenB);
-    const { key, personalization, salt } = opts;
+    let { key, personalization, salt } = opts;
+    if (key != null) key = toBytes(key);
     const keyLength = key ? key.length : 0;
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt) {
@@ -276,16 +278,19 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
 
   constructor(opts: BlakeOpts = {}) {
     super(64, opts.dkLen === undefined ? 32 : opts.dkLen, opts, keyLenS, saltLenS, persLenS);
-    const { key, personalization, salt } = opts;
+    let { key, personalization, salt } = opts;
+    if (key != null) key = toBytes(key);
+    if (salt != null) salt = toBytes(salt);
+    if (personalization != null) personalization = toBytes(personalization);
     const keyLength = key ? key.length : 0;
     this.v0 ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt) {
-      const slt = u32(toBytes(salt));
+      const slt = u32(salt as Uint8Array);
       this.v4 ^= byteSwapIfBE(slt[0]);
       this.v5 ^= byteSwapIfBE(slt[1]);
     }
     if (personalization) {
-      const pers = u32(toBytes(personalization));
+      const pers = u32(personalization as Uint8Array);
       this.v6 ^= byteSwapIfBE(pers[0]);
       this.v7 ^= byteSwapIfBE(pers[1]);
     }

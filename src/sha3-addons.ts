@@ -12,7 +12,9 @@
  */
 import { Keccak, type ShakeOpts } from './sha3.ts';
 import {
-  abytes, anumber, type CHashO,
+  abytes,
+  anumber,
+  type CHashO,
   type CHashXO,
   createOptHasher,
   createXOFer,
@@ -20,7 +22,7 @@ import {
   type HashXOF,
   type Input,
   toBytes,
-  u32
+  u32,
 } from './utils.ts';
 
 // cSHAKE && KMAC (NIST SP800-185)

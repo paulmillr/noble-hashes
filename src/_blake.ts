@@ -2,7 +2,12 @@
  * Internal helpers for blake hash.
  * @module
  */
-import { abytes, aexists, anumber, aoutput, byteSwap32, byteSwapIfBE, clean, Hash, isLE, rotr, toBytes, u32, type Input } from './utils.ts';
+// prettier-ignore
+import {
+  abytes, aexists, anumber, aoutput,
+  byteSwap32, byteSwapIfBE, clean,
+  Hash, isLE, rotr, toBytes, u32, type Input,
+} from './utils.ts';
 
 /**
  * Internal blake variable.

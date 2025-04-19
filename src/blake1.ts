@@ -25,14 +25,12 @@
 import { G1s, G2s, SIGMA } from './_blake.ts';
 import { setBigUint64, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
+// prettier-ignore
 import {
-  abytes, aexists, aoutput, clean,
-  createOptHasher as createHashWithOpts,
-  createView,
-  Hash,
-  toBytes,
-  type CHashO,
-  type Input
+  abytes, aexists, aoutput,
+  clean, createOptHasher,
+  createView, Hash, toBytes,
+  type CHashO, type Input,
 } from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */
@@ -517,18 +515,18 @@ export class Blake384 extends Blake1_64 {
   }
 }
 /** blake1-224 hash function */
-export const blake224: CHashO = /* @__PURE__ */ createHashWithOpts<Blake224, BlakeOpts>(
+export const blake224: CHashO = /* @__PURE__ */ createOptHasher<Blake224, BlakeOpts>(
   (opts) => new Blake224(opts)
 );
 /** blake1-256 hash function */
-export const blake256: CHashO = /* @__PURE__ */ createHashWithOpts<Blake256, BlakeOpts>(
+export const blake256: CHashO = /* @__PURE__ */ createOptHasher<Blake256, BlakeOpts>(
   (opts) => new Blake256(opts)
 );
 /** blake1-384 hash function */
-export const blake384: CHashO = /* @__PURE__ */ createHashWithOpts<Blake512, BlakeOpts>(
+export const blake384: CHashO = /* @__PURE__ */ createOptHasher<Blake512, BlakeOpts>(
   (opts) => new Blake384(opts)
 );
 /** blake1-512 hash function */
-export const blake512: CHashO = /* @__PURE__ */ createHashWithOpts<Blake512, BlakeOpts>(
+export const blake512: CHashO = /* @__PURE__ */ createOptHasher<Blake512, BlakeOpts>(
   (opts) => new Blake512(opts)
 );

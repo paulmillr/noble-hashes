@@ -10,19 +10,11 @@
  * @module
  */
 import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
+// prettier-ignore
 import {
-  abytes, aexists, anumber, aoutput, byteSwap32,
-  clean,
-  createHasher,
-  createXOFer,
-  Hash,
-  isLE,
-  toBytes,
-  u32,
-  type CHash,
-  type CHashXO,
-  type HashXOF,
-  type Input
+  abytes, aexists, anumber, aoutput,
+  byteSwap32, clean, createHasher, createXOFer, Hash, isLE, toBytes, u32,
+  type CHash, type CHashXO, type HashXOF, type Input,
 } from './utils.ts';
 
 // No __PURE__ annotations in sha3 header:

@@ -55,20 +55,24 @@ export function aoutput(out: any, instance: any): void {
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
 
-// Cast array to different type
+/** Cast u8 / u16 / u32 to u8. */
 export function u8(arr: TypedArray): Uint8Array {
   return new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
 }
+
+/** Cast u8 / u16 / u32 to u32. */
 export function u32(arr: TypedArray): Uint32Array {
   return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
 }
+
+/** Zeroize a byte array. Warning: JS provides no guarantees. */
 export function clean(...arrays: TypedArray[]): void {
   for (let i = 0; i < arrays.length; i++) {
     arrays[i].fill(0);
   }
 }
 
-// Cast array to view
+/** Create DataView of an array for easy byte-level manipulation. */
 export function createView(arr: TypedArray): DataView {
   return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
 }
@@ -77,6 +81,7 @@ export function createView(arr: TypedArray): DataView {
 export function rotr(word: number, shift: number): number {
   return (word << (32 - shift)) | (word >>> shift);
 }
+
 /** The rotate left (circular left shift) operation for uint32 */
 export function rotl(word: number, shift: number): number {
   return (word << shift) | ((word >>> (32 - shift)) >>> 0);
@@ -223,9 +228,7 @@ export function toBytes(data: Input): Uint8Array {
   return data;
 }
 
-/**
- * Copies several Uint8Arrays into one.
- */
+/** Copies several Uint8Arrays into one. */
 export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   let sum = 0;
   for (let i = 0; i < arrays.length; i++) {

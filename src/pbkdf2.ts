@@ -3,15 +3,11 @@
  * @module
  */
 import { hmac } from './hmac.ts';
+// prettier-ignore
 import {
-  ahash, anumber, asyncLoop,
-  checkOpts,
-  clean,
-  createView,
-  Hash,
-  toBytes,
-  type CHash,
-  type Input
+  ahash, anumber,
+  asyncLoop, checkOpts, clean, createView, Hash, toBytes,
+  type CHash, type Input,
 } from './utils.ts';
 
 export type Pbkdf2Opt = {

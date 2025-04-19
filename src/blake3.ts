@@ -15,13 +15,10 @@ import { BLAKE } from './_blake.ts';
 import { SHA256_IV } from './_md.ts';
 import { fromBig } from './_u64.ts';
 import { compress } from './blake2.ts';
-import { abytes, aexists, anumber, aoutput } from './utils.ts';
 // prettier-ignore
 import {
-  byteSwap32,
-  clean,
-  createXOFer as createXOFWithOpts, isLE, toBytes,
-  u32, u8,
+  abytes, aexists, anumber, aoutput,
+  byteSwap32, clean, createXOFer, isLE, toBytes, u32, u8,
   type CHashXO, type HashXOF, type Input,
 } from './utils.ts';
 
@@ -274,6 +271,6 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
  * const mac = blake3(data, { key: new Uint8Array(32) });
  * const kdf = blake3(data, { context: 'application name' });
  */
-export const blake3: CHashXO = /* @__PURE__ */ createXOFWithOpts<BLAKE3, Blake3Opts>(
+export const blake3: CHashXO = /* @__PURE__ */ createXOFer<BLAKE3, Blake3Opts>(
   (opts) => new BLAKE3(opts)
 );
