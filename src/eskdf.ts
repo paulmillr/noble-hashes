@@ -77,7 +77,7 @@ function getSaltInfo(protocol: string, accountId: AccountID = 0) {
       throw new Error('accountId must be string of length 1..255');
     salt = toBytes(accountId);
   } else if (Number.isSafeInteger(accountId)) {
-    if (accountId < 0 || accountId > 2 ** 32 - 1) throw new Error('invalid accountId');
+    if (accountId < 0 || accountId > Math.pow(2, 32) - 1) throw new Error('invalid accountId');
     // Convert to Big Endian Uint32
     salt = new Uint8Array(4);
     createView(salt).setUint32(0, accountId, false);

@@ -28,14 +28,6 @@ export function abytes(b: Uint8Array | undefined, ...lengths: number[]): void {
     throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
 }
 
-/** Hash interface. */
-export type IHash = {
-  (data: Uint8Array): Uint8Array;
-  blockLen: number;
-  outputLen: number;
-  create: any;
-};
-
 /** Asserts something is hash */
 export function ahash(h: IHash): void {
   if (typeof h !== 'function' || typeof h.create !== 'function')
@@ -250,6 +242,25 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   return res;
 }
 
+type EmptyObj = {};
+export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
+  defaults: T1,
+  opts?: T2
+): T1 & T2 {
+  if (opts !== undefined && {}.toString.call(opts) !== '[object Object]')
+    throw new Error('Options should be object or undefined');
+  const merged = Object.assign(defaults, opts);
+  return merged as T1 & T2;
+}
+
+/** Hash interface. */
+export type IHash = {
+  (data: Uint8Array): Uint8Array;
+  blockLen: number;
+  outputLen: number;
+  create: any;
+};
+
 /** For runtime check if class implements interface */
 export abstract class Hash<T extends Hash<T>> {
   abstract blockLen: number; // Bytes per block
@@ -288,17 +299,6 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
   xof(bytes: number): Uint8Array; // Read 'bytes' bytes from digest stream
   xofInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
 };
-
-type EmptyObj = {};
-export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
-  defaults: T1,
-  opts?: T2
-): T1 & T2 {
-  if (opts !== undefined && {}.toString.call(opts) !== '[object Object]')
-    throw new Error('Options should be object or undefined');
-  const merged = Object.assign(defaults, opts);
-  return merged as T1 & T2;
-}
 
 /** Hash function */
 export type CHash = ReturnType<typeof createHasher>;

@@ -190,7 +190,7 @@ export type ArgonOpts = {
   onProgress?: (progress: number) => void;
 };
 
-const maxUint32 = 2 ** 32;
+const maxUint32 = Math.pow(2, 32);
 function isUint32(num: number) {
   return Number.isSafeInteger(num) && num >= 0 && num < maxUint32;
 }
@@ -199,14 +199,14 @@ function initOpts(opts: ArgonOpts) {
   const merged: any = {
     version: 0x13,
     dkLen: 32,
-    maxmem: 2 ** 32 - 1,
+    maxmem: maxUint32 - 1,
     asyncTick: 10,
   };
   for (let [k, v] of Object.entries(opts)) if (v != null) merged[k] = v;
 
   const { dkLen, p, m, t, version, onProgress } = merged;
   if (!isUint32(dkLen) || dkLen < 4) throw new Error('Argon2: dkLen should be at least 4 bytes');
-  if (!isUint32(p) || p < 1 || p >= 2 ** 24)
+  if (!isUint32(p) || p < 1 || p >= Math.pow(2, 24))
     throw new Error('Argon2: p (parallelism) should be at least 1 and less than 2^24');
   if (!isUint32(m)) throw new Error('Argon2: m should be 0 <= m < 2^32');
   if (!isUint32(t) || t < 1)

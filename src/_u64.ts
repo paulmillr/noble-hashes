@@ -18,9 +18,10 @@ function fromBig(
 }
 
 function split(lst: bigint[], le = false): Uint32Array[] {
-  let Ah = new Uint32Array(lst.length);
-  let Al = new Uint32Array(lst.length);
-  for (let i = 0; i < lst.length; i++) {
+  const len = lst.length;
+  let Ah = new Uint32Array(len);
+  let Al = new Uint32Array(len);
+  for (let i = 0; i < len; i++) {
     const { h, l } = fromBig(lst[i], le);
     [Ah[i], Al[i]] = [h, l];
   }
@@ -76,12 +77,7 @@ const add5H = (low: number, Ah: number, Bh: number, Ch: number, Dh: number, Eh: 
 
 // prettier-ignore
 export {
-  fromBig, split, toBig,
-  shrSH, shrSL,
-  rotrSH, rotrSL, rotrBH, rotrBL,
-  rotr32H, rotr32L,
-  rotlSH, rotlSL, rotlBH, rotlBL,
-  add, add3L, add3H, add4L, add4H, add5H, add5L,
+  add, add3H, add3L, add4H, add4L, add5H, add5L, fromBig, rotlBH, rotlBL, rotlSH, rotlSL, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL, shrSH, shrSL, split, toBig
 };
 // prettier-ignore
 const u64: { fromBig: typeof fromBig; split: typeof split; toBig: (h: number, l: number) => bigint; shrSH: (h: number, _l: number, s: number) => number; shrSL: (h: number, l: number, s: number) => number; rotrSH: (h: number, l: number, s: number) => number; rotrSL: (h: number, l: number, s: number) => number; rotrBH: (h: number, l: number, s: number) => number; rotrBL: (h: number, l: number, s: number) => number; rotr32H: (_h: number, l: number) => number; rotr32L: (h: number, _l: number) => number; rotlSH: (h: number, l: number, s: number) => number; rotlSL: (h: number, l: number, s: number) => number; rotlBH: (h: number, l: number, s: number) => number; rotlBL: (h: number, l: number, s: number) => number; add: typeof add; add3L: (Al: number, Bl: number, Cl: number) => number; add3H: (low: number, Ah: number, Bh: number, Ch: number) => number; add4L: (Al: number, Bl: number, Cl: number, Dl: number) => number; add4H: (low: number, Ah: number, Bh: number, Ch: number, Dh: number) => number; add5H: (low: number, Ah: number, Bh: number, Ch: number, Dh: number, Eh: number) => number; add5L: (Al: number, Bl: number, Cl: number, Dl: number, El: number) => number; } = {

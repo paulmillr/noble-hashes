@@ -109,18 +109,19 @@ function scryptInit(password: Input, salt: Input, _opts?: ScryptOpts) {
   const blockSize32 = blockSize / 4;
 
   // Max N is 2^32 (Integrify is 32-bit). Real limit is 2^22: JS engines Uint8Array limit is 4GB in 2024.
-  // Spec check `N >= 2 ** (blockSize / 8)` is not done for compat with popular libs,
+  // Spec check `N >= 2^(blockSize / 8)` is not done for compat with popular libs,
   // which used incorrect r: 1, p: 8. Also, the check seems to be a spec error:
   // https://www.rfc-editor.org/errata_search.php?rfc=7914
-  if (N <= 1 || (N & (N - 1)) !== 0 || N > 2 ** 32) {
+  const pow32 = Math.pow(2, 32);
+  if (N <= 1 || (N & (N - 1)) !== 0 || N > pow32) {
     throw new Error('Scrypt: N must be larger than 1, a power of 2, and less than 2^32');
   }
-  if (p < 0 || p > ((2 ** 32 - 1) * 32) / blockSize) {
+  if (p < 0 || p > ((pow32 - 1) * 32) / blockSize) {
     throw new Error(
       'Scrypt: p must be a positive integer less than or equal to ((2^32 - 1) * 32) / (128 * r)'
     );
   }
-  if (dkLen < 0 || dkLen > (2 ** 32 - 1) * 32) {
+  if (dkLen < 0 || dkLen > (pow32 - 1) * 32) {
     throw new Error(
       'Scrypt: dkLen should be positive integer less than or equal to (2^32 - 1) * 32'
     );
