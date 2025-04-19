@@ -75,6 +75,10 @@
       "import": "./esm/blake1.js",
       "require": "./blake1.js"
     },
+    "./blake2": {
+      "import": "./esm/blake2.js",
+      "require": "./blake2.js"
+    },
     "./blake2b": {
       "import": "./esm/blake2b.js",
       "require": "./blake2b.js"
