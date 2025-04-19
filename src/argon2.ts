@@ -9,7 +9,7 @@
  * @module
  */
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.ts';
-import { blake2b } from './blake2b.ts';
+import { blake2b } from './blake2.ts';
 import { type Input, nextTick, toBytes, u32, u8 } from './utils.ts';
 
 const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;

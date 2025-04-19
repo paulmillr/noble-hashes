@@ -22,16 +22,22 @@
  * - blake512: G1b: rotr 24 -> 25, G2b: rotr 63 -> 11
  * @module
  */
-import { aexists, aoutput } from './_assert.ts';
-import { SIGMA } from './_blake.ts';
-import { setBigUint64 } from './_md.ts';
-import u64, { fromBig } from './_u64.ts';
-import { B2S_IV, G1s, G2s } from './blake2s.ts';
-import { Hash, type Input, createView, toBytes, wrapConstructorWithOpts } from './utils.ts';
+import { abytes, aexists, aoutput } from './_assert.ts';
+import { G1s, G2s, SIGMA } from './_blake.ts';
+import { setBigUint64, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
+import * as u64 from './_u64.ts';
+import {
+  wrapConstructorWithOpts as createHashWithOpts,
+  createView,
+  Hash,
+  toBytes,
+  type CHashO,
+  type Input,
+} from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */
 export type BlakeOpts = {
-  salt?: Input;
+  salt?: Uint8Array;
 };
 
 // Empty zero-filled salt
@@ -66,17 +72,20 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     opts: BlakeOpts = {}
   ) {
     super();
+    const { salt } = opts;
     this.blockLen = blockLen;
     this.outputLen = outputLen;
     this.lengthFlag = lengthFlag;
     this.counterLen = counterLen;
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
-    if (opts.salt) {
-      const salt = toBytes(opts.salt);
-      if (salt.length !== 4 * saltLen) throw new Error('wrong salt length');
+    if (salt) {
+      let slt = salt;
+      slt = toBytes(slt);
+      abytes(slt);
+      if (slt.length !== 4 * saltLen) throw new Error('wrong salt length');
       const salt32 = (this.salt = new Uint32Array(saltLen));
-      const sv = createView(salt);
+      const sv = createView(slt);
       this.constants = constants.slice();
       for (let i = 0, offset = 0; i < salt32.length; i++, offset += 4) {
         salt32[i] = sv.getUint32(offset, false);
@@ -90,6 +99,7 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
   update(data: Input): this {
     aexists(this);
     data = toBytes(data);
+    abytes(data);
     // From _md, but update length before each compress
     const { view, buffer, blockLen } = this;
     const len = data.length;
@@ -173,11 +183,20 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
   }
 }
 
-// Same as blake2s!
-const C256 = /* @__PURE__ */ Uint32Array.from([
+// Constants
+const C512 = /* @__PURE__ */ Uint32Array.from([
   0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344, 0xa4093822, 0x299f31d0, 0x082efa98, 0xec4e6c89,
   0x452821e6, 0x38d01377, 0xbe5466cf, 0x34e90c6c, 0xc0ac29b7, 0xc97c50dd, 0x3f84d5b5, 0xb5470917,
+  0x9216d5d9, 0x8979fb1b, 0xd1310ba6, 0x98dfb5ac, 0x2ffd72db, 0xd01adfb7, 0xb8e1afed, 0x6a267e96,
+  0xba7c9045, 0xf12c7f99, 0x24a19947, 0xb3916cf7, 0x0801f2e2, 0x858efc16, 0x636920d8, 0x71574e69,
 ]);
+// first half of C512
+const C256 = C512.slice(0, 16);
+
+const B256_IV = SHA256_IV.slice();
+const B512_IV = SHA512_IV.slice();
+const B384_IV = SHA384_IV.slice();
+const B224_IV = SHA224_IV.slice();
 
 function generateTBL256() {
   const TBL = [];
@@ -194,11 +213,6 @@ const TBL256 = /* @__PURE__ */ generateTBL256(); // C256[SIGMA[X]] precompute
 // Temporary buffer, not used to store anything between runs
 // Named after SHA256_W buffer (works same)
 const BLAKE256_W = /* @__PURE__ */ new Uint32Array(16);
-
-// == SHA224_IV
-const B224_IV = new Uint32Array([
-  0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4,
-]);
 
 class Blake1_32 extends Blake1<Blake1_32> {
   private v0: number;
@@ -256,7 +270,7 @@ class Blake1_32 extends Blake1<Blake1_32> {
     let v09 = this.constants[1] | 0;
     let v10 = this.constants[2] | 0;
     let v11 = this.constants[3] | 0;
-    const { h, l } = fromBig(BigInt(withLength ? this.length * 8 : 0));
+    const { h, l } = u64.fromBig(BigInt(withLength ? this.length * 8 : 0));
     let v12 = (this.constants[4] ^ l) >>> 0;
     let v13 = (this.constants[5] ^ l) >>> 0;
     let v14 = (this.constants[6] ^ h) >>> 0;
@@ -291,26 +305,6 @@ class Blake1_32 extends Blake1<Blake1_32> {
     BLAKE256_W.fill(0);
   }
 }
-
-// Constants
-const C512 = /* @__PURE__ */ Uint32Array.from([
-  0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344, 0xa4093822, 0x299f31d0, 0x082efa98, 0xec4e6c89,
-  0x452821e6, 0x38d01377, 0xbe5466cf, 0x34e90c6c, 0xc0ac29b7, 0xc97c50dd, 0x3f84d5b5, 0xb5470917,
-  0x9216d5d9, 0x8979fb1b, 0xd1310ba6, 0x98dfb5ac, 0x2ffd72db, 0xd01adfb7, 0xb8e1afed, 0x6a267e96,
-  0xba7c9045, 0xf12c7f99, 0x24a19947, 0xb3916cf7, 0x0801f2e2, 0x858efc16, 0x636920d8, 0x71574e69,
-]);
-
-// State of SHA512
-const B512_IV = /* @__PURE__ */ Uint32Array.from([
-  0x6a09e667, 0xf3bcc908, 0xbb67ae85, 0x84caa73b, 0x3c6ef372, 0xfe94f82b, 0xa54ff53a, 0x5f1d36f1,
-  0x510e527f, 0xade682d1, 0x9b05688c, 0x2b3e6c1f, 0x1f83d9ab, 0xfb41bd6b, 0x5be0cd19, 0x137e2179,
-]);
-
-// State of SHA384
-const B384_IV = /* @__PURE__ */ Uint32Array.from([
-  0xcbbb9d5d, 0xc1059ed8, 0x629a292a, 0x367cd507, 0x9159015a, 0x3070dd17, 0x152fecd8, 0xf70e5939,
-  0x67332667, 0xffc00b31, 0x8eb44a87, 0x68581511, 0xdb0c2e0d, 0x64f98fa7, 0x47b5481d, 0xbefa4fa4,
-]);
 
 const BBUF = /* @__PURE__ */ new Uint32Array(32);
 const BLAKE512_W = /* @__PURE__ */ new Uint32Array(32);
@@ -458,7 +452,7 @@ class Blake1_64 extends Blake1<Blake1_64> {
     this.get().forEach((v, i) => (BBUF[i] = v)); // First half from state.
     BBUF.set(this.constants.subarray(0, 16), 16);
     if (withLength) {
-      const { h, l } = fromBig(BigInt(this.length * 8));
+      const { h, l } = u64.fromBig(BigInt(this.length * 8));
       BBUF[24] = (BBUF[24] ^ h) >>> 0;
       BBUF[25] = (BBUF[25] ^ l) >>> 0;
       BBUF[26] = (BBUF[26] ^ h) >>> 0;
@@ -511,8 +505,7 @@ export class Blake224 extends Blake1_32 {
 }
 export class Blake256 extends Blake1_32 {
   constructor(opts: BlakeOpts = {}) {
-    // == SHA256_IV
-    super(32, B2S_IV, 0b0000_0001, opts);
+    super(32, B256_IV, 0b0000_0001, opts);
   }
 }
 export class Blake512 extends Blake1_64 {
@@ -526,30 +519,18 @@ export class Blake384 extends Blake1_64 {
   }
 }
 /** blake1-224 hash function */
-export const blake224: {
-  (msg: Input, opts?: BlakeOpts | undefined): Uint8Array;
-  outputLen: number;
-  blockLen: number;
-  create(opts: BlakeOpts): Hash<Blake224>;
-} = /* @__PURE__ */ wrapConstructorWithOpts<Blake224, BlakeOpts>((opts) => new Blake224(opts));
+export const blake224: CHashO = /* @__PURE__ */ createHashWithOpts<Blake224, BlakeOpts>(
+  (opts) => new Blake224(opts)
+);
 /** blake1-256 hash function */
-export const blake256: {
-  (msg: Input, opts?: BlakeOpts | undefined): Uint8Array;
-  outputLen: number;
-  blockLen: number;
-  create(opts: BlakeOpts): Hash<Blake256>;
-} = /* @__PURE__ */ wrapConstructorWithOpts<Blake256, BlakeOpts>((opts) => new Blake256(opts));
+export const blake256: CHashO = /* @__PURE__ */ createHashWithOpts<Blake256, BlakeOpts>(
+  (opts) => new Blake256(opts)
+);
 /** blake1-384 hash function */
-export const blake384: {
-  (msg: Input, opts?: BlakeOpts | undefined): Uint8Array;
-  outputLen: number;
-  blockLen: number;
-  create(opts: BlakeOpts): Hash<Blake512>;
-} = /* @__PURE__ */ wrapConstructorWithOpts<Blake512, BlakeOpts>((opts) => new Blake384(opts));
+export const blake384: CHashO = /* @__PURE__ */ createHashWithOpts<Blake512, BlakeOpts>(
+  (opts) => new Blake384(opts)
+);
 /** blake1-512 hash function */
-export const blake512: {
-  (msg: Input, opts?: BlakeOpts | undefined): Uint8Array;
-  outputLen: number;
-  blockLen: number;
-  create(opts: BlakeOpts): Hash<Blake512>;
-} = /* @__PURE__ */ wrapConstructorWithOpts<Blake512, BlakeOpts>((opts) => new Blake512(opts));
+export const blake512: CHashO = /* @__PURE__ */ createHashWithOpts<Blake512, BlakeOpts>(
+  (opts) => new Blake512(opts)
+);

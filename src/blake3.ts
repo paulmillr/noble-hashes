@@ -13,18 +13,14 @@
  */
 import { abytes, aexists, anumber, aoutput } from './_assert.ts';
 import { BLAKE } from './_blake.ts';
+import { SHA256_IV } from './_md.ts';
 import { fromBig } from './_u64.ts';
-import { B2S_IV, compress } from './blake2s.ts';
+import { compress } from './blake2.ts';
+// prettier-ignore
 import {
-  byteSwap32,
-  type CHashXO,
-  type HashXOF,
-  type Input,
-  isLE,
-  toBytes,
-  u32,
-  u8,
-  wrapXOFConstructorWithOpts,
+  byteSwap32, wrapXOFConstructorWithOpts as createXOFWithOpts, isLE, toBytes,
+  u32, u8,
+  type CHashXO, type HashXOF, type Input,
 } from './utils.ts';
 
 // Flag bitset
@@ -37,6 +33,8 @@ const B3_Flags = {
   DERIVE_KEY_CONTEXT: 1 << 5,
   DERIVE_KEY_MATERIAL: 1 << 6,
 } as const;
+
+const B3_IV = SHA256_IV.slice();
 
 const SIGMA: Uint8Array = /* @__PURE__ */ (() => {
   const Id = Array.from({ length: 16 }, (_, i) => i);
@@ -78,6 +76,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     if (opts.key !== undefined && opts.context !== undefined)
       throw new Error('Blake3: only key or context can be specified at same time');
     else if (opts.key !== undefined) {
+      // abytes(opts.key);
       const key = toBytes(opts.key).slice();
       if (key.length !== 32) throw new Error('Blake3: key should be 32 byte');
       this.IV = u32(key);
@@ -85,13 +84,13 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
       this.flags = flags | B3_Flags.KEYED_HASH;
     } else if (opts.context !== undefined) {
       const context_key = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
-        .update(opts.context)
+        .update(toBytes(opts.context))
         .digest();
       this.IV = u32(context_key);
       if (!isLE) byteSwap32(this.IV);
       this.flags = flags | B3_Flags.DERIVE_KEY_MATERIAL;
     } else {
-      this.IV = B2S_IV.slice();
+      this.IV = B3_IV.slice();
       this.flags = flags;
     }
     this.state = this.IV.slice();
@@ -110,7 +109,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
       compress(
         SIGMA, bufPos, buf, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
-        B2S_IV[0], B2S_IV[1], B2S_IV[2], B2S_IV[3], h, l, pos, flags
+        B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], h, l, pos, flags
       );
     s[0] = v0 ^ v8;
     s[1] = v1 ^ v9;
@@ -187,7 +186,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
       compress(
         SIGMA, 0, buffer32, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
-        B2S_IV[0], B2S_IV[1], B2S_IV[2], B2S_IV[3], l, h, pos, flags
+        B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], l, h, pos, flags
       );
     out32[0] = v0 ^ v8;
     out32[1] = v1 ^ v9;
@@ -276,6 +275,6 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
  * const mac = blake3(data, { key: new Uint8Array(32) });
  * const kdf = blake3(data, { context: 'application name' });
  */
-export const blake3: CHashXO = /* @__PURE__ */ wrapXOFConstructorWithOpts<BLAKE3, Blake3Opts>(
+export const blake3: CHashXO = /* @__PURE__ */ createXOFWithOpts<BLAKE3, Blake3Opts>(
   (opts) => new BLAKE3(opts)
 );
