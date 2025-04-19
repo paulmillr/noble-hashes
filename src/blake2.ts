@@ -10,13 +10,14 @@ import * as u64 from './_u64.ts';
 import {
   byteSwapIfBE,
   type CHashO,
-  wrapConstructorWithOpts as createHashWithOpts,
+  clean,
+  createOptHasher as createHashWithOpts,
   toBytes,
   u32,
 } from './utils.ts';
 
 // Same as SHA512_IV, but swapped endianness: LE instead of BE. iv[1] is iv[0], etc.
-const B2B_IV = /* @__PURE__ */ new Uint32Array([
+const B2B_IV = /* @__PURE__ */ Uint32Array.from([
   0xf3bcc908, 0x6a09e667, 0x84caa73b, 0xbb67ae85, 0xfe94f82b, 0x3c6ef372, 0x5f1d36f1, 0xa54ff53a,
   0xade682d1, 0x510e527f, 0x2b3e6c1f, 0x9b05688c, 0xfb41bd6b, 0x1f83d9ab, 0x137e2179, 0x5be0cd19,
 ]);
@@ -205,11 +206,11 @@ export class BLAKE2b extends BLAKE<BLAKE2b> {
     this.v6h ^= BBUF[13] ^ BBUF[29];
     this.v7l ^= BBUF[14] ^ BBUF[30];
     this.v7h ^= BBUF[15] ^ BBUF[31];
-    BBUF.fill(0);
+    clean(BBUF);
   }
   destroy(): void {
     this.destroyed = true;
-    this.buffer32.fill(0);
+    clean(this.buffer32);
     this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   }
 }
@@ -335,7 +336,7 @@ export class BLAKE2s extends BLAKE<BLAKE2s> {
   }
   destroy(): void {
     this.destroyed = true;
-    this.buffer32.fill(0);
+    clean(this.buffer32);
     this.set(0, 0, 0, 0, 0, 0, 0, 0);
   }
 }

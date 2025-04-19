@@ -5,7 +5,7 @@
  */
 import { ahash, anumber } from './_assert.ts';
 import { hmac } from './hmac.ts';
-import { type CHash, type Input, toBytes } from './utils.ts';
+import { type CHash, clean, type Input, toBytes } from './utils.ts';
 
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`
@@ -23,8 +23,8 @@ export function extract(hash: CHash, ikm: Input, salt?: Input): Uint8Array {
   return hmac(hash, toBytes(salt), toBytes(ikm));
 }
 
-const HKDF_COUNTER = /* @__PURE__ */ new Uint8Array([0]);
-const EMPTY_BUFFER = /* @__PURE__ */ new Uint8Array();
+const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.from([0]);
+const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
 /**
  * HKDF-expand from the spec. The most important part. `HKDF-Expand(PRK, info, L) -> OKM`
@@ -58,8 +58,7 @@ export function expand(hash: CHash, prk: Input, info?: Input, length: number = 3
   }
   HMAC.destroy();
   HMACTmp.destroy();
-  T.fill(0);
-  HKDF_COUNTER.fill(0);
+  clean(T, HKDF_COUNTER);
   return okm.slice(0, length);
 }
 

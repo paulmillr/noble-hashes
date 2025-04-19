@@ -27,7 +27,8 @@ import { G1s, G2s, SIGMA } from './_blake.ts';
 import { setBigUint64, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
 import {
-  wrapConstructorWithOpts as createHashWithOpts,
+  clean,
+  createOptHasher as createHashWithOpts,
   createView,
   Hash,
   toBytes,
@@ -129,8 +130,7 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
   destroy(): void {
     this.destroyed = true;
     if (this.salt !== EMPTY_SALT) {
-      this.salt.fill(0);
-      this.constants.fill(0);
+      clean(this.salt, this.constants);
     }
   }
   _cloneInto(to?: T): T {
@@ -152,7 +152,7 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     this.finished = true;
     // Padding
     const { buffer, blockLen, counterLen, lengthFlag, view } = this;
-    buffer.subarray(this.pos).fill(0); // clean buf
+    clean(buffer.subarray(this.pos)); // clean buf
     const counter = BigInt((this.length + this.pos) * 8);
     const counterPos = blockLen - counterLen - 1;
     buffer[this.pos] |= 0b1000_0000; // End block flag
@@ -160,7 +160,7 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     // Not enough in buffer for length: write what we have.
     if (this.pos > counterPos) {
       this.compress(view, 0);
-      buffer.fill(0);
+      clean(buffer);
       this.pos = 0;
     }
     // Difference with md: here we have lengthFlag!
@@ -169,7 +169,7 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     setBigUint64(view, blockLen - 8, counter, false);
     this.compress(view, 0, this.pos !== 0); // don't add length if length is not empty block?
     // Write output
-    buffer.fill(0);
+    clean(buffer);
     const v = createView(out);
     const state = this.get();
     for (let i = 0; i < this.outputLen / 4; ++i) v.setUint32(i * 4, state[i]);
@@ -302,7 +302,7 @@ class Blake1_32 extends Blake1<Blake1_32> {
     this.v5 = (this.v5 ^ v05 ^ v13 ^ this.salt[1]) >>> 0;
     this.v6 = (this.v6 ^ v06 ^ v14 ^ this.salt[2]) >>> 0;
     this.v7 = (this.v7 ^ v07 ^ v15 ^ this.salt[3]) >>> 0;
-    BLAKE256_W.fill(0);
+    clean(BLAKE256_W);
   }
 }
 
@@ -493,8 +493,7 @@ class Blake1_64 extends Blake1<Blake1_64> {
     this.v6h ^= BBUF[13] ^ BBUF[29] ^ this.salt[5];
     this.v7l ^= BBUF[14] ^ BBUF[30] ^ this.salt[6];
     this.v7h ^= BBUF[15] ^ BBUF[31] ^ this.salt[7];
-    BBUF.fill(0);
-    BLAKE512_W.fill(0);
+    clean(BBUF, BLAKE512_W);
   }
 }
 

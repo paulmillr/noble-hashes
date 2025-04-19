@@ -7,6 +7,7 @@ import { hmac } from './hmac.ts';
 import {
   asyncLoop,
   checkOpts,
+  clean,
   createView,
   Hash,
   toBytes,
@@ -48,7 +49,7 @@ function pbkdf2Output<T extends Hash<T>>(
   PRF.destroy();
   PRFSalt.destroy();
   if (prfW) prfW.destroy();
-  u.fill(0);
+  clean(u);
   return DK;
 }
 

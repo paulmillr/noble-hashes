@@ -5,7 +5,7 @@
 import { abytes, aexists, anumber, aoutput } from './_assert.ts';
 // prettier-ignore
 import {
-  byteSwap32, byteSwapIfBE, Hash, isLE, rotr, toBytes, u32, type Input
+  byteSwap32, byteSwapIfBE, clean, Hash, isLE, rotr, toBytes, u32, type Input
 } from './utils.ts';
 
 /**
@@ -13,7 +13,7 @@ import {
  * For BLAKE2b, the two extra permutations for rounds 10 and 11 are SIGMA[10..11] = SIGMA[0..1].
  */
 // prettier-ignore
-export const SIGMA: Uint8Array = /* @__PURE__ */ new Uint8Array([
+export const SIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
   14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
   11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,
@@ -126,7 +126,7 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     const { pos, buffer32 } = this;
     this.finished = true;
     // Padding
-    this.buffer.subarray(pos).fill(0);
+    clean(this.buffer.subarray(pos));
     if (!isLE) byteSwap32(buffer32);
     this.compress(buffer32, 0, true);
     if (!isLE) byteSwap32(buffer32);

@@ -13,12 +13,13 @@ import { abytes, aexists, anumber, aoutput } from './_assert.ts';
 import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 import {
   byteSwap32,
+  clean,
+  createHasher,
+  createXOFer,
   Hash,
   isLE,
   toBytes,
   u32,
-  wrapConstructor,
-  wrapXOFConstructorWithOpts,
   type CHash,
   type CHashXO,
   type HashXOF,
@@ -100,10 +101,8 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
     s[0] ^= SHA3_IOTA_H[round];
     s[1] ^= SHA3_IOTA_L[round];
   }
-  B.fill(0);
+  clean(B);
 }
-
-export const abc = 1;
 
 /** Keccak sponge function. */
 export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
@@ -143,6 +142,9 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.state = new Uint8Array(200);
     this.state32 = u32(this.state);
   }
+  clone(): Keccak {
+    return this._cloneInto();
+  }
   protected keccak(): void {
     if (!isLE) byteSwap32(this.state32);
     keccakP(this.state32, this.rounds);
@@ -152,8 +154,9 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
   }
   update(data: Input): this {
     aexists(this);
-    const { blockLen, state } = this;
     data = toBytes(data);
+    abytes(data);
+    const { blockLen, state } = this;
     const len = data.length;
     for (let pos = 0; pos < len; ) {
       const take = Math.min(blockLen - this.pos, len - pos);
@@ -208,7 +211,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
   }
   destroy(): void {
     this.destroyed = true;
-    this.state.fill(0);
+    clean(this.state);
   }
   _cloneInto(to?: Keccak): Keccak {
     const { blockLen, suffix, outputLen, rounds, enableXOF } = this;
@@ -228,7 +231,7 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
 }
 
 const gen = (suffix: number, blockLen: number, outputLen: number) =>
-  wrapConstructor(() => new Keccak(blockLen, suffix, outputLen));
+  createHasher(() => new Keccak(blockLen, suffix, outputLen));
 
 /** SHA3-224 hash function. */
 export const sha3_224: CHash = /* @__PURE__ */ (() => gen(0x06, 144, 224 / 8))();
@@ -251,7 +254,7 @@ export const keccak_512: CHash = /* @__PURE__ */ (() => gen(0x01, 72, 512 / 8))(
 export type ShakeOpts = { dkLen?: number };
 
 const genShake = (suffix: number, blockLen: number, outputLen: number) =>
-  wrapXOFConstructorWithOpts<HashXOF<Keccak>, ShakeOpts>(
+  createXOFer<HashXOF<Keccak>, ShakeOpts>(
     (opts: ShakeOpts = {}) =>
       new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true)
   );

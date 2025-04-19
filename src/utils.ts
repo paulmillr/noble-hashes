@@ -29,6 +29,11 @@ export function u8(arr: TypedArray): Uint8Array {
 export function u32(arr: TypedArray): Uint32Array {
   return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
 }
+export function clean(...arrays: TypedArray[]): void {
+  for (let i = 0; i < arrays.length; i++) {
+    arrays[i].fill(0);
+  }
+}
 
 // Cast array to view
 export function createView(arr: TypedArray): DataView {
@@ -69,9 +74,9 @@ export function byteSwap32(arr: Uint32Array): void {
 }
 
 // Built-in hex conversion https://caniuse.com/mdn-javascript_builtins_uint8array_fromhex
-const hasHexBuiltin: boolean =
+const hasHexBuiltin: boolean = /* @__PURE__ */ (() =>
   // @ts-ignore
-  typeof Uint8Array.from([]).toHex === 'function' && typeof Uint8Array.fromHex === 'function';
+  typeof Uint8Array.from([]).toHex === 'function' && typeof Uint8Array.fromHex === 'function')();
 
 // Array where index 0xf0 (240) is mapped to string 'f0'
 const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
@@ -151,17 +156,25 @@ export async function asyncLoop(
   }
 }
 
-// Global symbols in both browsers and Node.js since v11
-// See https://github.com/microsoft/TypeScript/issues/31535
+// Global symbols, but ts doesn't see them: https://github.com/microsoft/TypeScript/issues/31535
 declare const TextEncoder: any;
+declare const TextDecoder: any;
 
 /**
- * Convert JS string to byte array.
- * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
+ * Converts string to bytes using UTF8 encoding.
+ * @example utf8ToBytes('abc') // Uint8Array.from([97, 98, 99])
  */
 export function utf8ToBytes(str: string): Uint8Array {
-  if (typeof str !== 'string') throw new Error('utf8ToBytes expected string, got ' + typeof str);
+  if (typeof str !== 'string') throw new Error('string expected');
   return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
+}
+
+/**
+ * Converts bytes to string using UTF8 encoding.
+ * @example bytesToUtf8(Uint8Array.from([97, 98, 99])) // 'abc'
+ */
+export function bytesToUtf8(bytes: Uint8Array): string {
+  return new TextDecoder().decode(bytes);
 }
 
 /** Accepted input of hash functions. Strings are converted to byte arrays. */
@@ -247,14 +260,14 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
 }
 
 /** Hash function */
-export type CHash = ReturnType<typeof wrapConstructor>;
+export type CHash = ReturnType<typeof createHasher>;
 /** Hash function with output */
-export type CHashO = ReturnType<typeof wrapConstructorWithOpts>;
+export type CHashO = ReturnType<typeof createOptHasher>;
 /** XOF with output */
-export type CHashXO = ReturnType<typeof wrapXOFConstructorWithOpts>;
+export type CHashXO = ReturnType<typeof createXOFer>;
 
 /** Wraps hash function, creating an interface on top of it */
-export function wrapConstructor<T extends Hash<T>>(
+export function createHasher<T extends Hash<T>>(
   hashCons: () => Hash<T>
 ): {
   (msg: Input): Uint8Array;
@@ -270,7 +283,7 @@ export function wrapConstructor<T extends Hash<T>>(
   return hashC;
 }
 
-export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
+export function createOptHasher<H extends Hash<H>, T extends Object>(
   hashCons: (opts?: T) => Hash<H>
 ): {
   (msg: Input, opts?: T): Uint8Array;
@@ -286,7 +299,7 @@ export function wrapConstructorWithOpts<H extends Hash<H>, T extends Object>(
   return hashC;
 }
 
-export function wrapXOFConstructorWithOpts<H extends HashXOF<H>, T extends Object>(
+export function createXOFer<H extends HashXOF<H>, T extends Object>(
   hashCons: (opts?: T) => HashXOF<H>
 ): {
   (msg: Input, opts?: T): Uint8Array;
@@ -301,6 +314,9 @@ export function wrapXOFConstructorWithOpts<H extends HashXOF<H>, T extends Objec
   hashC.create = (opts: T) => hashCons(opts);
   return hashC;
 }
+export const wrapConstructor: typeof createHasher = createHasher;
+export const wrapConstructorWithOpts: typeof createOptHasher = createOptHasher;
+export const wrapXOFConstructorWithOpts: typeof createXOFer = createXOFer;
 
 /** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
 export function randomBytes(bytesLength = 32): Uint8Array {

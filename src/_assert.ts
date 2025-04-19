@@ -31,7 +31,7 @@ export type Hash = {
 /** Asserts something is hash */
 function ahash(h: Hash): void {
   if (typeof h !== 'function' || typeof h.create !== 'function')
-    throw new Error('Hash should be wrapped by utils.wrapConstructor');
+    throw new Error('Hash should be wrapped by utils.createHasher');
   anumber(h.outputLen);
   anumber(h.blockLen);
 }
@@ -51,4 +51,4 @@ function aoutput(out: any, instance: any): void {
   }
 }
 
-export { anumber, abytes, ahash, aexists, aoutput };
+export { abytes, aexists, ahash, anumber, aoutput };

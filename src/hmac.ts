@@ -3,7 +3,7 @@
  * @module
  */
 import { abytes, aexists, ahash } from './_assert.ts';
-import { Hash, toBytes, type CHash, type Input } from './utils.ts';
+import { clean, Hash, toBytes, type CHash, type Input } from './utils.ts';
 
 export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   oHash: T;
@@ -33,7 +33,7 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     // Undo internal XOR && apply outer XOR
     for (let i = 0; i < pad.length; i++) pad[i] ^= 0x36 ^ 0x5c;
     this.oHash.update(pad);
-    pad.fill(0);
+    clean(pad);
   }
   update(buf: Input): this {
     aexists(this);

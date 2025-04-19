@@ -18,7 +18,9 @@ import { fromBig } from './_u64.ts';
 import { compress } from './blake2.ts';
 // prettier-ignore
 import {
-  byteSwap32, wrapXOFConstructorWithOpts as createXOFWithOpts, isLE, toBytes,
+  byteSwap32,
+  clean,
+  createXOFer as createXOFWithOpts, isLE, toBytes,
   u32, u8,
   type CHashXO, type HashXOF, type Input,
 } from './utils.ts';
@@ -170,11 +172,8 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   }
   destroy(): void {
     this.destroyed = true;
-    this.state.fill(0);
-    this.buffer32.fill(0);
-    this.IV.fill(0);
-    this.bufferOut32.fill(0);
-    for (let i of this.stack) i.fill(0);
+    clean(this.state, this.buffer32, this.IV, this.bufferOut32);
+    for (let i of this.stack) clean(i);
   }
   // Same as b2Compress, but doesn't modify state and returns 16 u32 array (instead of 8)
   private b2CompressOut() {
@@ -214,7 +213,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     if (this.finished) return;
     this.finished = true;
     // Padding
-    this.buffer.fill(0, this.pos);
+    clean(this.buffer.subarray(this.pos));
     // Process last chunk
     let flags = this.flags | B3_Flags.ROOT;
     if (this.stack.length) {

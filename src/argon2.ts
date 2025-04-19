@@ -8,15 +8,19 @@
  * * JS arrays do slow bound checks, so reading from `A2_BUF` slows it down
  * @module
  */
+import { abytes } from './_assert.ts';
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.ts';
 import { blake2b } from './blake2.ts';
-import { type Input, nextTick, toBytes, u32, u8 } from './utils.ts';
+import { clean, type Input, nextTick, toBytes, u32, u8 } from './utils.ts';
 
 const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];
 
 const ARGON2_SYNC_POINTS = 4;
-const toBytesOptional = (buf?: Input) => (buf !== undefined ? toBytes(buf) : new Uint8Array([]));
+const abytesOrZero = (buf?: Input) => {
+  if (buf === undefined) return Uint8Array.of();
+  return toBytes(buf);
+};
 
 // u32 * u32 = u64
 function mul(a: number, b: number) {
@@ -115,7 +119,7 @@ function block(x: Uint32Array, xPos: number, yPos: number, outPos: number, needX
 
   if (needXor) for (let i = 0; i < 256; i++) x[outPos + i] ^= A2_BUF[i] ^ x[xPos + i] ^ x[yPos + i];
   else for (let i = 0; i < 256; i++) x[outPos + i] = A2_BUF[i] ^ x[xPos + i] ^ x[yPos + i];
-  A2_BUF.fill(0);
+  clean(A2_BUF);
 }
 
 // Variable-Length Hash Function H'
@@ -141,8 +145,7 @@ function Hp(A: Uint32Array, dkLen: number) {
   }
   // Last block
   out.set(blake2b(V, { dkLen: dkLen - pos }), pos);
-  V.fill(0);
-  T.fill(0);
+  clean(V, T);
   return u32(out);
 }
 
@@ -222,6 +225,8 @@ function initOpts(opts: ArgonOpts) {
 function argon2Init(password: Input, salt: Input, type: Types, opts: ArgonOpts) {
   password = toBytes(password);
   salt = toBytes(salt);
+  abytes(password);
+  abytes(salt);
   if (!isUint32(password.length)) throw new Error('Argon2: password should be less than 4 GB');
   if (!isUint32(salt.length) || salt.length < 8)
     throw new Error('Argon2: salt should be at least 8 bytes and less than 4 GB');
@@ -230,8 +235,8 @@ function argon2Init(password: Input, salt: Input, type: Types, opts: ArgonOpts) 
     initOpts(opts);
 
   // Validation
-  key = toBytesOptional(key);
-  personalization = toBytesOptional(personalization);
+  key = abytesOrZero(key);
+  personalization = abytesOrZero(personalization);
   // H_0 = H^(64)(LE32(p) || LE32(T) || LE32(m) || LE32(t) ||
   //       LE32(v) || LE32(y) || LE32(length(P)) || P ||
   //       LE32(length(S)) || S ||  LE32(length(K)) || K ||
@@ -289,8 +294,7 @@ function argon2Init(password: Input, salt: Input, type: Types, opts: ArgonOpts) 
         onProgress(blockCnt / totalBlock);
     };
   }
-  BUF.fill(0);
-  H0.fill(0);
+  clean(BUF, H0);
   return { type, mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick };
 }
 
@@ -299,7 +303,7 @@ function argon2Output(B: Uint32Array, p: number, laneLen: number, dkLen: number)
   for (let l = 0; l < p; l++)
     for (let j = 0; j < 256; j++) B_final[j] ^= B[256 * (laneLen * l + laneLen - 1) + j];
   const res = u8(Hp(B_final, dkLen));
-  B_final.fill(0);
+  clean(B_final);
   return res;
 }
 
@@ -398,7 +402,7 @@ function argon2(type: Types, password: Input, salt: Input, opts: ArgonOpts) {
       }
     }
   }
-  address.fill(0);
+  clean(address);
   return argon2Output(B, p, laneLen, dkLen);
 }
 
@@ -471,7 +475,7 @@ async function argon2Async(type: Types, password: Input, salt: Input, opts: Argo
       }
     }
   }
-  address.fill(0);
+  clean(address);
   return argon2Output(B, p, laneLen, dkLen);
 }
 

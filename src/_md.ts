@@ -2,8 +2,8 @@
  * Internal Merkle-Damgard hash utils.
  * @module
  */
-import { aexists, aoutput } from './_assert.ts';
-import { type Input, Hash, createView, toBytes } from './utils.ts';
+import { abytes, aexists, aoutput } from './_assert.ts';
+import { type Input, Hash, clean, createView, toBytes } from './utils.ts';
 
 /** Polyfill for Safari 14. https://caniuse.com/mdn-javascript_builtins_dataview_setbiguint64 */
 export function setBigUint64(
@@ -68,8 +68,9 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
   }
   update(data: Input): this {
     aexists(this);
-    const { view, buffer, blockLen } = this;
     data = toBytes(data);
+    abytes(data);
+    const { view, buffer, blockLen } = this;
     const len = data.length;
     for (let pos = 0; pos < len; ) {
       const take = Math.min(blockLen - this.pos, len - pos);
@@ -102,7 +103,7 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     let { pos } = this;
     // append the bit '1' to the message
     buffer[pos++] = 0b10000000;
-    this.buffer.subarray(pos).fill(0);
+    clean(this.buffer.subarray(pos));
     // we have less than padOffset left in buffer, so we cannot put length in
     // current block, need process it and pad again
     if (this.padOffset > blockLen - pos) {

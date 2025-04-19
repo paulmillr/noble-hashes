@@ -5,7 +5,7 @@
 import { anumber } from './_assert.ts';
 import { pbkdf2 } from './pbkdf2.ts';
 import { sha256 } from './sha256.ts';
-import { asyncLoop, byteSwap32, checkOpts, type Input, isLE, rotl, u32 } from './utils.ts';
+import { asyncLoop, byteSwap32, checkOpts, clean, type Input, isLE, rotl, u32 } from './utils.ts';
 
 // The main Scrypt loop: uses Salsa extensively.
 // Six versions of the function were tried, this is the fastest one.
@@ -163,9 +163,7 @@ function scryptOutput(
   tmp: Uint32Array
 ) {
   const res = pbkdf2(sha256, password, B, { c: 1, dkLen });
-  B.fill(0);
-  V.fill(0);
-  tmp.fill(0);
+  clean(B, V, tmp);
   return res;
 }
 

@@ -9,10 +9,10 @@ Don't use them in a new protocol. What "weak" means:
  * @module
  */
 import { Chi, HashMD, Maj } from './_md.ts';
-import { type CHash, wrapConstructor as createHash, rotl } from './utils.ts';
+import { type CHash, clean, createHasher, rotl } from './utils.ts';
 
 /** Initial SHA1 state */
-const SHA1_IV = /* @__PURE__ */ new Uint32Array([
+const SHA1_IV = /* @__PURE__ */ Uint32Array.from([
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0,
 ]);
 
@@ -78,16 +78,16 @@ export class SHA1 extends HashMD<SHA1> {
     this.set(A, B, C, D, E);
   }
   protected roundClean(): void {
-    SHA1_W.fill(0);
+    clean(SHA1_W);
   }
   destroy(): void {
     this.set(0, 0, 0, 0, 0);
-    this.buffer.fill(0);
+    clean(this.buffer);
   }
 }
 
 /** SHA1 (RFC 3174) legacy hash function. It was cryptographically broken. */
-export const sha1: CHash = /* @__PURE__ */ createHash(() => new SHA1());
+export const sha1: CHash = /* @__PURE__ */ createHasher(() => new SHA1());
 
 /** Per-round constants */
 const p32 = /* @__PURE__ */ Math.pow(2, 32);
@@ -157,11 +157,11 @@ export class MD5 extends HashMD<MD5> {
     this.set(A, B, C, D);
   }
   protected roundClean(): void {
-    MD5_W.fill(0);
+    clean(MD5_W);
   }
   destroy(): void {
     this.set(0, 0, 0, 0);
-    this.buffer.fill(0);
+    clean(this.buffer);
   }
 }
 
@@ -174,11 +174,11 @@ export class MD5 extends HashMD<MD5> {
  * - Non-linear index selection: huge speed-up for unroll
  * - Per round constants: more memory accesses, additional speed-up for unroll
  */
-export const md5: CHash = /* @__PURE__ */ createHash(() => new MD5());
+export const md5: CHash = /* @__PURE__ */ createHasher(() => new MD5());
 
 // RIPEMD-160
 
-const Rho160 = /* @__PURE__ */ new Uint8Array([
+const Rho160 = /* @__PURE__ */ Uint8Array.from([
   7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
 ]);
 const Id160 = /* @__PURE__ */ (() => Uint8Array.from(new Array(16).fill(0).map((_, i) => i)))();
@@ -276,11 +276,11 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
     );
   }
   protected roundClean(): void {
-    BUF_160.fill(0);
+    clean(BUF_160);
   }
   destroy(): void {
     this.destroyed = true;
-    this.buffer.fill(0);
+    clean(this.buffer);
     this.set(0, 0, 0, 0, 0);
   }
 }
@@ -290,4 +290,4 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
  * * https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
  * * https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
  */
-export const ripemd160: CHash = /* @__PURE__ */ createHash(() => new RIPEMD160());
+export const ripemd160: CHash = /* @__PURE__ */ createHasher(() => new RIPEMD160());
