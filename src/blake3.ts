@@ -18,8 +18,9 @@ import { compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  byteSwap32, clean, createXOFer, isLE, toBytes, u32, u8,
-  type CHashXO, type HashXOF, type Input,
+  byteSwap32, clean, createXOFer, isLE,
+  u32, u8,
+  type CHashXO, type HashXOF
 } from './utils.ts';
 
 // Flag bitset
@@ -51,7 +52,7 @@ const SIGMA: Uint8Array = /* @__PURE__ */ (() => {
  * * `context`: string for KDF. Should be hardcoded, globally unique, and application - specific.
  *   A good default format for the context string is "[application] [commit timestamp] [purpose]".
  */
-export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
+export type Blake3Opts = { dkLen?: number; key?: Uint8Array; context?: Uint8Array };
 
 /** Blake3 hash. Can be used as MAC and KDF. */
 export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
@@ -71,19 +72,20 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   constructor(opts: Blake3Opts = {}, flags = 0) {
     const olen = opts.dkLen === undefined ? 32 : opts.dkLen;
     super(64, olen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
+    const { key, context } = opts;
     anumber(this.outputLen);
-    if (opts.key !== undefined && opts.context !== undefined)
-      throw new Error('Blake3: only key or context can be specified at same time');
-    else if (opts.key !== undefined) {
-      // abytes(opts.key);
-      const key = toBytes(opts.key).slice();
-      if (key.length !== 32) throw new Error('Blake3: key should be 32 byte');
-      this.IV = u32(key);
+    const hasContext = context != null;
+    if (key != null) {
+      if (hasContext) throw new Error('Blake3: only key or context can be specified at same time');
+      abytes(key, 32);
+      const k = key.slice();
+      this.IV = u32(k);
       if (!isLE) byteSwap32(this.IV);
       this.flags = flags | B3_Flags.KEYED_HASH;
-    } else if (opts.context !== undefined) {
+    } else if (hasContext) {
+      abytes(context);
       const context_key = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
-        .update(toBytes(opts.context))
+        .update(context)
         .digest();
       this.IV = u32(context_key);
       if (!isLE) byteSwap32(this.IV);

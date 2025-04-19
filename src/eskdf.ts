@@ -4,7 +4,7 @@
 import { hkdf } from './hkdf.ts';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.ts';
 import { scrypt as _scrypt } from './scrypt.ts';
-import { sha256 } from './sha256.ts';
+import { sha256 } from './sha2.ts';
 import { abytes, bytesToHex, clean, createView, hexToBytes, kdfInputToBytes } from './utils.ts';
 
 // A tiny KDF for various applications like AES key-gen.
@@ -16,12 +16,20 @@ const PBKDF2_FACTOR = 2 ** 17;
 
 // Scrypt KDF
 export function scrypt(password: string, salt: string): Uint8Array {
-  return _scrypt(password, salt, { N: SCRYPT_FACTOR, r: 8, p: 1, dkLen: 32 });
+  return _scrypt(kdfInputToBytes(password), kdfInputToBytes(salt), {
+    N: SCRYPT_FACTOR,
+    r: 8,
+    p: 1,
+    dkLen: 32,
+  });
 }
 
 // PBKDF2-HMAC-SHA256
 export function pbkdf2(password: string, salt: string): Uint8Array {
-  return _pbkdf2(sha256, password, salt, { c: PBKDF2_FACTOR, dkLen: 32 });
+  return _pbkdf2(sha256, kdfInputToBytes(password), kdfInputToBytes(salt), {
+    c: PBKDF2_FACTOR,
+    dkLen: 32,
+  });
 }
 
 // Combines two 32-byte byte arrays

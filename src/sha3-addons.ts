@@ -20,9 +20,8 @@ import {
   createXOFer,
   Hash,
   type HashXOF,
-  type Input,
-  toBytes,
   u32,
+  utf8ToBytes,
 } from './utils.ts';
 
 // cSHAKE && KMAC (NIST SP800-185)
@@ -53,13 +52,14 @@ function chooseLen(opts: ShakeOpts, outputLen: number): number {
   return opts.dkLen === undefined ? outputLen : opts.dkLen;
 }
 
-const abytesOrZero = (buf?: Input) => {
+const abytesOrZero = (buf?: Uint8Array) => {
   if (buf === undefined) return Uint8Array.of();
-  return toBytes(buf);
+  abytes(buf);
+  return buf;
 };
 // NOTE: second modulo is necessary since we don't need to add padding if current element takes whole block
 const getPadding = (len: number, block: number) => new Uint8Array((block - (len % block)) % block);
-export type cShakeOpts = ShakeOpts & { personalization?: Input; NISTfn?: Input };
+export type cShakeOpts = ShakeOpts & { personalization?: Uint8Array; NISTfn?: Uint8Array };
 
 // Personalization
 function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
@@ -86,17 +86,17 @@ const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
 
 // TODO: refactor
 export type ICShake = {
-  (msg: Input, opts?: cShakeOpts): Uint8Array;
+  (msg: Uint8Array, opts?: cShakeOpts): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(opts: cShakeOpts): HashXOF<Keccak>;
 };
 export type ITupleHash = {
-  (messages: Input[], opts?: cShakeOpts): Uint8Array;
+  (messages: Uint8Array[], opts?: cShakeOpts): Uint8Array;
   create(opts?: cShakeOpts): TupleHash;
 };
 export type IParHash = {
-  (message: Input, opts?: ParallelOpts): Uint8Array;
+  (message: Uint8Array, opts?: ParallelOpts): Uint8Array;
   create(opts?: ParallelOpts): ParallelHash;
 };
 export const cshake128: ICShake = /* @__PURE__ */ (() => gencShake(0x1f, 168, 128 / 8))();
@@ -107,12 +107,11 @@ export class KMAC extends Keccak implements HashXOF<KMAC> {
     blockLen: number,
     outputLen: number,
     enableXOF: boolean,
-    key: Input,
+    key: Uint8Array,
     opts: cShakeOpts = {}
   ) {
     super(blockLen, 0x1f, outputLen, enableXOF);
-    cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
-    key = toBytes(key);
+    cshakePers(this, { NISTfn: utf8ToBytes('KMAC'), personalization: opts.personalization });
     abytes(key);
     // 1. newX = bytepad(encode_string(K), 168) || X || right_encode(L).
     const blockLenBytes = leftEncode(this.blockLen);
@@ -142,28 +141,28 @@ export class KMAC extends Keccak implements HashXOF<KMAC> {
 }
 
 function genKmac(blockLen: number, outputLen: number, xof = false) {
-  const kmac = (key: Input, message: Input, opts?: cShakeOpts): Uint8Array =>
+  const kmac = (key: Uint8Array, message: Uint8Array, opts?: cShakeOpts): Uint8Array =>
     kmac.create(key, opts).update(message).digest();
-  kmac.create = (key: Input, opts: cShakeOpts = {}) =>
+  kmac.create = (key: Uint8Array, opts: cShakeOpts = {}) =>
     new KMAC(blockLen, chooseLen(opts, outputLen), xof, key, opts);
   return kmac;
 }
 
 export const kmac128: {
-  (key: Input, message: Input, opts?: cShakeOpts): Uint8Array;
-  create(key: Input, opts?: cShakeOpts): KMAC;
+  (key: Uint8Array, message: Uint8Array, opts?: cShakeOpts): Uint8Array;
+  create(key: Uint8Array, opts?: cShakeOpts): KMAC;
 } = /* @__PURE__ */ (() => genKmac(168, 128 / 8))();
 export const kmac256: {
-  (key: Input, message: Input, opts?: cShakeOpts): Uint8Array;
-  create(key: Input, opts?: cShakeOpts): KMAC;
+  (key: Uint8Array, message: Uint8Array, opts?: cShakeOpts): Uint8Array;
+  create(key: Uint8Array, opts?: cShakeOpts): KMAC;
 } = /* @__PURE__ */ (() => genKmac(136, 256 / 8))();
 export const kmac128xof: {
-  (key: Input, message: Input, opts?: cShakeOpts): Uint8Array;
-  create(key: Input, opts?: cShakeOpts): KMAC;
+  (key: Uint8Array, message: Uint8Array, opts?: cShakeOpts): Uint8Array;
+  create(key: Uint8Array, opts?: cShakeOpts): KMAC;
 } = /* @__PURE__ */ (() => genKmac(168, 128 / 8, true))();
 export const kmac256xof: {
-  (key: Input, message: Input, opts?: cShakeOpts): Uint8Array;
-  create(key: Input, opts?: cShakeOpts): KMAC;
+  (key: Uint8Array, message: Uint8Array, opts?: cShakeOpts): Uint8Array;
+  create(key: Uint8Array, opts?: cShakeOpts): KMAC;
 } = /* @__PURE__ */ (() => genKmac(136, 256 / 8, true))();
 
 // TupleHash
@@ -171,10 +170,9 @@ export const kmac256xof: {
 export class TupleHash extends Keccak implements HashXOF<TupleHash> {
   constructor(blockLen: number, outputLen: number, enableXOF: boolean, opts: cShakeOpts = {}) {
     super(blockLen, 0x1f, outputLen, enableXOF);
-    cshakePers(this, { NISTfn: 'TupleHash', personalization: opts.personalization });
+    cshakePers(this, { NISTfn: utf8ToBytes('TupleHash'), personalization: opts.personalization });
     // Change update after cshake processed
-    this.update = (data: Input) => {
-      data = toBytes(data);
+    this.update = (data: Uint8Array) => {
       abytes(data);
       super.update(leftEncode(_8n * BigInt(data.length)));
       super.update(data);
@@ -196,7 +194,7 @@ export class TupleHash extends Keccak implements HashXOF<TupleHash> {
 }
 
 function genTuple(blockLen: number, outputLen: number, xof = false) {
-  const tuple = (messages: Input[], opts?: cShakeOpts): Uint8Array => {
+  const tuple = (messages: Uint8Array[], opts?: cShakeOpts): Uint8Array => {
     const h = tuple.create(opts);
     for (const msg of messages) h.update(msg);
     return h.digest();
@@ -232,7 +230,10 @@ export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
     opts: ParallelOpts = {}
   ) {
     super(blockLen, 0x1f, outputLen, enableXOF);
-    cshakePers(this, { NISTfn: 'ParallelHash', personalization: opts.personalization });
+    cshakePers(this, {
+      NISTfn: utf8ToBytes('ParallelHash'),
+      personalization: opts.personalization,
+    });
     this.leafCons = leafCons;
     let { blockLen: B } = opts;
     B ||= 8;
@@ -240,8 +241,7 @@ export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
     this.chunkLen = B;
     super.update(leftEncode(B));
     // Change update after cshake processed
-    this.update = (data: Input) => {
-      data = toBytes(data);
+    this.update = (data: Uint8Array) => {
       abytes(data);
       const { chunkLen, leafCons } = this;
       for (let pos = 0, len = data.length; pos < len; ) {
@@ -294,7 +294,7 @@ function genPrl(
   leaf: ReturnType<typeof gencShake>,
   xof = false
 ) {
-  const parallel = (message: Input, opts?: ParallelOpts): Uint8Array =>
+  const parallel = (message: Uint8Array, opts?: ParallelOpts): Uint8Array =>
     parallel.create(opts).update(message).digest();
   parallel.create = (opts: ParallelOpts = {}) =>
     new ParallelHash(
@@ -347,7 +347,7 @@ function rightEncodeK12(n: number | bigint): Uint8Array {
   return Uint8Array.from(res);
 }
 
-export type KangarooOpts = { dkLen?: number; personalization?: Input };
+export type KangarooOpts = { dkLen?: number; personalization?: Uint8Array };
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
 export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
@@ -368,8 +368,7 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
     this.leafLen = leafLen;
     this.personalization = abytesOrZero(opts.personalization);
   }
-  update(data: Input): this {
-    data = toBytes(data);
+  update(data: Uint8Array): this {
     abytes(data);
     const { chunkLen, blockLen, leafLen, rounds } = this;
     for (let pos = 0, len = data.length; pos < len; ) {
@@ -459,12 +458,12 @@ export class KeccakPRG extends Keccak {
     this.pos = 0;
     this.posOut = 0;
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     super.update(data);
     this.posOut = this.blockLen;
     return this;
   }
-  feed(data: Input): this {
+  feed(data: Uint8Array): this {
     return this.update(data);
   }
   protected finish(): void {}

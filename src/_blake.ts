@@ -6,7 +6,8 @@
 import {
   abytes, aexists, anumber, aoutput,
   byteSwap32, byteSwapIfBE, clean,
-  Hash, isLE, rotr, toBytes, u32, type Input,
+  Hash, isLE, rotr,
+  u32
 } from './utils.ts';
 
 /**
@@ -37,9 +38,9 @@ export const SIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
 /** Blake hash options. dkLen is output length. key is used in MAC mode. salt is used in KDF mode. */
 export type BlakeOpts = {
   dkLen?: number;
-  key?: Input;
-  salt?: Input;
-  personalization?: Input;
+  key?: Uint8Array;
+  salt?: Uint8Array;
+  personalization?: Uint8Array;
 };
 
 /** Class, from which others are subclassed. */
@@ -81,9 +82,8 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     this.buffer = new Uint8Array(blockLen);
     this.buffer32 = u32(this.buffer);
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
