@@ -253,32 +253,21 @@ export type IHash = {
   create: any;
 };
 
-/** For runtime check if class implements interface */
-export abstract class Hash<T extends Hash<T>> {
-  abstract blockLen: number; // Bytes per block
-  abstract outputLen: number; // Bytes in output
-  abstract update(buf: Uint8Array): this;
-  // Writes digest into buf
-  abstract digestInto(buf: Uint8Array): void;
-  abstract digest(): Uint8Array;
-  /**
-   * Resets internal state. Makes Hash instance unusable.
-   * Reset is impossible for keyed hashes if key is consumed into state. If digest is not consumed
-   * by user, they will need to manually call `destroy()` when zeroing is necessary.
-   */
-  abstract destroy(): void;
-  /**
-   * Clones hash instance. Unsafe: doesn't check whether `to` is valid. Can be used as `clone()`
-   * when no options are passed.
-   * Reasons to use `_cloneInto` instead of clone: 1) performance 2) reuse instance => all internal
-   * buffers are overwritten => causes buffer overwrite which is used for digest in some cases.
-   * There are no guarantees for clean-up because it's impossible in JS.
-   */
-  abstract _cloneInto(to?: T): T;
-  // Safe version that clones internal state
-  clone(): T {
-    return this._cloneInto();
-  }
+/**
+ * All hashes should implement Hash interface.
+ * * _cloneInto is unsafe internal version of clone made for performance / reusing instances
+ * * destroy resets internal state and makes instance unustable. Not available for keyed hashes when
+ *   key was consumed into state.
+ */
+export interface Hash<T extends Hash<T>> {
+  blockLen: number; // Bytes per block
+  outputLen: number; // Bytes in output
+  update(buf: Uint8Array): this;
+  digestInto(buf: Uint8Array): void;
+  digest(): Uint8Array;
+  destroy(): void;
+  _cloneInto(to?: T): T;
+  clone(): T;
 }
 
 /**

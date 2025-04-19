@@ -2,9 +2,9 @@
  * HMAC: RFC2104 message authentication code.
  * @module
  */
-import { abytes, aexists, ahash, clean, Hash, type CHash } from './utils.ts';
+import { abytes, aexists, ahash, clean, type CHash, type Hash } from './utils.ts';
 
-export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
+export class HMAC<T extends Hash<T>> implements Hash<HMAC<T>> {
   oHash: T;
   iHash: T;
   blockLen: number;
@@ -13,7 +13,6 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   private destroyed = false;
 
   constructor(hash: CHash, _key: Uint8Array) {
-    super();
     ahash(hash);
     abytes(_key);
     const key = _key;
@@ -71,6 +70,9 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     this.destroyed = true;
     this.oHash.destroy();
     this.iHash.destroy();
+  }
+  clone(): HMAC<T> {
+    return this._cloneInto();
   }
 }
 

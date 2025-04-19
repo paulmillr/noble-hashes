@@ -18,7 +18,7 @@ import {
   type CHashXO,
   createOptHasher,
   createXOFer,
-  Hash,
+  type Hash,
   type HashXOF,
   u32,
   utf8ToBytes,

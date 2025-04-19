@@ -6,7 +6,7 @@
 import {
   abytes, aexists, anumber, aoutput,
   byteSwap32, byteSwapIfBE, clean,
-  Hash, isLE, rotr,
+  type Hash, isLE, rotr,
   u32
 } from './utils.ts';
 
@@ -44,7 +44,7 @@ export type BlakeOpts = {
 };
 
 /** Class, from which others are subclassed. */
-export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
+export abstract class BLAKE<T extends BLAKE<T>> implements Hash<T> {
   protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
@@ -66,7 +66,6 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     saltLen: number,
     persLen: number
   ) {
-    super();
     anumber(blockLen);
     anumber(outputLen);
     anumber(keyLen);
@@ -153,6 +152,9 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     to.buffer.set(buffer);
     to.pos = pos;
     return to;
+  }
+  clone(): T {
+    return this._cloneInto();
   }
 }
 

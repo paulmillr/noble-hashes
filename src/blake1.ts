@@ -29,8 +29,9 @@ import * as u64 from './_u64.ts';
 import {
   abytes, aexists, aoutput,
   clean, createOptHasher,
-  createView, Hash,
-  type CHashO
+  createView,
+  type CHashO,
+  type Hash
 } from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */
@@ -41,7 +42,7 @@ export type BlakeOpts = {
 // Empty zero-filled salt
 const EMPTY_SALT = /* @__PURE__ */ new Uint32Array(8);
 
-abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
+abstract class Blake1<T extends Blake1<T>> implements Hash<T> {
   protected finished = false;
   protected length = 0;
   protected pos = 0;
@@ -69,7 +70,6 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     constants: Uint32Array,
     opts: BlakeOpts = {}
   ) {
-    super();
     const { salt } = opts;
     this.blockLen = blockLen;
     this.outputLen = outputLen;
@@ -175,6 +175,9 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     const res = buffer.slice(0, outputLen);
     this.destroy();
     return res;
+  }
+  clone(): T {
+    return this._cloneInto();
   }
 }
 

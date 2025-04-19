@@ -2,7 +2,7 @@
  * Internal Merkle-Damgard hash utils.
  * @module
  */
-import { Hash, abytes, aexists, aoutput, clean, createView } from './utils.ts';
+import { type Hash, abytes, aexists, aoutput, clean, createView } from './utils.ts';
 
 /** Polyfill for Safari 14. https://caniuse.com/mdn-javascript_builtins_dataview_setbiguint64 */
 export function setBigUint64(
@@ -36,7 +36,7 @@ export function Maj(a: number, b: number, c: number): number {
  * Merkle-Damgard hash construction base class.
  * Could be used to create MD5, RIPEMD, SHA1, SHA2.
  */
-export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
+export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
   protected abstract process(buf: DataView, offset: number): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
@@ -57,7 +57,6 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
   protected destroyed = false;
 
   constructor(blockLen: number, outputLen: number, padOffset: number, isLE: boolean) {
-    super();
     this.blockLen = blockLen;
     this.outputLen = outputLen;
     this.padOffset = padOffset;
@@ -141,6 +140,9 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     to.destroyed = destroyed;
     if (length % blockLen) to.buffer.set(buffer);
     return to;
+  }
+  clone(): T {
+    return this._cloneInto();
   }
 }
 
