@@ -2,8 +2,11 @@
  * Internal helpers for blake hash.
  * @module
  */
-import { aexists, anumber, aoutput } from './_assert.ts';
-import { type Input, byteSwap32, byteSwapIfBE, Hash, isLE, toBytes, u32 } from './utils.ts';
+import { abytes, aexists, anumber, aoutput } from './_assert.ts';
+// prettier-ignore
+import {
+  byteSwap32, byteSwapIfBE, Hash, isLE, rotr, toBytes, u32, type Input
+} from './utils.ts';
 
 /**
  * Internal blake variable.
@@ -79,12 +82,13 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
   }
   update(data: Input): this {
     aexists(this);
+    data = toBytes(data);
+    abytes(data);
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
     // is the next one. This significantly complicates logic and reduces ability
     // to do zero-copy processing
     const { blockLen, buffer, buffer32 } = this;
-    data = toBytes(data);
     const len = data.length;
     const offset = data.byteOffset;
     const buf = data.buffer;
@@ -149,4 +153,24 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     to.pos = pos;
     return to;
   }
+}
+
+// prettier-ignore
+export type Num4 = { a: number; b: number; c: number; d: number; };
+
+// Mixing function G splitted in two halfs
+export function G1s(a: number, b: number, c: number, d: number, x: number): Num4 {
+  a = (a + b + x) | 0;
+  d = rotr(d ^ a, 16);
+  c = (c + d) | 0;
+  b = rotr(b ^ c, 12);
+  return { a, b, c, d };
+}
+
+export function G2s(a: number, b: number, c: number, d: number, x: number): Num4 {
+  a = (a + b + x) | 0;
+  d = rotr(d ^ a, 8);
+  c = (c + d) | 0;
+  b = rotr(b ^ c, 7);
+  return { a, b, c, d };
 }
