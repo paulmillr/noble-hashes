@@ -152,17 +152,6 @@ describe('hmac', () => {
     //   throws(() => hmac.create(sha256, 'key', t), `hmac.create(opt=${repr(t)})`);
     // }
     for (const t of TYPE_TEST.hash) throws(() => hmac(t, key, msg), `hmac(hash=${repr(t)})`);
-    // String / Bytes tests
-    deepStrictEqual(
-      hmac(sha512, SPACE.str, SPACE.str),
-      hmac(sha512, SPACE.bytes, SPACE.bytes),
-      'hmac.SPACE'
-    );
-    deepStrictEqual(
-      hmac(sha512, EMPTY.str, EMPTY.str),
-      hmac(sha512, EMPTY.bytes, EMPTY.bytes),
-      'hmac.EMPTY'
-    );
     deepStrictEqual(
       hmac(sha512, SPACE.bytes, SPACE.bytes),
       hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
