@@ -25,16 +25,18 @@ import {
   type Input,
 } from './utils.ts';
 
+// No __PURE__ annotations in sha3 header:
+// EVERYTHING is in fact used on every export.
 // Various per round constants calculations
+const _0n = BigInt(0);
+const _1n = BigInt(1);
+const _2n = BigInt(2);
+const _7n = BigInt(7);
+const _256n = BigInt(256);
+const _0x71n = BigInt(0x71);
 const SHA3_PI: number[] = [];
 const SHA3_ROTL: number[] = [];
 const _SHA3_IOTA: bigint[] = [];
-const _0n = /* @__PURE__ */ BigInt(0);
-const _1n = /* @__PURE__ */ BigInt(1);
-const _2n = /* @__PURE__ */ BigInt(2);
-const _7n = /* @__PURE__ */ BigInt(7);
-const _256n = /* @__PURE__ */ BigInt(256);
-const _0x71n = /* @__PURE__ */ BigInt(0x71);
 for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
   // Pi
   [x, y] = [y, (2 * x + 3 * y) % 5];
@@ -49,7 +51,9 @@ for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
   }
   _SHA3_IOTA.push(t);
 }
-const [SHA3_IOTA_H, SHA3_IOTA_L] = /* @__PURE__ */ split(_SHA3_IOTA, true);
+const IOTAS = split(_SHA3_IOTA, true);
+const SHA3_IOTA_H = IOTAS[0];
+const SHA3_IOTA_L = IOTAS[1];
 
 // Left rotation (without 0, 32, 64)
 const rotlH = (h: number, l: number, s: number) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
@@ -98,6 +102,8 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
   }
   B.fill(0);
 }
+
+export const abc = 1;
 
 /** Keccak sponge function. */
 export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
@@ -225,22 +231,22 @@ const gen = (suffix: number, blockLen: number, outputLen: number) =>
   wrapConstructor(() => new Keccak(blockLen, suffix, outputLen));
 
 /** SHA3-224 hash function. */
-export const sha3_224: CHash = /* @__PURE__ */ gen(0x06, 144, 224 / 8);
+export const sha3_224: CHash = /* @__PURE__ */ (() => gen(0x06, 144, 224 / 8))();
 /** SHA3-256 hash function. Different from keccak-256. */
-export const sha3_256: CHash = /* @__PURE__ */ gen(0x06, 136, 256 / 8);
+export const sha3_256: CHash = /* @__PURE__ */ (() => gen(0x06, 136, 256 / 8))();
 /** SHA3-384 hash function. */
-export const sha3_384: CHash = /* @__PURE__ */ gen(0x06, 104, 384 / 8);
+export const sha3_384: CHash = /* @__PURE__ */ (() => gen(0x06, 104, 384 / 8))();
 /** SHA3-512 hash function. */
-export const sha3_512: CHash = /* @__PURE__ */ gen(0x06, 72, 512 / 8);
+export const sha3_512: CHash = /* @__PURE__ */ (() => gen(0x06, 72, 512 / 8))();
 
 /** keccak-224 hash function. */
-export const keccak_224: CHash = /* @__PURE__ */ gen(0x01, 144, 224 / 8);
+export const keccak_224: CHash = /* @__PURE__ */ (() => gen(0x01, 144, 224 / 8))();
 /** keccak-256 hash function. Different from SHA3-256. */
-export const keccak_256: CHash = /* @__PURE__ */ gen(0x01, 136, 256 / 8);
+export const keccak_256: CHash = /* @__PURE__ */ (() => gen(0x01, 136, 256 / 8))();
 /** keccak-384 hash function. */
-export const keccak_384: CHash = /* @__PURE__ */ gen(0x01, 104, 384 / 8);
+export const keccak_384: CHash = /* @__PURE__ */ (() => gen(0x01, 104, 384 / 8))();
 /** keccak-512 hash function. */
-export const keccak_512: CHash = /* @__PURE__ */ gen(0x01, 72, 512 / 8);
+export const keccak_512: CHash = /* @__PURE__ */ (() => gen(0x01, 72, 512 / 8))();
 
 export type ShakeOpts = { dkLen?: number };
 
@@ -251,6 +257,6 @@ const genShake = (suffix: number, blockLen: number, outputLen: number) =>
   );
 
 /** SHAKE128 XOF with 128-bit security. */
-export const shake128: CHashXO = /* @__PURE__ */ genShake(0x1f, 168, 128 / 8);
+export const shake128: CHashXO = /* @__PURE__ */ (() => genShake(0x1f, 168, 128 / 8))();
 /** SHAKE256 XOF with 256-bit security. */
-export const shake256: CHashXO = /* @__PURE__ */ genShake(0x1f, 136, 256 / 8);
+export const shake256: CHashXO = /* @__PURE__ */ (() => genShake(0x1f, 136, 256 / 8))();
