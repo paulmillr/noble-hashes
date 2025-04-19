@@ -114,7 +114,8 @@ describe('blake', () => {
         exp: '88cc11889bbbee42095337fe2153c591971f94fbf8fe540d3c7e9f1700ab2d0c',
       },
     ];
-    for (const { input, salt: salts, exp } of VECTORS) {
+    for (const { input: inp, salt: salts, exp } of VECTORS) {
+      const input = utf8ToBytes(inp);
       const salt = utf8ToBytes(salts);
       deepStrictEqual(bytesToHex(blake256.create({ salt }).update(input).digest()), exp);
     }
@@ -262,12 +263,12 @@ describe('blake', () => {
         const res_hash = blake3(pattern(0xfa, v.input_len), { dkLen: v.hash.length / 2 });
         deepStrictEqual(bytesToHex(res_hash), v.hash, `Blake3 ${i} (hash)`);
         const res_keyed = blake3(pattern(0xfa, v.input_len), {
-          key: blake3_vectors.key,
+          key: utf8ToBytes(blake3_vectors.key),
           dkLen: v.hash.length / 2,
         });
         deepStrictEqual(bytesToHex(res_keyed), v.keyed_hash, `Blake3 ${i} (keyed)`);
         const res_derive = blake3(pattern(0xfa, v.input_len), {
-          context: blake3_vectors.context_string,
+          context: utf8ToBytes(blake3_vectors.context_string),
           dkLen: v.hash.length / 2,
         });
         deepStrictEqual(bytesToHex(res_derive), v.derive_key, `Blake3 ${i} (derive)`);

@@ -179,18 +179,19 @@ describe('hkdf', () => {
   }
 
   should('HKDF types', () => {
-    hkdf(sha256, '', '', '', 32);
-    hkdf(sha256, '', '', '', 8160);
-    throws(() => hkdf(sha256, '', '', '', 8160 + 1), `hkdf.dkLen(8160 + 1)`);
-    hkdf(sha512, '', '', '', 16320);
-    throws(() => hkdf(sha512, '', '', '', 16320 + 1), `hkdf.dkLen(16320 + 1)`);
+    const e = EMPTY.bytes;
+    hkdf(sha256, e, e, e, 32);
+    hkdf(sha256, e, e, e, 8160);
+    throws(() => hkdf(sha256, e, e, e, 8160 + 1), `hkdf.dkLen(8160 + 1)`);
+    hkdf(sha512, e, e, e, 16320);
+    throws(() => hkdf(sha512, e, e, e, 16320 + 1), `hkdf.dkLen(16320 + 1)`);
     for (const t of TYPE_TEST.int) {
-      throws(() => hkdf(sha256, '', '', '', t), `hkdf.dkLen(${repr(t)})`);
+      throws(() => hkdf(sha256, e, e, e, t), `hkdf.dkLen(${repr(t)})`);
     }
     for (const t of TYPE_TEST.bytes) {
-      throws(() => hkdf(sha256, t, '', '', 32), `hkdf.ikm(${repr(t)})`);
-      throws(() => hkdf(sha256, '', t, '', 32), `hkdf.salt(${repr(t)})`);
-      throws(() => hkdf(sha256, '', '', t, 32), `hkdf.info(${repr(t)})`);
+      throws(() => hkdf(sha256, t, e, e, 32), `hkdf.ikm(${repr(t)})`);
+      throws(() => hkdf(sha256, e, t, e, 32), `hkdf.salt(${repr(t)})`);
+      throws(() => hkdf(sha256, e, e, t, 32), `hkdf.info(${repr(t)})`);
     }
     // for (const t of TYPE_TEST.opts)
     //   throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${repr(t)})`);
@@ -207,6 +208,8 @@ describe('hkdf', () => {
       hkdf(sha256, EMPTY.bytes, EMPTY.bytes, EMPTY.bytes),
       'hkdf.EMPTY'
     );
+    throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
+    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), `hkdf(hash=${repr(t)})`);
   });
 });
 

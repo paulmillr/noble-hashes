@@ -175,7 +175,11 @@ describe('sha3-addons', () => {
     for (let i = 0; i < CSHAKE_VESTORS.length; i++) {
       const v = CSHAKE_VESTORS[i];
       deepStrictEqual(
-        v.fn(v.data, { personalization: v.personalization, NISTfn: v.NISTfn, dkLen: v.dkLen }),
+        v.fn(v.data, {
+          personalization: utf8ToBytes(v.personalization),
+          NISTfn: utf8ToBytes(v.NISTfn),
+          dkLen: v.dkLen,
+        }),
         v.output,
         `cSHAKE ${i}`
       );
@@ -186,7 +190,7 @@ describe('sha3-addons', () => {
     for (let i = 0; i < KMAC_VECTORS.length; i++) {
       const v = KMAC_VECTORS[i];
       deepStrictEqual(
-        v.fn(v.key, v.data, { personalization: v.personalization, dkLen: v.dkLen }),
+        v.fn(v.key, v.data, { personalization: utf8ToBytes(v.personalization), dkLen: v.dkLen }),
         v.output,
         `KMAC ${i}`
       );
@@ -197,7 +201,7 @@ describe('sha3-addons', () => {
     for (let i = 0; i < TUPLE_VECTORS.length; i++) {
       const v = TUPLE_VECTORS[i];
       deepStrictEqual(
-        v.fn(v.data, { personalization: v.personalization, dkLen: v.dkLen }),
+        v.fn(v.data, { personalization: utf8ToBytes(v.personalization), dkLen: v.dkLen }),
         v.output,
         `tuplehash ${i}`
       );
@@ -208,7 +212,11 @@ describe('sha3-addons', () => {
     for (let i = 0; i < PARALLEL_VECTORS.length; i++) {
       const v = PARALLEL_VECTORS[i];
       deepStrictEqual(
-        v.fn(v.data, { personalization: v.personalization, dkLen: v.dkLen, blockLen: v.blockLen }),
+        v.fn(v.data, {
+          personalization: utf8ToBytes(v.personalization),
+          dkLen: v.dkLen,
+          blockLen: v.blockLen,
+        }),
         v.output,
         `parallelhash ${i}`
       );

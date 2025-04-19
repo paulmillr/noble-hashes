@@ -7,6 +7,7 @@ import { ripemd160 } from '../esm/legacy.js';
 import { sha256, sha512 } from '../esm/sha2.js';
 import { k12, kmac256 } from '../esm/sha3-addons.js';
 import { sha3_256, shake256 } from '../esm/sha3.js';
+import { utf8ToBytes } from '../esm/utils.js';
 
 // small -- minimal personalization options, big -- all personalization options
 // test that clone works correctly if "to" is same class instance but with completely different personalization
@@ -67,7 +68,7 @@ const HASHES = {
   blake3: {
     small: () => blake3.create(),
     // derive has different IV
-    big: () => blake3.create({ context: 'someContext', dkLen: 256 }),
+    big: () => blake3.create({ context: utf8ToBytes('someContext'), dkLen: 256 }),
   },
 };
 
