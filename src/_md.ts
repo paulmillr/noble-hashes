@@ -136,10 +136,10 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     to ||= new (this.constructor as any)() as T;
     to.set(...this.get());
     const { blockLen, buffer, length, finished, destroyed, pos } = this;
+    to.destroyed = destroyed;
+    to.finished = finished;
     to.length = length;
     to.pos = pos;
-    to.finished = finished;
-    to.destroyed = destroyed;
     if (length % blockLen) to.buffer.set(buffer);
     return to;
   }

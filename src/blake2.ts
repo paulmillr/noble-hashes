@@ -186,13 +186,13 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     const { buffer, length, finished, destroyed, outputLen, pos } = this;
     to ||= new (this.constructor as any)({ dkLen: outputLen }) as T;
     to.set(...this.get());
-    to.length = length;
-    to.finished = finished;
+    to.buffer.set(buffer);
     to.destroyed = destroyed;
+    to.finished = finished;
+    to.length = length;
+    to.pos = pos;
     // @ts-ignore
     to.outputLen = outputLen;
-    to.buffer.set(buffer);
-    to.pos = pos;
     return to;
   }
   clone(): T {

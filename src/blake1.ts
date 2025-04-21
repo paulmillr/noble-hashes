@@ -134,13 +134,13 @@ abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
     to ||= new (this.constructor as any)() as T;
     to.set(...this.get());
     const { buffer, length, finished, destroyed, constants, salt, pos } = this;
+    to.buffer.set(buffer);
+    to.constants = constants.slice();
+    to.destroyed = destroyed;
+    to.finished = finished;
     to.length = length;
     to.pos = pos;
-    to.finished = finished;
-    to.destroyed = destroyed;
-    to.constants = constants.slice();
     to.salt = salt.slice();
-    to.buffer.set(buffer);
     return to;
   }
   clone(): T {

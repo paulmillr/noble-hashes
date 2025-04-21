@@ -317,13 +317,13 @@ export class SHA384 extends SHA512 {
  */
 
 /** SHA512/224 IV */
-const T224_IV = Uint32Array.from([
+const T224_IV = /* @__PURE__ */ Uint32Array.from([
   0x8c3d37c8, 0x19544da2, 0x73e19966, 0x89dcd4d6, 0x1dfab7ae, 0x32ff9c82, 0x679dd514, 0x582f9fcf,
   0x0f6d2b69, 0x7bd44da8, 0x77e36f73, 0x04c48942, 0x3f9d85a8, 0x6a1d36c8, 0x1112e6ad, 0x91d692a1,
 ]);
 
 /** SHA512/256 IV */
-const T256_IV = Uint32Array.from([
+const T256_IV = /* @__PURE__ */ Uint32Array.from([
   0x22312194, 0xfc2bf72c, 0x9f555fa3, 0xc84c64c2, 0x2393b86b, 0x6f53b151, 0x96387719, 0x5940eabd,
   0x96283ee2, 0xa88effe3, 0xbe5e1e25, 0x53863992, 0x2b0199fc, 0x2c85b8aa, 0x0eb72ddc, 0x81c52ca2,
 ]);
