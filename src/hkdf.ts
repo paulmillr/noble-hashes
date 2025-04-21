@@ -35,11 +35,12 @@ const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 export function expand(hash: CHash, prk: Input, info?: Input, length: number = 32): Uint8Array {
   ahash(hash);
   anumber(length);
-  if (length > 255 * hash.outputLen) throw new Error('Length should be <= 255*HashLen');
-  const blocks = Math.ceil(length / hash.outputLen);
+  const olen = hash.outputLen;
+  if (length > 255 * olen) throw new Error('Length should be <= 255*HashLen');
+  const blocks = Math.ceil(length / olen);
   if (info === undefined) info = EMPTY_BUFFER;
   // first L(ength) octets of T
-  const okm = new Uint8Array(blocks * hash.outputLen);
+  const okm = new Uint8Array(blocks * olen);
   // Re-use HMAC instance between blocks
   const HMAC = hmac.create(hash, prk);
   const HMACTmp = HMAC._cloneInto();
@@ -52,7 +53,7 @@ export function expand(hash: CHash, prk: Input, info?: Input, length: number = 3
       .update(info)
       .update(HKDF_COUNTER)
       .digestInto(T);
-    okm.set(T, hash.outputLen * counter);
+    okm.set(T, olen * counter);
     HMAC._cloneInto(HMACTmp);
   }
   HMAC.destroy();
