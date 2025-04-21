@@ -143,6 +143,9 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     if (length % blockLen) to.buffer.set(buffer);
     return to;
   }
+  clone(): T {
+    return this._cloneInto();
+  }
 }
 
 /**

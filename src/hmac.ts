@@ -66,6 +66,9 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     to.iHash = iHash._cloneInto(to.iHash);
     return to;
   }
+  clone(): HMAC<T> {
+    return this._cloneInto();
+  }
   destroy(): void {
     this.destroyed = true;
     this.oHash.destroy();

@@ -309,9 +309,7 @@ export abstract class Hash<T extends Hash<T>> {
    */
   abstract _cloneInto(to?: T): T;
   // Safe version that clones internal state
-  clone(): T {
-    return this._cloneInto();
-  }
+  abstract clone(): T;
 }
 
 /**
