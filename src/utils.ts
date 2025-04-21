@@ -355,13 +355,13 @@ export function createOptHasher<H extends Hash<H>, T extends Object>(
   (msg: Input, opts?: T): Uint8Array;
   outputLen: number;
   blockLen: number;
-  create(opts: T): Hash<H>;
+  create(opts?: T): Hash<H>;
 } {
   const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
-  hashC.create = (opts: T) => hashCons(opts);
+  hashC.create = (opts?: T) => hashCons(opts);
   return hashC;
 }
 
@@ -371,13 +371,13 @@ export function createXOFer<H extends HashXOF<H>, T extends Object>(
   (msg: Input, opts?: T): Uint8Array;
   outputLen: number;
   blockLen: number;
-  create(opts: T): HashXOF<H>;
+  create(opts?: T): HashXOF<H>;
 } {
   const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
-  hashC.create = (opts: T) => hashCons(opts);
+  hashC.create = (opts?: T) => hashCons(opts);
   return hashC;
 }
 export const wrapConstructor: typeof createHasher = createHasher;
