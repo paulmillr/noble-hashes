@@ -2,7 +2,7 @@
   "extends": "@paulmillr/jsbt/tsconfig.cjs.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "outDir": ".",
+    "outDir": "cjs",
     "paths": {
       "@noble/hashes/crypto": [
         "src/crypto.ts"

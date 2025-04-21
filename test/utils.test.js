@@ -1,9 +1,9 @@
 import fc from 'fast-check';
 import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
-import { setBigUint64 } from '../esm/_md.js';
-import { sha256 } from '../esm/sha2.js';
-import * as u from '../esm/utils.js';
+import { setBigUint64 } from '../_md.js';
+import { sha256 } from '../sha2.js';
+import * as u from '../utils.js';
 import {
   byteSwap,
   byteSwap32,
@@ -15,7 +15,7 @@ import {
   isLE,
   randomBytes,
   swap8IfBE,
-} from '../esm/utils.js';
+} from '../utils.js';
 import { gen, integer, optional } from './generator.js';
 import { TYPE_TEST, pattern } from './utils.js';
 
