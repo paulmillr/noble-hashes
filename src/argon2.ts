@@ -43,6 +43,7 @@ function mul2(a: number, b: number) {
   return { h: ((h << 1) | (l >>> 31)) & 0xffff_ffff, l: (l << 1) & 0xffff_ffff };
 }
 
+// BlaMka permutation for Argon2
 // A + B + (2 * u32(A) * u32(B))
 function blamka(Ah: number, Al: number, Bh: number, Bl: number) {
   const { h: Ch, l: Cl } = mul2(Al, Bl);

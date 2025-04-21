@@ -6,6 +6,7 @@
  *
  * Check out [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
  * @module
+ * @deprecated
  */
 import {
   SHA224 as SHA224n,
@@ -14,8 +15,10 @@ import {
   sha256 as sha256n,
 } from './sha2.ts';
 /** @deprecated Use import from `noble/hashes/sha2` module */
-/** SHA256 */
 export const SHA256: typeof SHA256n = SHA256n;
+/** @deprecated Use import from `noble/hashes/sha2` module */
 export const sha256: typeof sha256n = sha256n;
+/** @deprecated Use import from `noble/hashes/sha2` module */
 export const SHA224: typeof SHA224n = SHA224n;
+/** @deprecated Use import from `noble/hashes/sha2` module */
 export const sha224: typeof sha224n = sha224n;
