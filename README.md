@@ -8,7 +8,7 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2 & KangarooTwelve
-- 🪶 48KB for everything, 5KB (2.5KB gzipped) for single-hash build
+- 🪶 48KB for everything, 4.8KB (2.36KB gzipped) for single-hash build
 
 Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
@@ -44,30 +44,29 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
-import { sha256 } from '@noble/hashes/sha2'; // ESM & Common.js
-sha256(new Uint8Array([1, 2, 3]); // returns Uint8Array
-sha256('abc'); // == sha256(new TextEncoder().encode('abc'))
+import { sha256 } from '@noble/hashes/sha2.js'; // ESM & Common.js
+sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])); // returns Uint8Array
 
 // Available modules
-import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2';
-import { sha3_256, sha3_512, keccak_256, keccak_512, shake128, shake256 } from '@noble/hashes/sha3';
-import { cshake256, turboshake256, kmac256, tuplehash256, k12, m14, keccakprg } from '@noble/hashes/sha3-addons';
-import { ripemd160 } from '@noble/hashes/ripemd160';
-import { blake3 } from '@noble/hashes/blake3';
-import { blake2b } from '@noble/hashes/blake2b';
-import { blake2s } from '@noble/hashes/blake2s';
-import { blake256, blake512 } from '@noble/hashes/blake1';
-import { hmac } from '@noble/hashes/hmac';
-import { hkdf } from '@noble/hashes/hkdf';
-import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
-import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
-import * as utils from '@noble/hashes/utils'; // bytesToHex, hexToBytes, etc
+import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2.js';
+import { sha3_256, sha3_512, keccak_256, keccak_512, shake128, shake256 } from '@noble/hashes/sha3.js';
+import { cshake256, turboshake256, kmac256, tuplehash256, k12, m14, keccakprg } from '@noble/hashes/sha3-addons.js';
+import { blake3 } from '@noble/hashes/blake3.js';
+import { blake2b, blake2s } from '@noble/hashes/blake2.js';
+import { blake256, blake512 } from '@noble/hashes/blake1.js';
+import { sha1, md5, ripemd160 } from '@noble/hashes/legacy.js';
+import { hmac } from '@noble/hashes/hmac.js';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2.js';
+import { scrypt, scryptAsync } from '@noble/hashes/scrypt.js';
+import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js';
+import * as utils from '@noble/hashes/utils'; // bytesToHex, bytesToUtf8, concatBytes...
 ```
 
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
 - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
 - [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
-- [ripemd160](#ripemd160) | [blake, blake2b, blake2s, blake3](#blake-blake2b-blake2s-blake3) | [legacy: sha1, md5](#legacy-sha1-md5)
+- [blake, blake2, blake3](#blake-blake2-blake3) | [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
 - MACs: [hmac](#hmac) | [sha3-addons kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake) | [blake3 key mode](#blake2b-blake2s-blake3)
 - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
 - [utils](#utils)
@@ -77,41 +76,21 @@ import * as utils from '@noble/hashes/utils'; // bytesToHex, hexToBytes, etc
 
 Hash functions:
 
-- receive & return `Uint8Array`
-- may receive `string` **(not hex)**, which is automatically utf8-encoded to `Uint8Array`
+- `sha256()`: receive & return `Uint8Array`
+- `sha256.create().update(a).update(b).digest()`: support partial updates
+- `blake3.create({ context: 'e', dkLen: 32 })`: sometimes have options
 - support little-endian architecture; also experimentally big-endian
 - can hash up to 4GB per chunk, with any amount of chunks
-- can be constructed via `hash.create()` method
-  - the result is `Hash` subclass instance, which has `update()` and `digest()` methods
-  - `digest()` finalizes the hash and makes it no longer usable
-- some of them can receive `options`:
-  - second argument to hash function: `blake3('abc', { key: 'd', dkLen: 32 })`
-  - first argument to class initializer: `blake3.create({ context: 'e', dkLen: 32 })`
 
 #### sha2: sha256, sha384, sha512 and others
 
 ```typescript
-import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2';
-// also available as aliases:
-// import ... from '@noble/hashes/sha256'
-// import ... from '@noble/hashes/sha512'
-
-// Variant A:
-const h1a = sha256('abc');
-
-// Variant B:
-const h1b = sha256
-  .create()
-  .update(Uint8Array.from([1, 2, 3]))
-  .digest();
-
-for (let hash of [sha384, sha512, sha224, sha512_224, sha512_256]) {
-  const res1 = hash('abc');
-  const res2 = hash
-    .create()
-    .update('def')
-    .update(Uint8Array.from([1, 2, 3]))
-    .digest();
+import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '@noble/hashes/sha2.js';
+const res = sha256(Uint8Array.from([0xbc])); // basic
+for (let hash of [sha256, sha384, sha512, sha224, sha512_224, sha512_256]) {
+  const arr = Uint8Array.from([0x10, 0x20, 0x30]);
+  const a = hash(arr);
+  const b = hash.create().update(arr).digest();
 }
 ```
 
@@ -121,20 +100,21 @@ See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
 #### sha3: FIPS, SHAKE, Keccak
 
 ```typescript
-// prettier-ignore
 import {
+  keccak_224, keccak_256, keccak_384, keccak_512,
+  sha3_224, sha3_256, sha3_384, sha3_512,
+  shake128, shake256,
+} from '@noble/hashes/sha3.js';
+for (let hash of [
   sha3_224, sha3_256, sha3_384, sha3_512,
   keccak_224, keccak_256, keccak_384, keccak_512,
-  shake128, shake256,
-} from '@noble/hashes/sha3';
-const h5a = sha3_256('abc');
-const h5b = sha3_256
-  .create()
-  .update(Uint8Array.from([1, 2, 3]))
-  .digest();
-const h6a = keccak_256('abc');
-const h7a = shake128('abc', { dkLen: 512 });
-const h7b = shake256('abc', { dkLen: 512 });
+]) {
+  const arr = Uint8Array.from([0x10, 0x20, 0x30]);
+  const a = hash(arr);
+  const b = hash.create().update(arr).digest();
+}
+const shka = shake128(Uint8Array.from([0x10]), { dkLen: 512 });
+const shkb = shake256(Uint8Array.from([0x30]), { dkLen: 512 });
 ```
 
 See [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
@@ -145,26 +125,30 @@ Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchang
 #### sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE
 
 ```typescript
-// prettier-ignore
 import {
   cshake128, cshake256,
-  turboshake128, turboshake256,
+  k12,
+  keccakprg,
   kmac128, kmac256,
-  tuplehash256, parallelhash256,
-  k12, m14, keccakprg
-} from '@noble/hashes/sha3-addons';
-const h7c = cshake128('abc', { personalization: 'def' });
-const h7d = cshake256('abc', { personalization: 'def' });
-const h7e = kmac128('key', 'message');
-const h7f = kmac256('key', 'message');
-const h7h = k12('abc');
-const h7g = m14('abc');
-const h7t1 = turboshake128('abc');
-const h7t2 = turboshake256('def', { D: 0x05 });
-const h7i = tuplehash256(['ab', 'c']); // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash(['abc'])
-// Same as k12/blake3, but without reduced number of rounds. Doesn't speedup anything due lack of SIMD and threading,
-// added for compatibility.
-const h7j = parallelhash256('abc', { blockLen: 8 });
+  m14,
+  parallelhash256,
+  tuplehash256,
+  turboshake128, turboshake256
+} from '@noble/hashes/sha3-addons.js';
+const data = Uint8Array.from([0x10, 0x20, 0x30]);
+const ec1 = cshake128(data, { personalization: 'def' });
+const ec2 = cshake256(data, { personalization: 'def' });
+const et1 = turboshake128(data);
+const et2 = turboshake256(data, { D: 0x05 });
+ // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash([data])
+const et3 = tuplehash256([utf8ToBytes('ab'), utf8ToBytes('c')]);
+// Not parallel in JS (similar to blake3 / k12), added for compat
+const ep1 = parallelhash256(data, { blockLen: 8 });
+const kk = Uint8Array.from([0xca]);
+const ek10 = kmac128(kk, data);
+const ek11 = kmac256(kk, data);
+const ek12 = k12(data);
+const ek13 = m14(data);
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
 // * with a capacity of 254 bits.
 const p = keccakprg(254);
@@ -180,76 +164,71 @@ const rand1b = p.fetch(1);
   - TurboSHAKE
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
 
-#### ripemd160
+#### blake, blake2, blake3
 
 ```typescript
-import { ripemd160 } from '@noble/hashes/ripemd160';
-const hash8 = ripemd160('abc');
-const hash9 = ripemd160
-  .create()
-  .update(Uint8Array.from([1, 2, 3]))
-  .digest();
-```
+import { blake224, blake256, blake384, blake512 } from '@noble/hashes/blake1.js';
+import { blake2b, blake2s } from '@noble/hashes/blake2.js';
+import { blake3 } from '@noble/hashes/blake3.js';
 
-See [RFC 2286](https://datatracker.ietf.org/doc/html/rfc2286),
-[Website](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
+for (let hash of [
+  blake224, blake256, blake384, blake512,
+  blake2b, blake2s, blake3
+]) {
+  const arr = Uint8Array.from([0x10, 0x20, 0x30]);
+  const a = hash(arr);
+  const b = hash.create().update(arr).digest();
+}
 
-#### blake, blake2b, blake2s, blake3
+// blake2 advanced usage
+const ab = Uint8Array.from([0x01]);
+blake2s(ab);
+blake2s(ab, { key: new Uint8Array(32) });
+blake2s(ab, { personalization: 'pers1234' });
+blake2s(ab, { salt: 'salt1234' });
+blake2b(ab);
+blake2b(ab, { key: new Uint8Array(64) });
+blake2b(ab, { personalization: 'pers1234pers1234' });
+blake2b(ab, { salt: 'salt1234salt1234' });
 
-```typescript
-import { blake224, blake256, blake384, blake512 } from '@noble/hashes/blake1';
-import { blake2b } from '@noble/hashes/blake2b';
-import { blake2s } from '@noble/hashes/blake2s';
-import { blake3 } from '@noble/hashes/blake3';
-
-const h_b1_224 = blake224('abc');
-const h_b1_256 = blake256('abc');
-const h_b1_384 = blake384('abc');
-const h_b1_512 = blake512('abc');
-
-const h10a = blake2s('abc');
-const b2params = { key: new Uint8Array([1]), personalization: t, salt: t, dkLen: 32 };
-const h10b = blake2s('abc', b2params);
-const h10c = blake2s
-  .create(b2params)
-  .update(Uint8Array.from([1, 2, 3]))
-  .digest();
-
-// All params are optional
-const h11 = blake3('abc', { dkLen: 256 });
-const h11_mac = blake3('abc', { key: new Uint8Array(32) });
-const h11_kdf = blake3('abc', { context: 'application name' });
+// blake3 advanced usage
+blake3(ab);
+blake3(ab, { dkLen: 256 });
+blake3(ab, { key: new Uint8Array(32) });
+blake3(ab, { context: 'application-name' });
 ```
 
 - Blake1 is legacy hash, one of SHA3 proposals. It is rarely used anywhere. See [pdf](https://www.aumasson.jp/blake/blake.pdf).
 - Blake2 is popular fast hash. blake2b focuses on 64-bit platforms while blake2s is for 8-bit to 32-bit ones. See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net)
 - Blake3 is faster, reduced-round blake2. See [Website & specs](https://blake3.io)
 
-#### legacy: sha1, md5
+#### legacy: sha1, md5, ripemd160
 
-SHA1 (RFC 3174) and MD5 (RFC 1321) legacy, broken hash functions.
-Don't use them in a new protocol. What "broken" means:
+SHA1 (RFC 3174), MD5 (RFC 1321) and RIPEMD160 (RFC 2286) legacy, weak hash functions.
+Don't use them in a new protocol. What "weak" means:
 
-- Collisions can be made with 2^18 effort in MD5, 2^60 in SHA1.
+- Collisions can be made with 2^18 effort in MD5, 2^60 in SHA1, 2^80 in RIPEMD160.
 - No practical pre-image attacks (only theoretical, 2^123.4)
 - HMAC seems kinda ok: https://datatracker.ietf.org/doc/html/rfc6151
 
 ```typescript
-import { sha1, md5 } from '@noble/hashes/legacy';
-const h12s = sha1('def');
-const h12m = md5('xcb');
+import { md5, ripemd160, sha1 } from '@noble/hashes/legacy.js';
+for (let hash of [md5, ripemd160, sha1]) {
+  const arr = Uint8Array.from([0x10, 0x20, 0x30]);
+  const a = hash(arr);
+  const b = hash.create().update(arr).digest();
+}
 ```
 
 #### hmac
 
 ```typescript
-import { hmac } from '@noble/hashes/hmac';
-import { sha256 } from '@noble/hashes/sha2';
-const mac1 = hmac(sha256, 'key', 'message');
-const mac2 = hmac
-  .create(sha256, Uint8Array.from([1, 2, 3]))
-  .update(Uint8Array.from([4, 5, 6]))
-  .digest();
+import { hmac } from '@noble/hashes/hmac.js';
+import { sha256 } from '@noble/hashes/sha2.js';
+const key = new Uint8Array(32).fill(1);
+const msg = new Uint8Array(32).fill(2);
+const mac1 = hmac(sha256, key, msg);
+const mac2 = hmac.create(sha256, key).update(msg).digest();
 ```
 
 Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
@@ -257,19 +236,19 @@ Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 #### hkdf
 
 ```typescript
-import { hkdf } from '@noble/hashes/hkdf';
-import { sha256 } from '@noble/hashes/sha2';
-import { randomBytes } from '@noble/hashes/utils';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { randomBytes } from '@noble/hashes/utils.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 const inputKey = randomBytes(32);
 const salt = randomBytes(32);
 const info = 'application-key';
 const hk1 = hkdf(sha256, inputKey, salt, info, 32);
 
 // == same as
-import * as hkdf from '@noble/hashes/hkdf';
-import { sha256 } from '@noble/hashes/sha2';
-const prk = hkdf.extract(sha256, inputKey, salt);
-const hk2 = hkdf.expand(sha256, prk, info, dkLen);
+import { extract, expand } from '@noble/hashes/hkdf.js';
+import { sha256 } from '@noble/hashes/sha2.js';
+const prk = extract(sha256, inputKey, salt);
+const hk2 = expand(sha256, prk, info, 32);
 ```
 
 Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
@@ -277,8 +256,8 @@ Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
 #### pbkdf2
 
 ```typescript
-import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2';
-import { sha256 } from '@noble/hashes/sha2';
+import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 const pbkey1 = pbkdf2(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
 const pbkey2 = await pbkdf2Async(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
 const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]), {
@@ -292,7 +271,7 @@ Matches [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898).
 #### scrypt
 
 ```typescript
-import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
+import { scrypt, scryptAsync } from '@noble/hashes/scrypt.js';
 const scr1 = scrypt('password', 'salt', { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
 const scr2 = await scryptAsync('password', 'salt', { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
 const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]), {
@@ -339,8 +318,8 @@ Time it takes to derive Scrypt key under different values of N (2\*\*N) on Apple
 #### argon2
 
 ```ts
-import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2';
-const result = argon2id('password', 'saltsalt', { t: 2, m: 65536, p: 1, maxmem: 2 ** 32 - 1 });
+import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js';
+const arg1 = argon2id('password', 'saltsalt', { t: 2, m: 65536, p: 1, maxmem: 2 ** 32 - 1 });
 ```
 
 Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
@@ -460,7 +439,6 @@ m14 x 423,190 ops/sec @ 2μs/op
 blake2b x 464,252 ops/sec @ 2μs/op
 blake2s x 766,871 ops/sec @ 1μs/op
 blake3 x 879,507 ops/sec @ 1μs/op
-ripemd160 x 1,757,469 ops/sec @ 569ns/op
 
 # 1MB
 sha256 x 331 ops/sec @ 3ms/op
@@ -472,7 +450,6 @@ m14 x 62 ops/sec @ 15ms/op
 blake2b x 69 ops/sec @ 14ms/op
 blake2s x 57 ops/sec @ 17ms/op
 blake3 x 72 ops/sec @ 13ms/op
-ripemd160 x 264 ops/sec @ 3ms/op
 
 # MAC
 hmac(sha256) x 599,880 ops/sec @ 1μs/op
@@ -498,7 +475,6 @@ sha512 x 983,284 ops/sec
 sha3_256 x 1,522,070 ops/sec
 blake2b x 1,512,859 ops/sec
 blake2s x 1,821,493 ops/sec
-ripemd160 x 1,855,287 ops/sec
 hmac(sha256) x 1,085,776 ops/sec
 hkdf(sha256) x 312,109 ops/sec
 # native (node) KDF
