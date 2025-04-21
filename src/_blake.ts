@@ -2,18 +2,14 @@
  * Internal helpers for blake hash.
  * @module
  */
-// prettier-ignore
-import {
-  abytes, aexists, anumber, aoutput,
-  clean, Hash, rotr, swap32IfBE, swap8IfBE, toBytes, u32, type Input
-} from './utils.ts';
+import { rotr } from './utils.ts';
 
 /**
  * Internal blake variable.
  * For BLAKE2b, the two extra permutations for rounds 10 and 11 are SIGMA[10..11] = SIGMA[0..1].
  */
 // prettier-ignore
-export const SIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
+export const BSIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
   14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
   11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,
@@ -32,129 +28,6 @@ export const SIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
   9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13,
   2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9,
 ]);
-
-/** Blake hash options. dkLen is output length. key is used in MAC mode. salt is used in KDF mode. */
-export type BlakeOpts = {
-  dkLen?: number;
-  key?: Input;
-  salt?: Input;
-  personalization?: Input;
-};
-
-/** Class, from which others are subclassed. */
-export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
-  protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
-  protected abstract get(): number[];
-  protected abstract set(...args: number[]): void;
-  abstract destroy(): void;
-  protected buffer: Uint8Array;
-  protected buffer32: Uint32Array;
-  protected length: number = 0;
-  protected pos: number = 0;
-  protected finished = false;
-  protected destroyed = false;
-  readonly blockLen: number;
-  readonly outputLen: number;
-
-  constructor(
-    blockLen: number,
-    outputLen: number,
-    opts: BlakeOpts | undefined = {},
-    keyLen: number,
-    saltLen: number,
-    persLen: number
-  ) {
-    super();
-    anumber(blockLen);
-    anumber(outputLen);
-    anumber(keyLen);
-    if (outputLen < 0 || outputLen > keyLen) throw new Error('outputLen bigger than keyLen');
-    const { key, salt, personalization } = opts;
-    if (key !== undefined && (key.length < 1 || key.length > keyLen))
-      throw new Error('key length must be undefined or 1..' + keyLen);
-    if (salt !== undefined && salt.length !== saltLen)
-      throw new Error('salt must be undefined or ' + saltLen);
-    if (personalization !== undefined && personalization.length !== persLen)
-      throw new Error('personalization must be undefined or ' + persLen);
-    this.blockLen = blockLen;
-    this.outputLen = outputLen;
-    this.buffer = new Uint8Array(blockLen);
-    this.buffer32 = u32(this.buffer);
-  }
-  update(data: Input): this {
-    aexists(this);
-    data = toBytes(data);
-    abytes(data);
-    // Main difference with other hashes: there is flag for last block,
-    // so we cannot process current block before we know that there
-    // is the next one. This significantly complicates logic and reduces ability
-    // to do zero-copy processing
-    const { blockLen, buffer, buffer32 } = this;
-    const len = data.length;
-    const offset = data.byteOffset;
-    const buf = data.buffer;
-    for (let pos = 0; pos < len; ) {
-      // If buffer is full and we still have input (don't process last block, same as blake2s)
-      if (this.pos === blockLen) {
-        swap32IfBE(buffer32);
-        this.compress(buffer32, 0, false);
-        swap32IfBE(buffer32);
-        this.pos = 0;
-      }
-      const take = Math.min(blockLen - this.pos, len - pos);
-      const dataOffset = offset + pos;
-      // full block && aligned to 4 bytes && not last in input
-      if (take === blockLen && !(dataOffset % 4) && pos + take < len) {
-        const data32 = new Uint32Array(buf, dataOffset, Math.floor((len - pos) / 4));
-        swap32IfBE(data32);
-        for (let pos32 = 0; pos + blockLen < len; pos32 += buffer32.length, pos += blockLen) {
-          this.length += blockLen;
-          this.compress(data32, pos32, false);
-        }
-        swap32IfBE(data32);
-        continue;
-      }
-      buffer.set(data.subarray(pos, pos + take), this.pos);
-      this.pos += take;
-      this.length += take;
-      pos += take;
-    }
-    return this;
-  }
-  digestInto(out: Uint8Array): void {
-    aexists(this);
-    aoutput(out, this);
-    const { pos, buffer32 } = this;
-    this.finished = true;
-    // Padding
-    clean(this.buffer.subarray(pos));
-    swap32IfBE(buffer32);
-    this.compress(buffer32, 0, true);
-    swap32IfBE(buffer32);
-    const out32 = u32(out);
-    this.get().forEach((v, i) => (out32[i] = swap8IfBE(v)));
-  }
-  digest(): Uint8Array {
-    const { buffer, outputLen } = this;
-    this.digestInto(buffer);
-    const res = buffer.slice(0, outputLen);
-    this.destroy();
-    return res;
-  }
-  _cloneInto(to?: T): T {
-    const { buffer, length, finished, destroyed, outputLen, pos } = this;
-    to ||= new (this.constructor as any)({ dkLen: outputLen }) as T;
-    to.set(...this.get());
-    to.length = length;
-    to.finished = finished;
-    to.destroyed = destroyed;
-    // @ts-ignore
-    to.outputLen = outputLen;
-    to.buffer.set(buffer);
-    to.pos = pos;
-    return to;
-  }
-}
 
 // prettier-ignore
 export type Num4 = { a: number; b: number; c: number; d: number; };

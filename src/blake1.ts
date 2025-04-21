@@ -22,7 +22,7 @@
  * - blake512: G1b: rotr 24 -> 25, G2b: rotr 63 -> 11
  * @module
  */
-import { G1s, G2s, SIGMA } from './_blake.ts';
+import { BSIGMA, G1s, G2s } from './_blake.ts';
 import { setBigUint64, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
 // prettier-ignore
@@ -143,6 +143,9 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
     to.buffer.set(buffer);
     return to;
   }
+  clone(): T {
+    return this._cloneInto();
+  }
   digestInto(out: Uint8Array): void {
     aexists(this);
     aoutput(out, this);
@@ -181,26 +184,26 @@ abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
 }
 
 // Constants
-const C512 = /* @__PURE__ */ Uint32Array.from([
+const B64C = /* @__PURE__ */ Uint32Array.from([
   0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344, 0xa4093822, 0x299f31d0, 0x082efa98, 0xec4e6c89,
   0x452821e6, 0x38d01377, 0xbe5466cf, 0x34e90c6c, 0xc0ac29b7, 0xc97c50dd, 0x3f84d5b5, 0xb5470917,
   0x9216d5d9, 0x8979fb1b, 0xd1310ba6, 0x98dfb5ac, 0x2ffd72db, 0xd01adfb7, 0xb8e1afed, 0x6a267e96,
   0xba7c9045, 0xf12c7f99, 0x24a19947, 0xb3916cf7, 0x0801f2e2, 0x858efc16, 0x636920d8, 0x71574e69,
 ]);
 // first half of C512
-const C256 = C512.slice(0, 16);
+const B32C = B64C.slice(0, 16);
 
 const B256_IV = SHA256_IV.slice();
-const B512_IV = SHA512_IV.slice();
-const B384_IV = SHA384_IV.slice();
 const B224_IV = SHA224_IV.slice();
+const B384_IV = SHA384_IV.slice();
+const B512_IV = SHA512_IV.slice();
 
 function generateTBL256() {
   const TBL = [];
   for (let i = 0, j = 0; i < 14; i++, j += 16) {
     for (let offset = 1; offset < 16; offset += 2) {
-      TBL.push(C256[SIGMA[j + offset]]);
-      TBL.push(C256[SIGMA[j + offset - 1]]);
+      TBL.push(B32C[BSIGMA[j + offset]]);
+      TBL.push(B32C[BSIGMA[j + offset - 1]]);
     }
   }
   return new Uint32Array(TBL);
@@ -221,7 +224,7 @@ class Blake1_32 extends Blake1<Blake1_32> {
   private v6: number;
   private v7: number;
   constructor(outputLen: number, IV: Uint32Array, lengthFlag: number, opts: BlakeOpts = {}) {
-    super(64, outputLen, lengthFlag, 8, 4, C256, opts);
+    super(64, outputLen, lengthFlag, 8, 4, B32C, opts);
     this.v0 = IV[0] | 0;
     this.v1 = IV[1] | 0;
     this.v2 = IV[2] | 0;
@@ -274,22 +277,22 @@ class Blake1_32 extends Blake1<Blake1_32> {
     let v15 = (this.constants[7] ^ h) >>> 0;
     // prettier-ignore
     for (let i = 0, k = 0, j = 0; i < 14; i++) {
-      ({ a: v00, b: v04, c: v08, d: v12 } = G1s(v00, v04, v08, v12, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v00, b: v04, c: v08, d: v12 } = G2s(v00, v04, v08, v12, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v01, b: v05, c: v09, d: v13 } = G1s(v01, v05, v09, v13, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v01, b: v05, c: v09, d: v13 } = G2s(v01, v05, v09, v13, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v02, b: v06, c: v10, d: v14 } = G1s(v02, v06, v10, v14, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v02, b: v06, c: v10, d: v14 } = G2s(v02, v06, v10, v14, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v03, b: v07, c: v11, d: v15 } = G1s(v03, v07, v11, v15, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v03, b: v07, c: v11, d: v15 } = G2s(v03, v07, v11, v15, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v00, b: v05, c: v10, d: v15 } = G1s(v00, v05, v10, v15, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v00, b: v05, c: v10, d: v15 } = G2s(v00, v05, v10, v15, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v01, b: v06, c: v11, d: v12 } = G1s(v01, v06, v11, v12, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v01, b: v06, c: v11, d: v12 } = G2s(v01, v06, v11, v12, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v02, b: v07, c: v08, d: v13 } = G1s(v02, v07, v08, v13, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v02, b: v07, c: v08, d: v13 } = G2s(v02, v07, v08, v13, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v03, b: v04, c: v09, d: v14 } = G1s(v03, v04, v09, v14, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
-      ({ a: v03, b: v04, c: v09, d: v14 } = G2s(v03, v04, v09, v14, BLAKE256_W[SIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v00, b: v04, c: v08, d: v12 } = G1s(v00, v04, v08, v12, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v00, b: v04, c: v08, d: v12 } = G2s(v00, v04, v08, v12, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v01, b: v05, c: v09, d: v13 } = G1s(v01, v05, v09, v13, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v01, b: v05, c: v09, d: v13 } = G2s(v01, v05, v09, v13, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v02, b: v06, c: v10, d: v14 } = G1s(v02, v06, v10, v14, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v02, b: v06, c: v10, d: v14 } = G2s(v02, v06, v10, v14, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v03, b: v07, c: v11, d: v15 } = G1s(v03, v07, v11, v15, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v03, b: v07, c: v11, d: v15 } = G2s(v03, v07, v11, v15, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v00, b: v05, c: v10, d: v15 } = G1s(v00, v05, v10, v15, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v00, b: v05, c: v10, d: v15 } = G2s(v00, v05, v10, v15, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v01, b: v06, c: v11, d: v12 } = G1s(v01, v06, v11, v12, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v01, b: v06, c: v11, d: v12 } = G2s(v01, v06, v11, v12, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v02, b: v07, c: v08, d: v13 } = G1s(v02, v07, v08, v13, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v02, b: v07, c: v08, d: v13 } = G2s(v02, v07, v08, v13, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v03, b: v04, c: v09, d: v14 } = G1s(v03, v04, v09, v14, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
+      ({ a: v03, b: v04, c: v09, d: v14 } = G2s(v03, v04, v09, v14, BLAKE256_W[BSIGMA[k++]] ^ TBL256[j++]));
     }
     this.v0 = (this.v0 ^ v00 ^ v08 ^ this.salt[0]) >>> 0;
     this.v1 = (this.v1 ^ v01 ^ v09 ^ this.salt[1]) >>> 0;
@@ -310,10 +313,10 @@ function generateTBL512() {
   const TBL = [];
   for (let r = 0, k = 0; r < 16; r++, k += 16) {
     for (let offset = 1; offset < 16; offset += 2) {
-      TBL.push(C512[SIGMA[k + offset] * 2 + 0]);
-      TBL.push(C512[SIGMA[k + offset] * 2 + 1]);
-      TBL.push(C512[SIGMA[k + offset - 1] * 2 + 0]);
-      TBL.push(C512[SIGMA[k + offset - 1] * 2 + 1]);
+      TBL.push(B64C[BSIGMA[k + offset] * 2 + 0]);
+      TBL.push(B64C[BSIGMA[k + offset] * 2 + 1]);
+      TBL.push(B64C[BSIGMA[k + offset - 1] * 2 + 0]);
+      TBL.push(B64C[BSIGMA[k + offset - 1] * 2 + 1]);
     }
   }
   return new Uint32Array(TBL);
@@ -322,7 +325,7 @@ const TBL512 = /* @__PURE__ */ generateTBL512(); // C512[SIGMA[X]] precompute
 
 // Mixing function G splitted in two halfs
 function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
-  const Xpos = 2 * SIGMA[k];
+  const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
   let Al = BBUF[2 * a + 1], Ah = BBUF[2 * a]; // prettier-ignore
   let Bl = BBUF[2 * b + 1], Bh = BBUF[2 * b]; // prettier-ignore
@@ -347,7 +350,7 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
 }
 
 function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
-  const Xpos = 2 * SIGMA[k];
+  const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
   let Al = BBUF[2 * a + 1], Ah = BBUF[2 * a]; // prettier-ignore
   let Bl = BBUF[2 * b + 1], Bh = BBUF[2 * b]; // prettier-ignore
@@ -389,7 +392,7 @@ class Blake1_64 extends Blake1<Blake1_64> {
   private v7l: number;
   private v7h: number;
   constructor(outputLen: number, IV: Uint32Array, lengthFlag: number, opts: BlakeOpts = {}) {
-    super(128, outputLen, lengthFlag, 16, 8, C512, opts);
+    super(128, outputLen, lengthFlag, 16, 8, B64C, opts);
     this.v0l = IV[0] | 0;
     this.v0h = IV[1] | 0;
     this.v1l = IV[2] | 0;
@@ -504,14 +507,14 @@ export class Blake256 extends Blake1_32 {
     super(32, B256_IV, 0b0000_0001, opts);
   }
 }
-export class Blake512 extends Blake1_64 {
-  constructor(opts: BlakeOpts = {}) {
-    super(64, B512_IV, 0b0000_0001, opts);
-  }
-}
 export class Blake384 extends Blake1_64 {
   constructor(opts: BlakeOpts = {}) {
     super(48, B384_IV, 0b0000_0000, opts);
+  }
+}
+export class Blake512 extends Blake1_64 {
+  constructor(opts: BlakeOpts = {}) {
+    super(64, B512_IV, 0b0000_0001, opts);
   }
 }
 /** blake1-224 hash function */

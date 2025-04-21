@@ -11,28 +11,25 @@
  * * It is still possible to make it faster using: a) loop unrolling b) web workers c) wasm
  * @module
  */
-import { BLAKE } from './_blake.ts';
 import { SHA256_IV } from './_md.ts';
 import { fromBig } from './_u64.ts';
-import { compress } from './blake2.ts';
+import { Blake2, compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  clean, createXOFer,
-  swap32IfBE,
-  toBytes, u32, u8,
+  clean, createXOFer, swap32IfBE, toBytes, u32, u8,
   type CHashXO, type HashXOF, type Input
 } from './utils.ts';
 
 // Flag bitset
 const B3_Flags = {
-  CHUNK_START: 1 << 0,
-  CHUNK_END: 1 << 1,
-  PARENT: 1 << 2,
-  ROOT: 1 << 3,
-  KEYED_HASH: 1 << 4,
-  DERIVE_KEY_CONTEXT: 1 << 5,
-  DERIVE_KEY_MATERIAL: 1 << 6,
+  CHUNK_START: 0b1,
+  CHUNK_END: 0b10,
+  PARENT: 0b100,
+  ROOT: 0b1000,
+  KEYED_HASH: 0b10000,
+  DERIVE_KEY_CONTEXT: 0b100000,
+  DERIVE_KEY_MATERIAL: 0b1000000,
 } as const;
 
 const B3_IV = SHA256_IV.slice();
@@ -56,12 +53,12 @@ const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
 export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
 
 /** Blake3 hash. Can be used as MAC and KDF. */
-export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
-  private IV: Uint32Array;
-  private flags = 0 | 0;
-  private state: Uint32Array;
+export class BLAKE3 extends Blake2<BLAKE3> implements HashXOF<BLAKE3> {
   private chunkPos = 0; // Position of current block in chunk
   private chunksDone = 0; // How many chunks we already have
+  private flags = 0 | 0;
+  private IV: Uint32Array;
+  private state: Uint32Array;
   private stack: Uint32Array[] = [];
   // Output
   private posOut = 0;
@@ -71,9 +68,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   private enableXOF = true;
 
   constructor(opts: Blake3Opts = {}, flags = 0) {
-    const olen = opts.dkLen === undefined ? 32 : opts.dkLen;
-    anumber(olen);
-    super(64, olen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
+    super(64, opts.dkLen === undefined ? 32 : opts.dkLen);
     const { key, context } = opts;
     const hasContext = context !== undefined;
     if (key !== undefined) {
@@ -173,7 +168,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   destroy(): void {
     this.destroyed = true;
     clean(this.state, this.buffer32, this.IV, this.bufferOut32);
-    for (let i of this.stack) clean(i);
+    clean(...this.stack);
   }
   // Same as b2Compress, but doesn't modify state and returns 16 u32 array (instead of 8)
   private b2CompressOut() {
