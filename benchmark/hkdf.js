@@ -2,8 +2,7 @@ import compare from 'micro-bmark/compare.js';
 import crypto from 'node:crypto';
 // Noble
 import { hkdf } from '@noble/hashes/hkdf';
-import { sha256 } from '@noble/hashes/sha256';
-import { sha512 } from '@noble/hashes/sha512';
+import { sha256, sha512 } from '@noble/hashes/sha2';
 // Others
 import { HKDF as stableHKDF } from '@stablelib/hkdf';
 import stable256 from '@stablelib/sha256';
