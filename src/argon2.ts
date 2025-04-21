@@ -191,11 +191,11 @@ export type ArgonOpts = {
 };
 
 const maxUint32 = Math.pow(2, 32);
-function isUint32(num: number) {
+function isU32(num: number) {
   return Number.isSafeInteger(num) && num >= 0 && num < maxUint32;
 }
 
-function initOpts(opts: ArgonOpts) {
+function argon2Opts(opts: ArgonOpts) {
   const merged: any = {
     version: 0x13,
     dkLen: 32,
@@ -205,19 +205,17 @@ function initOpts(opts: ArgonOpts) {
   for (let [k, v] of Object.entries(opts)) if (v != null) merged[k] = v;
 
   const { dkLen, p, m, t, version, onProgress } = merged;
-  if (!isUint32(dkLen) || dkLen < 4) throw new Error('Argon2: dkLen should be at least 4 bytes');
-  if (!isUint32(p) || p < 1 || p >= Math.pow(2, 24))
-    throw new Error('Argon2: p (parallelism) should be at least 1 and less than 2^24');
-  if (!isUint32(m)) throw new Error('Argon2: m should be 0 <= m < 2^32');
-  if (!isUint32(t) || t < 1)
-    throw new Error('Argon2: t (iterations) should be at least 1 and less than 2^32');
+  if (!isU32(dkLen) || dkLen < 4) throw new Error('dkLen should be at least 4 bytes');
+  if (!isU32(p) || p < 1 || p >= Math.pow(2, 24)) throw new Error('p should be 1 <= p < 2^24');
+  if (!isU32(m)) throw new Error('m should be 0 <= m < 2^32');
+  if (!isU32(t) || t < 1) throw new Error('t (iterations) should be 1 <= t < 2^32');
   if (onProgress !== undefined && typeof onProgress !== 'function')
     throw new Error('progressCb should be function');
   /*
   Memory size m MUST be an integer number of kibibytes from 8*p to 2^(32)-1. The actual number of blocks is m', which is m rounded down to the nearest multiple of 4*p.
   */
-  if (!isUint32(m) || m < 8 * p) throw new Error('Argon2: memory should be at least 8*p bytes');
-  if (version !== 0x10 && version !== 0x13) throw new Error('Argon2: unknown version=' + version);
+  if (!isU32(m) || m < 8 * p) throw new Error('memory should be at least 8*p bytes');
+  if (version !== 0x10 && version !== 0x13) throw new Error('unknown version=' + version);
   return merged;
 }
 
@@ -226,12 +224,12 @@ function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: Argon
   salt = kdfInputToBytes(salt);
   abytes(password);
   abytes(salt);
-  if (!isUint32(password.length)) throw new Error('Argon2: password should be less than 4 GB');
-  if (!isUint32(salt.length) || salt.length < 8)
-    throw new Error('Argon2: salt should be at least 8 bytes and less than 4 GB');
-  if (!Object.values(AT).includes(type)) throw new Error('invalid argon2 type');
+  if (!isU32(password.length)) throw new Error('password should be less than 4 GB');
+  if (!isU32(salt.length) || salt.length < 8)
+    throw new Error('salt should be at least 8 bytes and less than 4 GB');
+  if (!Object.values(AT).includes(type)) throw new Error('invalid type');
   let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } =
-    initOpts(opts);
+    argon2Opts(opts);
 
   // Validation
   key = abytesOrZero(key);
@@ -264,9 +262,9 @@ function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: Argon
   const laneLen = Math.floor(mP / p);
   const segmentLen = Math.floor(laneLen / ARGON2_SYNC_POINTS);
   const memUsed = mP * 256;
-  if (!isUint32(maxmem) || memUsed > maxmem)
+  if (!isU32(maxmem) || memUsed > maxmem)
     throw new Error(
-      'Argon2: mem should be less than 2**32, got: maxmem=' + maxmem + ', memused=' + memUsed
+      'mem should be less than 2**32, got: maxmem=' + maxmem + ', memused=' + memUsed
     );
   const B = new Uint32Array(memUsed);
   // Fill first blocks

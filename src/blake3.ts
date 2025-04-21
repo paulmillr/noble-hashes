@@ -18,8 +18,10 @@ import { compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  byteSwap32, clean, createXOFer, isLE, toBytes, u32, u8,
-  type CHashXO, type HashXOF, type Input,
+  clean, createXOFer,
+  swap32IfBE,
+  toBytes, u32, u8,
+  type CHashXO, type HashXOF, type Input
 } from './utils.ts';
 
 // Flag bitset
@@ -35,7 +37,7 @@ const B3_Flags = {
 
 const B3_IV = SHA256_IV.slice();
 
-const SIGMA: Uint8Array = /* @__PURE__ */ (() => {
+const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
   const Id = Array.from({ length: 16 }, (_, i) => i);
   const permute = (arr: number[]) =>
     [2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8].map((i) => arr[i]);
@@ -70,23 +72,24 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
 
   constructor(opts: Blake3Opts = {}, flags = 0) {
     const olen = opts.dkLen === undefined ? 32 : opts.dkLen;
+    anumber(olen);
     super(64, olen, {}, Number.MAX_SAFE_INTEGER, 0, 0);
-    anumber(this.outputLen);
-    if (opts.key !== undefined && opts.context !== undefined)
-      throw new Error('Blake3: only key or context can be specified at same time');
-    else if (opts.key !== undefined) {
-      // abytes(opts.key);
-      const key = toBytes(opts.key).slice();
-      if (key.length !== 32) throw new Error('Blake3: key should be 32 byte');
-      this.IV = u32(key);
-      if (!isLE) byteSwap32(this.IV);
+    const { key, context } = opts;
+    const hasContext = context !== undefined;
+    if (key !== undefined) {
+      if (hasContext) throw new Error('Only "key" or "context" can be specified at same time');
+      const k = toBytes(key).slice();
+      abytes(k, 32);
+      this.IV = u32(k);
+      swap32IfBE(this.IV);
       this.flags = flags | B3_Flags.KEYED_HASH;
-    } else if (opts.context !== undefined) {
-      const context_key = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
-        .update(toBytes(opts.context))
+    } else if (hasContext) {
+      const ctx = toBytes(context);
+      const contextKey = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
+        .update(ctx)
         .digest();
-      this.IV = u32(context_key);
-      if (!isLE) byteSwap32(this.IV);
+      this.IV = u32(contextKey);
+      swap32IfBE(this.IV);
       this.flags = flags | B3_Flags.DERIVE_KEY_MATERIAL;
     } else {
       this.IV = B3_IV.slice();
@@ -106,7 +109,7 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
-        SIGMA, bufPos, buf, 7,
+        B3_SIGMA, bufPos, buf, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
         B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], h, l, pos, flags
       );
@@ -176,11 +179,11 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
   private b2CompressOut() {
     const { state: s, pos, flags, buffer32, bufferOut32: out32 } = this;
     const { h, l } = fromBig(BigInt(this.chunkOut++));
-    if (!isLE) byteSwap32(buffer32);
+    swap32IfBE(buffer32);
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
-        SIGMA, 0, buffer32, 7,
+        B3_SIGMA, 0, buffer32, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
         B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], l, h, pos, flags
       );
@@ -200,10 +203,8 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     out32[13] = s[5] ^ v13;
     out32[14] = s[6] ^ v14;
     out32[15] = s[7] ^ v15;
-    if (!isLE) {
-      byteSwap32(buffer32);
-      byteSwap32(out32);
-    }
+    swap32IfBE(buffer32);
+    swap32IfBE(out32);
     this.posOut = 0;
   }
   protected finish(): void {
@@ -215,9 +216,9 @@ export class BLAKE3 extends BLAKE<BLAKE3> implements HashXOF<BLAKE3> {
     let flags = this.flags | B3_Flags.ROOT;
     if (this.stack.length) {
       flags |= B3_Flags.PARENT;
-      if (!isLE) byteSwap32(this.buffer32);
+      swap32IfBE(this.buffer32);
       this.compress(this.buffer32, 0, true);
-      if (!isLE) byteSwap32(this.buffer32);
+      swap32IfBE(this.buffer32);
       this.chunksDone = 0;
       this.pos = this.blockLen;
     } else {

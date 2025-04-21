@@ -6,8 +6,11 @@ import { pbkdf2 } from './pbkdf2.ts';
 import { sha256 } from './sha2.ts';
 // prettier-ignore
 import {
-  anumber, asyncLoop, byteSwap32, checkOpts, clean,
-  isLE, type KDFInput, rotl, u32
+  anumber, asyncLoop,
+  checkOpts, clean,
+  type KDFInput, rotl,
+  swap32IfBE,
+  u32
 } from './utils.ts';
 
 // The main Scrypt loop: uses Salsa extensively.
@@ -193,7 +196,7 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
     salt,
     opts
   );
-  if (!isLE) byteSwap32(B32);
+  swap32IfBE(B32);
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
     for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
@@ -211,7 +214,7 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
       blockMixCb();
     }
   }
-  if (!isLE) byteSwap32(B32);
+  swap32IfBE(B32);
   return scryptOutput(password, dkLen, B, V, tmp);
 }
 
@@ -230,7 +233,7 @@ export async function scryptAsync(
     salt,
     opts
   );
-  if (!isLE) byteSwap32(B32);
+  swap32IfBE(B32);
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
     for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
@@ -249,6 +252,6 @@ export async function scryptAsync(
       blockMixCb();
     });
   }
-  if (!isLE) byteSwap32(B32);
+  swap32IfBE(B32);
   return scryptOutput(password, dkLen, B, V, tmp);
 }

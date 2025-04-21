@@ -12,6 +12,7 @@
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 import { crypto } from '@noble/hashes/crypto';
 
+/** Checks if something is Uint8Array. Be careful: nodejs Buffer will return true. */
 export function isBytes(a: unknown): a is Uint8Array {
   return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
 }
@@ -51,6 +52,7 @@ export function aoutput(out: any, instance: any): void {
   }
 }
 
+/** Generic type encompassing 8/16/32-byte arrays - but not 64-byte. */
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
@@ -90,7 +92,8 @@ export function rotl(word: number, shift: number): number {
 /** Is current platform little-endian? Most are. Big-Endian platform: IBM */
 export const isLE: boolean = /* @__PURE__ */ (() =>
   new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
-// The byte swap operation for uint32
+
+/** The byte swap operation for uint32 */
 export function byteSwap(word: number): number {
   return (
     ((word << 24) & 0xff000000) |
@@ -100,16 +103,23 @@ export function byteSwap(word: number): number {
   );
 }
 /** Conditionally byte swap if on a big-endian platform */
-export const byteSwapIfBE: (n: number) => number = isLE
+export const swap8IfBE: (n: number) => number = isLE
   ? (n: number) => n
   : (n: number) => byteSwap(n);
 
+/** @deprecated */
+export const byteSwapIfBE: typeof swap8IfBE = swap8IfBE;
 /** In place byte swap for Uint32Array */
-export function byteSwap32(arr: Uint32Array): void {
+export function byteSwap32(arr: Uint32Array): Uint32Array {
   for (let i = 0; i < arr.length; i++) {
     arr[i] = byteSwap(arr[i]);
   }
+  return arr;
 }
+
+export const swap32IfBE: (u: Uint32Array) => Uint32Array = isLE
+  ? (u: Uint32Array) => u
+  : byteSwap32;
 
 // Built-in hex conversion https://caniuse.com/mdn-javascript_builtins_uint8array_fromhex
 const hasHexBuiltin: boolean = /* @__PURE__ */ (() =>
@@ -263,7 +273,7 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   opts?: T2
 ): T1 & T2 {
   if (opts !== undefined && {}.toString.call(opts) !== '[object Object]')
-    throw new Error('Options should be object or undefined');
+    throw new Error('options should be object or undefined');
   const merged = Object.assign(defaults, opts);
   return merged as T1 & T2;
 }

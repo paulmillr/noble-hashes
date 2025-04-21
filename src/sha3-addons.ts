@@ -445,7 +445,7 @@ export class KeccakPRG extends Keccak {
     anumber(capacity);
     // Rho should be full bytes
     if (capacity < 0 || capacity > 1600 - 10 || (1600 - capacity - 2) % 8)
-      throw new Error('KeccakPRG: Invalid capacity');
+      throw new Error('invalid capacity');
     // blockLen = rho in bytes
     super((1600 - capacity - 2) / 8, 0, 0, true);
     this.rate = 1600 - capacity;
@@ -469,14 +469,14 @@ export class KeccakPRG extends Keccak {
   }
   protected finish(): void {}
   digestInto(_out: Uint8Array): Uint8Array {
-    throw new Error('KeccakPRG: digest is not allowed, please use .fetch instead.');
+    throw new Error('digest is not allowed, use .fetch instead');
   }
   fetch(bytes: number): Uint8Array {
     return this.xof(bytes);
   }
   // Ensure irreversibility (even if state leaked previous outputs cannot be computed)
   forget(): void {
-    if (this.rate < 1600 / 2 + 1) throw new Error('KeccakPRG: rate too low to use forget');
+    if (this.rate < 1600 / 2 + 1) throw new Error('rate is too low to use .forget()');
     this.keccak();
     for (let i = 0; i < this.blockLen; i++) this.state[i] = 0;
     this.pos = this.blockLen;

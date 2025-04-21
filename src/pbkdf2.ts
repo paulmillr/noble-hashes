@@ -24,7 +24,7 @@ function pbkdf2Init(hash: CHash, _password: KDFInput, _salt: KDFInput, _opts: Pb
   anumber(c);
   anumber(dkLen);
   anumber(asyncTick);
-  if (c < 1) throw new Error('PBKDF2: iterations (c) should be >= 1');
+  if (c < 1) throw new Error('iterations (c) should be >= 1');
   const password = kdfInputToBytes(_password);
   const salt = kdfInputToBytes(_salt);
   // DK = PBKDF2(PRF, Password, Salt, c, dkLen);

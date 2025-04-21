@@ -7,7 +7,6 @@ import * as u from '../esm/utils.js';
 import {
   byteSwap,
   byteSwap32,
-  byteSwapIfBE,
   bytesToHex,
   concatBytes,
   createView,
@@ -15,6 +14,7 @@ import {
   isBytes,
   isLE,
   randomBytes,
+  swap8IfBE,
 } from '../esm/utils.js';
 import { gen, integer, optional } from './generator.js';
 import { TYPE_TEST, pattern } from './utils.js';
@@ -108,19 +108,19 @@ describe('utils etc', () => {
     });
   });
 
-  should('byteSwapIfBE', () => {
+  should('swap8IfBE', () => {
     BYTESWAP_TEST_CASES.forEach((test) => {
       if (isLE) {
-        deepStrictEqual(test.in, byteSwapIfBE(test.in));
+        deepStrictEqual(test.in, swap8IfBE(test.in));
       } else {
-        deepStrictEqual(test.out, byteSwapIfBE(test.in));
+        deepStrictEqual(test.out, swap8IfBE(test.in));
       }
     });
   });
 
   should('byteSwap32', () => {
-    const input = Uint32Array.of([0x11223344, 0xffeeddcc, 0xccddeeff]);
-    const expected = Uint32Array.of([0x44332211, 0xccddeeff, 0xffeeddcc]);
+    const input = Uint32Array.from([0x11223344, 0xffeeddcc, 0xccddeeff]);
+    const expected = Uint32Array.from([0x44332211, 0xccddeeff, 0xffeeddcc]);
     byteSwap32(input);
     deepStrictEqual(expected, input);
   });

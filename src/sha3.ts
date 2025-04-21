@@ -13,8 +13,10 @@ import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  byteSwap32, clean, createHasher, createXOFer, Hash, isLE, toBytes, u32,
-  type CHash, type CHashXO, type HashXOF, type Input,
+  clean, createHasher, createXOFer, Hash,
+  swap32IfBE,
+  toBytes, u32,
+  type CHash, type CHashXO, type HashXOF, type Input
 } from './utils.ts';
 
 // No __PURE__ annotations in sha3 header:
@@ -128,8 +130,8 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     anumber(outputLen);
     // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
     // 0 < blockLen < 200
-    if (0 >= this.blockLen || this.blockLen >= 200)
-      throw new Error('Sha3 supports only keccak-f1600 function');
+    if (!(0 < blockLen && blockLen < 200))
+      throw new Error('only keccak-f1600 function is supported');
     this.state = new Uint8Array(200);
     this.state32 = u32(this.state);
   }
@@ -137,9 +139,9 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     return this._cloneInto();
   }
   protected keccak(): void {
-    if (!isLE) byteSwap32(this.state32);
+    swap32IfBE(this.state32);
     keccakP(this.state32, this.rounds);
-    if (!isLE) byteSwap32(this.state32);
+    swap32IfBE(this.state32);
     this.posOut = 0;
     this.pos = 0;
   }

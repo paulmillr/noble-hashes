@@ -5,8 +5,7 @@
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  byteSwap32, byteSwapIfBE, clean,
-  Hash, isLE, rotr, toBytes, u32, type Input,
+  clean, Hash, rotr, swap32IfBE, swap8IfBE, toBytes, u32, type Input
 } from './utils.ts';
 
 /**
@@ -70,11 +69,12 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     anumber(outputLen);
     anumber(keyLen);
     if (outputLen < 0 || outputLen > keyLen) throw new Error('outputLen bigger than keyLen');
-    if (opts.key !== undefined && (opts.key.length < 1 || opts.key.length > keyLen))
+    const { key, salt, personalization } = opts;
+    if (key !== undefined && (key.length < 1 || key.length > keyLen))
       throw new Error('key length must be undefined or 1..' + keyLen);
-    if (opts.salt !== undefined && opts.salt.length !== saltLen)
+    if (salt !== undefined && salt.length !== saltLen)
       throw new Error('salt must be undefined or ' + saltLen);
-    if (opts.personalization !== undefined && opts.personalization.length !== persLen)
+    if (personalization !== undefined && personalization.length !== persLen)
       throw new Error('personalization must be undefined or ' + persLen);
     this.blockLen = blockLen;
     this.outputLen = outputLen;
@@ -96,9 +96,9 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     for (let pos = 0; pos < len; ) {
       // If buffer is full and we still have input (don't process last block, same as blake2s)
       if (this.pos === blockLen) {
-        if (!isLE) byteSwap32(buffer32);
+        swap32IfBE(buffer32);
         this.compress(buffer32, 0, false);
-        if (!isLE) byteSwap32(buffer32);
+        swap32IfBE(buffer32);
         this.pos = 0;
       }
       const take = Math.min(blockLen - this.pos, len - pos);
@@ -106,12 +106,12 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
       // full block && aligned to 4 bytes && not last in input
       if (take === blockLen && !(dataOffset % 4) && pos + take < len) {
         const data32 = new Uint32Array(buf, dataOffset, Math.floor((len - pos) / 4));
-        if (!isLE) byteSwap32(data32);
+        swap32IfBE(data32);
         for (let pos32 = 0; pos + blockLen < len; pos32 += buffer32.length, pos += blockLen) {
           this.length += blockLen;
           this.compress(data32, pos32, false);
         }
-        if (!isLE) byteSwap32(data32);
+        swap32IfBE(data32);
         continue;
       }
       buffer.set(data.subarray(pos, pos + take), this.pos);
@@ -128,11 +128,11 @@ export abstract class BLAKE<T extends BLAKE<T>> extends Hash<T> {
     this.finished = true;
     // Padding
     clean(this.buffer.subarray(pos));
-    if (!isLE) byteSwap32(buffer32);
+    swap32IfBE(buffer32);
     this.compress(buffer32, 0, true);
-    if (!isLE) byteSwap32(buffer32);
+    swap32IfBE(buffer32);
     const out32 = u32(out);
-    this.get().forEach((v, i) => (out32[i] = byteSwapIfBE(v)));
+    this.get().forEach((v, i) => (out32[i] = swap8IfBE(v)));
   }
   digest(): Uint8Array {
     const { buffer, outputLen } = this;
