@@ -41,7 +41,7 @@ export type BlakeOpts = {
 // Empty zero-filled salt
 const EMPTY_SALT = /* @__PURE__ */ new Uint32Array(8);
 
-abstract class Blake1<T extends Blake1<T>> extends Hash<T> {
+abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
   protected finished = false;
   protected length = 0;
   protected pos = 0;
@@ -210,11 +210,10 @@ function generateTBL256() {
 }
 const TBL256 = /* @__PURE__ */ generateTBL256(); // C256[SIGMA[X]] precompute
 
-// Temporary buffer, not used to store anything between runs
-// Named after SHA256_W buffer (works same)
+// Reusable temporary buffer
 const BLAKE256_W = /* @__PURE__ */ new Uint32Array(16);
 
-class Blake1_32 extends Blake1<Blake1_32> {
+class Blake1_32 extends BLAKE1<Blake1_32> {
   private v0: number;
   private v1: number;
   private v2: number;
@@ -374,7 +373,7 @@ function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
   (BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh);
 }
 
-class Blake1_64 extends Blake1<Blake1_64> {
+class Blake1_64 extends BLAKE1<Blake1_64> {
   private v0l: number;
   private v0h: number;
   private v1l: number;
@@ -497,39 +496,39 @@ class Blake1_64 extends Blake1<Blake1_64> {
   }
 }
 
-export class Blake224 extends Blake1_32 {
+export class BLAKE224 extends Blake1_32 {
   constructor(opts: BlakeOpts = {}) {
     super(28, B224_IV, 0b0000_0000, opts);
   }
 }
-export class Blake256 extends Blake1_32 {
+export class BLAKE256 extends Blake1_32 {
   constructor(opts: BlakeOpts = {}) {
     super(32, B256_IV, 0b0000_0001, opts);
   }
 }
-export class Blake384 extends Blake1_64 {
+export class BLAKE384 extends Blake1_64 {
   constructor(opts: BlakeOpts = {}) {
     super(48, B384_IV, 0b0000_0000, opts);
   }
 }
-export class Blake512 extends Blake1_64 {
+export class BLAKE512 extends Blake1_64 {
   constructor(opts: BlakeOpts = {}) {
     super(64, B512_IV, 0b0000_0001, opts);
   }
 }
 /** blake1-224 hash function */
-export const blake224: CHashO = /* @__PURE__ */ createOptHasher<Blake224, BlakeOpts>(
-  (opts) => new Blake224(opts)
+export const blake224: CHashO = /* @__PURE__ */ createOptHasher<BLAKE224, BlakeOpts>(
+  (opts) => new BLAKE224(opts)
 );
 /** blake1-256 hash function */
-export const blake256: CHashO = /* @__PURE__ */ createOptHasher<Blake256, BlakeOpts>(
-  (opts) => new Blake256(opts)
+export const blake256: CHashO = /* @__PURE__ */ createOptHasher<BLAKE256, BlakeOpts>(
+  (opts) => new BLAKE256(opts)
 );
 /** blake1-384 hash function */
-export const blake384: CHashO = /* @__PURE__ */ createOptHasher<Blake512, BlakeOpts>(
-  (opts) => new Blake384(opts)
+export const blake384: CHashO = /* @__PURE__ */ createOptHasher<BLAKE512, BlakeOpts>(
+  (opts) => new BLAKE384(opts)
 );
 /** blake1-512 hash function */
-export const blake512: CHashO = /* @__PURE__ */ createOptHasher<Blake512, BlakeOpts>(
-  (opts) => new Blake512(opts)
+export const blake512: CHashO = /* @__PURE__ */ createOptHasher<BLAKE512, BlakeOpts>(
+  (opts) => new BLAKE512(opts)
 );

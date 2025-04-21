@@ -25,7 +25,7 @@ const SHA256_K = /* @__PURE__ */ Uint32Array.from([
   0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 ]);
 
-/** Temporary buffer, not used to store anything between runs. "W" comes straight from spec. */
+/** Reusable temporary buffer. "W" comes straight from spec. */
 const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
 export class SHA256 extends HashMD<SHA256> {
   // We cannot use array here since array allows indexing by variable
@@ -149,7 +149,7 @@ const K512 = /* @__PURE__ */ (() => u64.split([
 const SHA512_Kh = /* @__PURE__ */ (() => K512[0])();
 const SHA512_Kl = /* @__PURE__ */ (() => K512[1])();
 
-// Temporary buffer, not used to store anything between runs
+// Reusable temporary buffers
 const SHA512_W_H = /* @__PURE__ */ new Uint32Array(80);
 const SHA512_W_L = /* @__PURE__ */ new Uint32Array(80);
 

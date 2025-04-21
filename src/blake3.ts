@@ -13,7 +13,7 @@
  */
 import { SHA256_IV } from './_md.ts';
 import { fromBig } from './_u64.ts';
-import { Blake2, compress } from './blake2.ts';
+import { BLAKE2, compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
@@ -53,7 +53,7 @@ const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
 export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
 
 /** Blake3 hash. Can be used as MAC and KDF. */
-export class BLAKE3 extends Blake2<BLAKE3> implements HashXOF<BLAKE3> {
+export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
   private chunkPos = 0; // Position of current block in chunk
   private chunksDone = 0; // How many chunks we already have
   private flags = 0 | 0;

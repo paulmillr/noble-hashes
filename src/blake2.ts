@@ -99,17 +99,17 @@ function checkBlake2Opts(
 }
 
 /** Class, from which others are subclassed. */
-export abstract class Blake2<T extends Blake2<T>> extends Hash<T> {
+export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
   protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
   abstract destroy(): void;
   protected buffer: Uint8Array;
   protected buffer32: Uint32Array;
-  protected length: number = 0;
-  protected pos: number = 0;
   protected finished = false;
   protected destroyed = false;
+  protected length: number = 0;
+  protected pos: number = 0;
   readonly blockLen: number;
   readonly outputLen: number;
 
@@ -200,7 +200,7 @@ export abstract class Blake2<T extends Blake2<T>> extends Hash<T> {
   }
 }
 
-export class BLAKE2b extends Blake2<BLAKE2b> {
+export class BLAKE2b extends BLAKE2<BLAKE2b> {
   // Same as SHA-512, but LE
   private v0l = B2B_IV[0] | 0;
   private v0h = B2B_IV[1] | 0;
@@ -392,7 +392,7 @@ export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds
 }
 
 const B2S_IV = SHA256_IV;
-export class BLAKE2s extends Blake2<BLAKE2s> {
+export class BLAKE2s extends BLAKE2<BLAKE2s> {
   // Internal state, same as SHA-256
   private v0 = B2S_IV[0] | 0;
   private v1 = B2S_IV[1] | 0;

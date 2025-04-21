@@ -16,7 +16,7 @@ const SHA1_IV = /* @__PURE__ */ Uint32Array.from([
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0,
 ]);
 
-// Temporary buffer, not used to store anything between runs
+// Reusable temporary buffer
 const SHA1_W = /* @__PURE__ */ new Uint32Array(80);
 
 /** SHA1 legacy hash class. */
@@ -98,7 +98,7 @@ const K = /* @__PURE__ */ Array.from({ length: 64 }, (_, i) =>
 /** md5 initial state: same as sha1, but 4 u32 instead of 5. */
 const MD5_IV = /* @__PURE__ */ SHA1_IV.slice(0, 4);
 
-// Temporary buffer, not used to store anything between runs
+// Reusable temporary buffer
 const MD5_W = /* @__PURE__ */ new Uint32Array(16);
 /** MD5 legacy hash class. */
 export class MD5 extends HashMD<MD5> {
@@ -200,7 +200,7 @@ const shifts160 = /* @__PURE__ */ [
   [13, 15, 14, 11, 7, 7, 6, 8, 13, 14, 13, 12, 5, 5, 6, 9],
   [14, 11, 12, 14, 8, 6, 5, 5, 15, 12, 15, 14, 9, 9, 8, 6],
   [15, 12, 13, 13, 9, 5, 8, 6, 14, 11, 12, 11, 8, 6, 5, 5],
-].map((i) => new Uint8Array(i));
+].map((i) => Uint8Array.from(i));
 const shiftsL160 = /* @__PURE__ */ idxL.map((idx, i) => idx.map((j) => shifts160[i][j]));
 const shiftsR160 = /* @__PURE__ */ idxR.map((idx, i) => idx.map((j) => shifts160[i][j]));
 const Kl160 = /* @__PURE__ */ Uint32Array.from([
@@ -210,14 +210,14 @@ const Kr160 = /* @__PURE__ */ Uint32Array.from([
   0x50a28be6, 0x5c4dd124, 0x6d703ef3, 0x7a6d76e9, 0x00000000,
 ]);
 // It's called f() in spec.
-function ripe_f(group: number, x: number, y: number, z: number): number {
+function ripemd_f(group: number, x: number, y: number, z: number): number {
   if (group === 0) return x ^ y ^ z;
-  else if (group === 1) return (x & y) | (~x & z);
-  else if (group === 2) return (x | ~y) ^ z;
-  else if (group === 3) return (x & z) | (y & ~z);
-  else return x ^ (y | ~z);
+  if (group === 1) return (x & y) | (~x & z);
+  if (group === 2) return (x | ~y) ^ z;
+  if (group === 3) return (x & z) | (y & ~z);
+  return x ^ (y | ~z);
 }
-// Temporary buffer, not used to store anything between runs
+// Reusable temporary buffer
 const BUF_160 = /* @__PURE__ */ new Uint32Array(16);
 export class RIPEMD160 extends HashMD<RIPEMD160> {
   private h0 = 0x67452301 | 0;
@@ -257,12 +257,12 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
       const rl = idxL[group], rr = idxR[group]; // prettier-ignore
       const sl = shiftsL160[group], sr = shiftsR160[group]; // prettier-ignore
       for (let i = 0; i < 16; i++) {
-        const tl = (rotl(al + ripe_f(group, bl, cl, dl) + BUF_160[rl[i]] + hbl, sl[i]) + el) | 0;
+        const tl = (rotl(al + ripemd_f(group, bl, cl, dl) + BUF_160[rl[i]] + hbl, sl[i]) + el) | 0;
         al = el, el = dl, dl = rotl(cl, 10) | 0, cl = bl, bl = tl; // prettier-ignore
       }
       // 2 loops are 10% faster
       for (let i = 0; i < 16; i++) {
-        const tr = (rotl(ar + ripe_f(rGroup, br, cr, dr) + BUF_160[rr[i]] + hbr, sr[i]) + er) | 0;
+        const tr = (rotl(ar + ripemd_f(rGroup, br, cr, dr) + BUF_160[rr[i]] + hbr, sr[i]) + er) | 0;
         ar = er, er = dr, dr = rotl(cr, 10) | 0, cr = br, br = tr; // prettier-ignore
       }
     }
