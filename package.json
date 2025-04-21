@@ -146,6 +146,94 @@
     "./utils": {
       "import": "./esm/utils.js",
       "require": "./utils.js"
+    },
+    "./_assert.js": {
+      "import": "./esm/_assert.js",
+      "require": "./_assert.js"
+    },
+    "./_md.js": {
+      "import": "./esm/_md.js",
+      "require": "./_md.js"
+    },
+    "./argon2.js": {
+      "import": "./esm/argon2.js",
+      "require": "./argon2.js"
+    },
+    "./blake1.js": {
+      "import": "./esm/blake1.js",
+      "require": "./blake1.js"
+    },
+    "./blake2.js": {
+      "import": "./esm/blake2.js",
+      "require": "./blake2.js"
+    },
+    "./blake2b.js": {
+      "import": "./esm/blake2b.js",
+      "require": "./blake2b.js"
+    },
+    "./blake2s.js": {
+      "import": "./esm/blake2s.js",
+      "require": "./blake2s.js"
+    },
+    "./blake3.js": {
+      "import": "./esm/blake3.js",
+      "require": "./blake3.js"
+    },
+    "./eskdf.js": {
+      "import": "./esm/eskdf.js",
+      "require": "./eskdf.js"
+    },
+    "./hkdf.js": {
+      "import": "./esm/hkdf.js",
+      "require": "./hkdf.js"
+    },
+    "./hmac.js": {
+      "import": "./esm/hmac.js",
+      "require": "./hmac.js"
+    },
+    "./legacy.js": {
+      "import": "./esm/legacy.js",
+      "require": "./legacy.js"
+    },
+    "./pbkdf2.js": {
+      "import": "./esm/pbkdf2.js",
+      "require": "./pbkdf2.js"
+    },
+    "./ripemd160.js": {
+      "import": "./esm/ripemd160.js",
+      "require": "./ripemd160.js"
+    },
+    "./scrypt.js": {
+      "import": "./esm/scrypt.js",
+      "require": "./scrypt.js"
+    },
+    "./sha1.js": {
+      "import": "./esm/sha1.js",
+      "require": "./sha1.js"
+    },
+    "./sha2.js": {
+      "import": "./esm/sha2.js",
+      "require": "./sha2.js"
+    },
+    "./sha3-addons.js": {
+      "import": "./esm/sha3-addons.js",
+      "require": "./sha3-addons.js"
+    },
+    "./sha3.js": {
+      "import": "./esm/sha3.js",
+      "require": "./sha3.js"
+    },
+    "./sha256.js": {
+      "import": "./esm/sha256.js",
+      "require": "./sha256.js"
+    },
+    "./sha512.js": {
+      "import": "./esm/sha512.js",
+      "require": "./sha512.js"
+    },
+    "./utils.js": {
+      "import": "./esm/utils.js",
+      "require": "./utils.js"
     }
   },
   "sideEffects": false,
