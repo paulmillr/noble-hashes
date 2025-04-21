@@ -1,8 +1,8 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
-import { hmac } from '../hmac.js';
-import { sha256, sha384, sha512 } from '../sha2.js';
-import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../utils.js';
+import { hmac } from '../esm/hmac.js';
+import { sha256, sha384, sha512 } from '../esm/sha2.js';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
 import { EMPTY, repr, SPACE, truncate, TYPE_TEST } from './utils.js';
 
 // HMAC test vectors from RFC 4231

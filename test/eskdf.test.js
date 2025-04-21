@@ -1,7 +1,7 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual, equal, rejects, throws } from 'node:assert';
-import { eskdf } from '../eskdf.js';
-import { bytesToHex as toHex } from '../utils.js';
+import { eskdf } from '../esm/eskdf.js';
+import { bytesToHex as toHex } from '../esm/utils.js';
 import { json } from './utils.js';
 const vectors = json('./vectors/eskdf.json');
 

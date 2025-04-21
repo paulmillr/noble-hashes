@@ -22,7 +22,7 @@ import {
   tuplehash256,
   turboshake128,
   turboshake256,
-} from '../sha3-addons.js';
+} from '../esm/sha3-addons.js';
 import {
   Keccak,
   keccak_224,
@@ -35,8 +35,8 @@ import {
   sha3_512,
   shake128,
   shake256,
-} from '../sha3.js';
-import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../utils.js';
+} from '../esm/sha3.js';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
 import { TYPE_TEST, jsonGZ } from './utils.js';
 import {
   CSHAKE_VESTORS,

@@ -1,11 +1,11 @@
 import { should } from 'micro-should';
 import { deepStrictEqual, rejects } from 'node:assert';
-import { hkdf } from '../hkdf.js';
-import { hmac } from '../hmac.js';
-import { pbkdf2, pbkdf2Async } from '../pbkdf2.js';
-import { scrypt, scryptAsync } from '../scrypt.js';
-import { sha256 } from '../sha2.js';
-import { createView } from '../utils.js';
+import { hkdf } from '../esm/hkdf.js';
+import { hmac } from '../esm/hmac.js';
+import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
+import { scrypt, scryptAsync } from '../esm/scrypt.js';
+import { sha256 } from '../esm/sha2.js';
+import { createView } from '../esm/utils.js';
 import { RANDOM } from './generator.js';
 import { HASHES } from './hashes.test.js';
 import { stats } from './utils.js';

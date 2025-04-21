@@ -8,9 +8,9 @@ import {
   argon2iAsync,
   argon2id,
   argon2idAsync,
-} from '../argon2.js';
-import { scrypt, scryptAsync } from '../scrypt.js';
-import { bytesToHex } from '../utils.js';
+} from '../esm/argon2.js';
+import { scrypt, scryptAsync } from '../esm/scrypt.js';
+import { bytesToHex } from '../esm/utils.js';
 import { bytes, gen, integer, serializeCase } from './generator.js';
 import { json, pattern } from './utils.js';
 

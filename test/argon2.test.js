@@ -7,8 +7,8 @@ import {
   argon2iAsync,
   argon2id,
   argon2idAsync,
-} from '../argon2.js';
-import { bytesToHex, hexToBytes } from '../utils.js';
+} from '../esm/argon2.js';
+import { bytesToHex, hexToBytes } from '../esm/utils.js';
 
 // Some vectors are very slow and are ran in slow-big.test.js.
 

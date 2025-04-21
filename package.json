@@ -7,7 +7,7 @@
     "/*.js.map",
     "/*.d.ts",
     "/*.d.ts.map",
-    "cjs",
+    "esm",
     "src/*.ts"
   ],
   "scripts": {
@@ -46,109 +46,106 @@
   "engines": {
     "node": "^14.21.3 || >=16"
   },
-  "type": "module",
   "exports": {
     ".": {
-      "import": "./index.js",
-      "require": "./cjs/index.js"
+      "import": "./esm/index.js",
+      "require": "./index.js"
     },
     "./crypto": {
       "node": {
-        "import": "./cryptoNode.js",
-        "require": "./cjs/cryptoNode.js",
-        "default": "./cjs/cryptoNode.js"
+        "import": "./esm/cryptoNode.js",
+        "default": "./cryptoNode.js"
       },
-      "import": "./crypto.js",
-      "require": "./cjs/crypto.js",
-      "default": "./cjs/crypto.js"
+      "import": "./esm/crypto.js",
+      "default": "./crypto.js"
     },
     "./_assert": {
-      "import": "./_assert.js",
-      "require": "./cjs/_assert.js"
+      "import": "./esm/_assert.js",
+      "require": "./_assert.js"
     },
     "./_md": {
-      "import": "./_md.js",
-      "require": "./cjs/_md.js"
+      "import": "./esm/_md.js",
+      "require": "./_md.js"
     },
     "./argon2": {
-      "import": "./argon2.js",
-      "require": "./cjs/argon2.js"
+      "import": "./esm/argon2.js",
+      "require": "./argon2.js"
     },
     "./blake1": {
-      "import": "./blake1.js",
-      "require": "./cjs/blake1.js"
+      "import": "./esm/blake1.js",
+      "require": "./blake1.js"
     },
     "./blake2": {
-      "import": "./blake2.js",
-      "require": "./cjs/blake2.js"
+      "import": "./esm/blake2.js",
+      "require": "./blake2.js"
     },
     "./blake2b": {
-      "import": "./blake2b.js",
-      "require": "./cjs/blake2b.js"
+      "import": "./esm/blake2b.js",
+      "require": "./blake2b.js"
     },
     "./blake2s": {
-      "import": "./blake2s.js",
-      "require": "./cjs/blake2s.js"
+      "import": "./esm/blake2s.js",
+      "require": "./blake2s.js"
     },
     "./blake3": {
-      "import": "./blake3.js",
-      "require": "./cjs/blake3.js"
+      "import": "./esm/blake3.js",
+      "require": "./blake3.js"
     },
     "./eskdf": {
-      "import": "./eskdf.js",
-      "require": "./cjs/eskdf.js"
+      "import": "./esm/eskdf.js",
+      "require": "./eskdf.js"
     },
     "./hkdf": {
-      "import": "./hkdf.js",
-      "require": "./cjs/hkdf.js"
+      "import": "./esm/hkdf.js",
+      "require": "./hkdf.js"
     },
     "./hmac": {
-      "import": "./hmac.js",
-      "require": "./cjs/hmac.js"
+      "import": "./esm/hmac.js",
+      "require": "./hmac.js"
     },
     "./legacy": {
-      "import": "./legacy.js",
-      "require": "./cjs/legacy.js"
+      "import": "./esm/legacy.js",
+      "require": "./legacy.js"
     },
     "./pbkdf2": {
-      "import": "./pbkdf2.js",
-      "require": "./cjs/pbkdf2.js"
+      "import": "./esm/pbkdf2.js",
+      "require": "./pbkdf2.js"
     },
     "./ripemd160": {
-      "import": "./ripemd160.js",
-      "require": "./cjs/ripemd160.js"
+      "import": "./esm/ripemd160.js",
+      "require": "./ripemd160.js"
     },
     "./scrypt": {
-      "import": "./scrypt.js",
-      "require": "./cjs/scrypt.js"
+      "import": "./esm/scrypt.js",
+      "require": "./scrypt.js"
     },
     "./sha1": {
-      "import": "./sha1.js",
-      "require": "./cjs/sha1.js"
+      "import": "./esm/sha1.js",
+      "require": "./sha1.js"
     },
     "./sha2": {
-      "import": "./sha2.js",
-      "require": "./cjs/sha2.js"
+      "import": "./esm/sha2.js",
+      "require": "./sha2.js"
     },
     "./sha3-addons": {
-      "import": "./sha3-addons.js",
-      "require": "./cjs/sha3-addons.js"
+      "import": "./esm/sha3-addons.js",
+      "require": "./sha3-addons.js"
     },
     "./sha3": {
-      "import": "./sha3.js",
-      "require": "./cjs/sha3.js"
+      "import": "./esm/sha3.js",
+      "require": "./sha3.js"
     },
     "./sha256": {
-      "import": "./sha256.js",
-      "require": "./cjs/sha256.js"
+      "import": "./esm/sha256.js",
+      "require": "./sha256.js"
     },
     "./sha512": {
-      "import": "./sha512.js",
-      "require": "./cjs/sha512.js"
+      "import": "./esm/sha512.js",
+      "require": "./sha512.js"
     },
     "./utils": {
-      "import": "./utils.js",
-      "require": "./cjs/utils.js"
+      "import": "./esm/utils.js",
+      "require": "./utils.js"
     }
   },
   "sideEffects": false,

@@ -1,3 +1,4 @@
+import { hexToBytes } from '../../esm/utils.js';
 import {
   cshake128,
   cshake256,
@@ -17,7 +18,6 @@ import {
   turboshake128,
   turboshake256,
 } from '../../sha3-addons.js';
-import { hexToBytes } from '../../utils.js';
 import { EMPTY, pattern, times } from '../utils.js';
 const fromHex = (hex) => hexToBytes(hex.replace(/ |\n/gm, ''));
 
