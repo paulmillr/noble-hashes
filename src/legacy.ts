@@ -87,7 +87,7 @@ export class SHA1 extends HashMD<SHA1> {
 }
 
 /** SHA1 (RFC 3174) legacy hash function. It was cryptographically broken. */
-export const sha1: CHash = /* @__PURE__ */ createHasher(() => new SHA1());
+export const sha1: CHash<SHA1> = /* @__PURE__ */ createHasher(() => new SHA1());
 
 /** Per-round constants */
 const p32 = /* @__PURE__ */ Math.pow(2, 32);
@@ -174,7 +174,7 @@ export class MD5 extends HashMD<MD5> {
  * - Non-linear index selection: huge speed-up for unroll
  * - Per round constants: more memory accesses, additional speed-up for unroll
  */
-export const md5: CHash = /* @__PURE__ */ createHasher(() => new MD5());
+export const md5: CHash<MD5> = /* @__PURE__ */ createHasher(() => new MD5());
 
 // RIPEMD-160
 
@@ -290,4 +290,4 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
  * * https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
  * * https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
  */
-export const ripemd160: CHash = /* @__PURE__ */ createHasher(() => new RIPEMD160());
+export const ripemd160: CHash<RIPEMD160> = /* @__PURE__ */ createHasher(() => new RIPEMD160());

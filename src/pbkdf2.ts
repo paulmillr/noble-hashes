@@ -17,7 +17,12 @@ export type Pbkdf2Opt = {
   asyncTick?: number; // Maximum time in ms for which async function can block execution
 };
 // Common prologue and epilogue for sync/async functions
-function pbkdf2Init(hash: CHash, _password: KDFInput, _salt: KDFInput, _opts: Pbkdf2Opt) {
+function pbkdf2Init<T extends Hash<T>>(
+  hash: CHash<T>,
+  _password: KDFInput,
+  _salt: KDFInput,
+  _opts: Pbkdf2Opt
+) {
   ahash(hash);
   const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);
   const { c, dkLen, asyncTick } = opts;
@@ -58,8 +63,8 @@ function pbkdf2Output<T extends Hash<T>>(
  * @example
  * const key = pbkdf2(sha256, 'password', 'salt', { dkLen: 32, c: Math.pow(2, 18) });
  */
-export function pbkdf2(
-  hash: CHash,
+export function pbkdf2<T extends Hash<T>>(
+  hash: CHash<T>,
   password: KDFInput,
   salt: KDFInput,
   opts: Pbkdf2Opt
@@ -92,8 +97,8 @@ export function pbkdf2(
  * @example
  * await pbkdf2Async(sha256, 'password', 'salt', { dkLen: 32, c: 500_000 });
  */
-export async function pbkdf2Async(
-  hash: CHash,
+export async function pbkdf2Async<T extends Hash<T>>(
+  hash: CHash<T>,
   password: KDFInput,
   salt: KDFInput,
   opts: Pbkdf2Opt
