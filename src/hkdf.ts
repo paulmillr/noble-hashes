@@ -4,7 +4,7 @@
  * @module
  */
 import { hmac } from './hmac.ts';
-import { ahash, anumber, type CHash, type Hash, clean, type Input, toBytes } from './utils.ts';
+import { ahash, anumber, type CHash, clean, type Hash, type Input, toBytes } from './utils.ts';
 
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`
@@ -22,7 +22,7 @@ export function extract<T extends Hash<T>>(hash: CHash<T>, ikm: Input, salt?: In
   return hmac(hash, toBytes(salt), toBytes(ikm));
 }
 
-const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.from([0]);
+const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.of(0);
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
 /**
