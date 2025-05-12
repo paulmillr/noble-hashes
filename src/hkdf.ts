@@ -4,7 +4,7 @@
  * @module
  */
 import { hmac } from './hmac.ts';
-import { ahash, anumber, type CHash, clean, type Input, toBytes } from './utils.ts';
+import { ahash, anumber, type CHash, clean, type Hash, type Input, toBytes } from './utils.ts';
 
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`
@@ -13,7 +13,7 @@ import { ahash, anumber, type CHash, clean, type Input, toBytes } from './utils.
  * @param ikm - input keying material, the initial key
  * @param salt - optional salt value (a non-secret random value)
  */
-export function extract(hash: CHash, ikm: Input, salt?: Input): Uint8Array {
+export function extract<T extends Hash<T>>(hash: CHash<T>, ikm: Input, salt?: Input): Uint8Array {
   ahash(hash);
   // NOTE: some libraries treat zero-length array as 'not provided';
   // we don't, since we have undefined as 'not provided'
@@ -22,7 +22,7 @@ export function extract(hash: CHash, ikm: Input, salt?: Input): Uint8Array {
   return hmac(hash, toBytes(salt), toBytes(ikm));
 }
 
-const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.from([0]);
+const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.of(0);
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
 /**
@@ -32,7 +32,12 @@ const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
  * @param info - optional context and application specific information (can be a zero-length string)
  * @param length - length of output keying material in bytes
  */
-export function expand(hash: CHash, prk: Input, info?: Input, length: number = 32): Uint8Array {
+export function expand<T extends Hash<T>>(
+  hash: CHash<T>,
+  prk: Input,
+  info?: Input,
+  length: number = 32
+): Uint8Array {
   ahash(hash);
   anumber(length);
   const olen = hash.outputLen;
@@ -79,8 +84,8 @@ export function expand(hash: CHash, prk: Input, info?: Input, length: number = 3
  * const info = 'application-key';
  * const hk1 = hkdf(sha256, inputKey, salt, info, 32);
  */
-export const hkdf = (
-  hash: CHash,
+export const hkdf = <T extends Hash<T>>(
+  hash: CHash<T>,
   ikm: Input,
   salt: Input | undefined,
   info: Input | undefined,

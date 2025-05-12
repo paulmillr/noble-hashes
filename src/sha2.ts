@@ -7,7 +7,7 @@
  */
 import { Chi, HashMD, Maj, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
-import { type CHash, clean, createHasher, rotr } from './utils.ts';
+import { type CHash, clean, createHasher, Hash, rotr } from './utils.ts';
 
 /**
  * Round constants:
@@ -105,7 +105,7 @@ export class SHA256 extends HashMD<SHA256> {
   }
 }
 
-export class SHA224 extends SHA256 {
+export class SHA224 extends SHA256 implements Hash<SHA224> {
   protected A: number = SHA224_IV[0] | 0;
   protected B: number = SHA224_IV[1] | 0;
   protected C: number = SHA224_IV[2] | 0;
@@ -116,6 +116,12 @@ export class SHA224 extends SHA256 {
   protected H: number = SHA224_IV[7] | 0;
   constructor() {
     super(28);
+  }
+  _cloneInto(to?: SHA224): SHA224 {
+    return super._cloneInto(to) as SHA224;
+  }
+  clone(): SHA224 {
+    return this._cloneInto() as SHA224;
   }
 }
 
@@ -286,7 +292,7 @@ export class SHA512 extends HashMD<SHA512> {
   }
 }
 
-export class SHA384 extends SHA512 {
+export class SHA384 extends SHA512 implements Hash<SHA384> {
   protected Ah: number = SHA384_IV[0] | 0;
   protected Al: number = SHA384_IV[1] | 0;
   protected Bh: number = SHA384_IV[2] | 0;
@@ -306,6 +312,12 @@ export class SHA384 extends SHA512 {
 
   constructor() {
     super(48);
+  }
+  _cloneInto(to?: SHA384): SHA384 {
+    return super._cloneInto(to) as SHA384;
+  }
+  clone(): SHA384 {
+    return this._cloneInto() as SHA384;
   }
 }
 
@@ -328,7 +340,7 @@ const T256_IV = /* @__PURE__ */ Uint32Array.from([
   0x96283ee2, 0xa88effe3, 0xbe5e1e25, 0x53863992, 0x2b0199fc, 0x2c85b8aa, 0x0eb72ddc, 0x81c52ca2,
 ]);
 
-export class SHA512_224 extends SHA512 {
+export class SHA512_224 extends SHA512 implements Hash<SHA512_224> {
   protected Ah: number = T224_IV[0] | 0;
   protected Al: number = T224_IV[1] | 0;
   protected Bh: number = T224_IV[2] | 0;
@@ -349,9 +361,15 @@ export class SHA512_224 extends SHA512 {
   constructor() {
     super(28);
   }
+  _cloneInto(to?: SHA512_224): SHA512_224 {
+    return super._cloneInto(to) as SHA512_224;
+  }
+  clone(): SHA512_224 {
+    return this._cloneInto() as SHA512_224;
+  }
 }
 
-export class SHA512_256 extends SHA512 {
+export class SHA512_256 extends SHA512 implements Hash<SHA512_256> {
   protected Ah: number = T256_IV[0] | 0;
   protected Al: number = T256_IV[1] | 0;
   protected Bh: number = T256_IV[2] | 0;
@@ -372,6 +390,12 @@ export class SHA512_256 extends SHA512 {
   constructor() {
     super(32);
   }
+  _cloneInto(to?: SHA512_256): SHA512_256 {
+    return super._cloneInto(to) as SHA512_256;
+  }
+  clone(): SHA512_256 {
+    return this._cloneInto() as SHA512_256;
+  }
 }
 
 /**
@@ -381,22 +405,22 @@ export class SHA512_256 extends SHA512 {
  * To break sha256 using birthday attack, attackers need to try 2^128 hashes.
  * BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
  */
-export const sha256: CHash = /* @__PURE__ */ createHasher(() => new SHA256());
+export const sha256: CHash<SHA256> = /* @__PURE__ */ createHasher(() => new SHA256());
 /** SHA2-224 hash function from RFC 4634 */
-export const sha224: CHash = /* @__PURE__ */ createHasher(() => new SHA224());
+export const sha224: CHash<SHA224> = /* @__PURE__ */ createHasher(() => new SHA224());
 
 /** SHA2-512 hash function from RFC 4634. */
-export const sha512: CHash = /* @__PURE__ */ createHasher(() => new SHA512());
+export const sha512: CHash<SHA512> = /* @__PURE__ */ createHasher(() => new SHA512());
 /** SHA2-384 hash function from RFC 4634. */
-export const sha384: CHash = /* @__PURE__ */ createHasher(() => new SHA384());
+export const sha384: CHash<SHA384> = /* @__PURE__ */ createHasher(() => new SHA384());
 
 /**
  * SHA2-512/256 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
  */
-export const sha512_256: CHash = /* @__PURE__ */ createHasher(() => new SHA512_256());
+export const sha512_256: CHash<SHA512_256> = /* @__PURE__ */ createHasher(() => new SHA512_256());
 /**
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
  */
-export const sha512_224: CHash = /* @__PURE__ */ createHasher(() => new SHA512_224());
+export const sha512_224: CHash<SHA512_224> = /* @__PURE__ */ createHasher(() => new SHA512_224());

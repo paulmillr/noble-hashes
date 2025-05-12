@@ -17,8 +17,8 @@ import { BLAKE2, compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  clean, createXOFer, swap32IfBE, toBytes, u32, u8,
-  type CHashXO, type HashXOF, type Input
+  clean, createHasher, swap32IfBE, toBytes, u32, u8,
+  type CHash, type HashXOF, type Input
 } from './utils.ts';
 
 // Flag bitset
@@ -267,6 +267,6 @@ export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
  * const mac = blake3(data, { key: new Uint8Array(32) });
  * const kdf = blake3(data, { context: 'application name' });
  */
-export const blake3: CHashXO = /* @__PURE__ */ createXOFer<BLAKE3, Blake3Opts>(
+export const blake3: CHash<BLAKE3, Blake3Opts> = /* @__PURE__ */ createHasher(
   (opts) => new BLAKE3(opts)
 );

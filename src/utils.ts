@@ -323,64 +323,35 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
   xofInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
 };
 
+export type HasherCons<T, Opts = undefined> = Opts extends undefined ? () => T : (opts?: Opts) => T;
 /** Hash function */
-export type CHash = ReturnType<typeof createHasher>;
-/** Hash function with output */
-export type CHashO = ReturnType<typeof createOptHasher>;
+export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
+  outputLen: number;
+  blockLen: number;
+} & (Opts extends undefined
+  ? {
+      (msg: Input): Uint8Array;
+      create(): T;
+    }
+  : {
+      (msg: Input, opts?: Opts): Uint8Array;
+      create(opts?: Opts): T;
+    });
 /** XOF with output */
-export type CHashXO = ReturnType<typeof createXOFer>;
+export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CHash<T, Opts>;
 
-/** Wraps hash function, creating an interface on top of it */
-export function createHasher<T extends Hash<T>>(
-  hashCons: () => Hash<T>
-): {
-  (msg: Input): Uint8Array;
-  outputLen: number;
-  blockLen: number;
-  create(): Hash<T>;
-} {
-  const hashC = (msg: Input): Uint8Array => hashCons().update(toBytes(msg)).digest();
-  const tmp = hashCons();
+export function createHasher<T extends Hash<T>, Opts = undefined>(
+  hashCons: HasherCons<T, Opts>
+): CHash<T, Opts> {
+  const hashC: any = (msg: Input, opts?: Opts) => hashCons(opts).update(toBytes(msg)).digest();
+  const tmp = hashCons(undefined);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
-  hashC.create = () => hashCons();
+  hashC.create = (opts?: Opts) => hashCons(opts);
   return hashC;
 }
 
-export function createOptHasher<H extends Hash<H>, T extends Object>(
-  hashCons: (opts?: T) => Hash<H>
-): {
-  (msg: Input, opts?: T): Uint8Array;
-  outputLen: number;
-  blockLen: number;
-  create(opts?: T): Hash<H>;
-} {
-  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
-  const tmp = hashCons({} as T);
-  hashC.outputLen = tmp.outputLen;
-  hashC.blockLen = tmp.blockLen;
-  hashC.create = (opts?: T) => hashCons(opts);
-  return hashC;
-}
-
-export function createXOFer<H extends HashXOF<H>, T extends Object>(
-  hashCons: (opts?: T) => HashXOF<H>
-): {
-  (msg: Input, opts?: T): Uint8Array;
-  outputLen: number;
-  blockLen: number;
-  create(opts?: T): HashXOF<H>;
-} {
-  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
-  const tmp = hashCons({} as T);
-  hashC.outputLen = tmp.outputLen;
-  hashC.blockLen = tmp.blockLen;
-  hashC.create = (opts?: T) => hashCons(opts);
-  return hashC;
-}
 export const wrapConstructor: typeof createHasher = createHasher;
-export const wrapConstructorWithOpts: typeof createOptHasher = createOptHasher;
-export const wrapXOFConstructorWithOpts: typeof createXOFer = createXOFer;
 
 /** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
 export function randomBytes(bytesLength = 32): Uint8Array {

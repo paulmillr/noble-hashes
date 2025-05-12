@@ -14,10 +14,9 @@ import { Keccak, type ShakeOpts } from './sha3.ts';
 import {
   abytes,
   anumber,
-  type CHashO,
-  type CHashXO,
-  createOptHasher,
-  createXOFer,
+  type CHash,
+  type CHashXOF,
+  createHasher,
   Hash,
   type HashXOF,
   type Input,
@@ -80,17 +79,12 @@ function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
 }
 
 const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
-  createXOFer<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
+  createHasher<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
     cshakePers(new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true), opts)
   );
 
 // TODO: refactor
-export type ICShake = {
-  (msg: Input, opts?: cShakeOpts): Uint8Array;
-  outputLen: number;
-  blockLen: number;
-  create(opts: cShakeOpts): HashXOF<Keccak>;
-};
+
 export type ITupleHash = {
   (messages: Input[], opts?: cShakeOpts): Uint8Array;
   create(opts?: cShakeOpts): TupleHash;
@@ -99,8 +93,10 @@ export type IParHash = {
   (message: Input, opts?: ParallelOpts): Uint8Array;
   create(opts?: ParallelOpts): ParallelHash;
 };
-export const cshake128: ICShake = /* @__PURE__ */ (() => gencShake(0x1f, 168, 128 / 8))();
-export const cshake256: ICShake = /* @__PURE__ */ (() => gencShake(0x1f, 136, 256 / 8))();
+export const cshake128: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ (() =>
+  gencShake(0x1f, 168, 128 / 8))();
+export const cshake256: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ (() =>
+  gencShake(0x1f, 136, 256 / 8))();
 
 export class KMAC extends Keccak implements HashXOF<KMAC> {
   constructor(
@@ -324,7 +320,7 @@ export type TurboshakeOpts = ShakeOpts & {
 };
 
 const genTurboshake = (blockLen: number, outputLen: number) =>
-  createXOFer<HashXOF<Keccak>, TurboshakeOpts>((opts: TurboshakeOpts = {}) => {
+  createHasher<Keccak, TurboshakeOpts>((opts: TurboshakeOpts = {}) => {
     const D = opts.D === undefined ? 0x1f : opts.D;
     // Section 2.1 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
     if (!Number.isSafeInteger(D) || D < 0x01 || D > 0x7f)
@@ -333,9 +329,15 @@ const genTurboshake = (blockLen: number, outputLen: number) =>
   });
 
 /** TurboSHAKE 128-bit: reduced 12-round keccak. */
-export const turboshake128: CHashXO = /* @__PURE__ */ genTurboshake(168, 256 / 8);
+export const turboshake128: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurboshake(
+  168,
+  256 / 8
+);
 /** TurboSHAKE 256-bit: reduced 12-round keccak. */
-export const turboshake256: CHashXO = /* @__PURE__ */ genTurboshake(136, 512 / 8);
+export const turboshake256: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurboshake(
+  136,
+  512 / 8
+);
 
 // Kangaroo
 // Same as NIST rightEncode, but returns [0] for zero string
@@ -426,13 +428,13 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
   }
 }
 /** KangarooTwelve: reduced 12-round keccak. */
-export const k12: CHashO = /* @__PURE__ */ (() =>
-  createOptHasher<KangarooTwelve, KangarooOpts>(
+export const k12: CHash<KangarooTwelve, KangarooOpts> = /* @__PURE__ */ (() =>
+  createHasher(
     (opts: KangarooOpts = {}) => new KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
   ))();
 /** MarsupilamiFourteen: reduced 14-round keccak. */
-export const m14: CHashO = /* @__PURE__ */ (() =>
-  createOptHasher<KangarooTwelve, KangarooOpts>(
+export const m14: CHash<KangarooTwelve, KangarooOpts> = /* @__PURE__ */ (() =>
+  createHasher(
     (opts: KangarooOpts = {}) => new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)
   ))();
 
