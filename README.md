@@ -8,7 +8,7 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2 & KangarooTwelve
-- 🪶 48KB for everything, 4.8KB (2.36KB gzipped) for single-hash build
+- 🪶 20KB (gzipped) for everything, 2.4KB for single-hash build
 
 Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
@@ -66,7 +66,8 @@ import * as utils from '@noble/hashes/utils'; // bytesToHex, bytesToUtf8, concat
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
 - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
 - [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
-- [blake, blake2, blake3](#blake-blake2-blake3) | [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
+- [blake, blake2, blake3](#blake-blake2-blake3)
+- [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
 - MACs: [hmac](#hmac) | [sha3-addons kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake) | [blake3 key mode](#blake2b-blake2s-blake3)
 - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
 - [utils](#utils)
@@ -289,8 +290,9 @@ const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5
 Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
 [Website](https://www.tarsnap.com/scrypt.html)
 
-- `N, r, p` are work factors. To understand them, see [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
-  `r: 8, p: 1` are common. JS doesn't support parallelization, making increasing p meaningless.
+- `N, r, p` are work factors. It is common to only adjust N, while keeping `r: 8, p: 1`.
+  See [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
+  JS doesn't support parallelization, making increasing `p` meaningless.
 - `dkLen` is the length of output bytes e.g. `32` or `64`
 - `onProgress` can be used with async version of the function to report progress to a user.
 - `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `N * r * p * 128 + (128 * r * p)`
