@@ -12,7 +12,7 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   private finished = false;
   private destroyed = false;
 
-  constructor(hash: CHash, _key: Input) {
+  constructor(hash: CHash<T>, _key: Input) {
     super();
     ahash(hash);
     const key = toBytes(_key);
@@ -87,8 +87,8 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
  * const mac1 = hmac(sha256, 'key', 'message');
  */
 export const hmac: {
-  (hash: CHash, key: Input, message: Input): Uint8Array;
-  create(hash: CHash, key: Input): HMAC<any>;
-} = (hash: CHash, key: Input, message: Input): Uint8Array =>
+  <T extends Hash<T>>(hash: CHash<T>, key: Input, message: Input): Uint8Array;
+  create<T extends Hash<T>>(hash: CHash<T>, key: Input): HMAC<any>;
+} = <T extends Hash<T>>(hash: CHash<T>, key: Input, message: Input): Uint8Array =>
   new HMAC<any>(hash, key).update(message).digest();
-hmac.create = (hash: CHash, key: Input) => new HMAC<any>(hash, key);
+hmac.create = <T extends Hash<T>>(hash: CHash<T>, key: Input) => new HMAC<any>(hash, key);

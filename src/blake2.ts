@@ -9,8 +9,8 @@ import * as u64 from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  clean, createOptHasher, Hash, swap32IfBE, swap8IfBE, toBytes, u32,
-  type CHashO, type Input
+  clean, createHasher, Hash, swap32IfBE, swap8IfBE, toBytes, u32,
+  type CHash, type Input
 } from './utils.ts';
 
 /** Blake hash options. dkLen is output length. key is used in MAC mode. salt is used in KDF mode. */
@@ -347,7 +347,7 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
-export const blake2b: CHashO = /* @__PURE__ */ createOptHasher<BLAKE2b, Blake2Opts>(
+export const blake2b: CHash<BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher(
   (opts) => new BLAKE2b(opts)
 );
 
@@ -481,6 +481,6 @@ export class BLAKE2s extends BLAKE2<BLAKE2s> {
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
-export const blake2s: CHashO = /* @__PURE__ */ createOptHasher<BLAKE2s, Blake2Opts>(
+export const blake2s: CHash<BLAKE2s, Blake2Opts> = /* @__PURE__ */ createHasher(
   (opts) => new BLAKE2s(opts)
 );
