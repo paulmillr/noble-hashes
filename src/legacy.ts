@@ -5,7 +5,7 @@ Don't use them in a new protocol. What "weak" means:
 
 - Collisions can be made with 2^18 effort in MD5, 2^60 in SHA1, 2^80 in RIPEMD160.
 - No practical pre-image attacks (only theoretical, 2^123.4)
-- HMAC seems kinda ok: https://datatracker.ietf.org/doc/html/rfc6151
+- HMAC seems kinda ok: https://www.rfc-editor.org/rfc/rfc6151
  * @module
  */
 import { Chi, HashMD, Maj } from './_md.ts';
