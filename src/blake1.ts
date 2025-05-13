@@ -30,7 +30,7 @@ import {
   abytes, aexists, aoutput,
   clean, createOptHasher,
   createView, Hash,
-  type CHashO, type Input
+  type CHashO
 } from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */
@@ -93,7 +93,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
       this.constants = constants;
     }
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
     abytes(data);
     // From _md, but update length before each compress

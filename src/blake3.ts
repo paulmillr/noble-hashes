@@ -19,7 +19,7 @@ import {
   abytes, aexists, anumber, aoutput,
   clean, createXOFer, swap32IfBE,
   u32, u8,
-  type CHashXO, type HashXOF, type Input
+  type CHashXO, type HashXOF
 } from './utils.ts';
 
 // Flag bitset
@@ -51,7 +51,7 @@ const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
  * * `context`: string for KDF. Should be hardcoded, globally unique, and application - specific.
  *   A good default format for the context string is "[application] [commit timestamp] [purpose]".
  */
-export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
+export type Blake3Opts = { dkLen?: number; key?: Uint8Array; context?: Uint8Array };
 
 /** Blake3 hash. Can be used as MAC and KDF. */
 export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {

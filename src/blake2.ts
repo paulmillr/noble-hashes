@@ -11,15 +11,15 @@ import {
   abytes, aexists, anumber, aoutput,
   clean, createOptHasher, Hash, swap32IfBE, swap8IfBE,
   u32,
-  type CHashO, type Input
+  type CHashO
 } from './utils.ts';
 
 /** Blake hash options. dkLen is output length. key is used in MAC mode. salt is used in KDF mode. */
 export type Blake2Opts = {
   dkLen?: number;
-  key?: Input;
-  salt?: Input;
-  personalization?: Input;
+  key?: Uint8Array;
+  salt?: Uint8Array;
+  personalization?: Uint8Array;
 };
 
 // Same as SHA512_IV, but swapped endianness: LE instead of BE. iv[1] is iv[0], etc.
@@ -123,7 +123,7 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     this.buffer = new Uint8Array(blockLen);
     this.buffer32 = u32(this.buffer);
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
     abytes(data);
     // Main difference with other hashes: there is flag for last block,
