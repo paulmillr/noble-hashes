@@ -1,16 +1,16 @@
+import { argon2id } from '@noble/hashes/argon2.js';
+import { blake256 } from '@noble/hashes/blake1.js';
+import { blake2b, blake2s } from '@noble/hashes/blake2.js';
+import { blake3 } from '@noble/hashes/blake3.js';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { hmac } from '@noble/hashes/hmac.js';
+import { ripemd160 } from '@noble/hashes/legacy.js';
+import { pbkdf2 } from '@noble/hashes/pbkdf2.js';
+import { scrypt } from '@noble/hashes/scrypt.js';
+import { sha256, sha512 } from '@noble/hashes/sha2.js';
+import { k12, kmac256, m14 } from '@noble/hashes/sha3-addons.js';
+import { sha3_256, sha3_512 } from '@noble/hashes/sha3.js';
 import { mark } from 'micro-bmark';
-import { sha256, sha384, sha512 } from '@noble/hashes/sha2';
-import { sha3_256, sha3_512 } from '@noble/hashes/sha3';
-import { k12, m14, kmac256 } from '@noble/hashes/sha3-addons';
-import { blake2b } from '@noble/hashes/blake2b';
-import { blake2s } from '@noble/hashes/blake2s';
-import { blake3 } from '@noble/hashes/blake3';
-import { ripemd160 } from '@noble/hashes/ripemd160';
-import { hmac } from '@noble/hashes/hmac';
-import { pbkdf2 } from '@noble/hashes/pbkdf2';
-import { hkdf } from '@noble/hashes/hkdf';
-import { scrypt } from '@noble/hashes/scrypt';
-import { argon2id } from '@noble/hashes/argon2';
 
 function buf(size) {
   return new Uint8Array(size).fill(size % 251);
@@ -27,11 +27,11 @@ const buffers = [
 
 async function main() {
   const d = buf(32);
-  for (let i = 0; i < 100000; i++) sha256(d); // warm-up
+  for (let i = 0; i < 1_000_000; i++) sha256(d); // warm-up
 
   // prettier-ignore
   const hashes = {
-    sha256, sha384, sha512, sha3_256, sha3_512, k12, m14, blake2b, blake2s, blake3, ripemd160,
+    sha256, sha512, sha3_256, sha3_512, k12, m14, blake256, blake2b, blake2s, blake3, ripemd160,
   };
   for (const { size, samples: i, data } of buffers) {
     console.log('# ' + size);
@@ -61,11 +61,11 @@ async function main() {
   await mark('pbkdf2(sha512, c: 2 ** 18)', 5, () =>
     pbkdf2(sha512, pass, salt, { c: 2 ** 18, dkLen: 32 })
   );
-  await mark('scrypt(n: 2 ** 18, r: 8, p: 1)', 5, () =>
-    scrypt(pass, salt, { N: 2 ** 18, r: 8, p: 1, dkLen: 32 })
+  await mark('scrypt(n: 2 ** 19, r: 8, p: 1)', 5, () =>
+    scrypt(pass, salt, { N: 2 ** 19, r: 8, p: 1, dkLen: 32 })
   );
-  await mark('argon2id(t: 1, m: 256MB)', () =>
-    argon2id(pass, salt, { t: 1, m: 256 * 1024, p: 1, dkLen: 32 })
+  await mark('argon2id(t: 1, m: 128MB)', () =>
+    argon2id(pass, salt, { t: 1, m: 128 * 1024, p: 1, dkLen: 32 })
   );
 }
 main();

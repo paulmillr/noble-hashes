@@ -1,6 +1,9 @@
 # Can noble-hashes be faster?
 
-tl;dr: Yes, 4x+; but auditability would be bad.
+Yes, 4x+; but auditability would be bad:
+
+1. Inner loops of "hot", performant code are usually unrolled.
+2.
 
 CSP policy treats this construction as 'unsafe-eval':
 
