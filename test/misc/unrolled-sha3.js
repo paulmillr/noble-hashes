@@ -94,4 +94,4 @@ export const keccakP = (() => {
   return new Function('state', 'rounds', 'SHA3_IOTA_H', 'SHA3_IOTA_L', out);
 })();
 
-console.log(keccakP.toString())
+console.log(keccakP.toString());

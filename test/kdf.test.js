@@ -195,9 +195,12 @@ describe('hkdf', () => {
     }
     // for (const t of TYPE_TEST.opts)
     //   throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${repr(t)})`);
+    throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
+    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), `hkdf(hash=${repr(t)})`);
+
+    // todo: remove string input tests
     throws(() => hkdf(sha256, undefined, '', '', 32), 'hkdf.ikm===undefined');
     for (const t of TYPE_TEST.hash) throws(() => hkdf(t, '', '', '', 32), `hkdf(hash=${repr(t)})`);
-
     deepStrictEqual(
       hkdf(sha256, SPACE.str, SPACE.str, SPACE.str),
       hkdf(sha256, SPACE.bytes, SPACE.bytes, SPACE.bytes),
@@ -208,8 +211,6 @@ describe('hkdf', () => {
       hkdf(sha256, EMPTY.bytes, EMPTY.bytes, EMPTY.bytes),
       'hkdf.EMPTY'
     );
-    throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
-    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), `hkdf(hash=${repr(t)})`);
   });
 });
 
