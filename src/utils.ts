@@ -14,6 +14,7 @@ export function anumber(n: number): void {
   if (!Number.isSafeInteger(n) || n < 0) throw new Error('positive integer expected, got ' + n);
 }
 
+// second part is only used in hmac and kdfs
 /** Asserts something is Uint8Array. */
 export function abytes(b: Uint8Array | undefined, ...lengths: number[]): void {
   if (!isBytes(b)) throw new Error('Uint8Array expected');

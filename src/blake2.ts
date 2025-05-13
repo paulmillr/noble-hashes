@@ -226,6 +226,7 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
     let { key, personalization, salt } = opts;
     let keyLength = 0;
     if (key !== undefined) {
+      abytes(key);
       keyLength = key.length;
     }
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
