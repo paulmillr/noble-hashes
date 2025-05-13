@@ -8,8 +8,8 @@ sha3_256 x 282,965 ops/sec => 780,031 ops/sec
 5.03 kb   => 7.57 kb    noble-sha3.min.js
 2.24 kb   => 3.54 kb    noble-sha3.min.js.gz
 
-The library will become 1.5x larger,
-because this would need to be done for all functions.
+The size increase would need to be done for all functions.
+Check out `test/misc/unrolled-sha3.js` for fast SHA3 drop-in replacement.
 
 ### Loop unrolling
 
