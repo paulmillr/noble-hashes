@@ -1,10 +1,11 @@
 /**
  * Experimental KDF for AES.
+ * @module
  */
 import { hkdf } from './hkdf.ts';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.ts';
 import { scrypt as _scrypt } from './scrypt.ts';
-import { sha256 } from './sha256.ts';
+import { sha256 } from './sha2.ts';
 import { abytes, bytesToHex, clean, createView, hexToBytes, kdfInputToBytes } from './utils.ts';
 
 // A tiny KDF for various applications like AES key-gen.
