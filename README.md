@@ -485,14 +485,13 @@ pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
 scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 378ms/op
 ```
 
-It is possible to [make this library 4x+ faster](./benchmark/README.md) by
+It is possible to [make this library 3x+ faster](./benchmark/README.md) by
 _doing code generation of full loop unrolls_. We've decided against it. Reasons:
 
+- current perf is good enough, even compared to other libraries - SHA256 only takes 500 nanoseconds
 - the library must be auditable, with minimum amount of code, and zero dependencies
 - most method invocations with the lib are going to be something like hashing 32b to 64kb of data
 - hashing big inputs is 10x faster with low-level languages, which means you should probably pick 'em instead
-
-The current performance is good enough when compared to other projects; SHA256 takes only 900 nanoseconds to run.
 
 ## Contributing & testing
 
