@@ -4,7 +4,7 @@
  * @module
  */
 import { hmac } from './hmac.ts';
-import { ahash, anumber, type CHash, clean, type Input, toBytes } from './utils.ts';
+import { abytes, ahash, anumber, type CHash, clean, type Input } from './utils.ts';
 
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`
@@ -19,7 +19,9 @@ export function extract(hash: CHash, ikm: Input, salt?: Input): Uint8Array {
   // we don't, since we have undefined as 'not provided'
   // https://github.com/RustCrypto/KDFs/issues/15
   if (salt === undefined) salt = new Uint8Array(hash.outputLen);
-  return hmac(hash, toBytes(salt), toBytes(ikm));
+  abytes(salt);
+  abytes(ikm);
+  return hmac(hash, salt, ikm);
 }
 
 const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.from([0]);

@@ -23,7 +23,6 @@ import {
   type Input,
   type KDFInput,
   kdfInputToBytes,
-  toBytes,
   u32,
 } from './utils.ts';
 
@@ -57,7 +56,8 @@ function chooseLen(opts: ShakeOpts, outputLen: number): number {
 
 const abytesOrZero = (buf?: Input) => {
   if (buf === undefined) return EMPTY_BUFFER;
-  return toBytes(buf);
+  abytes(buf);
+  return buf;
 };
 // NOTE: second modulo is necessary since we don't need to add padding if current element takes whole block
 const getPadding = (len: number, block: number) => new Uint8Array((block - (len % block)) % block);
@@ -114,7 +114,6 @@ export class KMAC extends Keccak implements HashXOF<KMAC> {
   ) {
     super(blockLen, 0x1f, outputLen, enableXOF);
     cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
-    key = toBytes(key);
     abytes(key);
     // 1. newX = bytepad(encode_string(K), 168) || X || right_encode(L).
     const blockLenBytes = leftEncode(this.blockLen);
@@ -176,7 +175,6 @@ export class TupleHash extends Keccak implements HashXOF<TupleHash> {
     cshakePers(this, { NISTfn: 'TupleHash', personalization: opts.personalization });
     // Change update after cshake processed
     this.update = (data: Input) => {
-      data = toBytes(data);
       abytes(data);
       super.update(leftEncode(_8n * BigInt(data.length)));
       super.update(data);
@@ -243,7 +241,6 @@ export class ParallelHash extends Keccak implements HashXOF<ParallelHash> {
     super.update(leftEncode(B));
     // Change update after cshake processed
     this.update = (data: Input) => {
-      data = toBytes(data);
       abytes(data);
       const { chunkLen, leafCons } = this;
       for (let pos = 0, len = data.length; pos < len; ) {
@@ -371,7 +368,6 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
     this.personalization = abytesOrZero(opts.personalization);
   }
   update(data: Input): this {
-    data = toBytes(data);
     abytes(data);
     const { chunkLen, blockLen, leafLen, rounds } = this;
     for (let pos = 0, len = data.length; pos < len; ) {

@@ -219,15 +219,6 @@ export function bytesToUtf8(bytes: Uint8Array): string {
 
 /** Accepted input of hash functions. Strings are converted to byte arrays. */
 export type Input = Uint8Array;
-/**
- * Normalizes (non-hex) string or Uint8Array to Uint8Array.
- * Warning: when Uint8Array is passed, it would NOT get copied.
- * Keep in mind for future mutable operations.
- */
-export function toBytes(data: Input): Uint8Array {
-  abytes(data);
-  return data;
-}
 
 /** KDFs can accept string or Uint8Array for user convenience. */
 export type KDFInput = string | Uint8Array;
