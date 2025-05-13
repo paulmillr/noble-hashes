@@ -22,7 +22,7 @@ export function extract(hash: CHash, ikm: Input, salt?: Input): Uint8Array {
   return hmac(hash, toBytes(salt), toBytes(ikm));
 }
 
-const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.from([0]);
+const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.of(0);
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
 /**
