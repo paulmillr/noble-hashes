@@ -115,28 +115,25 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
   const blockSize = 128 * r;
   const blockSize32 = blockSize / 4;
 
-  // Max N is 2^32 (Integrify is 32-bit). Real limit is 2^22: JS engines Uint8Array limit is 4GB in 2024.
+  // Max N is 2^32 (Integrify is 32-bit).
+  // Real limit can be 2^22: some JS engines limit Uint8Array to 4GB.
   // Spec check `N >= 2^(blockSize / 8)` is not done for compat with popular libs,
   // which used incorrect r: 1, p: 8. Also, the check seems to be a spec error:
   // https://www.rfc-editor.org/errata_search.php?rfc=7914
   const pow32 = Math.pow(2, 32);
   if (N <= 1 || (N & (N - 1)) !== 0 || N > pow32) {
-    throw new Error('Scrypt: N must be larger than 1, a power of 2, and less than 2^32');
+    throw new Error('"N" must be a power of 2, and 1 <= N < 2^32');
   }
-  if (p < 0 || p > ((pow32 - 1) * 32) / blockSize) {
-    throw new Error(
-      'Scrypt: p must be a positive integer less than or equal to ((2^32 - 1) * 32) / (128 * r)'
-    );
+  if (p < 1 || p > ((pow32 - 1) * 32) / blockSize) {
+    throw new Error('"p" must be positive integer <= ((2^32 - 1) * 32) / (128 * r)');
   }
-  if (dkLen < 0 || dkLen > (pow32 - 1) * 32) {
-    throw new Error(
-      'Scrypt: dkLen should be positive integer less than or equal to (2^32 - 1) * 32'
-    );
+  if (dkLen < 1 || dkLen > (pow32 - 1) * 32) {
+    throw new Error('"dkLen" should be positive integer <= (2^32 - 1) * 32');
   }
   const memUsed = blockSize * (N + p);
   if (memUsed > maxmem) {
     throw new Error(
-      'Scrypt: memused is bigger than maxMem. Expected 128 * r * (N + p) > maxmem of ' + maxmem
+      'memused is bigger than "maxmem". Expected 128 * r * (N + p) > maxmem of ' + maxmem
     );
   }
   // [B0...Bp−1] ← PBKDF2HMAC-SHA256(Passphrase, Salt, 1, blockSize*ParallelizationFactor)
