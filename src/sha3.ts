@@ -15,8 +15,8 @@ import {
   abytes, aexists, anumber, aoutput,
   clean, createHasher, createXOFer, Hash,
   swap32IfBE,
-  toBytes, u32,
-  type CHash, type CHashXO, type HashXOF, type Input
+  u32,
+  type CHash, type CHashXO, type HashXOF
 } from './utils.ts';
 
 // No __PURE__ annotations in sha3 header:
@@ -145,9 +145,8 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.posOut = 0;
     this.pos = 0;
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     const { blockLen, state } = this;
     const len = data.length;

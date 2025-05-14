@@ -1,8 +1,8 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
-import { hmac } from '../esm/hmac.js';
-import { sha256, sha384, sha512 } from '../esm/sha2.js';
-import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
+import { hmac } from '../hmac.js';
+import { sha256, sha384, sha512 } from '../sha2.js';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../utils.js';
 import { EMPTY, repr, SPACE, truncate, TYPE_TEST } from './utils.js';
 
 // HMAC test vectors from RFC 4231
@@ -161,18 +161,6 @@ describe('hmac', () => {
       hmac(sha512, SPACE.bytes, SPACE.bytes),
       hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
       'hmac.SPACE (full form stingr)'
-    );
-
-    // todo: remove string input tests
-    deepStrictEqual(
-      hmac(sha512, SPACE.str, SPACE.str),
-      hmac(sha512, SPACE.bytes, SPACE.bytes),
-      'hmac.SPACE'
-    );
-    deepStrictEqual(
-      hmac(sha512, EMPTY.str, EMPTY.str),
-      hmac(sha512, EMPTY.bytes, EMPTY.bytes),
-      'hmac.EMPTY'
     );
   });
 

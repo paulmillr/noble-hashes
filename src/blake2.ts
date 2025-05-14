@@ -9,16 +9,17 @@ import * as u64 from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  clean, createOptHasher, Hash, swap32IfBE, swap8IfBE, toBytes, u32,
-  type CHashO, type Input
+  clean, createOptHasher, Hash, swap32IfBE, swap8IfBE,
+  u32,
+  type CHashO
 } from './utils.ts';
 
 /** Blake hash options. dkLen is output length. key is used in MAC mode. salt is used in KDF mode. */
 export type Blake2Opts = {
   dkLen?: number;
-  key?: Input;
-  salt?: Input;
-  personalization?: Input;
+  key?: Uint8Array;
+  salt?: Uint8Array;
+  personalization?: Uint8Array;
 };
 
 // Same as SHA512_IV, but swapped endianness: LE instead of BE. iv[1] is iv[0], etc.
@@ -122,9 +123,8 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
     this.buffer = new Uint8Array(blockLen);
     this.buffer32 = u32(this.buffer);
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     // Main difference with other hashes: there is flag for last block,
     // so we cannot process current block before we know that there
@@ -226,12 +226,11 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
     let { key, personalization, salt } = opts;
     let keyLength = 0;
     if (key !== undefined) {
-      key = toBytes(key);
+      abytes(key);
       keyLength = key.length;
     }
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt !== undefined) {
-      salt = toBytes(salt);
       const slt = u32(salt);
       this.v4l ^= swap8IfBE(slt[0]);
       this.v4h ^= swap8IfBE(slt[1]);
@@ -239,7 +238,7 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
       this.v5h ^= swap8IfBE(slt[3]);
     }
     if (personalization !== undefined) {
-      personalization = toBytes(personalization);
+      abytes(personalization);
       const pers = u32(personalization);
       this.v6l ^= swap8IfBE(pers[0]);
       this.v6h ^= swap8IfBE(pers[1]);
@@ -410,18 +409,18 @@ export class BLAKE2s extends BLAKE2<BLAKE2s> {
     let { key, personalization, salt } = opts;
     let keyLength = 0;
     if (key !== undefined) {
-      key = toBytes(key);
+      abytes(key);
       keyLength = key.length;
     }
     this.v0 ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt !== undefined) {
-      salt = toBytes(salt);
+      abytes(salt);
       const slt = u32(salt as Uint8Array);
       this.v4 ^= swap8IfBE(slt[0]);
       this.v5 ^= swap8IfBE(slt[1]);
     }
     if (personalization !== undefined) {
-      personalization = toBytes(personalization);
+      abytes(personalization);
       const pers = u32(personalization as Uint8Array);
       this.v6 ^= swap8IfBE(pers[0]);
       this.v7 ^= swap8IfBE(pers[1]);

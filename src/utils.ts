@@ -4,14 +4,6 @@
  */
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 
-// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
-// node.js versions earlier than v19 don't declare it in global scope.
-// For node.js, package.json#exports field mapping rewrites import
-// from `crypto` to `cryptoNode`, which imports native module.
-// Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-import { crypto } from '@noble/hashes/crypto';
-
 /** Checks if something is Uint8Array. Be careful: nodejs Buffer will return true. */
 export function isBytes(a: unknown): a is Uint8Array {
   return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
@@ -22,6 +14,7 @@ export function anumber(n: number): void {
   if (!Number.isSafeInteger(n) || n < 0) throw new Error('positive integer expected, got ' + n);
 }
 
+// second part is only used in hmac and kdfs
 /** Asserts something is Uint8Array. */
 export function abytes(b: Uint8Array | undefined, ...lengths: number[]): void {
   if (!isBytes(b)) throw new Error('Uint8Array expected');
@@ -225,19 +218,6 @@ export function bytesToUtf8(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
 
-/** Accepted input of hash functions. Strings are converted to byte arrays. */
-export type Input = string | Uint8Array;
-/**
- * Normalizes (non-hex) string or Uint8Array to Uint8Array.
- * Warning: when Uint8Array is passed, it would NOT get copied.
- * Keep in mind for future mutable operations.
- */
-export function toBytes(data: Input): Uint8Array {
-  if (typeof data === 'string') data = utf8ToBytes(data);
-  abytes(data);
-  return data;
-}
-
 /** KDFs can accept string or Uint8Array for user convenience. */
 export type KDFInput = string | Uint8Array;
 /**
@@ -290,7 +270,7 @@ export type IHash = {
 export abstract class Hash<T extends Hash<T>> {
   abstract blockLen: number; // Bytes per block
   abstract outputLen: number; // Bytes in output
-  abstract update(buf: Input): this;
+  abstract update(buf: Uint8Array): this;
   // Writes digest into buf
   abstract digestInto(buf: Uint8Array): void;
   abstract digest(): Uint8Array;
@@ -334,12 +314,12 @@ export type CHashXO = ReturnType<typeof createXOFer>;
 export function createHasher<T extends Hash<T>>(
   hashCons: () => Hash<T>
 ): {
-  (msg: Input): Uint8Array;
+  (msg: Uint8Array): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(): Hash<T>;
 } {
-  const hashC = (msg: Input): Uint8Array => hashCons().update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array): Uint8Array => hashCons().update(msg).digest();
   const tmp = hashCons();
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -350,12 +330,12 @@ export function createHasher<T extends Hash<T>>(
 export function createOptHasher<H extends Hash<H>, T extends Object>(
   hashCons: (opts?: T) => Hash<H>
 ): {
-  (msg: Input, opts?: T): Uint8Array;
+  (msg: Uint8Array, opts?: T): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(opts?: T): Hash<H>;
 } {
-  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(msg).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -366,12 +346,12 @@ export function createOptHasher<H extends Hash<H>, T extends Object>(
 export function createXOFer<H extends HashXOF<H>, T extends Object>(
   hashCons: (opts?: T) => HashXOF<H>
 ): {
-  (msg: Input, opts?: T): Uint8Array;
+  (msg: Uint8Array, opts?: T): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(opts?: T): HashXOF<H>;
 } {
-  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(msg).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -382,14 +362,13 @@ export const wrapConstructor: typeof createHasher = createHasher;
 export const wrapConstructorWithOpts: typeof createOptHasher = createOptHasher;
 export const wrapXOFConstructorWithOpts: typeof createXOFer = createXOFer;
 
-/** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
+/**
+ * Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`.
+ * We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
+ */
 export function randomBytes(bytesLength = 32): Uint8Array {
-  if (crypto && typeof crypto.getRandomValues === 'function') {
-    return crypto.getRandomValues(new Uint8Array(bytesLength));
-  }
-  // Legacy Node.js compatibility
-  if (crypto && typeof crypto.randomBytes === 'function') {
-    return Uint8Array.from(crypto.randomBytes(bytesLength));
-  }
-  throw new Error('crypto.getRandomValues must be defined');
+  const cr = typeof globalThis != null && (globalThis as any).crypto;
+  if (!cr || typeof cr.getRandomValues !== 'function')
+    throw new Error('crypto.getRandomValues must be defined');
+  return cr.getRandomValues(new Uint8Array(bytesLength));
 }

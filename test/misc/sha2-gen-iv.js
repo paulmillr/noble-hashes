@@ -35,8 +35,8 @@ const SHA384_IV = sqrts.slice(8, 16);
 // FIPS 180-4
 // SHA512_IV is XORed with 0xa5a5a5a5a5a5a5a5, then used as "intermediary" IV of SHA512/t.
 // Then t() hashes string to produce result IV.
-import * as u64 from '../../esm/_u64.js';
-import { SHA512 } from '../../esm/sha2.js';
+import * as u64 from '../../_u64.js';
+import { SHA512 } from '../../sha2.js';
 function splitIntoOne(lst, le = false) {
   let AhAl = new Uint32Array(lst.length * 2);
   for (let i = 0; i < lst.length; i++) {

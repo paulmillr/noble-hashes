@@ -2,25 +2,17 @@ import { describe, should } from 'micro-should';
 import { deepStrictEqual, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../esm/sha2.js';
+import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../sha2.js';
 // prettier-ignore
-import { blake224, blake256, blake384, blake512 } from '../esm/blake1.js';
-import { blake2b, blake2s } from '../esm/blake2.js';
-import { blake3 } from '../esm/blake3.js';
-import { hmac } from '../esm/hmac.js';
-import { md5, ripemd160, sha1 } from '../esm/legacy.js';
-import { k12, turboshake128, turboshake256 } from '../esm/sha3-addons.js';
-import {
-  keccak_256,
-  sha3_224,
-  sha3_256,
-  sha3_384,
-  sha3_512,
-  shake128,
-  shake256,
-} from '../esm/sha3.js';
-import { concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
-import { EMPTY, repeat, repr, SPACE, TYPE_TEST } from './utils.js';
+import { blake224, blake256, blake384, blake512 } from '../blake1.js';
+import { blake2b, blake2s } from '../blake2.js';
+import { blake3 } from '../blake3.js';
+import { hmac } from '../hmac.js';
+import { md5, ripemd160, sha1 } from '../legacy.js';
+import { k12, turboshake128, turboshake256 } from '../sha3-addons.js';
+import { keccak_256, sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../sha3.js';
+import { concatBytes, hexToBytes, utf8ToBytes } from '../utils.js';
+import { repeat, repr, TYPE_TEST } from './utils.js';
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
 const NIST_VECTORS = [
@@ -464,14 +456,6 @@ function init() {
           );
         }
       });
-      // todo: remove string input tests
-      should('accept string', () => {
-        const tmp = hash.obj().update('abc').digest();
-        deepStrictEqual(tmp, hexToBytes(hash.nist[0].replace(/ /g, '')));
-      });
-      should('accept data in compact call form (string)', () => {
-        deepStrictEqual(hash.fn('abc'), hexToBytes(hash.nist[0].replace(/ /g, '')));
-      });
       should('accept data in compact call form (Uint8Array)', () => {
         deepStrictEqual(hash.fn(utf8ToBytes('abc')), hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
@@ -494,20 +478,6 @@ function init() {
         throws(() => hash.fn(), `compact(undefined)`);
         throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
         for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), `opt(${repr(t)})`);
-      });
-
-      // todo: remove string input tests
-      should('check types', () => {
-        deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
-        deepStrictEqual(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));
-        deepStrictEqual(
-          hash.obj().update(SPACE.str).digest(),
-          hash.obj().update(SPACE.bytes).digest()
-        );
-        deepStrictEqual(
-          hash.obj().update(EMPTY.str).digest(),
-          hash.obj().update(EMPTY.bytes).digest()
-        );
       });
 
       should('clone', () => {

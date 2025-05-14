@@ -29,8 +29,8 @@ import * as u64 from './_u64.ts';
 import {
   abytes, aexists, aoutput,
   clean, createOptHasher,
-  createView, Hash, toBytes,
-  type CHashO, type Input,
+  createView, Hash,
+  type CHashO
 } from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */
@@ -79,7 +79,6 @@ abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
     this.view = createView(this.buffer);
     if (salt) {
       let slt = salt;
-      slt = toBytes(slt);
       abytes(slt);
       if (slt.length !== 4 * saltLen) throw new Error('wrong salt length');
       const salt32 = (this.salt = new Uint32Array(saltLen));
@@ -94,9 +93,8 @@ abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
       this.constants = constants;
     }
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     // From _md, but update length before each compress
     const { view, buffer, blockLen } = this;
