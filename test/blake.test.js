@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual, throws } from 'node:assert';
+import { deepStrictEqual as eql, throws } from 'node:assert';
 import { blake224, blake256, blake384, blake512 } from '../esm/blake1.js';
 import { blake2b, blake2s } from '../esm/blake2.js';
 import { blake3 } from '../esm/blake3.js';
@@ -94,10 +94,10 @@ describe('blake', () => {
   should('Blake1 vectors', () => {
     for (const v of blake1_vectors) {
       const msg = typeof v.input === 'string' ? hexToBytes(v.input, 'hex') : v.input;
-      if (v.blake224) deepStrictEqual(bytesToHex(blake224(msg)), v.blake224);
-      if (v.blake256) deepStrictEqual(bytesToHex(blake256(msg)), v.blake256);
-      if (v.blake384) deepStrictEqual(bytesToHex(blake384(msg)), v.blake384);
-      if (v.blake512) deepStrictEqual(bytesToHex(blake512(msg)), v.blake512);
+      if (v.blake224) eql(bytesToHex(blake224(msg)), v.blake224);
+      if (v.blake256) eql(bytesToHex(blake256(msg)), v.blake256);
+      if (v.blake384) eql(bytesToHex(blake384(msg)), v.blake384);
+      if (v.blake512) eql(bytesToHex(blake512(msg)), v.blake512);
     }
   });
   // https://github.com/dchest/blake256/blob/master/blake256_test.go
@@ -117,7 +117,7 @@ describe('blake', () => {
     for (const { input: inp, salt: salts, exp } of VECTORS) {
       const input = utf8ToBytes(inp);
       const salt = utf8ToBytes(salts);
-      deepStrictEqual(bytesToHex(blake256.create({ salt }).update(input).digest()), exp);
+      eql(bytesToHex(blake256.create({ salt }).update(input).digest()), exp);
     }
     throws(() => blake256.create({ salt: new Uint8Array(100) }));
     throws(() => blake256.create({ salt: new Uint8Array(0) }));
@@ -129,7 +129,7 @@ describe('blake', () => {
       if (!hash) continue;
       const [input, exp] = [v.in, v.out].map(hexToBytes);
       const key = v.key ? hexToBytes(v.key) : undefined;
-      deepStrictEqual(hash(input, { key }), exp);
+      eql(hash(input, { key }), exp);
     }
   });
   // NodeJS blake2 doesn't support personalization and salt, so we generated vectors using python: see vectors/blake2-gen.py
@@ -144,7 +144,7 @@ describe('blake', () => {
       if (v.person) opt.personalization = hexToBytes(v.person);
       if (v.salt) opt.salt = hexToBytes(v.salt);
       if (v.key) opt.key = hexToBytes(v.key);
-      deepStrictEqual(bytesToHex(hash(data, opt)), v.digest);
+      eql(bytesToHex(hash(data, opt)), v.digest);
     }
   });
 
@@ -205,10 +205,10 @@ describe('blake', () => {
       const pers = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
       const salt = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
       blake2b(msg, { key, salt, personalization: pers });
-      deepStrictEqual(msg, new Uint8Array([1, 2, 3, 4]));
-      deepStrictEqual(key, new Uint8Array([1, 2, 3, 4]));
-      deepStrictEqual(pers, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]));
-      deepStrictEqual(salt, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]));
+      eql(msg, new Uint8Array([1, 2, 3, 4]));
+      eql(key, new Uint8Array([1, 2, 3, 4]));
+      eql(pers, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]));
+      eql(salt, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]));
     });
 
     should('BLAKE2s', () => {
@@ -217,10 +217,10 @@ describe('blake', () => {
       const pers = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
       const salt = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
       blake2s(msg, { key, salt, personalization: pers });
-      deepStrictEqual(msg, new Uint8Array([1, 2, 3, 4]));
-      deepStrictEqual(key, new Uint8Array([1, 2, 3, 4]));
-      deepStrictEqual(pers, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
-      deepStrictEqual(salt, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
+      eql(msg, new Uint8Array([1, 2, 3, 4]));
+      eql(key, new Uint8Array([1, 2, 3, 4]));
+      eql(pers, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
+      eql(salt, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
     });
 
     should('BLAKE3', () => {
@@ -232,9 +232,9 @@ describe('blake', () => {
       ]);
       blake3(msg, { key });
       blake3(msg, { context: ctx });
-      deepStrictEqual(msg, new Uint8Array([1, 2, 3, 4]));
-      deepStrictEqual(ctx, new Uint8Array([1, 2, 3, 4]));
-      deepStrictEqual(
+      eql(msg, new Uint8Array([1, 2, 3, 4]));
+      eql(ctx, new Uint8Array([1, 2, 3, 4]));
+      eql(
         key,
         new Uint8Array([
           1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6,
@@ -261,17 +261,17 @@ describe('blake', () => {
       for (let i = 0; i < blake3_vectors.cases.length; i++) {
         const v = blake3_vectors.cases[i];
         const res_hash = blake3(pattern(0xfa, v.input_len), { dkLen: v.hash.length / 2 });
-        deepStrictEqual(bytesToHex(res_hash), v.hash, `Blake3 ${i} (hash)`);
+        eql(bytesToHex(res_hash), v.hash, `Blake3 ${i} (hash)`);
         const res_keyed = blake3(pattern(0xfa, v.input_len), {
           key: utf8ToBytes(blake3_vectors.key),
           dkLen: v.hash.length / 2,
         });
-        deepStrictEqual(bytesToHex(res_keyed), v.keyed_hash, `Blake3 ${i} (keyed)`);
+        eql(bytesToHex(res_keyed), v.keyed_hash, `Blake3 ${i} (keyed)`);
         const res_derive = blake3(pattern(0xfa, v.input_len), {
           context: utf8ToBytes(blake3_vectors.context_string),
           dkLen: v.hash.length / 2,
         });
-        deepStrictEqual(bytesToHex(res_derive), v.derive_key, `Blake3 ${i} (derive)`);
+        eql(bytesToHex(res_derive), v.derive_key, `Blake3 ${i} (derive)`);
       }
     });
 
@@ -292,7 +292,7 @@ describe('blake', () => {
       const hashxof = blake3.create();
       const out = [];
       for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
-      deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size');
+      eql(concatBytes(...out), bigOut, 'xof check against fixed size');
     });
   });
 });

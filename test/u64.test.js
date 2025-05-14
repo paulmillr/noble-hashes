@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual } from 'node:assert';
+import { deepStrictEqual as eql } from 'node:assert';
 import * as u64 from '../esm/_u64.js';
 
 const U64_MASK = 2n ** 64n - 1n;
@@ -20,7 +20,7 @@ describe('u64', () => {
     for (let i = 0; i < 32; i++) {
       const h = u64.shrSH(val[0], val[1], i);
       const l = u64.shrSL(val[0], val[1], i);
-      deepStrictEqual((big >> BigInt(i)) & U64_MASK, u64.toBig(h, l));
+      eql((big >> BigInt(i)) & U64_MASK, u64.toBig(h, l));
     }
   });
 
@@ -40,7 +40,7 @@ describe('u64', () => {
     for (let i = 1; i < 32; i++) {
       const h = u64.rotrSH(val[0], val[1], i);
       const l = u64.rotrSL(val[0], val[1], i);
-      deepStrictEqual(rotate_right(big, BigInt(i)), u64.toBig(h, l));
+      eql(rotate_right(big, BigInt(i)), u64.toBig(h, l));
     }
   });
 
@@ -49,7 +49,7 @@ describe('u64', () => {
     const big = u64.toBig(...val);
     const h = u64.rotr32H(val[0], val[1], 32);
     const l = u64.rotr32L(val[0], val[1], 32);
-    deepStrictEqual(rotate_right(big, BigInt(32)), u64.toBig(h, l));
+    eql(rotate_right(big, BigInt(32)), u64.toBig(h, l));
   });
 
   should('rotr_big', () => {
@@ -58,7 +58,7 @@ describe('u64', () => {
     for (let i = 33; i < 64; i++) {
       const h = u64.rotrBH(val[0], val[1], i);
       const l = u64.rotrBL(val[0], val[1], i);
-      deepStrictEqual(rotate_right(big, BigInt(i)), u64.toBig(h, l));
+      eql(rotate_right(big, BigInt(i)), u64.toBig(h, l));
     }
   });
 
@@ -68,7 +68,7 @@ describe('u64', () => {
     for (let i = 1; i < 32; i++) {
       const h = u64.rotlSH(val[0], val[1], i);
       const l = u64.rotlSL(val[0], val[1], i);
-      deepStrictEqual(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
+      eql(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
     }
   });
 
@@ -78,7 +78,7 @@ describe('u64', () => {
     for (let i = 33; i < 64; i++) {
       const h = u64.rotlBH(val[0], val[1], i);
       const l = u64.rotlBL(val[0], val[1], i);
-      deepStrictEqual(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
+      eql(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
     }
   });
 });

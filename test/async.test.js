@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual } from 'node:assert';
+import { deepStrictEqual as eql } from 'node:assert';
 import { pbkdf2Async } from '../esm/pbkdf2.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
 import { sha256 } from '../esm/sha2.js';
@@ -53,15 +53,15 @@ describe('async', () => {
         const info = w.info(true);
         // console.log('\tKDF took', info);
         // we compare avg with exepcted+2ms to avoid flaky tests
-        deepStrictEqual(info.avg < ms + 2, true, 'avg');
-        deepStrictEqual(info.total > ms, true, 'total');
+        eql(info.avg < ms + 2, true, 'avg');
+        eql(info.total > ms, true, 'total');
       });
     }
     should(`${kdf} parallel`, async () => {
       // Run 10 async job in parallel and verify that there is no corruption of internal state
       const exp = Uint8Array.from(await KDFS[kdf](10)); // Make sure that there is no way to change output
       const res = await Promise.all(Array.from({ length: 10 }, (i) => KDFS[kdf](1)));
-      for (let val of res) deepStrictEqual(val, exp);
+      for (let val of res) eql(val, exp);
     });
   }
 
@@ -69,9 +69,9 @@ describe('async', () => {
     let t = [];
     scrypt('', '', { N: 2 ** 18, r: 8, p: 1, onProgress: (per) => t.push(per) });
     // Should be called ~10k
-    deepStrictEqual(t.length, 10083);
+    eql(t.length, 10083);
     // Should be exact numbers
-    deepStrictEqual(
+    eql(
       t.slice(0, 5),
       [
         0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
@@ -79,7 +79,7 @@ describe('async', () => {
       ]
     );
     // Should end with 1
-    deepStrictEqual(
+    eql(
       t.slice(-5),
       [0.9996566772460938, 0.999755859375, 0.9998550415039062, 0.9999542236328125, 1]
     );
@@ -89,9 +89,9 @@ describe('async', () => {
     let t = [];
     await scryptAsync('', '', { N: 2 ** 18, r: 8, p: 1, onProgress: (per) => t.push(per) });
     // Should be called ~10k
-    deepStrictEqual(t.length, 10083);
+    eql(t.length, 10083);
     // Should be exact numbers
-    deepStrictEqual(
+    eql(
       t.slice(0, 5),
       [
         0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
@@ -99,7 +99,7 @@ describe('async', () => {
       ]
     );
     // Should end with 1
-    deepStrictEqual(
+    eql(
       t.slice(-5),
       [0.9996566772460938, 0.999755859375, 0.9998550415039062, 0.9999542236328125, 1]
     );

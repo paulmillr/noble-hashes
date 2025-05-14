@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual } from 'node:assert';
+import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync } from 'node:crypto';
 import {
   argon2d,
@@ -39,8 +39,8 @@ for (let i = 0; i < SCRYPT_CASES.length; i++) {
   should(`Scrypt generator (${i}): ${serializeCase(c)}`, async () => {
     const opt = { ...c, N: 2 ** c.N };
     const exp = Uint8Array.from(scryptSync(c.pwd, c.salt, c.dkLen, { maxmem: 1024 ** 4, ...opt }));
-    deepStrictEqual(scrypt(c.pwd, c.salt, opt), exp, `scrypt(${opt})`);
-    deepStrictEqual(await scryptAsync(c.pwd, c.salt, opt), exp, `scryptAsync(${opt})`);
+    eql(scrypt(c.pwd, c.salt, opt), exp, `scrypt(${opt})`);
+    eql(await scryptAsync(c.pwd, c.salt, opt), exp, `scryptAsync(${opt})`);
   });
 }
 
@@ -110,7 +110,7 @@ for (let i = 0; i < verySlowArgon.length; i++) {
         version: v.version,
       })
     );
-    deepStrictEqual(res, v.exp);
+    eql(res, v.exp);
   });
   should(`${title}: async`, async () => {
     const asyncFn = asyncMap.get(v.fn);
@@ -124,7 +124,7 @@ for (let i = 0; i < verySlowArgon.length; i++) {
         version: v.version,
       })
     );
-    deepStrictEqual(res, v.exp);
+    eql(res, v.exp);
   });
 }
 
@@ -178,7 +178,7 @@ describe('argon2 crosstest', () => {
           should(`#${vi} ${algoName}(${pass.length}, ${salt.length}, opts=${jopts})`, () => {
             const res = fn(pass, salt, opts);
             const hex = bytesToHex(res);
-            deepStrictEqual(hex, argon2_vectors[vi]);
+            eql(hex, argon2_vectors[vi]);
             allResults.push(hex);
           });
         }

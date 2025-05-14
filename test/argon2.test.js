@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual, throws } from 'node:assert';
+import { deepStrictEqual as eql, throws } from 'node:assert';
 import {
   argon2d,
   argon2dAsync,
@@ -332,7 +332,7 @@ describe('Argon2', () => {
         t.push(p);
       },
     });
-    deepStrictEqual(t.length !== 0, true);
+    eql(t.length !== 0, true);
   });
   for (let i = 0; i < VECTORS.length; i++) {
     const v = VECTORS[i];
@@ -350,7 +350,7 @@ describe('Argon2', () => {
           version: v.version,
         })
       );
-      deepStrictEqual(res, v.exp);
+      eql(res, v.exp);
     });
     should(`${title}: async`, async () => {
       const asyncFn = asyncMap.get(v.fn);
@@ -364,7 +364,7 @@ describe('Argon2', () => {
           version: v.version,
         })
       );
-      deepStrictEqual(res, v.exp);
+      eql(res, v.exp);
     });
   }
 });

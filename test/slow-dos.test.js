@@ -1,5 +1,5 @@
 import { should } from 'micro-should';
-import { deepStrictEqual, rejects } from 'node:assert';
+import { deepStrictEqual as eql, rejects } from 'node:assert';
 import { hkdf } from '../esm/hkdf.js';
 import { hmac } from '../esm/hmac.js';
 import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
@@ -86,7 +86,7 @@ async function isLinear(callback, iters = 128) {
   // Median of differences. Should be close to zero for linear functions (+/- some noise).
   const medianDifference = stats(stats(timings.map((i) => i)).difference).median;
   console.log({ medianDifference });
-  deepStrictEqual(
+  eql(
     medianDifference < MARGIN,
     true,
     `medianDifference(${medianDifference}) should be less than ${MARGIN}`
@@ -141,7 +141,7 @@ function pbkdf2DOS(hash, password, salt, c) {
 should('DoS: pbkdfDOS returns correct result', () => {
   const password = new Uint8Array([1, 2, 3]);
   const salt = new Uint8Array([4, 5, 6]);
-  deepStrictEqual(
+  eql(
     pbkdf2(sha256, password, salt, { dkLen: 32, c: 1024 }),
     pbkdf2DOS(sha256, password, salt, 1024)
   );
