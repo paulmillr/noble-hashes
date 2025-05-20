@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual, equal, rejects, throws } from 'node:assert';
+import { deepStrictEqual as eql, equal, rejects, throws } from 'node:assert';
 import { eskdf } from '../esm/eskdf.js';
 import { bytesToHex as toHex } from '../esm/utils.js';
 import { json } from './utils.js';
@@ -49,24 +49,24 @@ describe('eskdf', () => {
   }
   should('types', async () => {
     const keyc = await eskdf('test@test.com', 'test2test');
-    deepStrictEqual(
+    eql(
       toHex(keyc.deriveChildKey('ssh', 'test')),
       '3bc39ad06a15d4867aaa53f4025077ecca7cd33b3f5b9da131b50586601726fa'
     );
-    deepStrictEqual(
+    eql(
       toHex(keyc.deriveChildKey('ssh', 0)),
       'd7b14774e815d429e75b5f366b0df4eff32343e94f1b30a5e12eaab682974667'
     );
 
     throws(() => keyc.deriveChildKey('ssh', 'test', { keyLength: 1, modulus: 1 }));
     throws(() => keyc.deriveChildKey('ssh', 'test', {}));
-    deepStrictEqual(
+    eql(
       toHex(keyc.deriveChildKey('ssh', 0, { keyLength: 16 })),
       'd7b14774e815d429e75b5f366b0df4ef'
     );
     throws(() => keyc.deriveChildKey('ssh', 'test', { modulus: -1n }));
     throws(() => keyc.deriveChildKey('ssh', 'test', { modulus: 1n }));
-    deepStrictEqual(
+    eql(
       toHex(keyc.deriveChildKey('ssh', 0, { modulus: 2n ** 128n - 1n })),
       'e75b5f366b0df4f1a285d2d31f46d8f8'
     );

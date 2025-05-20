@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, should } from 'micro-should';
-import { deepStrictEqual, throws } from 'node:assert';
+import { deepStrictEqual as eql, throws } from 'node:assert';
 import { setBigUint64 } from '../esm/_md.js';
 import { sha256 } from '../esm/sha2.js';
 import * as u from '../esm/utils.js';
@@ -19,6 +19,14 @@ import {
 import { gen, integer, optional } from './generator.js';
 import { TYPE_TEST, pattern } from './utils.js';
 
+function hexa() {
+  const items = '0123456789abcdef';
+  return fc.integer({ min: 0, max: 15 }).map((n) => items[n]);
+}
+function hexaString(constraints = {}) {
+  return fc.string({ ...constraints, unit: hexa() });
+}
+
 describe('utils', () => {
   const staticHexVectors = [
     { bytes: Uint8Array.from([]), hex: '' },
@@ -27,26 +35,26 @@ describe('utils', () => {
     { bytes: Uint8Array.from(new Array(1024).fill(0x69)), hex: '69'.repeat(1024) },
   ];
   should('hexToBytes', () => {
-    for (let v of staticHexVectors) deepStrictEqual(hexToBytes(v.hex), v.bytes);
-    for (let v of staticHexVectors) deepStrictEqual(hexToBytes(v.hex.toUpperCase()), v.bytes);
+    for (let v of staticHexVectors) eql(hexToBytes(v.hex), v.bytes);
+    for (let v of staticHexVectors) eql(hexToBytes(v.hex.toUpperCase()), v.bytes);
     for (let v of TYPE_TEST.hex) {
       throws(() => hexToBytes(v));
     }
   });
   should('bytesToHex', () => {
-    for (let v of staticHexVectors) deepStrictEqual(bytesToHex(v.bytes), v.hex);
+    for (let v of staticHexVectors) eql(bytesToHex(v.bytes), v.hex);
     for (let v of TYPE_TEST.bytes) {
       throws(() => bytesToHex(v));
     }
   });
   should('hexToBytes <=> bytesToHex roundtrip', () =>
     fc.assert(
-      fc.property(fc.hexaString({ minLength: 2, maxLength: 64 }), (hex) => {
+      fc.property(hexaString({ minLength: 2, maxLength: 64 }), (hex) => {
         if (hex.length % 2 !== 0) return;
-        deepStrictEqual(hex, bytesToHex(hexToBytes(hex)));
-        deepStrictEqual(hex, bytesToHex(hexToBytes(hex.toUpperCase())));
+        eql(hex, bytesToHex(hexToBytes(hex)));
+        eql(hex, bytesToHex(hexToBytes(hex.toUpperCase())));
         if (typeof Buffer !== 'undefined')
-          deepStrictEqual(hexToBytes(hex), Uint8Array.from(Buffer.from(hex, 'hex')));
+          eql(hexToBytes(hex), Uint8Array.from(Buffer.from(hex, 'hex')));
       })
     )
   );
@@ -57,9 +65,9 @@ describe('utils', () => {
     const aa = Uint8Array.from([a]);
     const bb = Uint8Array.from([b]);
     const cc = Uint8Array.from([c]);
-    deepStrictEqual(concatBytes(), new Uint8Array());
-    deepStrictEqual(concatBytes(aa, bb), Uint8Array.from([a, b]));
-    deepStrictEqual(concatBytes(aa, bb, cc), Uint8Array.from([a, b, c]));
+    eql(concatBytes(), new Uint8Array());
+    eql(concatBytes(aa, bb), Uint8Array.from([a, b]));
+    eql(concatBytes(aa, bb, cc), Uint8Array.from([a, b, c]));
     for (let v of TYPE_TEST.bytes)
       throws(() => {
         concatBytes(v);
@@ -69,7 +77,7 @@ describe('utils', () => {
     fc.assert(
       fc.property(fc.uint8Array(), fc.uint8Array(), fc.uint8Array(), (a, b, c) => {
         const expected = Uint8Array.from([...a, ...b, ...c]);
-        deepStrictEqual(concatBytes(a.slice(), b.slice(), c.slice()), expected);
+        eql(concatBytes(a.slice(), b.slice(), c.slice()), expected);
       })
     )
   );
@@ -78,7 +86,7 @@ describe('utils', () => {
 describe('utils etc', () => {
   // Here goes test for tests...
   should('Test generator', () => {
-    deepStrictEqual(
+    eql(
       gen({
         N: integer(0, 5),
         b: integer(2, 7),
@@ -104,16 +112,16 @@ describe('utils etc', () => {
 
   should('byteSwap', () => {
     BYTESWAP_TEST_CASES.forEach((test) => {
-      deepStrictEqual(test.out, byteSwap(test.in));
+      eql(test.out, byteSwap(test.in));
     });
   });
 
   should('swap8IfBE', () => {
     BYTESWAP_TEST_CASES.forEach((test) => {
       if (isLE) {
-        deepStrictEqual(test.in, swap8IfBE(test.in));
+        eql(test.in, swap8IfBE(test.in));
       } else {
-        deepStrictEqual(test.out, swap8IfBE(test.in));
+        eql(test.out, swap8IfBE(test.in));
       }
     });
   });
@@ -122,17 +130,14 @@ describe('utils etc', () => {
     const input = Uint32Array.from([0x11223344, 0xffeeddcc, 0xccddeeff]);
     const expected = Uint32Array.from([0x44332211, 0xccddeeff, 0xffeeddcc]);
     byteSwap32(input);
-    deepStrictEqual(expected, input);
+    eql(expected, input);
   });
 
   should('pattern', () => {
     const fromHex = (hex) => hexToBytes(hex.replace(/ |\n/gm, ''));
 
-    deepStrictEqual(
-      pattern(0xfa, 17),
-      fromHex(`00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10`)
-    );
-    deepStrictEqual(
+    eql(pattern(0xfa, 17), fromHex(`00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10`));
+    eql(
       pattern(0xfa, 17 ** 2),
       fromHex(`00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
             10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
@@ -203,39 +208,39 @@ describe('utils etc', () => {
         const b = new Uint8Array(20);
         const v = cv(b);
         setBigUint64(v, t.pos || 0, t.n, t.le);
-        deepStrictEqual(bytesToHex(b), t.hex);
+        eql(bytesToHex(b), t.hex);
       }
     }
   });
   should('randomBytes', () => {
     if (typeof crypto === 'undefined') return;
     const t = randomBytes(32);
-    deepStrictEqual(t instanceof Uint8Array, true);
-    deepStrictEqual(t.length, 32);
+    eql(t instanceof Uint8Array, true);
+    eql(t.length, 32);
     const t2 = randomBytes(12);
-    deepStrictEqual(t2 instanceof Uint8Array, true);
-    deepStrictEqual(t2.length, 12);
+    eql(t2 instanceof Uint8Array, true);
+    eql(t2.length, 12);
   });
   should('isBytes', () => {
-    deepStrictEqual(isBytes(new Uint8Array(0)), true);
-    if (typeof Buffer !== 'undefined') deepStrictEqual(isBytes(Buffer.alloc(10)), true);
-    deepStrictEqual(isBytes(''), false);
-    deepStrictEqual(isBytes([1, 2, 3]), false);
+    eql(isBytes(new Uint8Array(0)), true);
+    if (typeof Buffer !== 'undefined') eql(isBytes(Buffer.alloc(10)), true);
+    eql(isBytes(''), false);
+    eql(isBytes([1, 2, 3]), false);
   });
 });
 
 describe('assert', () => {
   should('anumber', () => {
-    deepStrictEqual(u.anumber(10), undefined);
+    eql(u.anumber(10), undefined);
     throws(() => u.anumber(1.2));
     throws(() => u.anumber('1'));
     throws(() => u.anumber(true));
     throws(() => u.anumber(NaN));
   });
   should('abytes', () => {
-    deepStrictEqual(u.abytes(new Uint8Array(0)), undefined);
-    if (typeof Buffer !== 'undefined') deepStrictEqual(u.abytes(Buffer.alloc(10)), undefined);
-    deepStrictEqual(u.abytes(new Uint8Array(10)), undefined);
+    eql(u.abytes(new Uint8Array(0)), undefined);
+    if (typeof Buffer !== 'undefined') eql(u.abytes(Buffer.alloc(10)), undefined);
+    eql(u.abytes(new Uint8Array(10)), undefined);
     u.abytes(new Uint8Array(11), 11, 12);
     u.abytes(new Uint8Array(12), 12, 12);
     throws(() => u.abytes('test'));
@@ -243,16 +248,16 @@ describe('assert', () => {
     throws(() => u.abytes(new Uint8Array(10), 11, 12));
   });
   should('ahash', () => {
-    deepStrictEqual(u.ahash(sha256), undefined);
+    eql(u.ahash(sha256), undefined);
     throws(() => u.ahash({}));
     throws(() => u.ahash({ blockLen: 1, outputLen: 1, create: () => {} }));
   });
   should('aexists', () => {
-    deepStrictEqual(u.aexists({}), undefined);
+    eql(u.aexists({}), undefined);
     throws(() => u.aexists({ destroyed: true }));
   });
   should('aoutput', () => {
-    deepStrictEqual(u.aoutput(new Uint8Array(10), { outputLen: 5 }), undefined);
+    eql(u.aoutput(new Uint8Array(10), { outputLen: 5 }), undefined);
     throws(() => u.aoutput(new Uint8Array(1), { outputLen: 5 }));
   });
 });

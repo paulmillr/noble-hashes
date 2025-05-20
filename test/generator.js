@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import assert from 'node:assert';
+import { deepStrictEqual as eql } from 'node:assert';
 import * as cryp from 'node:crypto';
 import { blake2b, blake2s } from '../esm/blake2.js';
 import { hkdf } from '../esm/hkdf.js';
@@ -82,7 +82,7 @@ function executeKDFTests(limit = true) {
             c.dkLen
           )
         );
-        assert.deepStrictEqual(hkdf(sha256, c.ikm, c.salt, c.info, c.dkLen), exp, `hkdf(${c})`);
+        eql(hkdf(sha256, c.ikm, c.salt, c.info, c.dkLen), exp, `hkdf(${c})`);
       }
     });
     should('PBKDF2(sha256) generator', async () => {
@@ -96,12 +96,8 @@ function executeKDFTests(limit = true) {
         if (c.dkLen === 0) continue; // Disallowed in node v22
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        assert.deepStrictEqual(pbkdf2(sha256, c.pwd, c.salt, opt), exp, `pbkdf2(sha256, ${opt})`);
-        assert.deepStrictEqual(
-          await pbkdf2Async(sha256, c.pwd, c.salt, opt),
-          exp,
-          `pbkdf2Async(sha256, ${opt})`
-        );
+        eql(pbkdf2(sha256, c.pwd, c.salt, opt), exp, `pbkdf2(sha256, ${opt})`);
+        eql(await pbkdf2Async(sha256, c.pwd, c.salt, opt), exp, `pbkdf2Async(sha256, ${opt})`);
       }
     });
 
@@ -115,12 +111,8 @@ function executeKDFTests(limit = true) {
       for (const c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha512'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        assert.deepStrictEqual(pbkdf2(sha512, c.pwd, c.salt, opt), exp, `pbkdf2(sha512, ${opt})`);
-        assert.deepStrictEqual(
-          await pbkdf2Async(sha512, c.pwd, c.salt, opt),
-          exp,
-          `pbkdf2Async(sha512, ${opt})`
-        );
+        eql(pbkdf2(sha512, c.pwd, c.salt, opt), exp, `pbkdf2(sha512, ${opt})`);
+        eql(await pbkdf2Async(sha512, c.pwd, c.salt, opt), exp, `pbkdf2Async(sha512, ${opt})`);
       }
     });
 
@@ -135,16 +127,8 @@ function executeKDFTests(limit = true) {
       for (let c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-256'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        assert.deepStrictEqual(
-          pbkdf2(sha3_256, c.pwd, c.salt, opt),
-          exp,
-          `pbkdf2(sha3_256, ${opt})`
-        );
-        assert.deepStrictEqual(
-          await pbkdf2Async(sha3_256, c.pwd, c.salt, opt),
-          exp,
-          `pbkdf2Async(sha3_256, ${opt})`
-        );
+        eql(pbkdf2(sha3_256, c.pwd, c.salt, opt), exp, `pbkdf2(sha3_256, ${opt})`);
+        eql(await pbkdf2Async(sha3_256, c.pwd, c.salt, opt), exp, `pbkdf2Async(sha3_256, ${opt})`);
       }
     });
 
@@ -159,16 +143,8 @@ function executeKDFTests(limit = true) {
       for (let c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-512'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        assert.deepStrictEqual(
-          pbkdf2(sha3_512, c.pwd, c.salt, opt),
-          exp,
-          `pbkdf2(sha3_512, ${opt})`
-        );
-        assert.deepStrictEqual(
-          await pbkdf2Async(sha3_512, c.pwd, c.salt, opt),
-          exp,
-          `pbkdf2Async(sha3_512, ${opt})`
-        );
+        eql(pbkdf2(sha3_512, c.pwd, c.salt, opt), exp, `pbkdf2(sha3_512, ${opt})`);
+        eql(await pbkdf2Async(sha3_512, c.pwd, c.salt, opt), exp, `pbkdf2Async(sha3_512, ${opt})`);
       }
     });
 
@@ -183,12 +159,12 @@ function executeKDFTests(limit = true) {
     //   for (let c of cases) {
     //     const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
     //     const opt = { c: c.c, dkLen: c.dkLen };
-    //     assert.deepStrictEqual(
+    //     deepStrictEqual(
     //       pbkdf2(ripemd160, c.pwd, c.salt, opt),
     //       exp,
     //       `pbkdf2(ripemd160, ${opt})`
     //     );
-    //     assert.deepStrictEqual(
+    //     deepStrictEqual(
     //       await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
     //       exp,
     //       `pbkdf2Async(ripemd160, ${opt})`
@@ -207,12 +183,8 @@ function executeKDFTests(limit = true) {
       for (let c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2s256'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        assert.deepStrictEqual(pbkdf2(blake2s, c.pwd, c.salt, opt), exp, `pbkdf2(blake2s, ${opt})`);
-        assert.deepStrictEqual(
-          await pbkdf2Async(blake2s, c.pwd, c.salt, opt),
-          exp,
-          `pbkdf2Async(blake2s, ${opt})`
-        );
+        eql(pbkdf2(blake2s, c.pwd, c.salt, opt), exp, `pbkdf2(blake2s, ${opt})`);
+        eql(await pbkdf2Async(blake2s, c.pwd, c.salt, opt), exp, `pbkdf2Async(blake2s, ${opt})`);
       }
     });
 
@@ -227,12 +199,8 @@ function executeKDFTests(limit = true) {
       for (let c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2b512'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        assert.deepStrictEqual(pbkdf2(blake2b, c.pwd, c.salt, opt), exp, `pbkdf2(blake2b, ${opt})`);
-        assert.deepStrictEqual(
-          await pbkdf2Async(blake2b, c.pwd, c.salt, opt),
-          exp,
-          `pbkdf2Async(blake2b, ${opt})`
-        );
+        eql(pbkdf2(blake2b, c.pwd, c.salt, opt), exp, `pbkdf2(blake2b, ${opt})`);
+        eql(await pbkdf2Async(blake2b, c.pwd, c.salt, opt), exp, `pbkdf2Async(blake2b, ${opt})`);
       }
     });
   });

@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual, throws } from 'node:assert';
+import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../esm/sha2.js';
@@ -450,30 +450,26 @@ function init() {
         for (let i = 0; i < NIST_VECTORS.length; i++) {
           if (!NIST_VECTORS[i]) continue;
           const [r, rbuf, buf] = NIST_VECTORS[i];
-          deepStrictEqual(
+          eql(
             hash.obj().update(buf).digest(),
             hexToBytes(hash.nist[i].replace(/ /g, '')),
             `vector ${i}`
           );
           const tmp = hash.obj();
           for (let j = 0; j < r; j++) tmp.update(rbuf);
-          deepStrictEqual(
-            tmp.digest(),
-            hexToBytes(hash.nist[i].replace(/ /g, '')),
-            `partial vector ${i}`
-          );
+          eql(tmp.digest(), hexToBytes(hash.nist[i].replace(/ /g, '')), `partial vector ${i}`);
         }
       });
-      // String / Bytes tests
+      // todo: remove string input tests
       should('accept string', () => {
         const tmp = hash.obj().update('abc').digest();
-        deepStrictEqual(tmp, hexToBytes(hash.nist[0].replace(/ /g, '')));
+        eql(tmp, hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
       should('accept data in compact call form (string)', () => {
-        deepStrictEqual(hash.fn('abc'), hexToBytes(hash.nist[0].replace(/ /g, '')));
+        eql(hash.fn('abc'), hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
       should('accept data in compact call form (Uint8Array)', () => {
-        deepStrictEqual(hash.fn(utf8ToBytes('abc')), hexToBytes(hash.nist[0].replace(/ /g, '')));
+        eql(hash.fn(utf8ToBytes('abc')), hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
       should('throw on update after digest', () => {
         const tmp = hash.obj();
@@ -496,18 +492,12 @@ function init() {
         for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), `opt(${repr(t)})`);
       });
 
-      // String / Bytes tests
+      // todo: remove string input tests
       should('check types', () => {
-        deepStrictEqual(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
-        deepStrictEqual(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));
-        deepStrictEqual(
-          hash.obj().update(SPACE.str).digest(),
-          hash.obj().update(SPACE.bytes).digest()
-        );
-        deepStrictEqual(
-          hash.obj().update(EMPTY.str).digest(),
-          hash.obj().update(EMPTY.bytes).digest()
-        );
+        eql(hash.fn(SPACE.str), hash.fn(SPACE.bytes));
+        eql(hash.fn(EMPTY.str), hash.fn(EMPTY.bytes));
+        eql(hash.obj().update(SPACE.str).digest(), hash.obj().update(SPACE.bytes).digest());
+        eql(hash.obj().update(EMPTY.str).digest(), hash.obj().update(EMPTY.bytes).digest());
       });
 
       should('clone', () => {
@@ -516,9 +506,9 @@ function init() {
         t.update(BUF_768.subarray(0, 10));
         const t2 = t.clone();
         t2.update(BUF_768.subarray(10));
-        deepStrictEqual(t2.digest(), exp);
+        eql(t2.digest(), exp);
         t.update(BUF_768.subarray(10));
-        deepStrictEqual(t.digest(), exp);
+        eql(t.digest(), exp);
       });
 
       should('partial', () => {
@@ -528,8 +518,8 @@ function init() {
           for (let j = 0; j < 256; j++) {
             let b2 = BUF_768.subarray(i, i + j);
             let b3 = BUF_768.subarray(i + j);
-            deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
-            deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
+            eql(concatBytes(b1, b2, b3), BUF_768);
+            eql(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
           }
         }
       });
@@ -542,8 +532,8 @@ function init() {
           for (let j = 0; j < 256; j++) {
             let b2 = BUF_768.subarray(i, i + j).slice();
             let b3 = BUF_768.subarray(i + j).slice();
-            deepStrictEqual(concatBytes(b1, b2, b3), BUF_768);
-            deepStrictEqual(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
+            eql(concatBytes(b1, b2, b3), BUF_768);
+            eql(hash.obj().update(b1).update(b2).update(b3).digest(), fnH);
           }
         }
       });
@@ -551,7 +541,7 @@ function init() {
         if (!!process.versions.bun && ['BLAKE2s', 'BLAKE2b'].includes(h)) return;
         should('node.js cross-test', () => {
           for (let i = 0; i < testBuf.length; i++) {
-            deepStrictEqual(
+            eql(
               hash.obj().update(testBuf.subarray(0, i)).digest(),
               hash.node(testBuf.subarray(0, i))
             );
@@ -564,11 +554,11 @@ function init() {
           for (let i = 0; i < 256; i++) {
             nodeH = hash.node(nodeH);
             nobleH = hash.fn(nobleH);
-            deepStrictEqual(nodeH, nobleH);
+            eql(nodeH, nobleH);
           }
         });
         should('node.js cross-test partial', () => {
-          deepStrictEqual(hash.fn(BUF_768), hash.node(BUF_768));
+          eql(hash.fn(BUF_768), hash.node(BUF_768));
         });
       }
     });

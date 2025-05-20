@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual, rejects, throws } from 'node:assert';
+import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { hkdf, extract as hkdf_extract } from '../esm/hkdf.js';
 import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
 import { scrypt, scryptAsync } from '../esm/scrypt.js';
@@ -172,9 +172,9 @@ describe('hkdf', () => {
     const t = HKDF_VECTORS[i];
     should(`HKDF vector (${i})`, () => {
       const PRK = hkdf_extract(t.hash, t.IKM, t.salt);
-      deepStrictEqual(PRK, t.PRK);
+      eql(PRK, t.PRK);
       const OKM = hkdf(t.hash, t.IKM, t.salt, t.info, t.L);
-      deepStrictEqual(OKM, t.OKM);
+      eql(OKM, t.OKM);
     });
   }
 
@@ -195,21 +195,22 @@ describe('hkdf', () => {
     }
     // for (const t of TYPE_TEST.opts)
     //   throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${repr(t)})`);
+    throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
+    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), `hkdf(hash=${repr(t)})`);
+
+    // todo: remove string input tests
     throws(() => hkdf(sha256, undefined, '', '', 32), 'hkdf.ikm===undefined');
     for (const t of TYPE_TEST.hash) throws(() => hkdf(t, '', '', '', 32), `hkdf(hash=${repr(t)})`);
-
-    deepStrictEqual(
+    eql(
       hkdf(sha256, SPACE.str, SPACE.str, SPACE.str),
       hkdf(sha256, SPACE.bytes, SPACE.bytes, SPACE.bytes),
       'hkdf.SPACE'
     );
-    deepStrictEqual(
+    eql(
       hkdf(sha256, EMPTY.str, EMPTY.str, EMPTY.str),
       hkdf(sha256, EMPTY.bytes, EMPTY.bytes, EMPTY.bytes),
       'hkdf.EMPTY'
     );
-    throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
-    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), `hkdf(hash=${repr(t)})`);
   });
 });
 
@@ -218,8 +219,8 @@ describe('scrypt', () => {
     const t = SCRYPT_VECTORS[i];
     should(`Scrypt vector (${i})`, async () => {
       const exp = hexToBytes(t.exp.replace(/ /g, ''));
-      deepStrictEqual(scrypt(t.P, t.S, t), exp);
-      deepStrictEqual(await scryptAsync(t.P, t.S, t), exp);
+      eql(scrypt(t.P, t.S, t), exp);
+      eql(await scryptAsync(t.P, t.S, t), exp);
     });
   }
 
@@ -266,16 +267,8 @@ describe('scrypt', () => {
         await rejects(() => scryptAsync('pwd', 'salt', t), `scrypt(opt=${repr(t)})`);
       }
     }
-    deepStrictEqual(
-      scrypt(SPACE.str, SPACE.str, opt),
-      scrypt(SPACE.bytes, SPACE.bytes, opt),
-      'scrypt.SPACE'
-    );
-    deepStrictEqual(
-      scrypt(EMPTY.str, EMPTY.str, opt),
-      scrypt(EMPTY.bytes, EMPTY.bytes, opt),
-      'scrypt.EMPTY'
-    );
+    eql(scrypt(SPACE.str, SPACE.str, opt), scrypt(SPACE.bytes, SPACE.bytes, opt), 'scrypt.SPACE');
+    eql(scrypt(EMPTY.str, EMPTY.str, opt), scrypt(EMPTY.bytes, EMPTY.bytes, opt), 'scrypt.EMPTY');
   });
 
   should('Scrypt maxmem', async () => {
@@ -291,8 +284,8 @@ describe('PBKDF2', () => {
     const t = PBKDF2_VECTORS[i];
     should(`PBKDF2 vector (${i})`, async () => {
       const exp = hexToBytes(t.exp.replace(/ /g, ''));
-      deepStrictEqual(pbkdf2(t.hash, t.P, t.S, t), exp);
-      deepStrictEqual(await pbkdf2Async(t.hash, t.P, t.S, t), exp);
+      eql(pbkdf2(t.hash, t.P, t.S, t), exp);
+      eql(await pbkdf2Async(t.hash, t.P, t.S, t), exp);
     });
   }
 
@@ -334,12 +327,12 @@ describe('PBKDF2', () => {
       throws(() => pbkdf2(t, 'pwd', 'salt', t), `pbkdf2(hash=${repr(t)})`);
       await rejects(() => pbkdf2Async(t, 'pwd', 'salt', t), `pbkdf2(hash=${repr(t)})`);
     }
-    deepStrictEqual(
+    eql(
       pbkdf2(sha256, SPACE.str, SPACE.str, opts),
       pbkdf2(sha256, SPACE.bytes, SPACE.bytes, opts),
       'pbkdf2.SPACE'
     );
-    deepStrictEqual(
+    eql(
       pbkdf2(sha256, EMPTY.str, EMPTY.str, opts),
       pbkdf2(sha256, EMPTY.bytes, EMPTY.bytes, opts),
       'pbkdf2.EMPTY'

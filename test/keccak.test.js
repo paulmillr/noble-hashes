@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual, throws } from 'node:assert';
+import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -73,7 +73,7 @@ describe('sha3', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-224')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : EMPTY;
-      deepStrictEqual(sha3_224(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
+      eql(sha3_224(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
     }
   });
 
@@ -81,7 +81,7 @@ describe('sha3', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-256')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-      deepStrictEqual(sha3_256(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
+      eql(sha3_256(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
     }
   });
 
@@ -89,7 +89,7 @@ describe('sha3', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-384')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-      deepStrictEqual(sha3_384(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
+      eql(sha3_384(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
     }
   });
 
@@ -97,7 +97,7 @@ describe('sha3', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-512')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-      deepStrictEqual(sha3_512(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
+      eql(sha3_512(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
     }
   });
 
@@ -105,11 +105,7 @@ describe('sha3', () => {
     for (let v of getVectors('ShortMsgKAT_SHAKE128')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-      deepStrictEqual(
-        shake128(msg, { dkLen: 512 }),
-        fromHex(v.Squeezed),
-        `len=${v.Len} hex=${v.Msg}`
-      );
+      eql(shake128(msg, { dkLen: 512 }), fromHex(v.Squeezed), `len=${v.Len} hex=${v.Msg}`);
     }
   });
 
@@ -117,11 +113,7 @@ describe('sha3', () => {
     for (let v of getVectors('ShortMsgKAT_SHAKE256')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
       const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
-      deepStrictEqual(
-        shake256(msg, { dkLen: 512 }),
-        fromHex(v.Squeezed),
-        `len=${v.Len} hex=${v.Msg}`
-      );
+      eql(shake256(msg, { dkLen: 512 }), fromHex(v.Squeezed), `len=${v.Len} hex=${v.Msg}`);
     }
   });
 
@@ -134,7 +126,7 @@ describe('sha3', () => {
     if (isBun) return; // bun is buggy
     for (let i = 0; i < 4096; i++) {
       const node = Uint8Array.from(createHash('shake128', { outputLength: i }).digest());
-      deepStrictEqual(shake128(EMPTY, { dkLen: i }), node);
+      eql(shake128(EMPTY, { dkLen: i }), node);
     }
   });
 
@@ -142,7 +134,7 @@ describe('sha3', () => {
     if (isBun) return; // bun is buggy
     for (let i = 0; i < 4096; i++) {
       const node = Uint8Array.from(createHash('shake256', { outputLength: i }).digest());
-      deepStrictEqual(shake256(EMPTY, { dkLen: i }), node);
+      eql(shake256(EMPTY, { dkLen: i }), node);
     }
   });
 });
@@ -154,7 +146,7 @@ describe('sha3-addons', () => {
       const exp = fromHex(v.exp.replace(/ /g, ''));
       let res = k12(v.msg, { personalization: v.personalization, dkLen: v.dkLen });
       if (v.last) res = res.slice(-v.last);
-      deepStrictEqual(res, exp, `k12 ${i}`);
+      eql(res, exp, `k12 ${i}`);
     }
   });
   should('k12: dkLen', () => {
@@ -168,13 +160,13 @@ describe('sha3-addons', () => {
       const exp = fromHex(M14_VECTORS[i].replace(/ /g, ''));
       let res = m14(v.msg, { personalization: v.personalization, dkLen: v.dkLen });
       if (v.last) res = res.slice(-v.last);
-      deepStrictEqual(res, exp, `m14 ${i}`);
+      eql(res, exp, `m14 ${i}`);
     }
   });
   should('cSHAKE', () => {
     for (let i = 0; i < CSHAKE_VESTORS.length; i++) {
       const v = CSHAKE_VESTORS[i];
-      deepStrictEqual(
+      eql(
         v.fn(v.data, {
           personalization: utf8ToBytes(v.personalization),
           NISTfn: utf8ToBytes(v.NISTfn),
@@ -189,7 +181,7 @@ describe('sha3-addons', () => {
   should('KMAC', () => {
     for (let i = 0; i < KMAC_VECTORS.length; i++) {
       const v = KMAC_VECTORS[i];
-      deepStrictEqual(
+      eql(
         v.fn(v.key, v.data, { personalization: utf8ToBytes(v.personalization), dkLen: v.dkLen }),
         v.output,
         `KMAC ${i}`
@@ -200,7 +192,7 @@ describe('sha3-addons', () => {
   should('tuplehash', () => {
     for (let i = 0; i < TUPLE_VECTORS.length; i++) {
       const v = TUPLE_VECTORS[i];
-      deepStrictEqual(
+      eql(
         v.fn(v.data, { personalization: utf8ToBytes(v.personalization), dkLen: v.dkLen }),
         v.output,
         `tuplehash ${i}`
@@ -211,7 +203,7 @@ describe('sha3-addons', () => {
   should('parallelhash', () => {
     for (let i = 0; i < PARALLEL_VECTORS.length; i++) {
       const v = PARALLEL_VECTORS[i];
-      deepStrictEqual(
+      eql(
         v.fn(v.data, {
           personalization: utf8ToBytes(v.personalization),
           dkLen: v.dkLen,
@@ -240,7 +232,7 @@ describe('sha3-addons', () => {
         } catch (e) {}
         if (out[0] & 4) out = p.fetch(v.output.length / 2);
       }
-      deepStrictEqual(out, fromHex(v.output), `prg vector ${i} failed`);
+      eql(out, fromHex(v.output), `prg vector ${i} failed`);
     }
   });
 
@@ -318,14 +310,14 @@ describe('sha3-addons', () => {
       const hashxof = f.create();
       const out = [];
       for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
-      deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size');
+      eql(concatBytes(...out), bigOut, 'xof check against fixed size');
     }
     for (let f of XOF_KMAC) {
       const bigOut = f(key, EMPTY, { dkLen: 130816 });
       const hashxof = f.create(key);
       const out = [];
       for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));
-      deepStrictEqual(concatBytes(...out), bigOut, 'xof check against fixed size (kmac)');
+      eql(concatBytes(...out), bigOut, 'xof check against fixed size (kmac)');
     }
   });
 
@@ -333,7 +325,7 @@ describe('sha3-addons', () => {
     const a = utf8ToBytes('key');
     const b = utf8ToBytes('123');
     const objs = [kmac128.create(a).update(b), keccakprg().feed(b)];
-    for (const o of objs) deepStrictEqual(o.clone(), o);
+    for (const o of objs) eql(o.clone(), o);
     const objs2 = [
       tuplehash128.create().update(b),
       parallelhash128.create({ blockLen: 12 }).update(b),
@@ -342,7 +334,7 @@ describe('sha3-addons', () => {
       const clone = o.clone();
       delete o.update;
       delete clone.update;
-      deepStrictEqual(clone, o);
+      eql(clone, o);
     }
   });
 
@@ -379,12 +371,12 @@ describe('sha3-addons', () => {
       const method = fn[v.fn_name];
       let err = `(${i}): ${v.fn_name}`;
       if (!method) throw new Error('invalid fn');
-      deepStrictEqual(bytesToHex(method()), v.exp, err);
+      eql(bytesToHex(method()), v.exp, err);
     }
   });
 
   should('turboshake', () => {
-    deepStrictEqual(
+    eql(
       bytesToHex(
         turboshake128(
           fromHex(
@@ -394,7 +386,7 @@ describe('sha3-addons', () => {
       ),
       '8e2e8cec4b4056b7810d78da12751029ad4a5b1694d5ca82ebf8b4de9cb4596a'
     );
-    deepStrictEqual(
+    eql(
       bytesToHex(
         turboshake256(
           fromHex(
@@ -409,14 +401,14 @@ describe('sha3-addons', () => {
     for (const v of VECTORS_TURBO) {
       let res = v.hash(v.msg, { dkLen: v.dkLen, D: v.D });
       if (v.last) res = res.subarray(-v.last);
-      deepStrictEqual(res, v.exp);
+      eql(res, v.exp);
     }
   });
   should('k12 spec vectors', () => {
     for (const v of VECTORS_K12) {
       let res = v.hash(v.msg, { personalization: v.C, dkLen: v.dkLen });
       if (v.last) res = res.subarray(-v.last);
-      deepStrictEqual(res, v.exp);
+      eql(res, v.exp);
     }
   });
   should('turboshake domain separation byte', () => {

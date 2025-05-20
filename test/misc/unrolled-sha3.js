@@ -1,9 +1,54 @@
-const rotlHs = (h: string, l: string, s: number) =>
-  s > 32 ? `(${l} << ${s - 32}) | (${h} >>> ${64 - s})` : `(${h} << ${s}) | (${l} >>> ${32 - s})`;
-const rotlLs = (h: string, l: string, s: number) =>
-  s > 32 ? `(${h} << ${s - 32}) | (${l} >>> ${64 - s})` : `(${l} << ${s}) | (${h} >>> ${32 - s})`;
+// u64.ts
+const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
+const _32n = /* @__PURE__ */ BigInt(32);
+function fromBig(n, le = false) {
+  if (le) return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
+  return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
+}
+function split(lst, le = false) {
+  const len = lst.length;
+  let Ah = new Uint32Array(len);
+  let Al = new Uint32Array(len);
+  for (let i = 0; i < len; i++) {
+    const { h, l } = fromBig(lst[i], le);
+    [Ah[i], Al[i]] = [h, l];
+  }
+  return [Ah, Al];
+}
+
+// sha3.ts
+const _0n = BigInt(0);
+const _1n = BigInt(1);
+const _2n = BigInt(2);
+const _7n = BigInt(7);
+const _256n = BigInt(256);
+const _0x71n = BigInt(0x71);
+const SHA3_PI = [];
+const SHA3_ROTL = [];
+const _SHA3_IOTA = [];
+for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
+  // Pi
+  [x, y] = [y, (2 * x + 3 * y) % 5];
+  SHA3_PI.push(2 * (5 * y + x));
+  // Rotational
+  SHA3_ROTL.push((((round + 1) * (round + 2)) / 2) % 64);
+  // Iota
+  let t = _0n;
+  for (let j = 0; j < 7; j++) {
+    R = ((R << _1n) ^ ((R >> _7n) * _0x71n)) % _256n;
+    if (R & _2n) t ^= _1n << ((_1n << /* @__PURE__ */ BigInt(j)) - _1n);
+  }
+  _SHA3_IOTA.push(t);
+}
+// const IOTAS = split(_SHA3_IOTA, true);
+// const SHA3_IOTA_H = IOTAS[0];
+// const SHA3_IOTA_L = IOTAS[1];
 
 export const keccakP = (() => {
+  const rotlHs = (h, l, s) =>
+    s > 32 ? `(${l} << ${s - 32}) | (${h} >>> ${64 - s})` : `(${h} << ${s}) | (${l} >>> ${32 - s})`;
+  const rotlLs = (h, l, s) =>
+    s > 32 ? `(${h} << ${s - 32}) | (${l} >>> ${64 - s})` : `(${l} << ${s}) | (${h} >>> ${32 - s})`;
   let out = 'let h, l, s = state;\n';
   const vars = [];
   for (let i = 0; i < 200 / 4; i++) vars.push(`s${i} = s[${i}]`);
@@ -48,3 +93,5 @@ export const keccakP = (() => {
   for (let i = 0; i < 200 / 4; i++) out += `s[${i}] = s${i}; `;
   return new Function('state', 'rounds', 'SHA3_IOTA_H', 'SHA3_IOTA_L', out);
 })();
+
+console.log(keccakP.toString());

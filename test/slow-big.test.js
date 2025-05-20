@@ -1,5 +1,5 @@
 import { should } from 'micro-should';
-import { deepStrictEqual } from 'node:assert';
+import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync as nodeScryptSync } from 'node:crypto';
 import { hkdf } from '../esm/hkdf.js';
 import { hmac } from '../esm/hmac.js';
@@ -76,7 +76,7 @@ for (let h in HASHES) {
     should(`Node: ${h} 4GB single update`, () => {
       const nodeH = hash.node_obj();
       for (let i = 0; i < 4 * 1024; i++) nodeH.update(ZERO_1MB);
-      deepStrictEqual(hash.fn(ZERO_4GB), Uint8Array.from(nodeH.digest()));
+      eql(hash.fn(ZERO_4GB), Uint8Array.from(nodeH.digest()));
     });
     should(`Node: ${h} 16GB partial update`, () => {
       const nodeH = hash.node_obj();
@@ -86,14 +86,14 @@ for (let h in HASHES) {
         nodeH.update(RANDOM);
         nobleH.update(RANDOM);
       }
-      deepStrictEqual(nobleH.digest(), Uint8Array.from(nodeH.digest()));
+      eql(nobleH.digest(), Uint8Array.from(nodeH.digest()));
     });
   }
   // Node doesn't support 5gb arrays in crypto :(
   if (supports5GB && BIG_VECTORS[h]) {
     should(`Node: ${h} (5GB)`, () => {
       let ZERO_5GB = new Uint8Array(5 * GB); // catches u32 overflow in ints
-      deepStrictEqual(bytesToHex(hash.fn(ZERO_5GB)), BIG_VECTORS[h]);
+      eql(bytesToHex(hash.fn(ZERO_5GB)), BIG_VECTORS[h]);
     });
   }
 }
@@ -113,8 +113,8 @@ for (const opts of opts_2gb) {
       })
     );
     const nobleOpts = { ...opts, maxmem: 16 * 1024 ** 3 }; // We don't have XY buffer
-    deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
-    deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
+    eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
+    eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
   });
 }
 
@@ -128,14 +128,14 @@ should('Scrypt (4GB)', async () => {
     })
   );
   const nobleOpts = { ...opts, maxmem: 4 * 1024 ** 3 + 128 * 1024 }; // We don't have XY buffer
-  deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
-  deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
+  eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
+  eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
 });
 
 // takes 5 min
 should('HKDF 4GB', () => {
   const exp = hexToBytes('411cd96b5326af15c28c6f63e73c1f87b49e6cd0e21a0f7989a993d6d796e0dd');
-  deepStrictEqual(hkdf(sha512, ZERO_4GB, ZERO_4GB, ZERO_4GB, 32), exp);
+  eql(hkdf(sha512, ZERO_4GB, ZERO_4GB, ZERO_4GB, 32), exp);
 });
 
 // takes 3min
@@ -144,20 +144,20 @@ should('PBKDF2 pwd/salt 4GB', async () => {
   const exp = hexToBytes(
     '58bf5b189082c9820b63d4eeb31c0d77efbc091b36856fff38032522e7e2f353d6781b0ba2bc0cbc50aa3896863803c61f907bcc3909b25b39e8f2f78174d4aa'
   );
-  deepStrictEqual(pbkdf2(sha512, ZERO_4GB, ZERO_4GB, opt), exp, `pbkdf2(${opt})`);
-  deepStrictEqual(await pbkdf2Async(sha512, ZERO_4GB, ZERO_4GB, opt), exp, `pbkdf2Async(${opt})`);
+  eql(pbkdf2(sha512, ZERO_4GB, ZERO_4GB, opt), exp, `pbkdf2(${opt})`);
+  eql(await pbkdf2Async(sha512, ZERO_4GB, ZERO_4GB, opt), exp, `pbkdf2Async(${opt})`);
 });
 
 should('Scrypt pwd/salt 4GB', async () => {
   const opt = { N: 4, r: 4, p: 4, dkLen: 32 };
   const exp = hexToBytes('00609885de3a56181c60f315c4ee65366368b01dd55efcd7923188597dc40912');
-  deepStrictEqual(scrypt(ZERO_4GB, ZERO_4GB, opt), exp, `scrypt(${opt})`);
-  deepStrictEqual(await scryptAsync(ZERO_4GB, ZERO_4GB, opt), exp, `scryptAsync(${opt})`);
+  eql(scrypt(ZERO_4GB, ZERO_4GB, opt), exp, `scrypt(${opt})`);
+  eql(await scryptAsync(ZERO_4GB, ZERO_4GB, opt), exp, `scryptAsync(${opt})`);
 });
 
 should('Hmac 4GB', async () => {
   const exp = hexToBytes('c5c39ec0ad91ddc3010d683b7e077aeedaba92fb7da17e367dbcf08e11aa25d1');
-  deepStrictEqual(hmac(sha256, ZERO_4GB, ZERO_4GB), exp);
+  eql(hmac(sha256, ZERO_4GB, ZERO_4GB), exp);
 });
 
 should('cshake >4gb (GH-101)', () => {
@@ -165,10 +165,7 @@ should('cshake >4gb (GH-101)', () => {
   const S = rng.subarray(0, 536_871_912);
   const data = rng.subarray(536_871_912);
   const res = cshake128(data, { personalization: S, dkLen: 32 });
-  deepStrictEqual(
-    bytesToHex(res),
-    '2cb9f237767e98f2614b8779cf096a52da9b3a849280bbddec820771ae529cf0'
-  );
+  eql(bytesToHex(res), '2cb9f237767e98f2614b8779cf096a52da9b3a849280bbddec820771ae529cf0');
 });
 
 if (supports5GB) {
@@ -176,30 +173,26 @@ if (supports5GB) {
     let ZERO_5GB = new Uint8Array(5 * GB); // catches u32 overflow in ints
     // hmac
     const expHm = hexToBytes('669fbe7961b70cb36f9d5559e939c4303090991a270586c23f2e6c2b82d2a4af');
-    deepStrictEqual(hmac(sha256, ZERO_5GB, ZERO_5GB), expHm);
+    eql(hmac(sha256, ZERO_5GB, ZERO_5GB), expHm);
 
     // hkdf
     const expH = hexToBytes('b5f75ccb25f5e3e2f4b524e9cf99449aac9b03bd4d0ad4957d0e3d42583a77d4');
-    deepStrictEqual(hkdf(sha512, ZERO_5GB, ZERO_5GB, ZERO_5GB, 32), expH, 'HKDF 5GB');
+    eql(hkdf(sha512, ZERO_5GB, ZERO_5GB, ZERO_5GB, 32), expH, 'HKDF 5GB');
 
     // pbkdf2
     const optP = { dkLen: 64, c: 10 };
     const expP = hexToBytes(
       '1445d2aa24bf84d7f69269a7e088f7130b00901860de454415c947f0cb87ea892d84ccb1757e973a649d09f32f965f4aa223dba690c0cea0ef0359c325cd9501'
     );
-    deepStrictEqual(pbkdf2(sha512, ZERO_5GB, ZERO_5GB, optP), expP, `5GB pbkdf2(${optP})`);
-    deepStrictEqual(
-      await pbkdf2Async(sha512, ZERO_5GB, ZERO_5GB, optP),
-      expP,
-      `5GB pbkdf2Async(${optP})`
-    );
+    eql(pbkdf2(sha512, ZERO_5GB, ZERO_5GB, optP), expP, `5GB pbkdf2(${optP})`);
+    eql(await pbkdf2Async(sha512, ZERO_5GB, ZERO_5GB, optP), expP, `5GB pbkdf2Async(${optP})`);
 
     // scrypt
     // This doesn't work in node, python: ~1.5h, noble: ~5min
     const optS = { N: 4, r: 4, p: 4, dkLen: 32 };
     const expS = hexToBytes('0e49e31878f256302b581977f4f5b921cd9c53f3072b0b2948f5c6f53416cac7');
-    deepStrictEqual(scrypt(ZERO_5GB, ZERO_5GB, optS), expS, `5GB scrypt(${optS})`);
-    deepStrictEqual(await scryptAsync(ZERO_5GB, ZERO_5GB, optS), expS, `5GB scryptAsync(${optS})`);
+    eql(scrypt(ZERO_5GB, ZERO_5GB, optS), expS, `5GB scrypt(${optS})`);
+    eql(await scryptAsync(ZERO_5GB, ZERO_5GB, optS), expS, `5GB scryptAsync(${optS})`);
   });
 
   // 22: 0b4de6108452441913a780b56461c011c3480e29c82dc47aa0af59321e039b9c
@@ -213,8 +206,8 @@ if (supports5GB) {
     const opts = { N: 2 ** 25, r: 2, p: 2 };
     const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
     const nobleOpts = { ...opts, maxmem: 9 * GB };
-    deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
-    deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
+    eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
+    eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
   });
 
   should('Scrypt (16GB)', async () => {
@@ -227,8 +220,8 @@ if (supports5GB) {
       })
     );
     const nobleOpts = { ...opts, maxmem: 17 * GB };
-    deepStrictEqual(scrypt(PASSWORD, SALT, nobleOpts), exp);
-    deepStrictEqual(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
+    eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
+    eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
   });
 }
 

@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual, throws } from 'node:assert';
+import { deepStrictEqual as eql, throws } from 'node:assert';
 import { hmac } from '../esm/hmac.js';
 import { sha256, sha384, sha512 } from '../esm/sha2.js';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../esm/utils.js';
@@ -115,21 +115,21 @@ describe('hmac', () => {
     describe('vector ' + i, () => {
       should('sha256 full', () => {
         const h256 = hmac.create(sha256, t.key).update(concatBytes(...t.data));
-        deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+        eql(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
       });
       should('sha256 partial', () => {
         const h256 = hmac.create(sha256, t.key);
         for (let d of t.data) h256.update(d);
-        deepStrictEqual(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+        eql(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
       });
       should('sha512 full', () => {
         const h512 = hmac.create(sha512, t.key).update(concatBytes(...t.data));
-        deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
+        eql(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
       });
       should('sha512 partial', () => {
         const h512 = hmac.create(sha512, t.key);
         for (let d of t.data) h512.update(d);
-        deepStrictEqual(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
+        eql(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
       });
     });
   }
@@ -152,27 +152,20 @@ describe('hmac', () => {
     //   throws(() => hmac.create(sha256, 'key', t), `hmac.create(opt=${repr(t)})`);
     // }
     for (const t of TYPE_TEST.hash) throws(() => hmac(t, key, msg), `hmac(hash=${repr(t)})`);
-    // String / Bytes tests
-    deepStrictEqual(
-      hmac(sha512, SPACE.str, SPACE.str),
-      hmac(sha512, SPACE.bytes, SPACE.bytes),
-      'hmac.SPACE'
-    );
-    deepStrictEqual(
-      hmac(sha512, EMPTY.str, EMPTY.str),
-      hmac(sha512, EMPTY.bytes, EMPTY.bytes),
-      'hmac.EMPTY'
-    );
-    deepStrictEqual(
+    eql(
       hmac(sha512, SPACE.bytes, SPACE.bytes),
       hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
       'hmac.SPACE (full form bytes)'
     );
-    deepStrictEqual(
+    eql(
       hmac(sha512, SPACE.bytes, SPACE.bytes),
       hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
       'hmac.SPACE (full form stingr)'
     );
+
+    // todo: remove string input tests
+    eql(hmac(sha512, SPACE.str, SPACE.str), hmac(sha512, SPACE.bytes, SPACE.bytes), 'hmac.SPACE');
+    eql(hmac(sha512, EMPTY.str, EMPTY.str), hmac(sha512, EMPTY.bytes, EMPTY.bytes), 'hmac.EMPTY');
   });
 
   should('Sha512/384 issue', () => {
@@ -193,7 +186,7 @@ describe('hmac', () => {
         '6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf59a9083505bc92276aec4be312696ef7bf3bf603f4bbd381196a029f340585312313bca4a9b5b890efee42c77b1ee25fe'
       )
     );
-    deepStrictEqual(
+    eql(
       bytesToHex(h.digest()),
       'a1ae63339c4fac449464e302c61e8ceb5b28c04d108e022179ce6dabb2d3e310cb3bf41cd6013b3006f33c037e6b7fa8'
     );

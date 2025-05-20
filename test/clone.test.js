@@ -1,5 +1,5 @@
 import { describe, should } from 'micro-should';
-import { deepStrictEqual } from 'node:assert';
+import { deepStrictEqual as eql } from 'node:assert';
 import { blake2b, blake2s } from '../esm/blake2.js';
 import { blake3 } from '../esm/blake3.js';
 import { hmac } from '../esm/hmac.js';
@@ -90,9 +90,9 @@ describe('clone', () => {
           ._cloneInto()
           .update(new Uint8Array([6, 7, 8, 9, 10]))
           .digest();
-        deepStrictEqual(s2, smallExp, 's2 correct');
+        eql(s2, smallExp, 's2 correct');
         // Original is not modified
-        deepStrictEqual(
+        eql(
           s1.digest(),
           small()
             .update(new Uint8Array([1, 2, 3, 4, 5]))
@@ -106,9 +106,9 @@ describe('clone', () => {
           ._cloneInto()
           .update(new Uint8Array([5, 4, 3, 2, 1]))
           .digest();
-        deepStrictEqual(b2, bigExp, 'b2 correct');
+        eql(b2, bigExp, 'b2 correct');
         // Original is not modified
-        deepStrictEqual(
+        eql(
           b1.digest(),
           big()
             .update(new Uint8Array([10, 9, 8, 7, 6]))
@@ -122,24 +122,20 @@ describe('clone', () => {
         const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
         const b2 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
         b1._cloneInto(s2);
-        deepStrictEqual(b1, s2, 'b1===s2');
+        eql(b1, s2, 'b1===s2');
         s1._cloneInto(b2);
-        deepStrictEqual(s1, b2, 'b1===b2');
-        deepStrictEqual(s2.update(new Uint8Array([5, 4, 3, 2, 1])).digest(), bigExp, 's2===big');
-        deepStrictEqual(
-          b2.update(new Uint8Array([6, 7, 8, 9, 10])).digest(),
-          smallExp,
-          'b2===small'
-        );
+        eql(s1, b2, 'b1===b2');
+        eql(s2.update(new Uint8Array([5, 4, 3, 2, 1])).digest(), bigExp, 's2===big');
+        eql(b2.update(new Uint8Array([6, 7, 8, 9, 10])).digest(), smallExp, 'b2===small');
         // Original is not modified
-        deepStrictEqual(
+        eql(
           b1.digest(),
           big()
             .update(new Uint8Array([10, 9, 8, 7, 6]))
             .digest(),
           'b1 same'
         );
-        deepStrictEqual(
+        eql(
           s1.digest(),
           small()
             .update(new Uint8Array([1, 2, 3, 4, 5]))
