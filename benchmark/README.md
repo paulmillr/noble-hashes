@@ -1,41 +1,54 @@
 # Can noble-hashes be faster?
 
-tl;dr: Yes, 4x+; but auditability would be bad.
+Yes, 3x, but auditability and code size would suffer.
+Here are speed-up results for sha3:
 
-CSP policy treats this construction as 'unsafe-eval':
+sha3_256 x 282,965 ops/sec => 780,031 ops/sec
+303 lines => 631 lines  noble-sha3.js
+5.03 kb   => 7.57 kb    noble-sha3.min.js
+2.24 kb   => 3.54 kb    noble-sha3.min.js.gz
 
-```js
-const unrolled = (() => { let out = 'let a = 1;'; ... return new Function(..., out) })();
-```
+The size increase would need to be done for all functions.
+Check out `test/misc/unrolled-sha3.js` for fast SHA3 drop-in replacement.
 
-There are websites and extensions that force this policy. Which means there is no way to do unrolling directly in JS without build systems.
-Adding a build system will make the code hard to audit and reason about.
-TypeScript is fine, since it generates very similar code and it is easy to read,
-but for loop unrolling it is pretty hard to verify the generated code is the same.
+### Loop unrolling
 
-Why does it matter? Loop unrolling itself doesn't impact performance much,
-however it also eliminates branches and array access which significantly impacts performance. For example, small expression:
-
-```js
-a[x] ^= b;
-```
-
-Can be just one xor instruction, but with array access it will be compiled to something like this:
+Consider "hot", performant code:
 
 ```js
-ptr = array_ptr + 8 * x; // can be even worse if there is different array elements sizes
-if (x < 0 || x >= array_len) throw Error;
-*ptr ^= b;
+for (let x = 0; x < 10; x++)
+  B[x] = s[x] ^ s[x+10] ^ s[x+20] ^ s[x+30] ^ s[x+40];
 ```
 
-Now we have a lot of overhead for a simple operation which will take significantly more time than operation itself.
+Array access such as `B[x]`, `s[x]` is slow because of bound checks.
+To make it fast, libraries resort to loop unrolling:
 
-So, how bad it is? Almost x4!
-
-```
-SHA3 32 B    x 184,331 ops/sec => 640,614   ops/sec unrolled
-BLAKE2s 32 B x 464,468 ops/sec => 1,820,714 ops/sec unrolled
-BLAKE2b 32 B x 282,965 ops/sec => 749,857   ops/sec unrolled
+```js
+let B0 = s0 ^ s10 ^ s20 ^ s30 ^ s40;
+let B1 = s1 ^ s11 ^ s21 ^ s31 ^ s41; // ...
 ```
 
-This is why we can't have nice things. Contact your W3C representative about it!
+There are two ways of doing unrolling: run-time and build-time.
+
+1. Run-time is using eval (`new Function`) to build fast function:
+
+```js
+let out = ''
+for (let x = 0; x < 10; x++)
+ out += `let B${x} = s${x} ^ s${x + 10} ^ s${x + 20} ^ s${x + 30} ^ s${x + 40};\n`;
+const UNROLLED_FN = new Function('state', out);
+```
+
+2. Constructing function during build-time is the same, but executed at some point during build.
+   The result function is
+
+### Loop unrolling issues
+
+Run-time doesn't work with popular CSP policy `unsafe-eval`. So, we can't use it.
+
+Build-time construction will make the code much harder to audit and reason about.
+Auditors would need to check code generation script in addition to code itself.
+It would also increase bundle size.
+So, for now we don't do unrolling.
+
+If you have a concrete use-case for "very fast" hashing in JS, open an issue - we will discuss it.

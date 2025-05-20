@@ -8,7 +8,7 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2 & KangarooTwelve
-- 🪶 48KB for everything, 4.8KB (2.36KB gzipped) for single-hash build
+- 🪶 20KB (gzipped) for everything, 2.4KB for single-hash build
 
 Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
@@ -49,8 +49,15 @@ sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])); // returns Uint8Array
 
 // Available modules
 import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2.js';
-import { sha3_256, sha3_512, keccak_256, keccak_512, shake128, shake256 } from '@noble/hashes/sha3.js';
-import { cshake256, turboshake256, kmac256, tuplehash256, k12, m14, keccakprg } from '@noble/hashes/sha3-addons.js';
+import {
+  sha3_256, sha3_512,
+  keccak_256, keccak_512,
+  shake128, shake256,
+} from '@noble/hashes/sha3.js';
+import {
+  cshake256, turboshake256, kmac256, tuplehash256,
+  k12, m14, keccakprg,
+} from '@noble/hashes/sha3-addons.js';
 import { blake3 } from '@noble/hashes/blake3.js';
 import { blake2b, blake2s } from '@noble/hashes/blake2.js';
 import { blake256, blake512 } from '@noble/hashes/blake1.js';
@@ -66,8 +73,9 @@ import * as utils from '@noble/hashes/utils'; // bytesToHex, bytesToUtf8, concat
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
 - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
 - [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
-- [blake, blake2, blake3](#blake-blake2-blake3) | [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
-- MACs: [hmac](#hmac) | [sha3-addons kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake) | [blake3 key mode](#blake2b-blake2s-blake3)
+- [blake1, blake2, blake3](#blake1-blake2-blake3)
+- [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
+- MACs: [hmac](#hmac) | [kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake) | [blake3 key mode](#blake1-blake2-blake3)
 - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
 - [utils](#utils)
 - [Security](#security) | [Speed](#speed) | [Contributing & testing](#contributing--testing) | [License](#license)
@@ -78,7 +86,7 @@ Hash functions:
 
 - `sha256()`: receive & return `Uint8Array`
 - `sha256.create().update(a).update(b).digest()`: support partial updates
-- `blake3.create({ context: 'e', dkLen: 32 })`: sometimes have options
+- `blake3.create({ context: 'e', dkLen: 32 })`: can have options
 - support little-endian architecture; also experimentally big-endian
 - can hash up to 4GB per chunk, with any amount of chunks
 
@@ -101,8 +109,8 @@ See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
 
 ```typescript
 import {
-  keccak_224, keccak_256, keccak_384, keccak_512,
   sha3_224, sha3_256, sha3_384, sha3_512,
+  keccak_224, keccak_256, keccak_384, keccak_512,
   shake128, shake256,
 } from '@noble/hashes/sha3.js';
 for (let hash of [
@@ -126,21 +134,17 @@ Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchang
 
 ```typescript
 import {
-  cshake128, cshake256,
-  k12,
-  keccakprg,
-  kmac128, kmac256,
-  m14,
-  parallelhash256,
-  tuplehash256,
-  turboshake128, turboshake256
+  cshake128, cshake256, k12, m14,
+  keccakprg, kmac128, kmac256,
+  parallelhash256, tuplehash256,
+  turboshake128, turboshake256,
 } from '@noble/hashes/sha3-addons.js';
 const data = Uint8Array.from([0x10, 0x20, 0x30]);
 const ec1 = cshake128(data, { personalization: 'def' });
 const ec2 = cshake256(data, { personalization: 'def' });
 const et1 = turboshake128(data);
 const et2 = turboshake256(data, { D: 0x05 });
- // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash([data])
+// tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash([data])
 const et3 = tuplehash256([utf8ToBytes('ab'), utf8ToBytes('c')]);
 // Not parallel in JS (similar to blake3 / k12), added for compat
 const ep1 = parallelhash256(data, { blockLen: 8 });
@@ -164,17 +168,14 @@ const rand1b = p.fetch(1);
   - TurboSHAKE
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
 
-#### blake, blake2, blake3
+#### blake1, blake2, blake3
 
 ```typescript
 import { blake224, blake256, blake384, blake512 } from '@noble/hashes/blake1.js';
 import { blake2b, blake2s } from '@noble/hashes/blake2.js';
 import { blake3 } from '@noble/hashes/blake3.js';
 
-for (let hash of [
-  blake224, blake256, blake384, blake512,
-  blake2b, blake2s, blake3
-]) {
+for (let hash of [blake224, blake256, blake384, blake512, blake2b, blake2s, blake3]) {
   const arr = Uint8Array.from([0x10, 0x20, 0x30]);
   const a = hash(arr);
   const b = hash.create().update(arr).digest();
@@ -289,8 +290,9 @@ const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5
 Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
 [Website](https://www.tarsnap.com/scrypt.html)
 
-- `N, r, p` are work factors. To understand them, see [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
-  `r: 8, p: 1` are common. JS doesn't support parallelization, making increasing p meaningless.
+- `N, r, p` are work factors. It is common to only adjust N, while keeping `r: 8, p: 1`.
+  See [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
+  JS doesn't support parallelization, making increasing `p` meaningless.
 - `dkLen` is the length of output bytes e.g. `32` or `64`
 - `onProgress` can be used with async version of the function to report progress to a user.
 - `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `N * r * p * 128 + (128 * r * p)`
@@ -483,14 +485,13 @@ pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
 scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 378ms/op
 ```
 
-It is possible to [make this library 4x+ faster](./benchmark/README.md) by
+It is possible to [make this library 3x+ faster](./benchmark/README.md) by
 _doing code generation of full loop unrolls_. We've decided against it. Reasons:
 
+- current perf is good enough, even compared to other libraries - SHA256 only takes 500 nanoseconds
 - the library must be auditable, with minimum amount of code, and zero dependencies
 - most method invocations with the lib are going to be something like hashing 32b to 64kb of data
 - hashing big inputs is 10x faster with low-level languages, which means you should probably pick 'em instead
-
-The current performance is good enough when compared to other projects; SHA256 takes only 900 nanoseconds to run.
 
 ## Contributing & testing
 
@@ -503,14 +504,18 @@ The current performance is good enough when compared to other projects; SHA256 t
 - There is **additional** 20-min DoS test `npm run test:dos` and 2-hour "big" multicore test `npm run test:big`.
   See [our approach to testing](./test/README.md)
 
+NTT hashes are outside of scope of the library. They depend on some math which is not available in noble-hashes, it doesn't make sense to add it here. You can view some of them in different repos:
+
+- [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)
+- [Poseidon in noble-curves](https://github.com/paulmillr/noble-curves/blob/3d124dd3ecec8b6634cc0b2ba1c183aded5304f9/src/abstract/poseidon.ts)
+
+Polynomial MACs are also outside of scope of the library. They are rarely used outside of encryption. Check out [Poly1305 & GHash in noble-ciphers](https://github.com/paulmillr/noble-ciphers).
+
 Additional resources:
 
-- NTT hashes are outside of scope of the library. You can view some of them in different repos:
-    - [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)
-    - [Poseidon in noble-curves](https://github.com/paulmillr/noble-curves/blob/3d124dd3ecec8b6634cc0b2ba1c183aded5304f9/src/abstract/poseidon.ts)
 - Check out [guidelines](https://github.com/paulmillr/guidelines) for coding practices
 - See [paulmillr.com/noble](https://paulmillr.com/noble/) for useful resources, articles, documentation and demos
-related to the library.
+  related to the library.
 
 ## License
 
