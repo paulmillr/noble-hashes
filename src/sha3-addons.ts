@@ -21,6 +21,8 @@ import {
   Hash,
   type HashXOF,
   type Input,
+  type KDFInput,
+  kdfInputToBytes,
   toBytes,
   u32,
 } from './utils.ts';
@@ -54,12 +56,12 @@ function chooseLen(opts: ShakeOpts, outputLen: number): number {
 }
 
 const abytesOrZero = (buf?: Input) => {
-  if (buf === undefined) return Uint8Array.of();
+  if (buf === undefined) return EMPTY_BUFFER;
   return toBytes(buf);
 };
 // NOTE: second modulo is necessary since we don't need to add padding if current element takes whole block
 const getPadding = (len: number, block: number) => new Uint8Array((block - (len % block)) % block);
-export type cShakeOpts = ShakeOpts & { personalization?: Input; NISTfn?: Input };
+export type cShakeOpts = ShakeOpts & { personalization?: Input; NISTfn?: KDFInput };
 
 // Personalization
 function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
@@ -67,7 +69,7 @@ function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
   // Encode and pad inplace to avoid unneccesary memory copies/slices (so we don't need to zero them later)
   // bytepad(encode_string(N) || encode_string(S), 168)
   const blockLenBytes = leftEncode(hash.blockLen);
-  const fn = abytesOrZero(opts.NISTfn);
+  const fn = opts.NISTfn === undefined ? EMPTY_BUFFER : kdfInputToBytes(opts.NISTfn);
   const fnLen = leftEncode(_8n * BigInt(fn.length)); // length in bits
   const pers = abytesOrZero(opts.personalization);
   const persLen = leftEncode(_8n * BigInt(pers.length)); // length in bits

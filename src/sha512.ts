@@ -1,7 +1,7 @@
 /**
  * SHA2-512 a.k.a. sha512 and sha384. It is slower than sha256 in js because u64 operations are slow.
  *
- * Check out [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
+ * Check out [RFC 4634](https://www.rfc-editor.org/rfc/rfc4634) and
  * [the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
  * @module
  * @deprecated

@@ -1,7 +1,7 @@
 /**
  * SHA2 hash function. A.k.a. sha256, sha384, sha512, sha512_224, sha512_256.
  * SHA256 is the fastest hash implementable in JS, even faster than Blake3.
- * Check out [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
+ * Check out [RFC 4634](https://www.rfc-editor.org/rfc/rfc4634) and
  * [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
  * @module
  */
