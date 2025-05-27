@@ -1,13 +1,12 @@
 {
   "name": "@noble/hashes",
-  "version": "1.8.0",
+  "version": "2.0.0-alpha",
   "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
   "files": [
     "/*.js",
     "/*.js.map",
     "/*.d.ts",
     "/*.d.ts.map",
-    "esm",
     "src/*.ts"
   ],
   "scripts": {
@@ -44,7 +43,7 @@
     "typescript": "5.8.3"
   },
   "engines": {
-    "node": "^20.19.0"
+    "node": ">= 20.19.0"
   },
   "type": "module",
   "main": "index.js",
