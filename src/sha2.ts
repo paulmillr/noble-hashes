@@ -420,22 +420,22 @@ export class SHA512_256 extends SHA2_64B<SHA512_256> {
  * To break sha256 using birthday attack, attackers need to try 2^128 hashes.
  * BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
  */
-export const sha256: CHash = /* @__PURE__ */ createHasher(() => new SHA256());
+export const sha256: CHash<SHA256> = /* @__PURE__ */ createHasher(() => new SHA256());
 /** SHA2-224 hash function from RFC 4634 */
-export const sha224: CHash = /* @__PURE__ */ createHasher(() => new SHA224());
+export const sha224: CHash<SHA224> = /* @__PURE__ */ createHasher(() => new SHA224());
 
 /** SHA2-512 hash function from RFC 4634. */
-export const sha512: CHash = /* @__PURE__ */ createHasher(() => new SHA512());
+export const sha512: CHash<SHA512> = /* @__PURE__ */ createHasher(() => new SHA512());
 /** SHA2-384 hash function from RFC 4634. */
-export const sha384: CHash = /* @__PURE__ */ createHasher(() => new SHA384());
+export const sha384: CHash<SHA384> = /* @__PURE__ */ createHasher(() => new SHA384());
 
 /**
  * SHA2-512/256 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
  */
-export const sha512_256: CHash = /* @__PURE__ */ createHasher(() => new SHA512_256());
+export const sha512_256: CHash<SHA512_256> = /* @__PURE__ */ createHasher(() => new SHA512_256());
 /**
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
  */
-export const sha512_224: CHash = /* @__PURE__ */ createHasher(() => new SHA512_224());
+export const sha512_224: CHash<SHA512_224> = /* @__PURE__ */ createHasher(() => new SHA512_224());
