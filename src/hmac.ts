@@ -2,7 +2,7 @@
  * HMAC: RFC2104 message authentication code.
  * @module
  */
-import { abytes, aexists, ahash, clean, Hash, toBytes, type CHash, type Input } from './utils.ts';
+import { abytes, aexists, ahash, clean, Hash, toBytes, type CHash } from './utils.ts';
 
 export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   oHash: T;
@@ -12,7 +12,7 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   private finished = false;
   private destroyed = false;
 
-  constructor(hash: CHash, _key: Input) {
+  constructor(hash: CHash, _key: Uint8Array) {
     super();
     ahash(hash);
     const key = toBytes(_key);
@@ -34,7 +34,7 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     this.oHash.update(pad);
     clean(pad);
   }
-  update(buf: Input): this {
+  update(buf: Uint8Array): this {
     aexists(this);
     this.iHash.update(buf);
     return this;
@@ -87,8 +87,8 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
  * const mac1 = hmac(sha256, 'key', 'message');
  */
 export const hmac: {
-  (hash: CHash, key: Input, message: Input): Uint8Array;
-  create(hash: CHash, key: Input): HMAC<any>;
-} = (hash: CHash, key: Input, message: Input): Uint8Array =>
+  (hash: CHash, key: Uint8Array, message: Uint8Array): Uint8Array;
+  create(hash: CHash, key: Uint8Array): HMAC<any>;
+} = (hash: CHash, key: Uint8Array, message: Uint8Array): Uint8Array =>
   new HMAC<any>(hash, key).update(message).digest();
-hmac.create = (hash: CHash, key: Input) => new HMAC<any>(hash, key);
+hmac.create = (hash: CHash, key: Uint8Array) => new HMAC<any>(hash, key);

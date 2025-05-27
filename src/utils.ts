@@ -223,7 +223,7 @@ export type Input = Uint8Array;
  * Warning: when Uint8Array is passed, it would NOT get copied.
  * Keep in mind for future mutable operations.
  */
-export function toBytes(data: Input): Uint8Array {
+export function toBytes(data: Uint8Array): Uint8Array {
   abytes(data);
   return data;
 }
@@ -280,7 +280,7 @@ export type IHash = {
 export abstract class Hash<T extends Hash<T>> {
   abstract blockLen: number; // Bytes per block
   abstract outputLen: number; // Bytes in output
-  abstract update(buf: Input): this;
+  abstract update(buf: Uint8Array): this;
   // Writes digest into buf
   abstract digestInto(buf: Uint8Array): void;
   abstract digest(): Uint8Array;
@@ -324,12 +324,12 @@ export type CHashXO = ReturnType<typeof createXOFer>;
 export function createHasher<T extends Hash<T>>(
   hashCons: () => Hash<T>
 ): {
-  (msg: Input): Uint8Array;
+  (msg: Uint8Array): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(): Hash<T>;
 } {
-  const hashC = (msg: Input): Uint8Array => hashCons().update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array): Uint8Array => hashCons().update(toBytes(msg)).digest();
   const tmp = hashCons();
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -340,12 +340,12 @@ export function createHasher<T extends Hash<T>>(
 export function createOptHasher<H extends Hash<H>, T extends Object>(
   hashCons: (opts?: T) => Hash<H>
 ): {
-  (msg: Input, opts?: T): Uint8Array;
+  (msg: Uint8Array, opts?: T): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(opts?: T): Hash<H>;
 } {
-  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -356,12 +356,12 @@ export function createOptHasher<H extends Hash<H>, T extends Object>(
 export function createXOFer<H extends HashXOF<H>, T extends Object>(
   hashCons: (opts?: T) => HashXOF<H>
 ): {
-  (msg: Input, opts?: T): Uint8Array;
+  (msg: Uint8Array, opts?: T): Uint8Array;
   outputLen: number;
   blockLen: number;
   create(opts?: T): HashXOF<H>;
 } {
-  const hashC = (msg: Input, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;

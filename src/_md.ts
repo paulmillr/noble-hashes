@@ -2,7 +2,7 @@
  * Internal Merkle-Damgard hash utils.
  * @module
  */
-import { type Input, Hash, abytes, aexists, aoutput, clean, createView, toBytes } from './utils.ts';
+import { Hash, abytes, aexists, aoutput, clean, createView, toBytes } from './utils.ts';
 
 /** Polyfill for Safari 14. https://caniuse.com/mdn-javascript_builtins_dataview_setbiguint64 */
 export function setBigUint64(
@@ -65,7 +65,7 @@ export abstract class HashMD<T extends HashMD<T>> extends Hash<T> {
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
     data = toBytes(data);
     abytes(data);
