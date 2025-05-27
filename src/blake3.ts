@@ -34,7 +34,7 @@ const B3_Flags = {
   DERIVE_KEY_MATERIAL: 0b1000000,
 } as const;
 
-const B3_IV = SHA256_IV.slice();
+const B3_IV = /* @__PURE__ */ SHA256_IV.slice();
 
 const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
   const Id = Array.from({ length: 16 }, (_, i) => i);

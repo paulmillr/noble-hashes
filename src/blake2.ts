@@ -393,7 +393,7 @@ export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds
   return { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 };
 }
 
-const B2S_IV = SHA256_IV;
+const B2S_IV = /* @__PURE__ */ SHA256_IV.slice();
 export class BLAKE2s extends BLAKE2<BLAKE2s> {
   // Internal state, same as SHA-256
   private v0 = B2S_IV[0] | 0;

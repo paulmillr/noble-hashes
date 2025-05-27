@@ -191,10 +191,10 @@ const B64C = /* @__PURE__ */ Uint32Array.from([
 // first half of C512
 const B32C = B64C.slice(0, 16);
 
-const B256_IV = SHA256_IV.slice();
-const B224_IV = SHA224_IV.slice();
-const B384_IV = SHA384_IV.slice();
-const B512_IV = SHA512_IV.slice();
+const B256_IV = /* @__PURE__ */ SHA256_IV.slice();
+const B224_IV = /* @__PURE__ */ SHA224_IV.slice();
+const B384_IV = /* @__PURE__ */ SHA384_IV.slice();
+const B512_IV = /* @__PURE__ */ SHA512_IV.slice();
 
 function generateTBL256() {
   const TBL = [];
@@ -211,7 +211,7 @@ const TBL256 = /* @__PURE__ */ generateTBL256(); // C256[SIGMA[X]] precompute
 // Reusable temporary buffer
 const BLAKE256_W = /* @__PURE__ */ new Uint32Array(16);
 
-class Blake1_32 extends BLAKE1<Blake1_32> {
+class BLAKE1_32B extends BLAKE1<BLAKE1_32B> {
   private v0: number;
   private v1: number;
   private v2: number;
@@ -371,7 +371,7 @@ function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
   (BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh);
 }
 
-class Blake1_64 extends BLAKE1<Blake1_64> {
+class BLAKE1_64B extends BLAKE1<BLAKE1_64B> {
   private v0l: number;
   private v0h: number;
   private v1l: number;
@@ -494,22 +494,22 @@ class Blake1_64 extends BLAKE1<Blake1_64> {
   }
 }
 
-export class BLAKE224 extends Blake1_32 {
+export class BLAKE224 extends BLAKE1_32B {
   constructor(opts: BlakeOpts = {}) {
     super(28, B224_IV, 0b0000_0000, opts);
   }
 }
-export class BLAKE256 extends Blake1_32 {
+export class BLAKE256 extends BLAKE1_32B {
   constructor(opts: BlakeOpts = {}) {
     super(32, B256_IV, 0b0000_0001, opts);
   }
 }
-export class BLAKE384 extends Blake1_64 {
+export class BLAKE384 extends BLAKE1_64B {
   constructor(opts: BlakeOpts = {}) {
     super(48, B384_IV, 0b0000_0000, opts);
   }
 }
-export class BLAKE512 extends Blake1_64 {
+export class BLAKE512 extends BLAKE1_64B {
   constructor(opts: BlakeOpts = {}) {
     super(64, B512_IV, 0b0000_0001, opts);
   }
