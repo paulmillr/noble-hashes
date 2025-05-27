@@ -162,10 +162,6 @@ describe('hmac', () => {
       hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
       'hmac.SPACE (full form stingr)'
     );
-
-    // todo: remove string input tests
-    eql(hmac(sha512, SPACE.str, SPACE.str), hmac(sha512, SPACE.bytes, SPACE.bytes), 'hmac.SPACE');
-    eql(hmac(sha512, EMPTY.str, EMPTY.str), hmac(sha512, EMPTY.bytes, EMPTY.bytes), 'hmac.EMPTY');
   });
 
   should('Sha512/384 issue', () => {

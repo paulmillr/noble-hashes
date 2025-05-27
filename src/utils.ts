@@ -217,14 +217,13 @@ export function bytesToUtf8(bytes: Uint8Array): string {
 }
 
 /** Accepted input of hash functions. Strings are converted to byte arrays. */
-export type Input = string | Uint8Array;
+export type Input = Uint8Array;
 /**
  * Normalizes (non-hex) string or Uint8Array to Uint8Array.
  * Warning: when Uint8Array is passed, it would NOT get copied.
  * Keep in mind for future mutable operations.
  */
 export function toBytes(data: Input): Uint8Array {
-  if (typeof data === 'string') data = utf8ToBytes(data);
   abytes(data);
   return data;
 }
