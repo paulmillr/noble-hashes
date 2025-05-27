@@ -6,8 +6,9 @@ import { hmac } from './hmac.ts';
 // prettier-ignore
 import {
   ahash, anumber,
-  asyncLoop, checkOpts, clean, createView, Hash, kdfInputToBytes,
+  asyncLoop, checkOpts, clean, createView, kdfInputToBytes,
   type CHash,
+  type Hash,
   type KDFInput
 } from './utils.ts';
 

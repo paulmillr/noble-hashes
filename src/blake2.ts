@@ -9,9 +9,11 @@ import * as u64 from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  clean, createOptHasher, Hash, swap32IfBE, swap8IfBE,
+  clean, createHasher,
+  swap32IfBE, swap8IfBE,
   u32,
-  type CHashO
+  type CHash,
+  type Hash
 } from './utils.ts';
 
 /** Blake hash options. dkLen is output length. key is used in MAC mode. salt is used in KDF mode. */
@@ -100,7 +102,7 @@ function checkBlake2Opts(
 }
 
 /** Class, from which others are subclassed. */
-export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
+export abstract class BLAKE2<T extends BLAKE2<T>> implements Hash<T> {
   protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
@@ -115,7 +117,6 @@ export abstract class BLAKE2<T extends BLAKE2<T>> extends Hash<T> {
   readonly outputLen: number;
 
   constructor(blockLen: number, outputLen: number) {
-    super();
     anumber(blockLen);
     anumber(outputLen);
     this.blockLen = blockLen;
@@ -347,9 +348,10 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
-export const blake2b: CHashO = /* @__PURE__ */ createOptHasher<BLAKE2b, Blake2Opts>(
-  (opts) => new BLAKE2b(opts)
-);
+export const blake2b: CHash<BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher<
+  BLAKE2b,
+  Blake2Opts
+>((opts) => new BLAKE2b(opts));
 
 // =================
 // Blake2S
@@ -481,6 +483,7 @@ export class BLAKE2s extends BLAKE2<BLAKE2s> {
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
-export const blake2s: CHashO = /* @__PURE__ */ createOptHasher<BLAKE2s, Blake2Opts>(
-  (opts) => new BLAKE2s(opts)
-);
+export const blake2s: CHash<BLAKE2s, Blake2Opts> = /* @__PURE__ */ createHasher<
+  BLAKE2s,
+  Blake2Opts
+>((opts) => new BLAKE2s(opts));
