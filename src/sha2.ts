@@ -27,19 +27,19 @@ const SHA256_K = /* @__PURE__ */ Uint32Array.from([
 
 /** Reusable temporary buffer. "W" comes straight from spec. */
 const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
-export class SHA256 extends HashMD<SHA256> {
+abstract class SHA2_32B<T extends SHA2_32B<T>> extends HashMD<T> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
-  protected A: number = SHA256_IV[0] | 0;
-  protected B: number = SHA256_IV[1] | 0;
-  protected C: number = SHA256_IV[2] | 0;
-  protected D: number = SHA256_IV[3] | 0;
-  protected E: number = SHA256_IV[4] | 0;
-  protected F: number = SHA256_IV[5] | 0;
-  protected G: number = SHA256_IV[6] | 0;
-  protected H: number = SHA256_IV[7] | 0;
+  protected abstract A: number;
+  protected abstract B: number;
+  protected abstract C: number;
+  protected abstract D: number;
+  protected abstract E: number;
+  protected abstract F: number;
+  protected abstract G: number;
+  protected abstract H: number;
 
-  constructor(outputLen: number = 32) {
+  constructor(outputLen: number) {
     super(64, outputLen, 8, false);
   }
   protected get(): [number, number, number, number, number, number, number, number] {
@@ -105,7 +105,23 @@ export class SHA256 extends HashMD<SHA256> {
   }
 }
 
-export class SHA224 extends SHA256 {
+export class SHA256 extends SHA2_32B<SHA256> {
+  // We cannot use array here since array allows indexing by variable
+  // which means optimizer/compiler cannot use registers.
+  protected A: number = SHA256_IV[0] | 0;
+  protected B: number = SHA256_IV[1] | 0;
+  protected C: number = SHA256_IV[2] | 0;
+  protected D: number = SHA256_IV[3] | 0;
+  protected E: number = SHA256_IV[4] | 0;
+  protected F: number = SHA256_IV[5] | 0;
+  protected G: number = SHA256_IV[6] | 0;
+  protected H: number = SHA256_IV[7] | 0;
+  constructor() {
+    super(32);
+  }
+}
+
+export class SHA224 extends SHA2_32B<SHA224> {
   protected A: number = SHA224_IV[0] | 0;
   protected B: number = SHA224_IV[1] | 0;
   protected C: number = SHA224_IV[2] | 0;
@@ -153,28 +169,28 @@ const SHA512_Kl = /* @__PURE__ */ (() => K512[1])();
 const SHA512_W_H = /* @__PURE__ */ new Uint32Array(80);
 const SHA512_W_L = /* @__PURE__ */ new Uint32Array(80);
 
-export class SHA512 extends HashMD<SHA512> {
+export abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
   // h -- high 32 bits, l -- low 32 bits
-  protected Ah: number = SHA512_IV[0] | 0;
-  protected Al: number = SHA512_IV[1] | 0;
-  protected Bh: number = SHA512_IV[2] | 0;
-  protected Bl: number = SHA512_IV[3] | 0;
-  protected Ch: number = SHA512_IV[4] | 0;
-  protected Cl: number = SHA512_IV[5] | 0;
-  protected Dh: number = SHA512_IV[6] | 0;
-  protected Dl: number = SHA512_IV[7] | 0;
-  protected Eh: number = SHA512_IV[8] | 0;
-  protected El: number = SHA512_IV[9] | 0;
-  protected Fh: number = SHA512_IV[10] | 0;
-  protected Fl: number = SHA512_IV[11] | 0;
-  protected Gh: number = SHA512_IV[12] | 0;
-  protected Gl: number = SHA512_IV[13] | 0;
-  protected Hh: number = SHA512_IV[14] | 0;
-  protected Hl: number = SHA512_IV[15] | 0;
+  protected abstract Ah: number;
+  protected abstract Al: number;
+  protected abstract Bh: number;
+  protected abstract Bl: number;
+  protected abstract Ch: number;
+  protected abstract Cl: number;
+  protected abstract Dh: number;
+  protected abstract Dl: number;
+  protected abstract Eh: number;
+  protected abstract El: number;
+  protected abstract Fh: number;
+  protected abstract Fl: number;
+  protected abstract Gh: number;
+  protected abstract Gl: number;
+  protected abstract Hh: number;
+  protected abstract Hl: number;
 
-  constructor(outputLen: number = 64) {
+  constructor(outputLen: number) {
     super(128, outputLen, 16, false);
   }
   // prettier-ignore
@@ -286,7 +302,30 @@ export class SHA512 extends HashMD<SHA512> {
   }
 }
 
-export class SHA384 extends SHA512 {
+export class SHA512 extends SHA2_64B<SHA512> {
+  protected Ah: number = SHA512_IV[0] | 0;
+  protected Al: number = SHA512_IV[1] | 0;
+  protected Bh: number = SHA512_IV[2] | 0;
+  protected Bl: number = SHA512_IV[3] | 0;
+  protected Ch: number = SHA512_IV[4] | 0;
+  protected Cl: number = SHA512_IV[5] | 0;
+  protected Dh: number = SHA512_IV[6] | 0;
+  protected Dl: number = SHA512_IV[7] | 0;
+  protected Eh: number = SHA512_IV[8] | 0;
+  protected El: number = SHA512_IV[9] | 0;
+  protected Fh: number = SHA512_IV[10] | 0;
+  protected Fl: number = SHA512_IV[11] | 0;
+  protected Gh: number = SHA512_IV[12] | 0;
+  protected Gl: number = SHA512_IV[13] | 0;
+  protected Hh: number = SHA512_IV[14] | 0;
+  protected Hl: number = SHA512_IV[15] | 0;
+
+  constructor() {
+    super(64);
+  }
+}
+
+export class SHA384 extends SHA2_64B<SHA384> {
   protected Ah: number = SHA384_IV[0] | 0;
   protected Al: number = SHA384_IV[1] | 0;
   protected Bh: number = SHA384_IV[2] | 0;
@@ -328,7 +367,7 @@ const T256_IV = /* @__PURE__ */ Uint32Array.from([
   0x96283ee2, 0xa88effe3, 0xbe5e1e25, 0x53863992, 0x2b0199fc, 0x2c85b8aa, 0x0eb72ddc, 0x81c52ca2,
 ]);
 
-export class SHA512_224 extends SHA512 {
+export class SHA512_224 extends SHA2_64B<SHA512_224> {
   protected Ah: number = T224_IV[0] | 0;
   protected Al: number = T224_IV[1] | 0;
   protected Bh: number = T224_IV[2] | 0;
@@ -351,7 +390,7 @@ export class SHA512_224 extends SHA512 {
   }
 }
 
-export class SHA512_256 extends SHA512 {
+export class SHA512_256 extends SHA2_64B<SHA512_256> {
   protected Ah: number = T256_IV[0] | 0;
   protected Al: number = T256_IV[1] | 0;
   protected Bh: number = T256_IV[2] | 0;
