@@ -432,7 +432,7 @@ Benchmarks measured on Apple M4.
 
 ```
 # 32B
-sha256 x 1,968,503 ops/sec @ 508ns/op
+sha256 x 2,016,129 ops/sec @ 496ns/op
 sha512 x 740,740 ops/sec @ 1μs/op
 sha3_256 x 287,686 ops/sec @ 3μs/op
 sha3_512 x 288,267 ops/sec @ 3μs/op
@@ -485,7 +485,7 @@ pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
 scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 378ms/op
 ```
 
-It is possible to [make this library 3x+ faster](./benchmark/README.md) by
+It is possible to [make this library 3x+ faster](./test/benchmark/README.md) by
 _doing code generation of full loop unrolls_. We've decided against it. Reasons:
 
 - current perf is good enough, even compared to other libraries - SHA256 only takes 500 nanoseconds

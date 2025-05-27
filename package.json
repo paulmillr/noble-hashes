@@ -11,11 +11,11 @@
     "src/*.ts"
   ],
   "scripts": {
-    "bench": "node benchmark/noble.js",
-    "bench:compare": "MBENCH_DIMS='algorithm,buffer,library' node benchmark/hashes.js",
-    "bench:compare-hkdf": "MBENCH_DIMS='algorithm,length,library' node benchmark/hkdf.js",
-    "bench:compare-scrypt": "MBENCH_DIMS='iters,library' MBENCH_FILTER='async' node benchmark/scrypt.js",
-    "bench:install": "cd benchmark; npm install; npm install .. --install-links",
+    "bench": "node test/benchmark/noble.js",
+    "bench:compare": "MBENCH_DIMS='algorithm,buffer,library' node test/benchmark/hashes.js",
+    "bench:compare-hkdf": "MBENCH_DIMS='algorithm,length,library' node test/benchmark/hkdf.js",
+    "bench:compare-scrypt": "MBENCH_DIMS='iters,library' MBENCH_FILTER='async' node test/benchmark/scrypt.js",
+    "bench:install": "cd test/benchmark; npm install; npm install ../.. --install-links",
     "build": "npm run build:clean; tsc && tsc -p tsconfig.cjs.json",
     "build:clean": "rm -f *.{js,d.ts,js.map,d.ts.map} esm/*.{js,js.map,d.ts.map}",
     "build:release": "npx jsbt esbuild test/build",
