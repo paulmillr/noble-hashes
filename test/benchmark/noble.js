@@ -1,16 +1,16 @@
-import { argon2id } from '@noble/hashes/argon2.js';
-import { blake256 } from '@noble/hashes/blake1.js';
-import { blake2b, blake2s } from '@noble/hashes/blake2.js';
-import { blake3 } from '@noble/hashes/blake3.js';
-import { hkdf } from '@noble/hashes/hkdf.js';
-import { hmac } from '@noble/hashes/hmac.js';
-import { ripemd160 } from '@noble/hashes/legacy.js';
-import { pbkdf2 } from '@noble/hashes/pbkdf2.js';
-import { scrypt } from '@noble/hashes/scrypt.js';
-import { sha256, sha512 } from '@noble/hashes/sha2.js';
-import { k12, kmac256, m14 } from '@noble/hashes/sha3-addons.js';
-import { sha3_256, sha3_512 } from '@noble/hashes/sha3.js';
 import { mark } from 'micro-bmark';
+import { argon2id } from '../../argon2.js';
+import { blake256 } from '../../blake1.js';
+import { blake2b, blake2s } from '../../blake2.js';
+import { blake3 } from '../../blake3.js';
+import { hkdf } from '../../hkdf.js';
+import { hmac } from '../../hmac.js';
+import { ripemd160 } from '../../legacy.js';
+import { pbkdf2 } from '../../pbkdf2.js';
+import { scrypt } from '../../scrypt.js';
+import { sha256, sha512 } from '../../sha2.js';
+import { k12, kmac256, m14 } from '../../sha3-addons.js';
+import { sha3_256, sha3_512 } from '../../sha3.js';
 
 function buf(size) {
   return new Uint8Array(size).fill(size % 251);

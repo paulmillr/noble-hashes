@@ -1,7 +1,7 @@
 import compare from 'micro-bmark/compare.js';
 import crypto from 'node:crypto';
 // Noble
-import { scrypt, scryptAsync } from '@noble/hashes/scrypt';
+import { scrypt, scryptAsync } from '../../scrypt.js';
 // Others
 import {
   deriveKey as stableScrypt,
