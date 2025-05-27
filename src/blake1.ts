@@ -193,10 +193,10 @@ const B64C = /* @__PURE__ */ Uint32Array.from([
 // first half of C512
 const B32C = B64C.slice(0, 16);
 
-const B256_IV = SHA256_IV.slice();
-const B224_IV = SHA224_IV.slice();
-const B384_IV = SHA384_IV.slice();
-const B512_IV = SHA512_IV.slice();
+const B256_IV = /* @__PURE__ */ SHA256_IV.slice();
+const B224_IV = /* @__PURE__ */ SHA224_IV.slice();
+const B384_IV = /* @__PURE__ */ SHA384_IV.slice();
+const B512_IV = /* @__PURE__ */ SHA512_IV.slice();
 
 function generateTBL256() {
   const TBL = [];
