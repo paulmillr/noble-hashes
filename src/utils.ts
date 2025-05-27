@@ -216,18 +216,6 @@ export function bytesToUtf8(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
 
-/** Accepted input of hash functions. Strings are converted to byte arrays. */
-export type Input = Uint8Array;
-/**
- * Normalizes (non-hex) string or Uint8Array to Uint8Array.
- * Warning: when Uint8Array is passed, it would NOT get copied.
- * Keep in mind for future mutable operations.
- */
-export function toBytes(data: Uint8Array): Uint8Array {
-  abytes(data);
-  return data;
-}
-
 /** KDFs can accept string or Uint8Array for user convenience. */
 export type KDFInput = string | Uint8Array;
 /**
@@ -329,7 +317,7 @@ export function createHasher<T extends Hash<T>>(
   blockLen: number;
   create(): Hash<T>;
 } {
-  const hashC = (msg: Uint8Array): Uint8Array => hashCons().update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array): Uint8Array => hashCons().update(msg).digest();
   const tmp = hashCons();
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -345,7 +333,7 @@ export function createOptHasher<H extends Hash<H>, T extends Object>(
   blockLen: number;
   create(opts?: T): Hash<H>;
 } {
-  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(msg).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
@@ -361,7 +349,7 @@ export function createXOFer<H extends HashXOF<H>, T extends Object>(
   blockLen: number;
   create(opts?: T): HashXOF<H>;
 } {
-  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(toBytes(msg)).digest();
+  const hashC = (msg: Uint8Array, opts?: T): Uint8Array => hashCons(opts).update(msg).digest();
   const tmp = hashCons({} as T);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;

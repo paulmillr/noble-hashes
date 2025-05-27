@@ -17,7 +17,8 @@ import { BLAKE2, compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  clean, createXOFer, swap32IfBE, toBytes, u32, u8,
+  clean, createXOFer, swap32IfBE,
+  u32, u8,
   type CHashXO, type HashXOF
 } from './utils.ts';
 
@@ -73,13 +74,15 @@ export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     const hasContext = context !== undefined;
     if (key !== undefined) {
       if (hasContext) throw new Error('Only "key" or "context" can be specified at same time');
-      const k = toBytes(key).slice();
+      abytes(key);
+      const k = key.slice();
       abytes(k, 32);
       this.IV = u32(k);
       swap32IfBE(this.IV);
       this.flags = flags | B3_Flags.KEYED_HASH;
     } else if (hasContext) {
-      const ctx = toBytes(context);
+      abytes(context);
+      const ctx = context;
       const contextKey = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
         .update(ctx)
         .digest();
