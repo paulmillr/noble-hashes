@@ -1,14 +1,14 @@
 import { should } from 'micro-should';
 import { deepStrictEqual as eql, rejects } from 'node:assert';
-import { hkdf } from '../hkdf.js';
-import { hmac } from '../hmac.js';
-import { pbkdf2, pbkdf2Async } from '../pbkdf2.js';
-import { scrypt, scryptAsync } from '../scrypt.js';
-import { sha256 } from '../sha2.js';
-import { createView } from '../utils.js';
-import { RANDOM } from './generator.js';
+import { hkdf } from '../src/hkdf.ts';
+import { hmac } from '../src/hmac.ts';
+import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
+import { scrypt, scryptAsync } from '../src/scrypt.ts';
+import { sha256 } from '../src/sha2.ts';
+import { createView } from '../src/utils.ts';
+import { RANDOM } from './generator.ts';
 import { HASHES } from './hashes.test.js';
-import { stats } from './utils.js';
+import { stats } from './utils.ts';
 
 const getTime = () => Number(process.hrtime.bigint());
 

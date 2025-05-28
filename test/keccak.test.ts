@@ -22,7 +22,7 @@ import {
   tuplehash256,
   turboshake128,
   turboshake256,
-} from '../sha3-addons.js';
+} from '../src/sha3-addons.ts';
 import {
   Keccak,
   keccak_224,
@@ -35,9 +35,8 @@ import {
   sha3_512,
   shake128,
   shake256,
-} from '../sha3.js';
-import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../utils.js';
-import { TYPE_TEST, jsonGZ } from './utils.js';
+} from '../src/sha3.ts';
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
 import {
   CSHAKE_VESTORS,
   K12_VECTORS,
@@ -47,7 +46,8 @@ import {
   TUPLE_VECTORS,
   VECTORS_K12,
   VECTORS_TURBO,
-} from './vectors/sha3-addons.js';
+} from './sha3-addons.ts';
+import { TYPE_TEST, jsonGZ } from './utils.ts';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const isBun = !!process.versions.bun;

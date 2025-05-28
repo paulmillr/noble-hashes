@@ -6,7 +6,7 @@ import { blake3 } from '../../blake3.js';
 import { hmac } from '../../hmac.js';
 import { ripemd160 } from '../../legacy.js';
 import { sha256, sha512 } from '../../sha2.js';
-import { k12, m14 } from '../../sha3-addons.js';
+import { k12, m14 } from '../../sha3-addons.ts';
 import { sha3_256 } from '../../sha3.js';
 
 // Others

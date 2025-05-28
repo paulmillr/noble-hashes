@@ -1,6 +1,6 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql } from 'node:assert';
-import * as u64 from '../_u64.js';
+import * as u64 from '../src/_u64.ts';
 
 const U64_MASK = 2n ** 64n - 1n;
 const U32_MASK = (2 ** 32 - 1) | 0;

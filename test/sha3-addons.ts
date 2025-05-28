@@ -16,9 +16,9 @@ import {
   tuplehash256xof,
   turboshake128,
   turboshake256,
-} from '../../sha3-addons.js';
-import { hexToBytes } from '../../utils.js';
-import { EMPTY, pattern, times } from '../utils.js';
+} from '../src/sha3-addons.ts';
+import { hexToBytes } from '../src/utils.ts';
+import { EMPTY, pattern, times } from './utils.ts';
 const fromHex = (hex) => hexToBytes(hex.replace(/ |\n/gm, ''));
 
 const K12_VECTORS = [
@@ -1097,5 +1097,6 @@ export {
   PARALLEL_VECTORS,
   TUPLE_VECTORS,
   VECTORS_K12,
-  VECTORS_TURBO,
+  VECTORS_TURBO
 };
+

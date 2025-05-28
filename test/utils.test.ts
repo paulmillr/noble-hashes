@@ -1,9 +1,9 @@
 import fc from 'fast-check';
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql, throws } from 'node:assert';
-import { setBigUint64 } from '../_md.js';
-import { sha256 } from '../sha2.js';
-import * as u from '../utils.js';
+import { setBigUint64 } from '../src/_md.ts';
+import { sha256 } from '../src/sha2.ts';
+import * as u from '../src/utils.ts';
 import {
   byteSwap,
   byteSwap32,
@@ -15,9 +15,9 @@ import {
   isLE,
   randomBytes,
   swap8IfBE,
-} from '../utils.js';
-import { gen, integer, optional } from './generator.js';
-import { TYPE_TEST, pattern } from './utils.js';
+} from '../src/utils.ts';
+import { gen, integer, optional } from './generator.ts';
+import { TYPE_TEST, pattern } from './utils.ts';
 
 function hexa() {
   const items = '0123456789abcdef';

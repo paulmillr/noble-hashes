@@ -1,13 +1,13 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql } from 'node:assert';
-import { blake2b, blake2s } from '../blake2.js';
-import { blake3 } from '../blake3.js';
-import { hmac } from '../hmac.js';
-import { ripemd160 } from '../legacy.js';
-import { sha256, sha512 } from '../sha2.js';
-import { k12, kmac256 } from '../sha3-addons.js';
-import { sha3_256, shake256 } from '../sha3.js';
-import { utf8ToBytes } from '../utils.js';
+import { blake2b, blake2s } from '../src/blake2.ts';
+import { blake3 } from '../src/blake3.ts';
+import { hmac } from '../src/hmac.ts';
+import { ripemd160 } from '../src/legacy.ts';
+import { sha256, sha512 } from '../src/sha2.ts';
+import { k12, kmac256 } from '../src/sha3-addons.ts';
+import { sha3_256, shake256 } from '../src/sha3.ts';
+import { utf8ToBytes } from '../src/utils.ts';
 
 // small -- minimal personalization options, big -- all personalization options
 // test that clone works correctly if "to" is same class instance but with completely different personalization
@@ -16,10 +16,6 @@ const HASHES = {
   sha512: { small: () => sha512.create() },
   ripemd160: { small: () => ripemd160.create() },
   sha3: { small: () => sha3_256.create() },
-  shake256: {
-    small: () => shake256.create(),
-    big: () => shake256.create({ dkLen: 256 }),
-  },
   shake256: {
     small: () => shake256.create(),
     big: () => shake256.create({ dkLen: 256 }),

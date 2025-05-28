@@ -2,17 +2,17 @@ import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../sha2.js';
+import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../src/sha2.ts';
 // prettier-ignore
-import { blake224, blake256, blake384, blake512 } from '../blake1.js';
-import { blake2b, blake2s } from '../blake2.js';
-import { blake3 } from '../blake3.js';
-import { hmac } from '../hmac.js';
-import { md5, ripemd160, sha1 } from '../legacy.js';
-import { k12, turboshake128, turboshake256 } from '../sha3-addons.js';
-import { keccak_256, sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../sha3.js';
-import { concatBytes, hexToBytes, utf8ToBytes } from '../utils.js';
-import { repeat, repr, TYPE_TEST } from './utils.js';
+import { blake224, blake256, blake384, blake512 } from '../src/blake1.ts';
+import { blake2b, blake2s } from '../src/blake2.ts';
+import { blake3 } from '../src/blake3.ts';
+import { hmac } from '../src/hmac.ts';
+import { md5, ripemd160, sha1 } from '../src/legacy.ts';
+import { k12, turboshake128, turboshake256 } from '../src/sha3-addons.ts';
+import { keccak_256, sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../src/sha3.ts';
+import { concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { repeat, repr, TYPE_TEST } from './utils.ts';
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
 const NIST_VECTORS = [

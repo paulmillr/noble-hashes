@@ -1,12 +1,12 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
-import { hkdf, extract as hkdf_extract } from '../hkdf.js';
-import { pbkdf2, pbkdf2Async } from '../pbkdf2.js';
-import { scrypt, scryptAsync } from '../scrypt.js';
-import { sha256, sha512 } from '../sha2.js';
-import { hexToBytes, utf8ToBytes } from '../utils.js';
-import { executeKDFTests } from './generator.js';
-import { EMPTY, repr, SPACE, TYPE_TEST } from './utils.js';
+import { hkdf, extract as hkdf_extract } from '../src/hkdf.ts';
+import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
+import { scrypt, scryptAsync } from '../src/scrypt.ts';
+import { sha256, sha512 } from '../src/sha2.ts';
+import { hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { executeKDFTests } from './generator.ts';
+import { EMPTY, repr, SPACE, TYPE_TEST } from './utils.ts';
 // HKDF test vectors from RFC 5869
 const HKDF_VECTORS = [
   {

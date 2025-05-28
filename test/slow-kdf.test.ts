@@ -8,11 +8,11 @@ import {
   argon2iAsync,
   argon2id,
   argon2idAsync,
-} from '../argon2.js';
-import { scrypt, scryptAsync } from '../scrypt.js';
-import { bytesToHex } from '../utils.js';
-import { bytes, gen, integer, serializeCase } from './generator.js';
-import { json, pattern } from './utils.js';
+} from '../src/argon2.ts';
+import { scrypt, scryptAsync } from '../src/scrypt.ts';
+import { bytesToHex } from '../src/utils.ts';
+import { bytes, gen, integer, serializeCase } from './generator.ts';
+import { json, pattern } from './utils.ts';
 
 const argon2_vectors = json('./vectors/argon2.json');
 
