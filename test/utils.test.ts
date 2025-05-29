@@ -1,7 +1,6 @@
 import fc from 'fast-check';
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql, throws } from 'node:assert';
-import { setBigUint64 } from '../src/_md.ts';
 import { sha256 } from '../src/sha2.ts';
 import * as u from '../src/utils.ts';
 import {
@@ -9,7 +8,6 @@ import {
   byteSwap32,
   bytesToHex,
   concatBytes,
-  createView,
   hexToBytes,
   isBytes,
   isLE,
@@ -159,58 +157,6 @@ describe('utils etc', () => {
             10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
             20 21 22 23 24 25`)
     );
-  });
-  should('setBigUint64', () => {
-    const t = new Uint8Array(20);
-    const v = createView(t);
-    const VECTORS = [
-      {
-        n: 123n,
-        le: false,
-        hex: '000000000000007b000000000000000000000000',
-      },
-      {
-        n: 123n,
-        le: true,
-        hex: '7b00000000000000000000000000000000000000',
-      },
-      {
-        n: 2n ** 64n - 1n,
-        le: true,
-        hex: 'ffffffffffffffff000000000000000000000000',
-      },
-      {
-        n: 2n ** 64n - 1n,
-        le: true,
-        hex: '000000ffffffffffffffff000000000000000000',
-        pos: 3,
-      },
-      {
-        n: 0x123456789abcdef0n,
-        le: true,
-        hex: 'f0debc9a78563412000000000000000000000000',
-      },
-      {
-        n: 0x123456789abcdef0n,
-        le: false,
-        hex: '123456789abcdef0000000000000000000000000',
-      },
-    ];
-    const createViewMock = (u8) => {
-      const v = createView(u8);
-      return {
-        setUint32: (o, wh, isLE) => v.setUint32(o, wh, isLE),
-      };
-    };
-
-    for (const cv of [createView, createViewMock]) {
-      for (const t of VECTORS) {
-        const b = new Uint8Array(20);
-        const v = cv(b);
-        setBigUint64(v, t.pos || 0, t.n, t.le);
-        eql(bytesToHex(b), t.hex);
-      }
-    }
   });
   should('randomBytes', () => {
     if (typeof crypto === 'undefined') return;

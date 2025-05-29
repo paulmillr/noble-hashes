@@ -23,7 +23,7 @@
  * @module
  */
 import { BSIGMA, G1s, G2s } from './_blake.ts';
-import { setBigUint64, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
+import { SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
 // prettier-ignore
 import {
@@ -164,7 +164,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     // Difference with md: here we have lengthFlag!
     buffer[counterPos] |= lengthFlag; // Length flag
     // We always set 8 byte length flag. Because length will overflow significantly sooner.
-    setBigUint64(view, blockLen - 8, counter, false);
+    view.setBigUint64(blockLen - 8, counter, false);
     this.compress(view, 0, this.pos !== 0); // don't add length if length is not empty block?
     // Write output
     clean(buffer);

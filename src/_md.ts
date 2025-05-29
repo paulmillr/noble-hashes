@@ -4,24 +4,6 @@
  */
 import { abytes, aexists, aoutput, clean, createView, type Hash } from './utils.ts';
 
-/** Polyfill for Safari 14. https://caniuse.com/mdn-javascript_builtins_dataview_setbiguint64 */
-export function setBigUint64(
-  view: DataView,
-  byteOffset: number,
-  value: bigint,
-  isLE: boolean
-): void {
-  if (typeof view.setBigUint64 === 'function') return view.setBigUint64(byteOffset, value, isLE);
-  const _32n = BigInt(32);
-  const _u32_max = BigInt(0xffffffff);
-  const wh = Number((value >> _32n) & _u32_max);
-  const wl = Number(value & _u32_max);
-  const h = isLE ? 4 : 0;
-  const l = isLE ? 0 : 4;
-  view.setUint32(byteOffset + h, wh, isLE);
-  view.setUint32(byteOffset + l, wl, isLE);
-}
-
 /** Choice: a ? b : c */
 export function Chi(a: number, b: number, c: number): number {
   return (a & b) ^ (~a & c);
@@ -112,7 +94,7 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     // Note: sha512 requires length to be 128bit integer, but length in JS will overflow before that
     // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
     // So we just write lowest 64 bits of that value.
-    setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
+    view.setBigUint64(blockLen - 8, BigInt(this.length * 8), isLE);
     this.process(view, 0);
     const oview = createView(out);
     const len = this.outputLen;
