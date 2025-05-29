@@ -17,12 +17,12 @@ function buf(size) {
 }
 
 const buffers = [
-  // { size: '16B', samples: 1_500_000, data: buf(16) }, // common block size
-  { size: '32B', samples: 1_000_000, data: buf(32) },
-  // { size: '64B', samples: 1_000_000, data: buf(64) },
-  // { size: '1KB', samples: 50_000, data: buf(1024) },
-  // { size: '8KB', samples: 10_000, data: buf(1024 * 8) },
-  { size: '1MB', samples: 100, data: buf(1024 * 1024) },
+  // { size: '16B', data: buf(16) }, // common block size
+  { size: '32B', data: buf(32) },
+  // { size: '64B', data: buf(64) },
+  // { size: '1KB', data: buf(1024) },
+  // { size: '8KB', data: buf(1024 * 8) },
+  { size: '1MB', data: buf(1024 * 1024) },
 ];
 
 async function main() {
@@ -33,11 +33,11 @@ async function main() {
   const hashes = {
     sha256, sha512, sha3_256, sha3_512, k12, m14, blake256, blake2b, blake2s, blake3, ripemd160,
   };
-  for (const { size, samples: i, data } of buffers) {
+  for (const { size, data } of buffers) {
     console.log('# ' + size);
     for (const title in hashes) {
       const hash = hashes[title];
-      await mark(title, i, () => hash(data));
+      await mark(title, () => hash(data));
     }
     console.log();
   }

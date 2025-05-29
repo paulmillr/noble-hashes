@@ -1,4 +1,4 @@
-name: Run tests
+name: Run TS tests
 on:
   - push
   - pull_request
