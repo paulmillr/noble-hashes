@@ -1,11 +1,6 @@
 {
-  "extends": "@paulmillr/jsbt/tsconfig.esm.json",
+  "extends": "@paulmillr/jsbt/tsconfig.json",
   "compilerOptions": {
-    "target": "es2022",
-    "lib": [
-      "dom",
-      "es2022"
-    ],
     "baseUrl": ".",
     "outDir": "."
   },

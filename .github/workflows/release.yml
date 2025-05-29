@@ -4,8 +4,8 @@ on:
     types: [created]
 jobs:
   release-js:
-    name: 'jsbt v0.4.0' # Should match commit below
-    uses: paulmillr/jsbt/.github/workflows/release.yml@3b4712c94bff7a5da5c968f783292061e81b218c
+    name: 'jsbt v0.4.1'
+    uses: paulmillr/jsbt/.github/workflows/release.yml@2318b9efe24831b4bd4cadf720c96f071c69c64d
     with:
       build-path: test/build
       # slow-types: false
