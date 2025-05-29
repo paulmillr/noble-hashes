@@ -494,6 +494,30 @@ _doing code generation of full loop unrolls_. We've decided against it. Reasons:
 - most method invocations with the lib are going to be something like hashing 32b to 64kb of data
 - hashing big inputs is 10x faster with low-level languages, which means you should probably pick 'em instead
 
+## Upgrading
+
+Upgrading from noble-hashes v1 to v2:
+
+- Bump minimum node.js version from v14 to v20.19
+- Bump compilation target from es2020 to es2022
+- Make package ESM-only
+    - node.js v20.19+ allows loading ESM modules from common.js
+- Remove extension-less exports: e.g. `sha3` became `sha3.js`
+    - This allows using package without import maps and allows package to be used in browsers directly, without bundlers
+- Only allow Uint8Array as hash inputs, prohibit `string`
+    - Strict validation checks improve security
+    - To replicate previous behavior, use `utils.utf8ToBytes`
+- Rename / remove some modules for consistency. Previously, sha384 resided in sha512, which was weird
+    - `sha256`, `sha512` => `sha2.js` (consistent with `sha3`)
+    - `blake2b`, `blake2s` => `blake2.js` (consistent with `blake1`, `blake3`)
+    - `ripemd160`, `sha1`, `md5` => `legacy.js` (all low-security hashes are there)
+    - `_assert` => `utils.js`
+    - `crypto` internal module got removed: use built-in WebCrypto instead
+- Improve typescript types
+    - Improve option autocomplete
+    - Simplify types in `utils`
+    - Use single createHasher for wrapping instead of 3 methods
+
 ## Contributing & testing
 
 `test/misc` directory contains implementations of loop unrolling and md5.
