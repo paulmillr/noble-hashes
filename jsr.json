@@ -1,34 +1,23 @@
 {
   "name": "@noble/hashes",
-  "version": "1.8.0",
+  "version": "2.0.0-beta.1",
   "exports": {
     ".": "./src/index.ts",
-    "./crypto": "./src/crypto.ts",
-    "./_assert": "./src/_assert.ts",
-    "./_md": "./src/_md.ts",
-    "./argon2": "./src/argon2.ts",
-    "./blake1": "./src/blake1.ts",
-    "./blake2": "./src/blake2.ts",
-    "./blake2b": "./src/blake2b.ts",
-    "./blake2s": "./src/blake2s.ts",
-    "./blake3": "./src/blake3.ts",
-    "./eskdf": "./src/eskdf.ts",
-    "./hkdf": "./src/hkdf.ts",
-    "./hmac": "./src/hmac.ts",
-    "./legacy": "./src/legacy.ts",
-    "./pbkdf2": "./src/pbkdf2.ts",
-    "./ripemd160": "./src/ripemd160.ts",
-    "./scrypt": "./src/scrypt.ts",
-    "./sha1": "./src/sha1.ts",
-    "./sha2": "./src/sha2.ts",
-    "./sha3-addons": "./src/sha3-addons.ts",
-    "./sha3": "./src/sha3.ts",
-    "./sha256": "./src/sha256.ts",
-    "./sha512": "./src/sha512.ts",
-    "./utils": "./src/utils.ts"
-  },
-  "imports": {
-    "@noble/hashes/crypto": "./src/crypto.ts"
+    "./_md.js": "./src/_md.ts",
+    "./argon2.js": "./src/argon2.ts",
+    "./blake1.js": "./src/blake1.ts",
+    "./blake2.js": "./src/blake2.ts",
+    "./blake3.js": "./src/blake3.ts",
+    "./eskdf.js": "./src/eskdf.ts",
+    "./hkdf.js": "./src/hkdf.ts",
+    "./hmac.js": "./src/hmac.ts",
+    "./legacy.js": "./src/legacy.ts",
+    "./pbkdf2.js": "./src/pbkdf2.ts",
+    "./scrypt.js": "./src/scrypt.ts",
+    "./sha2.js": "./src/sha2.ts",
+    "./sha3-addons.js": "./src/sha3-addons.ts",
+    "./sha3.js": "./src/sha3.ts",
+    "./utils.js": "./src/utils.ts"
   },
   "publish": {
     "include": [
@@ -36,9 +25,6 @@
       "jsr.json",
       "LICENSE",
       "README.md"
-    ],
-    "exclude": [
-      "src/cryptoNode.ts"
     ]
   },
   "license": "MIT"
