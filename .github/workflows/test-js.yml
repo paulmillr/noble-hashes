@@ -5,6 +5,6 @@ on:
 jobs:
   test-js:
     name: 'jsbt v0.4.1' # Should match commit below
-    uses: paulmillr/jsbt/.github/workflows/test-ts.yml@e3cad10c8a8f85d5a291e393ea80468e16546a46
+    uses: paulmillr/jsbt/.github/workflows/test-ts.yml@24cc98832c198329c6590f85c2de7ee4e0ea439d
     # with:
     #   submodules: false
