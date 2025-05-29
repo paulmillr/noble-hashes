@@ -4,7 +4,7 @@ on:
   - pull_request
 jobs:
   test-js:
-    name: 'jsbt v0.4.0' # Should match commit below
-    uses: paulmillr/jsbt/.github/workflows/test-js.yml@3b4712c94bff7a5da5c968f783292061e81b218c
+    name: 'jsbt v0.4.1' # Should match commit below
+    uses: paulmillr/jsbt/.github/workflows/test-js.yml@e3cad10c8a8f85d5a291e393ea80468e16546a46
     # with:
     #   submodules: false

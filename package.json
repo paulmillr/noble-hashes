@@ -20,12 +20,13 @@
     "build:release": "npx jsbt esbuild test/build",
     "lint": "prettier --check 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
-    "test": "node test/index.js",
-    "test:bun": "bun test/index.js",
-    "test:deno": "deno --allow-env --allow-read test/index.js",
-    "test:dos": "node test/slow-dos.test.js",
-    "test:big": "node test/slow-big.test.js",
-    "test:kdf": "node test/slow-kdf.test.js"
+    "test": "node --experimental-strip-types --no-warnings test/index.ts",
+    "test:bun": "bun test/index.ts",
+    "test:deno": "deno --allow-env --allow-read test/index.ts",
+    "test:node20": "cd test; npx tsc; node compiled/test/index.js",
+    "test:dos": "node test/slow-dos.test.ts",
+    "test:big": "node test/slow-big.test.ts",
+    "test:kdf": "node test/slow-kdf.test.ts"
   },
   "author": "Paul Miller (https://paulmillr.com)",
   "homepage": "https://paulmillr.com/noble/",
@@ -36,6 +37,7 @@
   "license": "MIT",
   "devDependencies": {
     "@paulmillr/jsbt": "0.4.0",
+    "@types/node": "22.15.23",
     "fast-check": "4.1.1",
     "micro-bmark": "0.4.1",
     "micro-should": "0.5.3",

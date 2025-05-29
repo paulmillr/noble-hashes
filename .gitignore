@@ -6,4 +6,5 @@ node_modules
 *.d.ts.map
 *.js.map
 /test/build
+/test/compiled
 *.tgz
