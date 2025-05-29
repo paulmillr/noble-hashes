@@ -28,9 +28,10 @@ import * as u64 from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, aoutput,
-  clean, createOptHasher,
-  createView, Hash, toBytes,
-  type CHashO, type Input,
+  clean, createHasher,
+  createView,
+  type CHash,
+  type Hash
 } from './utils.ts';
 
 /** Blake1 options. Basically just "salt" */
@@ -41,7 +42,7 @@ export type BlakeOpts = {
 // Empty zero-filled salt
 const EMPTY_SALT = /* @__PURE__ */ new Uint32Array(8);
 
-abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
+abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
   protected finished = false;
   protected length = 0;
   protected pos = 0;
@@ -69,7 +70,6 @@ abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
     constants: Uint32Array,
     opts: BlakeOpts = {}
   ) {
-    super();
     const { salt } = opts;
     this.blockLen = blockLen;
     this.outputLen = outputLen;
@@ -79,7 +79,6 @@ abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
     this.view = createView(this.buffer);
     if (salt) {
       let slt = salt;
-      slt = toBytes(slt);
       abytes(slt);
       if (slt.length !== 4 * saltLen) throw new Error('wrong salt length');
       const salt32 = (this.salt = new Uint32Array(saltLen));
@@ -94,9 +93,8 @@ abstract class BLAKE1<T extends BLAKE1<T>> extends Hash<T> {
       this.constants = constants;
     }
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     // From _md, but update length before each compress
     const { view, buffer, blockLen } = this;
@@ -517,18 +515,22 @@ export class BLAKE512 extends BLAKE1_64B {
   }
 }
 /** blake1-224 hash function */
-export const blake224: CHashO = /* @__PURE__ */ createOptHasher<BLAKE224, BlakeOpts>(
-  (opts) => new BLAKE224(opts)
-);
+export const blake224: CHash<BLAKE224, BlakeOpts> = /* @__PURE__ */ createHasher<
+  BLAKE224,
+  BlakeOpts
+>((opts) => new BLAKE224(opts));
 /** blake1-256 hash function */
-export const blake256: CHashO = /* @__PURE__ */ createOptHasher<BLAKE256, BlakeOpts>(
-  (opts) => new BLAKE256(opts)
-);
+export const blake256: CHash<BLAKE256, BlakeOpts> = /* @__PURE__ */ createHasher<
+  BLAKE256,
+  BlakeOpts
+>((opts) => new BLAKE256(opts));
 /** blake1-384 hash function */
-export const blake384: CHashO = /* @__PURE__ */ createOptHasher<BLAKE512, BlakeOpts>(
-  (opts) => new BLAKE384(opts)
-);
+export const blake384: CHash<BLAKE384, BlakeOpts> = /* @__PURE__ */ createHasher<
+  BLAKE512,
+  BlakeOpts
+>((opts) => new BLAKE384(opts));
 /** blake1-512 hash function */
-export const blake512: CHashO = /* @__PURE__ */ createOptHasher<BLAKE512, BlakeOpts>(
-  (opts) => new BLAKE512(opts)
-);
+export const blake512: CHash<BLAKE512, BlakeOpts> = /* @__PURE__ */ createHasher<
+  BLAKE512,
+  BlakeOpts
+>((opts) => new BLAKE512(opts));

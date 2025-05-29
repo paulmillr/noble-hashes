@@ -239,7 +239,7 @@ function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: Argon
   //       LE32(v) || LE32(y) || LE32(length(P)) || P ||
   //       LE32(length(S)) || S ||  LE32(length(K)) || K ||
   //       LE32(length(X)) || X)
-  const h = blake2b.create({});
+  const h = blake2b.create();
   const BUF = new Uint32Array(1);
   const BUF8 = u8(BUF);
   for (let item of [p, dkLen, m, t, version, type]) {

@@ -1,16 +1,16 @@
 import { mark } from 'micro-bmark';
-import { argon2id } from '../../argon2.js';
-import { blake256 } from '../../blake1.js';
-import { blake2b, blake2s } from '../../blake2.js';
-import { blake3 } from '../../blake3.js';
-import { hkdf } from '../../hkdf.js';
-import { hmac } from '../../hmac.js';
-import { ripemd160 } from '../../legacy.js';
-import { pbkdf2 } from '../../pbkdf2.js';
-import { scrypt } from '../../scrypt.js';
-import { sha256, sha512 } from '../../sha2.js';
-import { k12, kmac256, m14 } from '../../sha3-addons.ts';
-import { sha3_256, sha3_512 } from '../../sha3.js';
+import { argon2id } from '../../src/argon2.ts';
+import { blake256 } from '../../src/blake1.ts';
+import { blake2b, blake2s } from '../../src/blake2.ts';
+import { blake3 } from '../../src/blake3.ts';
+import { hkdf } from '../../src/hkdf.ts';
+import { hmac } from '../../src/hmac.ts';
+import { ripemd160 } from '../../src/legacy.ts';
+import { pbkdf2 } from '../../src/pbkdf2.ts';
+import { scrypt } from '../../src/scrypt.ts';
+import { sha256, sha512 } from '../../src/sha2.ts';
+import { k12, kmac256, m14 } from '../../src/sha3-addons.ts';
+import { sha3_256, sha3_512 } from '../../src/sha3.ts';
 
 function buf(size) {
   return new Uint8Array(size).fill(size % 251);

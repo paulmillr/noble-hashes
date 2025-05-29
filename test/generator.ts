@@ -1,12 +1,12 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql } from 'node:assert';
 import * as cryp from 'node:crypto';
-import { blake2b, blake2s } from '../esm/blake2.js';
-import { hkdf } from '../esm/hkdf.js';
-import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
-import { sha256, sha512 } from '../esm/sha2.js';
-import { sha3_256, sha3_512 } from '../esm/sha3.js';
-import { concatBytes } from '../esm/utils.js';
+import { blake2b, blake2s } from '../src/blake2.ts';
+import { hkdf } from '../src/hkdf.ts';
+import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
+import { sha256, sha512 } from '../src/sha2.ts';
+import { sha3_256, sha3_512 } from '../src/sha3.ts';
+import { concatBytes } from '../src/utils.ts';
 
 const { createHash, hkdfSync, pbkdf2Sync } = cryp;
 

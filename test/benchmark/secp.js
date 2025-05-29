@@ -1,9 +1,9 @@
 import bench from 'micro-bmark';
 import crypto from 'node:crypto';
 
-import { hmac } from '@noble/hashes/hmac';
-import { sha256 } from '@noble/hashes/sha2';
-import { concatBytes } from '@noble/hashes/utils';
+import { hmac } from '../../src/hmac.ts';
+import { sha256 } from '../../src/sha2.ts';
+import { concatBytes } from '../../src/utils.ts';
 
 const hmac256 = (key, ...msgs) => {
   const h = crypto.createHmac('sha256', key);

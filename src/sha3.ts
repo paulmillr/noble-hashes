@@ -13,10 +13,12 @@ import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  clean, createHasher, createXOFer, Hash,
+  clean, createHasher,
   swap32IfBE,
-  toBytes, u32,
-  type CHash, type CHashXO, type HashXOF, type Input
+  u32,
+  type CHash, type CHashXOF,
+  type Hash,
+  type HashXOF
 } from './utils.ts';
 
 // No __PURE__ annotations in sha3 header:
@@ -98,7 +100,7 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
 }
 
 /** Keccak sponge function. */
-export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
+export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   protected state: Uint8Array;
   protected pos = 0;
   protected posOut = 0;
@@ -120,7 +122,6 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     enableXOF = false,
     rounds: number = 24
   ) {
-    super();
     this.blockLen = blockLen;
     this.suffix = suffix;
     this.outputLen = outputLen;
@@ -145,9 +146,8 @@ export class Keccak extends Hash<Keccak> implements HashXOF<Keccak> {
     this.posOut = 0;
     this.pos = 0;
   }
-  update(data: Input): this {
+  update(data: Uint8Array): this {
     aexists(this);
-    data = toBytes(data);
     abytes(data);
     const { blockLen, state } = this;
     const len = data.length;
@@ -247,12 +247,14 @@ export const keccak_512: CHash = /* @__PURE__ */ (() => gen(0x01, 72, 512 / 8))(
 export type ShakeOpts = { dkLen?: number };
 
 const genShake = (suffix: number, blockLen: number, outputLen: number) =>
-  createXOFer<HashXOF<Keccak>, ShakeOpts>(
+  createHasher<Keccak, ShakeOpts>(
     (opts: ShakeOpts = {}) =>
       new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true)
   );
 
 /** SHAKE128 XOF with 128-bit security. */
-export const shake128: CHashXO = /* @__PURE__ */ (() => genShake(0x1f, 168, 128 / 8))();
+export const shake128: CHashXOF<Keccak, ShakeOpts> = /* @__PURE__ */ (() =>
+  genShake(0x1f, 168, 128 / 8))();
 /** SHAKE256 XOF with 256-bit security. */
-export const shake256: CHashXO = /* @__PURE__ */ (() => genShake(0x1f, 136, 256 / 8))();
+export const shake256: CHashXOF<Keccak, ShakeOpts> = /* @__PURE__ */ (() =>
+  genShake(0x1f, 136, 256 / 8))();

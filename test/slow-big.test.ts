@@ -1,14 +1,14 @@
 import { should } from 'micro-should';
 import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync as nodeScryptSync } from 'node:crypto';
-import { hkdf } from '../esm/hkdf.js';
-import { hmac } from '../esm/hmac.js';
-import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
-import { scrypt, scryptAsync } from '../esm/scrypt.js';
-import { sha256, sha512 } from '../esm/sha2.js';
-import { cshake128 } from '../esm/sha3-addons.js';
-import { bytesToHex, hexToBytes } from '../esm/utils.js';
-import { RANDOM, executeKDFTests } from './generator.js';
+import { hkdf } from '../src/hkdf.ts';
+import { hmac } from '../src/hmac.ts';
+import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
+import { scrypt, scryptAsync } from '../src/scrypt.ts';
+import { sha256, sha512 } from '../src/sha2.ts';
+import { cshake128 } from '../src/sha3-addons.ts';
+import { bytesToHex, hexToBytes } from '../src/utils.ts';
+import { RANDOM, executeKDFTests } from './generator.ts';
 import { HASHES } from './hashes.test.js';
 
 const KB = 1024;

@@ -2,9 +2,9 @@
  * HMAC: RFC2104 message authentication code.
  * @module
  */
-import { abytes, aexists, ahash, clean, Hash, toBytes, type CHash, type Input } from './utils.ts';
+import { abytes, aexists, ahash, clean, type CHash, type Hash } from './utils.ts';
 
-export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
+export class HMAC<T extends Hash<T>> implements Hash<HMAC<T>> {
   oHash: T;
   iHash: T;
   blockLen: number;
@@ -12,10 +12,9 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
   private finished = false;
   private destroyed = false;
 
-  constructor(hash: CHash, _key: Input) {
-    super();
+  constructor(hash: CHash, key: Uint8Array) {
     ahash(hash);
-    const key = toBytes(_key);
+    abytes(key);
     this.iHash = hash.create() as T;
     if (typeof this.iHash.update !== 'function')
       throw new Error('Expected instance of class which extends utils.Hash');
@@ -34,7 +33,7 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
     this.oHash.update(pad);
     clean(pad);
   }
-  update(buf: Input): this {
+  update(buf: Uint8Array): this {
     aexists(this);
     this.iHash.update(buf);
     return this;
@@ -87,8 +86,8 @@ export class HMAC<T extends Hash<T>> extends Hash<HMAC<T>> {
  * const mac1 = hmac(sha256, 'key', 'message');
  */
 export const hmac: {
-  (hash: CHash, key: Input, message: Input): Uint8Array;
-  create(hash: CHash, key: Input): HMAC<any>;
-} = (hash: CHash, key: Input, message: Input): Uint8Array =>
+  (hash: CHash, key: Uint8Array, message: Uint8Array): Uint8Array;
+  create(hash: CHash, key: Uint8Array): HMAC<any>;
+} = (hash: CHash, key: Uint8Array, message: Uint8Array): Uint8Array =>
   new HMAC<any>(hash, key).update(message).digest();
-hmac.create = (hash: CHash, key: Input) => new HMAC<any>(hash, key);
+hmac.create = (hash: CHash, key: Uint8Array) => new HMAC<any>(hash, key);

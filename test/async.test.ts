@@ -1,9 +1,9 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql } from 'node:assert';
-import { pbkdf2Async } from '../esm/pbkdf2.js';
-import { scrypt, scryptAsync } from '../esm/scrypt.js';
-import { sha256 } from '../esm/sha2.js';
-import * as utils from '../esm/utils.js';
+import { pbkdf2Async } from '../src/pbkdf2.ts';
+import { scrypt, scryptAsync } from '../src/scrypt.ts';
+import { sha256 } from '../src/sha2.ts';
+import * as utils from '../src/utils.ts';
 
 // Collect statistic about block of event loop by sync code
 class LoopWatcher {

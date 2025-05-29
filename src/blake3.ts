@@ -17,8 +17,10 @@ import { BLAKE2, compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
-  clean, createXOFer, swap32IfBE, toBytes, u32, u8,
-  type CHashXO, type HashXOF, type Input
+  clean, createHasher, swap32IfBE,
+  u32, u8,
+  type CHashXOF,
+  type HashXOF
 } from './utils.ts';
 
 // Flag bitset
@@ -50,7 +52,7 @@ const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
  * * `context`: string for KDF. Should be hardcoded, globally unique, and application - specific.
  *   A good default format for the context string is "[application] [commit timestamp] [purpose]".
  */
-export type Blake3Opts = { dkLen?: number; key?: Input; context?: Input };
+export type Blake3Opts = { dkLen?: number; key?: Uint8Array; context?: Uint8Array };
 
 /** Blake3 hash. Can be used as MAC and KDF. */
 export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
@@ -73,13 +75,15 @@ export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     const hasContext = context !== undefined;
     if (key !== undefined) {
       if (hasContext) throw new Error('Only "key" or "context" can be specified at same time');
-      const k = toBytes(key).slice();
+      abytes(key);
+      const k = key.slice();
       abytes(k, 32);
       this.IV = u32(k);
       swap32IfBE(this.IV);
       this.flags = flags | B3_Flags.KEYED_HASH;
     } else if (hasContext) {
-      const ctx = toBytes(context);
+      abytes(context);
+      const ctx = context;
       const contextKey = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
         .update(ctx)
         .digest();
@@ -267,6 +271,7 @@ export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
  * const mac = blake3(data, { key: new Uint8Array(32) });
  * const kdf = blake3(data, { context: 'application name' });
  */
-export const blake3: CHashXO = /* @__PURE__ */ createXOFer<BLAKE3, Blake3Opts>(
-  (opts) => new BLAKE3(opts)
-);
+export const blake3: CHashXOF<BLAKE3, Blake3Opts> = /* @__PURE__ */ createHasher<
+  BLAKE3,
+  Blake3Opts
+>((opts = {}) => new BLAKE3(opts));

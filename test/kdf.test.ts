@@ -1,12 +1,12 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
-import { hkdf, extract as hkdf_extract } from '../esm/hkdf.js';
-import { pbkdf2, pbkdf2Async } from '../esm/pbkdf2.js';
-import { scrypt, scryptAsync } from '../esm/scrypt.js';
-import { sha256, sha512 } from '../esm/sha2.js';
-import { hexToBytes, utf8ToBytes } from '../esm/utils.js';
-import { executeKDFTests } from './generator.js';
-import { EMPTY, repr, SPACE, TYPE_TEST } from './utils.js';
+import { hkdf, extract as hkdf_extract } from '../src/hkdf.ts';
+import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
+import { scrypt, scryptAsync } from '../src/scrypt.ts';
+import { sha256, sha512 } from '../src/sha2.ts';
+import { hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { executeKDFTests } from './generator.ts';
+import { EMPTY, repr, SPACE, TYPE_TEST } from './utils.ts';
 // HKDF test vectors from RFC 5869
 const HKDF_VECTORS = [
   {
@@ -197,20 +197,6 @@ describe('hkdf', () => {
     //   throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${repr(t)})`);
     throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
     for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), `hkdf(hash=${repr(t)})`);
-
-    // todo: remove string input tests
-    throws(() => hkdf(sha256, undefined, '', '', 32), 'hkdf.ikm===undefined');
-    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, '', '', '', 32), `hkdf(hash=${repr(t)})`);
-    eql(
-      hkdf(sha256, SPACE.str, SPACE.str, SPACE.str),
-      hkdf(sha256, SPACE.bytes, SPACE.bytes, SPACE.bytes),
-      'hkdf.SPACE'
-    );
-    eql(
-      hkdf(sha256, EMPTY.str, EMPTY.str, EMPTY.str),
-      hkdf(sha256, EMPTY.bytes, EMPTY.bytes, EMPTY.bytes),
-      'hkdf.EMPTY'
-    );
   });
 });
 
