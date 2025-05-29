@@ -1,11 +1,11 @@
-import bench from 'micro-bmark';
+import mark from 'micro-bmark';
 import crypto from 'node:crypto';
 
 import { hmac } from '../../src/hmac.ts';
 import { sha256 } from '../../src/sha2.ts';
 import { concatBytes } from '../../src/utils.ts';
 
-const hmac256 = (key, ...msgs) => {
+const hmac256node = (key, ...msgs) => {
   const h = crypto.createHmac('sha256', key);
   msgs.forEach((msg) => h.update(msg));
   return Uint8Array.from(h.digest());
@@ -35,9 +35,8 @@ const CASES = [
   },
 ];
 
-const FNS = [hmac256, hmac256noble];
+const FNS = [hmac256node, hmac256noble];
 const samples = 20000;
-const { mark } = bench; // or bench.mark
 
 async function main() {
   for (const c of CASES) {

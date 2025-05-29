@@ -1,13 +1,13 @@
 import compare from 'micro-bmark/compare.js';
 // Noble
-import { blake256, blake512 } from '../../blake1.js';
-import { blake2b, blake2s } from '../../blake2.js';
-import { blake3 } from '../../blake3.js';
-import { hmac } from '../../hmac.js';
-import { ripemd160 } from '../../legacy.js';
-import { sha256, sha512 } from '../../sha2.js';
-import { k12, m14 } from '../../sha3-addons.ts';
-import { sha3_256 } from '../../sha3.js';
+import { blake256, blake512 } from '../../src/blake1.ts';
+import { blake2b, blake2s } from '../../src/blake2.ts';
+import { blake3 } from '../../src/blake3.ts';
+import { hmac } from '../../src/hmac.ts';
+import { ripemd160 } from '../../src/legacy.ts';
+import { sha256, sha512 } from '../../src/sha2.ts';
+import { k12, m14 } from '../../src/sha3-addons.ts';
+import { sha3_256 } from '../../src/sha3.ts';
 
 // Others
 import stableb2b from '@stablelib/blake2b';

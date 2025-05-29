@@ -3,11 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bench": "node noble.js",
-    "bench:install": "npm install; npm install ../.. --install-links"
-  },
-  "dependencies": {
-    "@noble/hashes": "file:../.."
+    "bench": "node noble.ts",
+    "bench:install": "npm install"
   },
   "devDependencies": {
     "@node-rs/argon2": "1.8.3",

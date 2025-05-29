@@ -1,8 +1,8 @@
 import compare from 'micro-bmark/compare.js';
 import crypto from 'node:crypto';
 // Noble
-import { hkdf } from '@noble/hashes/hkdf';
-import { sha256, sha512 } from '@noble/hashes/sha2';
+import { hkdf } from '../../src/hkdf.ts';
+import { sha256, sha512 } from '../../src/sha2.ts';
 // Others
 import { HKDF as stableHKDF } from '@stablelib/hkdf';
 import stable256 from '@stablelib/sha256';
