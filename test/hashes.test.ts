@@ -10,7 +10,15 @@ import { blake3 } from '../src/blake3.ts';
 import { hmac } from '../src/hmac.ts';
 import { md5, ripemd160, sha1 } from '../src/legacy.ts';
 import { k12, turboshake128, turboshake256 } from '../src/sha3-addons.ts';
-import { keccak_256, sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../src/sha3.ts';
+import {
+  keccak_256,
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+  shake128,
+  shake256,
+} from '../src/sha3.ts';
 import { concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
 import { repeat, repr, TYPE_TEST } from './utils.ts';
 

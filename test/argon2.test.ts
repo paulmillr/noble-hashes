@@ -1,12 +1,12 @@
 import { describe, should } from 'micro-should';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import {
-    argon2d,
-    argon2dAsync,
-    argon2i,
-    argon2iAsync,
-    argon2id,
-    argon2idAsync,
+  argon2d,
+  argon2dAsync,
+  argon2i,
+  argon2iAsync,
+  argon2id,
+  argon2idAsync,
 } from '../src/argon2.ts';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
 
