@@ -29,7 +29,7 @@ const SCRYPT_CASES = gen({
   N: integer(1, 10),
   r: integer(1, 1024),
   p: integer(1, 1024),
-  dkLen: integer(0, 1024),
+  dkLen: integer(1, 1024),
   pwd: bytes(0, 1024),
   salt: bytes(0, 1024),
 });

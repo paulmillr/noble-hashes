@@ -7,7 +7,7 @@ import { scrypt, scryptAsync } from '../src/scrypt.ts';
 import { sha256 } from '../src/sha2.ts';
 import { createView } from '../src/utils.ts';
 import { RANDOM } from './generator.ts';
-import { HASHES } from './hashes.test.js';
+import { HASHES } from './hashes.test.ts';
 import { stats } from './utils.ts';
 
 const getTime = () => Number(process.hrtime.bigint());
