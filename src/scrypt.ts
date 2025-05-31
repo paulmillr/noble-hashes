@@ -122,7 +122,7 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
   // https://www.rfc-editor.org/errata_search.php?rfc=7914
   const pow32 = Math.pow(2, 32);
   if (N <= 1 || (N & (N - 1)) !== 0 || N > pow32) {
-    throw new Error('"N" must be a power of 2, and 1 <= N < 2^32');
+    throw new Error('"N" must be a power of 2, and 2^1 <= N <= 2^32');
   }
   if (p < 1 || p > ((pow32 - 1) * 32) / blockSize) {
     throw new Error('"p" must be positive integer <= ((2^32 - 1) * 32) / (128 * r)');
