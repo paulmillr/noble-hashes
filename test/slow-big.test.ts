@@ -9,7 +9,7 @@ import { sha256, sha512 } from '../src/sha2.ts';
 import { cshake128 } from '../src/sha3-addons.ts';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
 import { RANDOM, executeKDFTests } from './generator.ts';
-import { HASHES } from './hashes.test.js';
+import { HASHES } from './hashes.test.ts';
 
 const KB = 1024;
 const MB = 1024 * KB;

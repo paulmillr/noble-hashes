@@ -24,9 +24,9 @@
     "test:bun": "bun test/index.ts",
     "test:deno": "deno --allow-env --allow-read test/index.ts",
     "test:node20": "cd test; npx tsc; node compiled/test/index.js",
-    "test:dos": "node test/slow-dos.test.ts",
-    "test:big": "node test/slow-big.test.ts",
-    "test:kdf": "node test/slow-kdf.test.ts"
+    "test:dos": "node --experimental-strip-types test/slow-dos.test.ts",
+    "test:big": "node --experimental-strip-types test/slow-big.test.ts",
+    "test:kdf": "node --experimental-strip-types test/slow-kdf.test.ts"
   },
   "author": "Paul Miller (https://paulmillr.com)",
   "homepage": "https://paulmillr.com/noble/",
