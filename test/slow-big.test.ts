@@ -10,6 +10,7 @@ import { cshake128 } from '../src/sha3-addons.ts';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
 import { RANDOM, executeKDFTests } from './generator.ts';
 import { HASHES } from './hashes.test.ts';
+import { fmt } from './utils.ts';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -105,7 +106,7 @@ const opts_2gb = [
   { N: 2, r: 2 ** 23, p: 1 },
 ];
 for (const opts of opts_2gb) {
-  should(`Scrypt (2GB): ${opts}`, async () => {
+  should(fmt`Scrypt (2GB): ${opts}`, async () => {
     const exp = Uint8Array.from(
       nodeScryptSync(PASSWORD, SALT, 32, {
         ...opts,
@@ -144,15 +145,15 @@ should('PBKDF2 pwd/salt 4GB', async () => {
   const exp = hexToBytes(
     '58bf5b189082c9820b63d4eeb31c0d77efbc091b36856fff38032522e7e2f353d6781b0ba2bc0cbc50aa3896863803c61f907bcc3909b25b39e8f2f78174d4aa'
   );
-  eql(pbkdf2(sha512, ZERO_4GB, ZERO_4GB, opt), exp, `pbkdf2(${opt})`);
-  eql(await pbkdf2Async(sha512, ZERO_4GB, ZERO_4GB, opt), exp, `pbkdf2Async(${opt})`);
+  eql(pbkdf2(sha512, ZERO_4GB, ZERO_4GB, opt), exp, fmt`pbkdf2(${opt})`);
+  eql(await pbkdf2Async(sha512, ZERO_4GB, ZERO_4GB, opt), exp, fmt`pbkdf2Async(${opt})`);
 });
 
 should('Scrypt pwd/salt 4GB', async () => {
   const opt = { N: 4, r: 4, p: 4, dkLen: 32 };
   const exp = hexToBytes('00609885de3a56181c60f315c4ee65366368b01dd55efcd7923188597dc40912');
-  eql(scrypt(ZERO_4GB, ZERO_4GB, opt), exp, `scrypt(${opt})`);
-  eql(await scryptAsync(ZERO_4GB, ZERO_4GB, opt), exp, `scryptAsync(${opt})`);
+  eql(scrypt(ZERO_4GB, ZERO_4GB, opt), exp, fmt`scrypt(${opt})`);
+  eql(await scryptAsync(ZERO_4GB, ZERO_4GB, opt), exp, fmt`scryptAsync(${opt})`);
 });
 
 should('Hmac 4GB', async () => {
@@ -184,15 +185,15 @@ if (supports5GB) {
     const expP = hexToBytes(
       '1445d2aa24bf84d7f69269a7e088f7130b00901860de454415c947f0cb87ea892d84ccb1757e973a649d09f32f965f4aa223dba690c0cea0ef0359c325cd9501'
     );
-    eql(pbkdf2(sha512, ZERO_5GB, ZERO_5GB, optP), expP, `5GB pbkdf2(${optP})`);
-    eql(await pbkdf2Async(sha512, ZERO_5GB, ZERO_5GB, optP), expP, `5GB pbkdf2Async(${optP})`);
+    eql(pbkdf2(sha512, ZERO_5GB, ZERO_5GB, optP), expP, fmt`5GB pbkdf2(${optP})`);
+    eql(await pbkdf2Async(sha512, ZERO_5GB, ZERO_5GB, optP), expP, fmt`5GB pbkdf2Async(${optP})`);
 
     // scrypt
     // This doesn't work in node, python: ~1.5h, noble: ~5min
     const optS = { N: 4, r: 4, p: 4, dkLen: 32 };
     const expS = hexToBytes('0e49e31878f256302b581977f4f5b921cd9c53f3072b0b2948f5c6f53416cac7');
-    eql(scrypt(ZERO_5GB, ZERO_5GB, optS), expS, `5GB scrypt(${optS})`);
-    eql(await scryptAsync(ZERO_5GB, ZERO_5GB, optS), expS, `5GB scryptAsync(${optS})`);
+    eql(scrypt(ZERO_5GB, ZERO_5GB, optS), expS, fmt`5GB scrypt(${optS})`);
+    eql(await scryptAsync(ZERO_5GB, ZERO_5GB, optS), expS, fmt`5GB scryptAsync(${optS})`);
   });
 
   // 22: 0b4de6108452441913a780b56461c011c3480e29c82dc47aa0af59321e039b9c

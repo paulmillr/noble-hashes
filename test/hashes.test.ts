@@ -20,7 +20,7 @@ import {
   shake256,
 } from '../src/sha3.ts';
 import { concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
-import { repeat, repr, TYPE_TEST } from './utils.ts';
+import { repeat, fmt, TYPE_TEST } from './utils.ts';
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
 const NIST_VECTORS = [
@@ -476,12 +476,12 @@ function init() {
       should('throw on wrong argument type', () => {
         // Allowed only: undefined (for compact form only), string, Uint8Array
         for (const t of TYPE_TEST.bytes) {
-          throws(() => hash.fn(t), `compact(${repr(t)})`);
-          throws(() => hash.obj().update(t).digest(), `full(${repr(t)})`);
+          throws(() => hash.fn(t), fmt`compact(${t})`);
+          throws(() => hash.obj().update(t).digest(), fmt`full(${t})`);
         }
         throws(() => hash.fn(), `compact(undefined)`);
         throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
-        for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), `opt(${repr(t)})`);
+        for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), fmt`opt(${t})`);
       });
 
       should('clone', () => {

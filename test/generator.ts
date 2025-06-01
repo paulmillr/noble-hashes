@@ -7,6 +7,7 @@ import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
 import { sha256, sha512 } from '../src/sha2.ts';
 import { sha3_256, sha3_512 } from '../src/sha3.ts';
 import { concatBytes } from '../src/utils.ts';
+import { fmt } from './utils.ts';
 
 const { createHash, hkdfSync, pbkdf2Sync } = cryp;
 
@@ -45,16 +46,6 @@ const gen = (obj) => {
   }
   return res;
 };
-
-function serializeCase(c) {
-  let o = {};
-  for (let k in c) {
-    const v = c[k];
-    if (v instanceof Uint8Array) o[k] = `Bytes(${v.length})`;
-    else o[k] = v;
-  }
-  return JSON.stringify(o);
-}
 
 function executeKDFTests(limit = true) {
   function genl(params) {
@@ -96,8 +87,8 @@ function executeKDFTests(limit = true) {
         if (c.dkLen === 0) continue; // Disallowed in node v22
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        eql(pbkdf2(sha256, c.pwd, c.salt, opt), exp, `pbkdf2(sha256, ${opt})`);
-        eql(await pbkdf2Async(sha256, c.pwd, c.salt, opt), exp, `pbkdf2Async(sha256, ${opt})`);
+        eql(pbkdf2(sha256, c.pwd, c.salt, opt), exp, fmt`pbkdf2(sha256, ${opt})`);
+        eql(await pbkdf2Async(sha256, c.pwd, c.salt, opt), exp, fmt`pbkdf2Async(sha256, ${opt})`);
       }
     });
 
@@ -111,8 +102,8 @@ function executeKDFTests(limit = true) {
       for (const c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha512'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        eql(pbkdf2(sha512, c.pwd, c.salt, opt), exp, `pbkdf2(sha512, ${opt})`);
-        eql(await pbkdf2Async(sha512, c.pwd, c.salt, opt), exp, `pbkdf2Async(sha512, ${opt})`);
+        eql(pbkdf2(sha512, c.pwd, c.salt, opt), exp, fmt`pbkdf2(sha512, ${opt})`);
+        eql(await pbkdf2Async(sha512, c.pwd, c.salt, opt), exp, fmt`pbkdf2Async(sha512, ${opt})`);
       }
     });
 
@@ -127,8 +118,12 @@ function executeKDFTests(limit = true) {
       for (let c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-256'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        eql(pbkdf2(sha3_256, c.pwd, c.salt, opt), exp, `pbkdf2(sha3_256, ${opt})`);
-        eql(await pbkdf2Async(sha3_256, c.pwd, c.salt, opt), exp, `pbkdf2Async(sha3_256, ${opt})`);
+        eql(pbkdf2(sha3_256, c.pwd, c.salt, opt), exp, fmt`pbkdf2(sha3_256, ${opt})`);
+        eql(
+          await pbkdf2Async(sha3_256, c.pwd, c.salt, opt),
+          exp,
+          fmt`pbkdf2Async(sha3_256, ${opt})`
+        );
       }
     });
 
@@ -143,8 +138,12 @@ function executeKDFTests(limit = true) {
       for (let c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha3-512'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        eql(pbkdf2(sha3_512, c.pwd, c.salt, opt), exp, `pbkdf2(sha3_512, ${opt})`);
-        eql(await pbkdf2Async(sha3_512, c.pwd, c.salt, opt), exp, `pbkdf2Async(sha3_512, ${opt})`);
+        eql(pbkdf2(sha3_512, c.pwd, c.salt, opt), exp, fmt`pbkdf2(sha3_512, ${opt})`);
+        eql(
+          await pbkdf2Async(sha3_512, c.pwd, c.salt, opt),
+          exp,
+          fmt`pbkdf2Async(sha3_512, ${opt})`
+        );
       }
     });
 
@@ -162,12 +161,12 @@ function executeKDFTests(limit = true) {
     //     deepStrictEqual(
     //       pbkdf2(ripemd160, c.pwd, c.salt, opt),
     //       exp,
-    //       `pbkdf2(ripemd160, ${opt})`
+    //       fmt`pbkdf2(ripemd160, ${opt})`
     //     );
     //     deepStrictEqual(
     //       await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
     //       exp,
-    //       `pbkdf2Async(ripemd160, ${opt})`
+    //       fmt`pbkdf2Async(ripemd160, ${opt})`
     //     );
     //   }
     // });
@@ -183,8 +182,8 @@ function executeKDFTests(limit = true) {
       for (let c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2s256'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        eql(pbkdf2(blake2s, c.pwd, c.salt, opt), exp, `pbkdf2(blake2s, ${opt})`);
-        eql(await pbkdf2Async(blake2s, c.pwd, c.salt, opt), exp, `pbkdf2Async(blake2s, ${opt})`);
+        eql(pbkdf2(blake2s, c.pwd, c.salt, opt), exp, fmt`pbkdf2(blake2s, ${opt})`);
+        eql(await pbkdf2Async(blake2s, c.pwd, c.salt, opt), exp, fmt`pbkdf2Async(blake2s, ${opt})`);
       }
     });
 
@@ -199,13 +198,13 @@ function executeKDFTests(limit = true) {
       for (let c of cases) {
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'blake2b512'));
         const opt = { c: c.c, dkLen: c.dkLen };
-        eql(pbkdf2(blake2b, c.pwd, c.salt, opt), exp, `pbkdf2(blake2b, ${opt})`);
-        eql(await pbkdf2Async(blake2b, c.pwd, c.salt, opt), exp, `pbkdf2Async(blake2b, ${opt})`);
+        eql(pbkdf2(blake2b, c.pwd, c.salt, opt), exp, fmt`pbkdf2(blake2b, ${opt})`);
+        eql(await pbkdf2Async(blake2b, c.pwd, c.salt, opt), exp, fmt`pbkdf2Async(blake2b, ${opt})`);
       }
     });
   });
 }
 
-export { bytes, executeKDFTests, gen, integer, optional, RANDOM, serializeCase };
+export { bytes, executeKDFTests, gen, integer, optional, RANDOM };
 
 should.runWhen(import.meta.url);

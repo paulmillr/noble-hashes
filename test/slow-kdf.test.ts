@@ -11,8 +11,8 @@ import {
 } from '../src/argon2.ts';
 import { scrypt, scryptAsync } from '../src/scrypt.ts';
 import { bytesToHex } from '../src/utils.ts';
-import { bytes, gen, integer, serializeCase } from './generator.ts';
-import { json, pattern } from './utils.ts';
+import { bytes, gen, integer } from './generator.ts';
+import { json, pattern, fmt } from './utils.ts';
 
 const argon2_vectors = json('./vectors/argon2.json');
 
@@ -36,11 +36,11 @@ const SCRYPT_CASES = gen({
 
 for (let i = 0; i < SCRYPT_CASES.length; i++) {
   const c = SCRYPT_CASES[i];
-  should(`Scrypt generator (${i}): ${serializeCase(c)}`, async () => {
+  should(fmt`Scrypt generator (${i}): ${c}`, async () => {
     const opt = { ...c, N: 2 ** c.N };
     const exp = Uint8Array.from(scryptSync(c.pwd, c.salt, c.dkLen, { maxmem: 1024 ** 4, ...opt }));
-    eql(scrypt(c.pwd, c.salt, opt), exp, `scrypt(${opt})`);
-    eql(await scryptAsync(c.pwd, c.salt, opt), exp, `scryptAsync(${opt})`);
+    eql(scrypt(c.pwd, c.salt, opt), exp, fmt`scrypt(${opt})`);
+    eql(await scryptAsync(c.pwd, c.salt, opt), exp, fmt`scryptAsync(${opt})`);
   });
 }
 

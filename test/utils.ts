@@ -189,8 +189,13 @@ export const getTypeTests = () => [
   [Symbol.for('a'), 'symbol("a")'],
 ];
 
-export function repr(item) {
+function repr(item) {
   if (item && item.isProxy) return '[proxy]';
   if (typeof item === 'symbol') return item.toString();
-  return `${item}`;
+  if (typeof item !== 'object') return `${item}`;
+  return JSON.stringify(item, (_k, v) => (ArrayBuffer.isView(v) ? `Bytes(${v.byteLength})` : v));
+}
+
+export function fmt(strings, ...args) {
+  return [strings[0], ...args.flatMap((x, i) => [repr(x), strings[i + 1]])].join('');
 }
