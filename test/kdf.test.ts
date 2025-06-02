@@ -6,7 +6,7 @@ import { scrypt, scryptAsync } from '../src/scrypt.ts';
 import { sha256, sha512 } from '../src/sha2.ts';
 import { hexToBytes, utf8ToBytes } from '../src/utils.ts';
 import { executeKDFTests } from './generator.ts';
-import { EMPTY, repr, SPACE, TYPE_TEST } from './utils.ts';
+import { EMPTY, fmt, SPACE, TYPE_TEST } from './utils.ts';
 // HKDF test vectors from RFC 5869
 const HKDF_VECTORS = [
   {
@@ -186,17 +186,17 @@ describe('hkdf', () => {
     hkdf(sha512, e, e, e, 16320);
     throws(() => hkdf(sha512, e, e, e, 16320 + 1), `hkdf.dkLen(16320 + 1)`);
     for (const t of TYPE_TEST.int) {
-      throws(() => hkdf(sha256, e, e, e, t), `hkdf.dkLen(${repr(t)})`);
+      throws(() => hkdf(sha256, e, e, e, t), fmt`hkdf.dkLen(${t})`);
     }
     for (const t of TYPE_TEST.bytes) {
-      throws(() => hkdf(sha256, t, e, e, 32), `hkdf.ikm(${repr(t)})`);
-      throws(() => hkdf(sha256, e, t, e, 32), `hkdf.salt(${repr(t)})`);
-      throws(() => hkdf(sha256, e, e, t, 32), `hkdf.info(${repr(t)})`);
+      throws(() => hkdf(sha256, t, e, e, 32), fmt`hkdf.ikm(${t})`);
+      throws(() => hkdf(sha256, e, t, e, 32), fmt`hkdf.salt(${t})`);
+      throws(() => hkdf(sha256, e, e, t, 32), fmt`hkdf.info(${t})`);
     }
     // for (const t of TYPE_TEST.opts)
-    //   throws(() => hkdf(sha256, '', '', '', 32, t), `hkdf.opt(${repr(t)})`);
+    //   throws(() => hkdf(sha256, '', '', '', 32, t), fmt`hkdf.opt(${t})`);
     throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
-    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), `hkdf(hash=${repr(t)})`);
+    for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), fmt`hkdf(hash=${t})`);
   });
 });
 
@@ -232,25 +232,22 @@ describe('scrypt', () => {
     await rejects(() => scryptAsync('pwd', 'salt', { ...opt, N: 1 }), `scrypt(N=1)`);
     for (const t of TYPE_TEST.int) {
       for (const k of ['N', 'r', 'p', 'dkLen']) {
-        throws(() => scrypt('pwd', 'salt', { ...opt, [k]: t }), `scrypt(${k}=${repr(t)})`);
-        await rejects(
-          () => scryptAsync('pwd', 'salt', { ...opt, [k]: t }),
-          `scrypt(${k}=${repr(t)})`
-        );
+        throws(() => scrypt('pwd', 'salt', { ...opt, [k]: t }), fmt`scrypt(${k}=${t})`);
+        await rejects(() => scryptAsync('pwd', 'salt', { ...opt, [k]: t }), fmt`scrypt(${k}=${t})`);
       }
       await rejects(
         () => scryptAsync('pwd', 'salt', { ...opt, asyncTick: t }),
-        `scrypt(asyncTick=${repr(t)})`
+        fmt`scrypt(asyncTick=${t})`
       );
     }
     for (const t of TYPE_TEST.bytes.concat([undefined])) {
-      throws(() => scrypt('pwd', t, opt), `scrypt(salt=${repr(t)})`);
-      await rejects(() => scryptAsync('pwd', t, opt), `scrypt(salt=${repr(t)})`);
-      throws(() => scrypt(t, 'salt', opt), `scrypt(pwd=${repr(t)})`);
-      await rejects(() => scryptAsync(t, 'salt', opt), `scrypt(pwd=${repr(t)})`);
+      throws(() => scrypt('pwd', t, opt), fmt`scrypt(salt=${t})`);
+      await rejects(() => scryptAsync('pwd', t, opt), fmt`scrypt(salt=${t})`);
+      throws(() => scrypt(t, 'salt', opt), fmt`scrypt(pwd=${t})`);
+      await rejects(() => scryptAsync(t, 'salt', opt), fmt`scrypt(pwd=${t})`);
       for (const t of TYPE_TEST.opts) {
-        throws(() => scrypt('pwd', 'salt', t), `scrypt(opt=${repr(t)})`);
-        await rejects(() => scryptAsync('pwd', 'salt', t), `scrypt(opt=${repr(t)})`);
+        throws(() => scrypt('pwd', 'salt', t), fmt`scrypt(opt=${t})`);
+        await rejects(() => scryptAsync('pwd', 'salt', t), fmt`scrypt(opt=${t})`);
       }
     }
     eql(scrypt(SPACE.str, SPACE.str, opt), scrypt(SPACE.bytes, SPACE.bytes, opt), 'scrypt.SPACE');
@@ -281,37 +278,34 @@ describe('PBKDF2', () => {
     throws(() => pbkdf2(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }), `pbkdf2(c=0)`);
     await rejects(() => pbkdf2Async(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }), `pbkdf2(c=0)`);
     for (const t of TYPE_TEST.int) {
-      throws(() => pbkdf2(sha256, 'pwd', 'salt', { ...opts, c: t }), `pbkdf2(c=${repr(t)})`);
+      throws(() => pbkdf2(sha256, 'pwd', 'salt', { ...opts, c: t }), fmt`pbkdf2(c=${t})`);
       await rejects(
         () => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, c: t }),
-        `pbkdf2(c=${repr(t)})`
+        fmt`pbkdf2(c=${t})`
       );
-      throws(
-        () => pbkdf2(sha256, 'pwd', 'salt', { ...opts, dkLen: t }),
-        `pbkdf2(dkLen=${repr(t)})`
-      );
+      throws(() => pbkdf2(sha256, 'pwd', 'salt', { ...opts, dkLen: t }), fmt`pbkdf2(dkLen=${t})`);
       await rejects(
         () => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, dkLen: t }),
-        `pbkdf2(dkLen=${repr(t)})`
+        fmt`pbkdf2(dkLen=${t})`
       );
       await rejects(
         () => pbkdf2Async(sha256, 'pwd', 'salt', { ...opts, asyncTick: t }),
-        `pbkdf2(asyncTick=${repr(t)})`
+        fmt`pbkdf2(asyncTick=${t})`
       );
     }
     for (const t of TYPE_TEST.bytes.concat([undefined])) {
-      throws(() => pbkdf2(sha256, t, 'salt', opts), `pbkdf2(pwd=${repr(t)})`);
-      await rejects(() => pbkdf2Async(sha256, t, 'salt', opts), `pbkdf2(pwd=${repr(t)})`);
-      throws(() => pbkdf2(sha256, 'pwd', t, opts), `pbkdf2(salt=${repr(t)})`);
-      await rejects(() => pbkdf2Async(sha256, 'pwd', t, opts), `pbkdf2(salt=${repr(t)})`);
+      throws(() => pbkdf2(sha256, t, 'salt', opts), fmt`pbkdf2(pwd=${t})`);
+      await rejects(() => pbkdf2Async(sha256, t, 'salt', opts), fmt`pbkdf2(pwd=${t})`);
+      throws(() => pbkdf2(sha256, 'pwd', t, opts), fmt`pbkdf2(salt=${t})`);
+      await rejects(() => pbkdf2Async(sha256, 'pwd', t, opts), fmt`pbkdf2(salt=${t})`);
     }
     for (const t of TYPE_TEST.opts) {
-      throws(() => pbkdf2(sha256, 'pwd', 'salt', t), `pbkdf2(opt=${repr(t)})`);
-      await rejects(() => pbkdf2Async(sha256, 'pwd', 'salt', t), `pbkdf2(opt=${repr(t)})`);
+      throws(() => pbkdf2(sha256, 'pwd', 'salt', t), fmt`pbkdf2(opt=${t})`);
+      await rejects(() => pbkdf2Async(sha256, 'pwd', 'salt', t), fmt`pbkdf2(opt=${t})`);
     }
     for (const t of TYPE_TEST.hash) {
-      throws(() => pbkdf2(t, 'pwd', 'salt', t), `pbkdf2(hash=${repr(t)})`);
-      await rejects(() => pbkdf2Async(t, 'pwd', 'salt', t), `pbkdf2(hash=${repr(t)})`);
+      throws(() => pbkdf2(t, 'pwd', 'salt', t), fmt`pbkdf2(hash=${t})`);
+      await rejects(() => pbkdf2Async(t, 'pwd', 'salt', t), fmt`pbkdf2(hash=${t})`);
     }
     eql(
       pbkdf2(sha256, SPACE.str, SPACE.str, opts),
