@@ -57,7 +57,7 @@ import {
 } from '@noble/hashes/sha3.js';
 import {
   cshake256, turboshake256, kmac256, tuplehash256,
-  k12, m14, keccakprg,
+  k12, keccakprg,
 } from '@noble/hashes/sha3-addons.js';
 import { blake3 } from '@noble/hashes/blake3.js';
 import { blake2b, blake2s } from '@noble/hashes/blake2.js';
@@ -73,10 +73,10 @@ import * as utils from '@noble/hashes/utils'; // bytesToHex, bytesToUtf8, concat
 
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
 - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
-- [sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE](#sha3-addons-cshake-kmac-k12-m14-turboshake)
+- [sha3-addons: cSHAKE, KMAC, K12, TurboSHAKE](#sha3-addons-cshake-kmac-k12-turboshake)
 - [blake1, blake2, blake3](#blake1-blake2-blake3)
 - [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
-- MACs: [hmac](#hmac) | [kmac](#sha3-addons-cshake-kmac-k12-m14-turboshake) | [blake3 key mode](#blake1-blake2-blake3)
+- MACs: [hmac](#hmac) | [kmac](#sha3-addons-cshake-kmac-k12-turboshake) | [blake3 key mode](#blake1-blake2-blake3)
 - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
 - [utils](#utils)
 - [Security](#security) | [Speed](#speed) | [Contributing & testing](#contributing--testing) | [License](#license)
@@ -103,7 +103,7 @@ for (let hash of [sha256, sha384, sha512, sha224, sha512_224, sha512_256]) {
 }
 ```
 
-See [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
+Check out [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
 [the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
 #### sha3: FIPS, SHAKE, Keccak
@@ -126,16 +126,16 @@ const shka = shake128(Uint8Array.from([0x10]), { dkLen: 512 });
 const shkb = shake256(Uint8Array.from([0x30]), { dkLen: 512 });
 ```
 
-See [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
+Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
 [Website](https://keccak.team/keccak.html).
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
-#### sha3-addons: cSHAKE, KMAC, K12, M14, TurboSHAKE
+#### sha3-addons: cSHAKE, KMAC, K12, TurboSHAKE
 
 ```typescript
 import {
-  cshake128, cshake256, k12, m14,
+  cshake128, cshake256, k12,
   keccakprg, kmac128, kmac256,
   parallelhash256, tuplehash256,
   turboshake128, turboshake256,
@@ -153,7 +153,6 @@ const kk = Uint8Array.from([0xca]);
 const ek10 = kmac128(kk, data);
 const ek11 = kmac256(kk, data);
 const ek12 = k12(data);
-const ek13 = m14(data);
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
 // * with a capacity of 254 bits.
 const p = keccakprg(254);
@@ -161,12 +160,10 @@ p.feed('test');
 const rand1b = p.fetch(1);
 ```
 
-- Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
+- Check out [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
   cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
-- [Reduced-round Keccak](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
-  - 🦘 K12 aka KangarooTwelve
-  - M14 aka MarsupilamiFourteen
-  - TurboSHAKE
+- Take a look at reduced-round Keccak [draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
+  🦘K12 (KangarooTwelve), TurboSHAKE
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
 
 #### blake1, blake2, blake3
@@ -233,7 +230,7 @@ const mac1 = hmac(sha256, key, msg);
 const mac2 = hmac.create(sha256, key).update(msg).digest();
 ```
 
-Matches [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
+Conforms to [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
 
 #### hkdf
 
@@ -253,7 +250,7 @@ const prk = extract(sha256, inputKey, salt);
 const hk2 = expand(sha256, prk, info, 32);
 ```
 
-Matches [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
+Conforms to [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
 
 #### pbkdf2
 
@@ -268,7 +265,7 @@ const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.
 });
 ```
 
-Matches [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898).
+Conforms to [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898).
 
 #### scrypt
 
@@ -390,9 +387,9 @@ can read application memory, you are doomed in any case:
 ### Supply chain security
 
 - **Commits** are signed with PGP keys, to prevent forgery. Make sure to verify commit signatures
-- **Releases** are transparent and built on GitHub CI. Make sure to verify [provenance](https://docs.npmjs.com/generating-provenance-statements) logs
-  - Use GitHub CLI to verify single-file builds:
-    `gh attestation verify --owner paulmillr noble-hashes.js`
+- **Releases** are transparent and built on GitHub CI.
+  Check out [attested checksums of single-file builds](https://github.com/paulmillr/noble-hashes/attestations)
+  and [provenance logs](https://github.com/paulmillr/noble-hashes/actions/workflows/release.yml)
 - **Rare releasing** is followed to ensure less re-audit need for end-users
 - **Dependencies** are minimized and locked-down: any dependency could get hacked and users will be downloading malware with every install.
   - We make sure to use as few dependencies as possible
@@ -426,7 +423,7 @@ Australian ASD prohibits SHA256 and similar hashes [after 2030](https://www.cybe
 ## Speed
 
 ```sh
-npm run bench:install && npm run bench
+npm run bench
 ```
 
 Benchmarks measured on Apple M4.
@@ -438,7 +435,6 @@ sha512 x 740,740 ops/sec @ 1μs/op
 sha3_256 x 287,686 ops/sec @ 3μs/op
 sha3_512 x 288,267 ops/sec @ 3μs/op
 k12 x 476,190 ops/sec @ 2μs/op
-m14 x 423,190 ops/sec @ 2μs/op
 blake2b x 464,252 ops/sec @ 2μs/op
 blake2s x 766,871 ops/sec @ 1μs/op
 blake3 x 879,507 ops/sec @ 1μs/op
@@ -449,7 +445,6 @@ sha512 x 129 ops/sec @ 7ms/op
 sha3_256 x 38 ops/sec @ 25ms/op
 sha3_512 x 20 ops/sec @ 47ms/op
 k12 x 88 ops/sec @ 11ms/op
-m14 x 62 ops/sec @ 15ms/op
 blake2b x 69 ops/sec @ 14ms/op
 blake2s x 57 ops/sec @ 17ms/op
 blake3 x 72 ops/sec @ 13ms/op
@@ -496,7 +491,12 @@ _doing code generation of full loop unrolls_. We've decided against it. Reasons:
 
 ## Upgrading
 
-Upgrading from noble-hashes v1 to v2:
+Supported node.js versions:
+
+- v2: v20.19+ (ESM-only)
+- v1: v14.21+ (ESM & CJS)
+
+Changelog of v2, when upgrading from hashes v1:
 
 - Bump minimum node.js version from v14 to v20.19
 - Bump compilation target from es2020 to es2022

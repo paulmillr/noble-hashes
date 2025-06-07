@@ -414,11 +414,12 @@ export class SHA512_256 extends SHA2_64B<SHA512_256> {
 }
 
 /**
- * SHA2-256 hash function from RFC 4634.
+ * SHA2-256 hash function from RFC 4634. In JS it's the fastest: even faster than Blake3. Some info:
  *
- * It is the fastest JS hash, even faster than Blake3.
- * To break sha256 using birthday attack, attackers need to try 2^128 hashes.
- * BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
+ * - Trying 2^128 hashes would get 50% chance of collision, using birthday attack.
+ * - BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
+ * - Each sha256 hash is executing 2^18 bit operations.
+ * - Good 2024 ASICs can do 200Th/sec with 3500 watts of power, corresponding to 2^36 hashes/joule.
  */
 export const sha256: CHash<SHA256> = /* @__PURE__ */ createHasher(() => new SHA256());
 /** SHA2-224 hash function from RFC 4634 */
