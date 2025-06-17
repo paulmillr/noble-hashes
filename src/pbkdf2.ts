@@ -12,12 +12,18 @@ import {
   type KDFInput
 } from './utils.ts';
 
+/**
+ * PBKDF2 options:
+ * * c: iterations, should probably be higher than 100_000
+ * * dkLen: desired length of derived key in bytes
+ * * asyncTick: max time in ms for which async function can block execution
+ */
 export type Pbkdf2Opt = {
-  c: number; // Iterations
-  dkLen?: number; // Desired key length in bytes (Intended output length in octets of the derived key
-  asyncTick?: number; // Maximum time in ms for which async function can block execution
+  c: number;
+  dkLen?: number;
+  asyncTick?: number;
 };
-// Common prologue and epilogue for sync/async functions
+// Common start and end for sync/async functions
 function pbkdf2Init(hash: CHash, _password: KDFInput, _salt: KDFInput, _opts: Pbkdf2Opt) {
   ahash(hash);
   const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);

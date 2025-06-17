@@ -27,6 +27,8 @@ const SHA256_K = /* @__PURE__ */ Uint32Array.from([
 
 /** Reusable temporary buffer. "W" comes straight from spec. */
 const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
+
+/** Internal 32-byte base SHA2 hash class. */
 abstract class SHA2_32B<T extends SHA2_32B<T>> extends HashMD<T> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
@@ -105,6 +107,7 @@ abstract class SHA2_32B<T extends SHA2_32B<T>> extends HashMD<T> {
   }
 }
 
+/** Internal SHA2-256 hash class. */
 export class SHA256 extends SHA2_32B<SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
@@ -121,6 +124,7 @@ export class SHA256 extends SHA2_32B<SHA256> {
   }
 }
 
+/** Internal SHA2-224 hash class. */
 export class SHA224 extends SHA2_32B<SHA224> {
   protected A: number = SHA224_IV[0] | 0;
   protected B: number = SHA224_IV[1] | 0;
@@ -169,6 +173,7 @@ const SHA512_Kl = /* @__PURE__ */ (() => K512[1])();
 const SHA512_W_H = /* @__PURE__ */ new Uint32Array(80);
 const SHA512_W_L = /* @__PURE__ */ new Uint32Array(80);
 
+/** Internal 64-byte base SHA2 hash class. */
 export abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
@@ -302,6 +307,7 @@ export abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
   }
 }
 
+/** Internal SHA2-512 hash class. */
 export class SHA512 extends SHA2_64B<SHA512> {
   protected Ah: number = SHA512_IV[0] | 0;
   protected Al: number = SHA512_IV[1] | 0;
@@ -367,6 +373,7 @@ const T256_IV = /* @__PURE__ */ Uint32Array.from([
   0x96283ee2, 0xa88effe3, 0xbe5e1e25, 0x53863992, 0x2b0199fc, 0x2c85b8aa, 0x0eb72ddc, 0x81c52ca2,
 ]);
 
+/** Internal SHA2-512/224 hash class. */
 export class SHA512_224 extends SHA2_64B<SHA512_224> {
   protected Ah: number = T224_IV[0] | 0;
   protected Al: number = T224_IV[1] | 0;
@@ -390,6 +397,7 @@ export class SHA512_224 extends SHA2_64B<SHA512_224> {
   }
 }
 
+/** Internal SHA2-512/256 hash class. */
 export class SHA512_256 extends SHA2_64B<SHA512_256> {
   protected Ah: number = T256_IV[0] | 0;
   protected Al: number = T256_IV[1] | 0;

@@ -101,7 +101,7 @@ function checkBlake2Opts(
     throw new Error('personalization must be undefined or ' + persLen);
 }
 
-/** Class, from which others are subclassed. */
+/** Internal base class for BLAKE2. */
 export abstract class BLAKE2<T extends BLAKE2<T>> implements Hash<T> {
   protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   protected abstract get(): number[];
@@ -201,6 +201,7 @@ export abstract class BLAKE2<T extends BLAKE2<T>> implements Hash<T> {
   }
 }
 
+/** Internal blake2b hash class. */
 export class BLAKE2b extends BLAKE2<BLAKE2b> {
   // Same as SHA-512, but LE
   private v0l = B2B_IV[0] | 0;
@@ -357,6 +358,7 @@ export const blake2b: CHash<BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher<
 // Blake2S
 // =================
 
+/** Internal type, 16 numbers. */
 // prettier-ignore
 export type Num16 = {
   v0: number; v1: number; v2: number; v3: number;
@@ -365,6 +367,7 @@ export type Num16 = {
   v12: number; v13: number; v14: number; v15: number;
 };
 
+/** BLAKE2-compress core method. */
 // prettier-ignore
 export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds: number,
   v0: number, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number,
@@ -394,6 +397,8 @@ export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds
 }
 
 const B2S_IV = /* @__PURE__ */ SHA256_IV.slice();
+
+/** Internal blake2s hash class. */
 export class BLAKE2s extends BLAKE2<BLAKE2s> {
   // Internal state, same as SHA-256
   private v0 = B2S_IV[0] | 0;

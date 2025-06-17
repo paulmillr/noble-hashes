@@ -99,8 +99,10 @@ export type ITupleHash = {
 //   (message: Uint8Array, opts?: ParallelOpts): Uint8Array;
 //   create(opts?: ParallelOpts): ParallelHash;
 // };
+/** NIST cSHAKE-128 XOF. */
 export const cshake128: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ (() =>
   gencShake(0x1f, 168, 128 / 8))();
+/** NIST cSHAKE-256 XOF. */
 export const cshake256: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ (() =>
   gencShake(0x1f, 136, 256 / 8))();
 

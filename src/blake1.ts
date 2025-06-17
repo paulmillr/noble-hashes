@@ -494,21 +494,25 @@ class BLAKE1_64B extends BLAKE1<BLAKE1_64B> {
   }
 }
 
+/** Internal blake1-224 hash class. */
 export class BLAKE224 extends BLAKE1_32B {
   constructor(opts: BlakeOpts = {}) {
     super(28, B224_IV, 0b0000_0000, opts);
   }
 }
+/** Internal blake1-256 hash class. */
 export class BLAKE256 extends BLAKE1_32B {
   constructor(opts: BlakeOpts = {}) {
     super(32, B256_IV, 0b0000_0001, opts);
   }
 }
+/** Internal blake1-384 hash class. */
 export class BLAKE384 extends BLAKE1_64B {
   constructor(opts: BlakeOpts = {}) {
     super(48, B384_IV, 0b0000_0000, opts);
   }
 }
+/** Internal blake1-512 hash class. */
 export class BLAKE512 extends BLAKE1_64B {
   constructor(opts: BlakeOpts = {}) {
     super(64, B512_IV, 0b0000_0001, opts);
