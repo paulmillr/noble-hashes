@@ -25,8 +25,8 @@ import {
 } from './utils.ts';
 
 // cSHAKE && KMAC (NIST SP800-185)
-const _8n = BigInt(8);
-const _ffn = BigInt(0xff);
+const _8n = /* @__PURE__ */ BigInt(8);
+const _ffn = /* @__PURE__ */ BigInt(0xff);
 
 // NOTE: it is safe to use bigints here, since they used only for length encoding (not actual data).
 // We use bigints in sha256 for lengths too.
