@@ -7,7 +7,7 @@
  */
 import { Chi, HashMD, Maj, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
-import { type CHash, clean, createHasher, rotr } from './utils.ts';
+import { type CHash, clean, createHasher, nistOid, rotr } from './utils.ts';
 
 /**
  * Round constants:
@@ -428,23 +428,52 @@ export class SHA512_256 extends SHA2_64B<SHA512_256> {
  * - BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
  * - Each sha256 hash is executing 2^18 bit operations.
  * - Good 2024 ASICs can do 200Th/sec with 3500 watts of power, corresponding to 2^36 hashes/joule.
+ *
+ * 256-bit preimage attack resistance, 128-bit collision resistance.
+ * Vulnerable to length extension attack.
  */
-export const sha256: CHash<SHA256> = /* @__PURE__ */ createHasher(() => new SHA256());
-/** SHA2-224 hash function from RFC 4634 */
-export const sha224: CHash<SHA224> = /* @__PURE__ */ createHasher(() => new SHA224());
+export const sha256: CHash<SHA256> = /* @__PURE__ */ createHasher(() => new SHA256(), {
+  oid: nistOid(0x01),
+});
+/**
+ * SHA2-224 hash function from RFC 4634.
+ * 224-bit preimage attack resistance, 112-bit collision resistance.
+ * Vulnerable to length extension attack (32-bit).
+ */
+export const sha224: CHash<SHA224> = /* @__PURE__ */ createHasher(() => new SHA224(), {
+  oid: nistOid(0x04),
+});
 
-/** SHA2-512 hash function from RFC 4634. */
-export const sha512: CHash<SHA512> = /* @__PURE__ */ createHasher(() => new SHA512());
-/** SHA2-384 hash function from RFC 4634. */
-export const sha384: CHash<SHA384> = /* @__PURE__ */ createHasher(() => new SHA384());
+/**
+ * SHA2-512 hash function from RFC 4634.
+ * 512-bit preimage attack resistance, 256-bit collision resistance.
+ * Vulnerable to length extension attack.
+ */
+export const sha512: CHash<SHA512> = /* @__PURE__ */ createHasher(() => new SHA512(), {
+  oid: nistOid(0x03),
+});
+/**
+ * SHA2-384 hash function from RFC 4634.
+ * 384-bit preimage attack resistance, 192-bit collision resistance.
+ * Vulnerable to length extension attack.
+ */
+export const sha384: CHash<SHA384> = /* @__PURE__ */ createHasher(() => new SHA384(), {
+  oid: nistOid(0x02),
+});
 
 /**
  * SHA2-512/256 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
+ * 256-bit preimage attack resistance, 128-bit collision resistance.
  */
-export const sha512_256: CHash<SHA512_256> = /* @__PURE__ */ createHasher(() => new SHA512_256());
+export const sha512_256: CHash<SHA512_256> = /* @__PURE__ */ createHasher(() => new SHA512_256(), {
+  oid: nistOid(0x06),
+});
 /**
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
+ * 224-bit preimage attack resistance, 112-bit collision resistance.
  */
-export const sha512_224: CHash<SHA512_224> = /* @__PURE__ */ createHasher(() => new SHA512_224());
+export const sha512_224: CHash<SHA512_224> = /* @__PURE__ */ createHasher(() => new SHA512_224(), {
+  oid: nistOid(0x05),
+});

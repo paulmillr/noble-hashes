@@ -346,6 +346,7 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
 
 /**
  * Blake2b hash function. 64-bit. 1.5x slower than blake2s in JS.
+ * 512-bit preimage attack resistance, 256-bit collision resistance.
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
@@ -485,6 +486,7 @@ export class BLAKE2s extends BLAKE2<BLAKE2s> {
 
 /**
  * Blake2s hash function. Focuses on 8-bit to 32-bit platforms. 1.5x faster than blake2b in JS.
+ * 256-bit preimage attack resistance, 128-bit collision resistance.
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */

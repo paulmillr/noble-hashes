@@ -86,8 +86,14 @@ export class SHA1 extends HashMD<SHA1> {
   }
 }
 
-/** SHA1 (RFC 3174) legacy hash function. It was cryptographically broken. */
-export const sha1: CHash = /* @__PURE__ */ createHasher(() => new SHA1());
+/**
+ * SHA1 (RFC 3174) legacy hash function. It was cryptographically broken.
+ * 160-bit preimage attack resistance, 63-bit collision resistance as per
+ * [2020 pdf](https://eprint.iacr.org/2020/014.pdf).
+ */
+export const sha1: CHash = /* @__PURE__ */ createHasher(() => new SHA1(), {
+  oid: Uint8Array.from([0x06, 0x05, 0x2b, 0x0e, 0x03, 0x02, 0x1a]),
+});
 
 /** Per-round constants */
 const p32 = /* @__PURE__ */ Math.pow(2, 32);
@@ -173,8 +179,12 @@ export class MD5 extends HashMD<MD5> {
  * - Little-endian: could be faster, but will require more code
  * - Non-linear index selection: huge speed-up for unroll
  * - Per round constants: more memory accesses, additional speed-up for unroll
+ * 128-bit preimage attack resistance, 18-bit collision resistance as per
+ * [2013 pdf](https://eprint.iacr.org/2013/170.pdf).
  */
-export const md5: CHash = /* @__PURE__ */ createHasher(() => new MD5());
+export const md5: CHash = /* @__PURE__ */ createHasher(() => new MD5(), {
+  oid: Uint8Array.from([0x06, 0x08, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x02, 0x05]),
+});
 
 // RIPEMD-160
 

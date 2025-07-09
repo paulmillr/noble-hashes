@@ -14,6 +14,7 @@ import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 import {
   abytes, aexists, anumber, aoutput,
   clean, createHasher,
+  nistOid,
   swap32IfBE,
   u32,
   type CHash, type CHashXOF,
@@ -223,21 +224,38 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   }
 }
 
-const gen = (suffix: number, blockLen: number, outputLen: number) =>
-  createHasher(() => new Keccak(blockLen, suffix, outputLen));
+const gen = (suffix: number, blockLen: number, outputLen: number, oid?: number) => {
+  const info = oid == null ? undefined : { oid: nistOid(oid) };
+  return createHasher(() => new Keccak(blockLen, suffix, outputLen), info);
+};
 
-/** SHA3-224 hash function. */
-export const sha3_224: CHash = /* @__PURE__ */ (() => gen(0x06, 144, 224 / 8))();
-/** SHA3-256 hash function. Different from keccak-256. */
-export const sha3_256: CHash = /* @__PURE__ */ (() => gen(0x06, 136, 256 / 8))();
-/** SHA3-384 hash function. */
-export const sha3_384: CHash = /* @__PURE__ */ (() => gen(0x06, 104, 384 / 8))();
-/** SHA3-512 hash function. */
-export const sha3_512: CHash = /* @__PURE__ */ (() => gen(0x06, 72, 512 / 8))();
+/**
+ * SHA3-224 hash function.
+ * 224-bit preimage attack resistance, 112-bit collision resistance.
+ */
+export const sha3_224: CHash = /* @__PURE__ */ (() => gen(0x06, 144, 224 / 8, 0x07))();
+/**
+ * SHA3-256 hash function. Different from `keccak_256`.
+ * 256-bit preimage attack resistance, 128-bit collision resistance.
+ */
+export const sha3_256: CHash = /* @__PURE__ */ (() => gen(0x06, 136, 256 / 8, 0x08))();
+/**
+ * SHA3-384 hash function.
+ * 384-bit preimage attack resistance, 192-bit collision resistance.
+ */
+export const sha3_384: CHash = /* @__PURE__ */ (() => gen(0x06, 104, 384 / 8, 0x09))();
+/**
+ * SHA3-512 hash function.
+ * 512-bit preimage attack resistance, 256-bit collision resistance.
+ */
+export const sha3_512: CHash = /* @__PURE__ */ (() => gen(0x06, 72, 512 / 8, 0x0a))();
 
 /** keccak-224 hash function. */
 export const keccak_224: CHash = /* @__PURE__ */ (() => gen(0x01, 144, 224 / 8))();
-/** keccak-256 hash function. Different from SHA3-256. */
+/**
+ * keccak-256 hash function. Different from SHA3-256.
+ * 256-bit preimage attack resistance, 128-bit collision resistance.
+ */
 export const keccak_256: CHash = /* @__PURE__ */ (() => gen(0x01, 136, 256 / 8))();
 /** keccak-384 hash function. */
 export const keccak_384: CHash = /* @__PURE__ */ (() => gen(0x01, 104, 384 / 8))();
@@ -246,15 +264,22 @@ export const keccak_512: CHash = /* @__PURE__ */ (() => gen(0x01, 72, 512 / 8))(
 
 export type ShakeOpts = { dkLen?: number };
 
-const genShake = (suffix: number, blockLen: number, outputLen: number) =>
+const genShake = (suffix: number, blockLen: number, outputLen: number, oid: number) =>
   createHasher<Keccak, ShakeOpts>(
     (opts: ShakeOpts = {}) =>
-      new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true)
+      new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true),
+    { oid: nistOid(oid) }
   );
 
-/** SHAKE128 XOF with 128-bit security. */
+/**
+ * SHAKE128 XOF.
+ * 256-bit preimage attack resistance, 128-bit collision resistance.
+ */
 export const shake128: CHashXOF<Keccak, ShakeOpts> = /* @__PURE__ */ (() =>
-  genShake(0x1f, 168, 128 / 8))();
-/** SHAKE256 XOF with 256-bit security. */
+  genShake(0x1f, 168, 128 / 8, 0x0b))();
+/**
+ * SHAKE256 XOF.
+ * 512-bit preimage attack resistance, 256-bit collision resistance.
+ */
 export const shake256: CHashXOF<Keccak, ShakeOpts> = /* @__PURE__ */ (() =>
-  genShake(0x1f, 136, 256 / 8))();
+  genShake(0x1f, 136, 256 / 8, 0x0c))();

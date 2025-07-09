@@ -283,26 +283,33 @@ export type HasherCons<T, Opts = undefined> = Opts extends undefined ? () => T :
 export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
   outputLen: number;
   blockLen: number;
-} & (Opts extends undefined
-  ? {
-      (msg: Uint8Array): Uint8Array;
-      create(): T;
-    }
-  : {
-      (msg: Uint8Array, opts?: Opts): Uint8Array;
-      create(opts?: Opts): T;
-    });
+} & HashInfo &
+  (Opts extends undefined
+    ? {
+        (msg: Uint8Array): Uint8Array;
+        create(): T;
+      }
+    : {
+        (msg: Uint8Array, opts?: Opts): Uint8Array;
+        create(opts?: Opts): T;
+      });
 /** XOF with output */
 export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CHash<T, Opts>;
 
+export type HashInfo = {
+  oid?: Uint8Array; // DER encoded OID in bytes
+};
+
 export function createHasher<T extends Hash<T>, Opts = undefined>(
-  hashCons: HasherCons<T, Opts>
+  hashCons: HasherCons<T, Opts>,
+  info?: HashInfo
 ): CHash<T, Opts> {
   const hashC: any = (msg: Uint8Array, opts?: Opts) => hashCons(opts).update(msg).digest();
   const tmp = hashCons(undefined);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.create = (opts?: Opts) => hashCons(opts);
+  Object.assign(hashC, info);
   return hashC;
 }
 
@@ -313,3 +320,6 @@ export function randomBytes(bytesLength = 32): Uint8Array {
     throw new Error('crypto.getRandomValues must be defined');
   return cr.getRandomValues(new Uint8Array(bytesLength));
 }
+
+const _nistPrefix = /* @__PURE__ */ [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02];
+export const nistOid = (suffix: number): Uint8Array => Uint8Array.from(_nistPrefix.concat(suffix));
