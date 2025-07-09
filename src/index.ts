@@ -14,9 +14,10 @@ import {
 import {
   cshake128, cshake256,
   turboshake128, turboshake256,
+  kt128, kt256,
   kmac128, kmac256,
   tuplehash256, parallelhash256,
-  k12, m14, keccakprg
+  keccakprg
 } from '@noble/hashes/sha3-addons.js';
 import { blake3 } from '@noble/hashes/blake3.js';
 import { blake2b, blake2s } from '@noble/hashes/blake2.js';

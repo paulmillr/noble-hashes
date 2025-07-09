@@ -6,7 +6,7 @@ import { blake3 } from '../../src/blake3.ts';
 import { hmac } from '../../src/hmac.ts';
 import { ripemd160 } from '../../src/legacy.ts';
 import { sha256, sha512 } from '../../src/sha2.ts';
-import { k12, m14 } from '../../src/sha3-addons.ts';
+import { kt128 } from '../../src/sha3-addons.ts';
 import { sha3_256 } from '../../src/sha3.ts';
 
 // Others
@@ -65,8 +65,9 @@ const HASHES = {
     'js-sha3': (buf) => wrapBuf(jssha3.sha3_256.create().update(buf).arrayBuffer()),
     sha3: (buf) => new _SHA3(256).update(Buffer.from(buf)).digest(),
   },
-  k12: { noble: (buf) => k12(buf) },
-  m14: { noble: (buf) => m14(buf) },
+  kt128: {
+    noble: (buf) => kt128(buf),
+  },
   blake1_256: {
     noble: blake256,
     'blake-hash': blake_hash('blake256'),

@@ -1,12 +1,10 @@
 /**
  * SHA3 (keccak) addons.
  *
- * * Full [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
- *   cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
- * * Reduced-round Keccak [(draft)](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
- *     * 🦘 K12 aka KangarooTwelve
- *     * M14 aka MarsupilamiFourteen
- *     * TurboSHAKE
+ * * cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants from
+ *   [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
+ * * KangarooTwelve 🦘 and TurboSHAKE - reduced-round keccak from
+ *   [k12-draft-17](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/17/)
  * * KeccakPRG: Pseudo-random generator based on Keccak [(pdf)](https://keccak.team/files/CSF-0.1.pdf)
  * @module
  */
@@ -28,7 +26,7 @@ import {
 const _8n = /* @__PURE__ */ BigInt(8);
 const _ffn = /* @__PURE__ */ BigInt(0xff);
 
-// NOTE: it is safe to use bigints here, since they used only for length encoding (not actual data).
+// It is safe to use bigints here, since they used only for length encoding (not actual data).
 // We use bigints in sha256 for lengths too.
 function leftEncode(n: number | bigint): Uint8Array {
   n = BigInt(n);
@@ -331,7 +329,7 @@ export type TurboshakeOpts = ShakeOpts & {
 const genTurboshake = (blockLen: number, outputLen: number) =>
   createHasher<Keccak, TurboshakeOpts>((opts: TurboshakeOpts = {}) => {
     const D = opts.D === undefined ? 0x1f : opts.D;
-    // Section 2.1 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
+    // Section 2.1 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/17/
     if (!Number.isSafeInteger(D) || D < 0x01 || D > 0x7f)
       throw new Error('invalid domain separation byte must be 0x01..0x7f, got: ' + D);
     return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);
@@ -348,7 +346,6 @@ export const turboshake256: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ g
   512 / 8
 );
 
-// Kangaroo
 // Same as NIST rightEncode, but returns [0] for zero string
 function rightEncodeK12(n: number | bigint): Uint8Array {
   n = BigInt(n);
@@ -435,16 +432,39 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
     return this._cloneInto();
   }
 }
-/** KangarooTwelve: reduced 12-round keccak. */
-export const k12: CHash<KangarooTwelve, KangarooOpts> = /* @__PURE__ */ (() =>
+
+/** 128-bit KangarooTwelve: reduced 12-round keccak. */
+export const kt128: CHash<KangarooTwelve, KangarooOpts> = /* @__PURE__ */ (() =>
   createHasher<KangarooTwelve, KangarooOpts>(
     (opts: KangarooOpts = {}) => new KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
   ))();
-/** MarsupilamiFourteen: reduced 14-round keccak. */
-export const m14: CHash<KangarooTwelve, KangarooOpts> = /* @__PURE__ */ (() =>
+/** 256-bit KangarooTwelve: reduced 12-round keccak. */
+export const kt256: CHash<KangarooTwelve, KangarooOpts> = /* @__PURE__ */ (() =>
   createHasher<KangarooTwelve, KangarooOpts>(
-    (opts: KangarooOpts = {}) => new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)
+    (opts: KangarooOpts = {}) => new KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
   ))();
+
+// MarsupilamiFourteen (14-rounds) can be defined as:
+// `new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)`
+
+export type HopMAC = (
+  key: Uint8Array,
+  message: Uint8Array,
+  personalization: Uint8Array,
+  dkLen?: number
+) => Uint8Array;
+const genHopMAC =
+  (hash: CHash<KangarooTwelve, KangarooOpts>) =>
+  (key: Uint8Array, message: Uint8Array, personalization: Uint8Array, dkLen?: number): Uint8Array =>
+    hash(key, { personalization: hash(message, { personalization }), dkLen });
+
+/**
+ * These untested (there is no test vectors or implementation available). Use at your own risk.
+ * HopMAC128(Key, M, C, L) = KT128(Key, KT128(M, C, 32), L)
+ * HopMAC256(Key, M, C, L) = KT256(Key, KT256(M, C, 64), L)
+ */
+export const HopMAC128: HopMAC = genHopMAC(kt128);
+export const HopMAC256: HopMAC = genHopMAC(kt256);
 
 /**
  * More at https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG.

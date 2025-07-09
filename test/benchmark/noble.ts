@@ -9,7 +9,7 @@ import { ripemd160 } from '../../src/legacy.ts';
 import { pbkdf2 } from '../../src/pbkdf2.ts';
 import { scrypt } from '../../src/scrypt.ts';
 import { sha256, sha512 } from '../../src/sha2.ts';
-import { k12, kmac256, m14 } from '../../src/sha3-addons.ts';
+import { kmac256, kt128, kt256, turboshake128 } from '../../src/sha3-addons.ts';
 import { sha3_256, sha3_512 } from '../../src/sha3.ts';
 
 function buf(size) {
@@ -31,7 +31,7 @@ async function main() {
 
   // prettier-ignore
   const hashes = {
-    sha256, sha512, sha3_256, sha3_512, k12, m14, blake256, blake2b, blake2s, blake3, ripemd160,
+    sha256, sha512, sha3_256, sha3_512, kt128, kt256, turboshake128, blake256, blake2b, blake2s, blake3, ripemd160,
   };
   for (const { size, data } of buffers) {
     console.log('# ' + size);

@@ -7,13 +7,12 @@ import { fileURLToPath } from 'node:url';
 import {
   cshake128,
   cshake256,
-  k12,
   keccakprg,
   kmac128,
   kmac128xof,
   kmac256,
   kmac256xof,
-  m14,
+  kt128,
   parallelhash128,
   parallelhash128xof,
   parallelhash256,
@@ -37,17 +36,15 @@ import {
   shake256,
 } from '../src/sha3.ts';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { TYPE_TEST, jsonGZ } from './utils.ts';
 import {
   CSHAKE_VESTORS,
   K12_VECTORS,
   KMAC_VECTORS,
-  M14_VECTORS,
   PARALLEL_VECTORS,
   TUPLE_VECTORS,
-  VECTORS_K12,
-  VECTORS_TURBO,
-} from './sha3-addons.ts';
-import { TYPE_TEST, jsonGZ } from './utils.ts';
+  TURBO_VECTORS,
+} from './vectors/keccak.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const isBun = !!process.versions.bun;
@@ -140,29 +137,6 @@ describe('sha3', () => {
 });
 
 describe('sha3-addons', () => {
-  should('k12', () => {
-    for (let i = 0; i < K12_VECTORS.length; i++) {
-      const v = K12_VECTORS[i];
-      const exp = fromHex(v.exp.replace(/ /g, ''));
-      let res = k12(v.msg, { personalization: v.personalization, dkLen: v.dkLen });
-      if (v.last) res = res.slice(-v.last);
-      eql(res, exp, `k12 ${i}`);
-    }
-  });
-  should('k12: dkLen', () => {
-    const input = utf8ToBytes('test');
-    for (const dkLen of TYPE_TEST.int) throws(() => k12(input, { dkLen }));
-  });
-
-  should('m14', () => {
-    for (let i = 0; i < K12_VECTORS.length; i++) {
-      const v = K12_VECTORS[i];
-      const exp = fromHex(M14_VECTORS[i].replace(/ /g, ''));
-      let res = m14(v.msg, { personalization: v.personalization, dkLen: v.dkLen });
-      if (v.last) res = res.slice(-v.last);
-      eql(res, exp, `m14 ${i}`);
-    }
-  });
   should('cSHAKE', () => {
     for (let i = 0; i < CSHAKE_VESTORS.length; i++) {
       const v = CSHAKE_VESTORS[i];
@@ -265,8 +239,7 @@ describe('sha3-addons', () => {
       cshake256,
       parallelhash128xof,
       parallelhash256xof,
-      k12,
-      m14,
+      kt128,
     ];
     const XOF_KMAC = [kmac128xof, kmac256xof];
     // XOF call on non-xof variants fails
@@ -338,7 +311,7 @@ describe('sha3-addons', () => {
     }
   });
 
-  should('various vectors for cshake, hmac, k12, p, t', () => {
+  should('various vectors for cshake, hmac, kt128, p, t', () => {
     const GEN_VECTORS = jsonGZ('vectors/sha3-addons.json.gz').v;
 
     const tupleData = (hex) => {
@@ -360,7 +333,7 @@ describe('sha3-addons', () => {
         cshake256: () => cshake256(fromHex(v.data), opt),
         kmac128: () => kmac128(fromHex(v.key), fromHex(v.data), opt),
         kmac256: () => kmac256(fromHex(v.key), fromHex(v.data), opt),
-        k12: () => k12(fromHex(v.data), opt),
+        k12: () => kt128(fromHex(v.data), opt),
         // blake3: () => blake3(fromHex(v.data), opt),
         parallel128: () => parallelhash128(fromHex(v.data), opt),
         parallel256: () => parallelhash256(fromHex(v.data), opt),
@@ -370,7 +343,7 @@ describe('sha3-addons', () => {
       if (v.fn_name === 'blake3') return;
       const method = fn[v.fn_name];
       let err = `(${i}): ${v.fn_name}`;
-      if (!method) throw new Error('invalid fn');
+      if (!method) throw new Error('invalid fn ' + v.fn_name);
       eql(bytesToHex(method()), v.exp, err);
     }
   });
@@ -398,15 +371,15 @@ describe('sha3-addons', () => {
     );
   });
   should('turboshake spec vectors', () => {
-    for (const v of VECTORS_TURBO) {
+    for (const v of TURBO_VECTORS) {
       let res = v.hash(v.msg, { dkLen: v.dkLen, D: v.D });
       if (v.last) res = res.subarray(-v.last);
       eql(res, v.exp);
     }
   });
-  should('k12 spec vectors', () => {
-    for (const v of VECTORS_K12) {
-      let res = v.hash(v.msg, { personalization: v.C, dkLen: v.dkLen });
+  should('k128, k256', () => {
+    for (const v of K12_VECTORS) {
+      let res = v.hash(v.msg, { dkLen: v.dkLen, D: v.D, personalization: v.C });
       if (v.last) res = res.subarray(-v.last);
       eql(res, v.exp);
     }

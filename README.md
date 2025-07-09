@@ -46,7 +46,7 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
 import { sha256 } from '@noble/hashes/sha2.js'; // ESM & Common.js
-sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])); // returns Uint8Array
+const hash = sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23]));
 
 // Available modules
 import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2.js';
@@ -57,7 +57,7 @@ import {
 } from '@noble/hashes/sha3.js';
 import {
   cshake256, turboshake256, kmac256, tuplehash256,
-  k12, keccakprg,
+  kt128, kt256, keccakprg,
 } from '@noble/hashes/sha3-addons.js';
 import { blake3 } from '@noble/hashes/blake3.js';
 import { blake2b, blake2s } from '@noble/hashes/blake2.js';
@@ -73,10 +73,10 @@ import * as utils from '@noble/hashes/utils.js'; // bytesToHex, bytesToUtf8, con
 
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
 - [sha3: FIPS, SHAKE, Keccak](#sha3-fips-shake-keccak)
-- [sha3-addons: cSHAKE, KMAC, K12, TurboSHAKE](#sha3-addons-cshake-kmac-k12-turboshake)
+- [sha3-addons: cSHAKE, KMAC, KT128, TurboSHAKE](#sha3-addons-cshake-kmac-kt128-turboshake)
 - [blake1, blake2, blake3](#blake1-blake2-blake3)
 - [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
-- MACs: [hmac](#hmac) | [kmac](#sha3-addons-cshake-kmac-k12-turboshake) | [blake3 key mode](#blake1-blake2-blake3)
+- MACs: [hmac](#hmac) | [kmac](#sha3-addons-cshake-kmac-kt128-turboshake) | [blake3 key mode](#blake1-blake2-blake3)
 - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
 - [utils](#utils)
 - [Security](#security) | [Speed](#speed) | [Contributing & testing](#contributing--testing) | [License](#license)
@@ -135,7 +135,7 @@ Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchang
 
 ```typescript
 import {
-  cshake128, cshake256, k12,
+  cshake128, cshake256, kt128, kt256,
   keccakprg, kmac128, kmac256,
   parallelhash256, tuplehash256,
   turboshake128, turboshake256,
@@ -147,12 +147,13 @@ const et1 = turboshake128(data);
 const et2 = turboshake256(data, { D: 0x05 });
 // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash([data])
 const et3 = tuplehash256([utf8ToBytes('ab'), utf8ToBytes('c')]);
-// Not parallel in JS (similar to blake3 / k12), added for compat
+// Not parallel in JS (similar to blake3 / kt128), added for compat
 const ep1 = parallelhash256(data, { blockLen: 8 });
 const kk = Uint8Array.from([0xca]);
 const ek10 = kmac128(kk, data);
 const ek11 = kmac256(kk, data);
-const ek12 = k12(data);
+const ek12 = kt128(data); // kangarootwelve 128-bit
+const ek13 = kt256(data); // kangarootwelve 256-bit
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
 // * with a capacity of 254 bits.
 const p = keccakprg(254);
@@ -160,11 +161,11 @@ p.feed('test');
 const rand1b = p.fetch(1);
 ```
 
-- Check out [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf):
-  cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants
-- Take a look at reduced-round Keccak [draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/):
-  🦘K12 (KangarooTwelve), TurboSHAKE
-- [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): Pseudo-random generator based on Keccak
+- cSHAKE, KMAC, TupleHash, ParallelHash + XOF are available, matching
+  [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
+- Reduced-round Keccak KT128 (KangarooTwelve 🦘, K12) and TurboSHAKE are available, matching
+  [kangaroo-draft-17](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/).
+- [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): pseudo-random generator based on Keccak
 
 #### blake1, blake2, blake3
 
