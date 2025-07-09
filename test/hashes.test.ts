@@ -9,7 +9,7 @@ import { blake2b, blake2s } from '../src/blake2.ts';
 import { blake3 } from '../src/blake3.ts';
 import { hmac } from '../src/hmac.ts';
 import { md5, ripemd160, sha1 } from '../src/legacy.ts';
-import { k12, turboshake128, turboshake256 } from '../src/sha3-addons.ts';
+import { kt128, turboshake128, turboshake256 } from '../src/sha3-addons.ts';
 import {
   keccak_256,
   sha3_224,
@@ -20,7 +20,7 @@ import {
   shake256,
 } from '../src/sha3.ts';
 import { concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
-import { repeat, fmt, TYPE_TEST } from './utils.ts';
+import { fmt, repeat, TYPE_TEST } from './utils.ts';
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
 const NIST_VECTORS = [
@@ -231,9 +231,9 @@ const HASHES = {
       '3578a7a4ca9137569cdf76ed617d31bb994fca9c1bbf8b184013de8234dfd13a',
     ],
   },
-  K12: {
-    fn: k12,
-    obj: k12.create,
+  KT128: {
+    fn: kt128,
+    obj: kt128.create,
     nist: [
       'ab174f328c55a5510b0b209791bf8b60e801a7cfc2aa42042dcb8f547fbe3a7d',
       '1ac2d450fc3b4205d19da7bfca1b37513c0803577ac7167f06fe2ce1f0ef39e5',

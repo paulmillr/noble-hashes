@@ -5,7 +5,7 @@ import { blake3 } from '../src/blake3.ts';
 import { hmac } from '../src/hmac.ts';
 import { ripemd160 } from '../src/legacy.ts';
 import { sha256, sha512 } from '../src/sha2.ts';
-import { k12, kmac256 } from '../src/sha3-addons.ts';
+import { kmac256, kt128 } from '../src/sha3-addons.ts';
 import { sha3_256, shake256 } from '../src/sha3.ts';
 import { utf8ToBytes } from '../src/utils.ts';
 
@@ -31,10 +31,10 @@ const HASHES = {
         personalization: new Uint8Array([44, 55, 66]),
       }),
   },
-  k12: {
-    small: () => k12.create(new Uint8Array([])),
+  kt128: {
+    small: () => kt128.create(new Uint8Array([])),
     big: () =>
-      k12.create(new Uint8Array([11, 22, 33]), {
+      kt128.create(new Uint8Array([11, 22, 33]), {
         personalization: new Uint8Array([44, 55, 66]),
         dkLen: 256,
       }),
