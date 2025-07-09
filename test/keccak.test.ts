@@ -44,7 +44,7 @@ import {
   PARALLEL_VECTORS,
   TUPLE_VECTORS,
   TURBO_VECTORS,
-} from './vectors/keccak.js';
+} from './vectors-keccak.ts';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const isBun = !!process.versions.bun;

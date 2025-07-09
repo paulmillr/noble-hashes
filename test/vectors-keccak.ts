@@ -17,9 +17,9 @@ import {
   tuplehash256xof,
   turboshake128,
   turboshake256,
-} from '../../src/sha3-addons.ts';
-import { hexToBytes } from '../../src/utils.ts';
-import { pattern } from '../utils.ts';
+} from '../src/sha3-addons.ts';
+import { hexToBytes } from '../src/utils.ts';
+import { pattern } from './utils.ts';
 const fromHex = (hex) => hexToBytes(hex.replace(/ |\n/gm, ''));
 
 // https://csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/cshake_samples.pdf
@@ -1605,5 +1605,6 @@ export {
   KMAC_VECTORS,
   PARALLEL_VECTORS,
   TUPLE_VECTORS,
-  TURBO_VECTORS,
+  TURBO_VECTORS
 };
+
