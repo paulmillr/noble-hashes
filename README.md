@@ -7,7 +7,8 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🏎 Fast: hand-optimized for caveats of JS engines
 - 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
-- 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2 & KangarooTwelve
+- 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2
+- 🥈 Optional, friendly wrapper over native WebCrypto
 - 🪶 20KB (gzipped) for everything, 2.4KB for single-hash build
 
 Check out [Upgrading](#upgrading) for information about upgrading from previous versions.
@@ -68,7 +69,11 @@ import { hkdf } from '@noble/hashes/hkdf.js';
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt.js';
 import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js';
-import * as utils from '@noble/hashes/utils.js'; // bytesToHex, bytesToUtf8, concatBytes...
+
+// sha256, sha384, sha512, hmac, hkdf, pbkdf2
+import * as webcrypto from '@noble/hashes/webcrypto.js';
+// bytesToHex, bytesToUtf8, concatBytes
+import * as utils from '@noble/hashes/utils.js';
 ```
 
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
@@ -258,10 +263,10 @@ Conforms to [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
 ```typescript
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
-const pbkey1 = pbkdf2(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
-const pbkey2 = await pbkdf2Async(sha256, 'password', 'salt', { c: 32, dkLen: 32 });
+const pbkey1 = pbkdf2(sha256, 'password', 'salt', { c: 524288, dkLen: 32 });
+const pbkey2 = await pbkdf2Async(sha256, 'password', 'salt', { c: 524288, dkLen: 32 });
 const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5, 6]), {
-  c: 32,
+  c: 524288,
   dkLen: 32,
 });
 ```
@@ -329,6 +334,29 @@ Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 > Argon2 can't be fast in JS, because there is no fast Uint64Array.
 > It is suggested to use [Scrypt](#scrypt) instead.
 > Being 5x slower than native code means brute-forcing attackers have bigger advantage.
+
+#### webcrypto
+
+```js
+import { sha256, sha384, sha512, hmac, hkdf, pbkdf2 } from '@noble/hashes/webcrypto.js';
+const whash = await sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23]));
+
+const key = new Uint8Array(32).fill(1);
+const msg = new Uint8Array(32).fill(2);
+const wmac = await hmac(sha256, key, msg);
+
+const inputKey = randomBytes(32);
+const salt = randomBytes(32);
+const info = 'application-key';
+const hk1 = await hkdf(sha256, inputKey, salt, info, 32);
+
+const pbkey1 = await pbkdf2(sha256, 'password', 'salt', { c: 524288, dkLen: 32 });
+```
+
+Noble implements hashes. Sometimes people want to use built-in `crypto.subtle` instead. However, it has terrible API. We simplify access to built-ins.
+
+> [!NOTE]
+> Webcrypto methods are always async.
 
 #### utils
 
@@ -497,7 +525,7 @@ Supported node.js versions:
 - v2: v20.19+ (ESM-only)
 - v1: v14.21+ (ESM & CJS)
 
-Changelog of v2, when upgrading from hashes v1:
+v2.0 changelog:
 
 - Bump minimum node.js version from v14 to v20.19
 - Bump compilation target from es2020 to es2022
