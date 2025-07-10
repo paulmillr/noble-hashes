@@ -83,6 +83,7 @@ import * as utils from '@noble/hashes/utils.js';
 - [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
 - MACs: [hmac](#hmac) | [kmac](#sha3-addons-cshake-kmac-kt128-turboshake) | [blake3 key mode](#blake1-blake2-blake3)
 - KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
+- [webcrypto: friendly wrapper](#webcrypto-friendly-wrapper)
 - [utils](#utils)
 - [Security](#security) | [Speed](#speed) | [Contributing & testing](#contributing--testing) | [License](#license)
 
@@ -335,7 +336,7 @@ Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 > It is suggested to use [Scrypt](#scrypt) instead.
 > Being 5x slower than native code means brute-forcing attackers have bigger advantage.
 
-#### webcrypto
+#### webcrypto: friendly wrapper
 
 ```js
 import { sha256, sha384, sha512, hmac, hkdf, pbkdf2 } from '@noble/hashes/webcrypto.js';
