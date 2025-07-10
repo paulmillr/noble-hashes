@@ -23,6 +23,7 @@ export {
   sha3_512, shake128,
   shake256
 } from '@noble/hashes/sha3.js';
+export * as webcrypto from '@noble/hashes/webcrypto.js';
 
 export const utils = { bytesToHex, hexToBytes, concatBytes, utf8ToBytes, randomBytes };
 
