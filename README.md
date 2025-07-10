@@ -353,7 +353,11 @@ const hk1 = await hkdf(sha256, inputKey, salt, info, 32);
 const pbkey1 = await pbkdf2(sha256, 'password', 'salt', { c: 524288, dkLen: 32 });
 ```
 
-Noble implements hashes. Sometimes people want to use built-in `crypto.subtle` instead. However, it has terrible API. We simplify access to built-ins.
+Sometimes people want to use built-in `crypto.subtle` instead of pure JS implementation.
+However, it has terrible API.
+
+We simplify access to built-ins with API which mirrors noble-hashes.
+The overhead is minimal - just 30+ lines of code, which verify input correctness.
 
 > [!NOTE]
 > Webcrypto methods are always async.

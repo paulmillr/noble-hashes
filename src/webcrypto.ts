@@ -47,11 +47,11 @@ function ahashWeb(hash: WebHash) {
 // export const sha1: WebHash = createHash('SHA-1', 64, 20);
 
 /** WebCrypto SHA2-256 hash function from RFC 4634. */
-export const sha256: WebHash = createWebHash('SHA-256', 64, 32);
+export const sha256: WebHash = /* @__PURE__ */ createWebHash('SHA-256', 64, 32);
 /** WebCrypto SHA2-384 hash function from RFC 4634. */
-export const sha384: WebHash = createWebHash('SHA-384', 128, 48);
+export const sha384: WebHash = /* @__PURE__ */ createWebHash('SHA-384', 128, 48);
 /** WebCrypto SHA2-512 hash function from RFC 4634. */
-export const sha512: WebHash = createWebHash('SHA-512', 128, 64);
+export const sha512: WebHash = /* @__PURE__ */ createWebHash('SHA-512', 128, 64);
 
 /**
  * WebCrypto HMAC: RFC2104 message authentication code.
@@ -67,7 +67,8 @@ export const sha512: WebHash = createWebHash('SHA-512', 128, 64);
 export const hmac: {
   (hash: WebHash, key: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   create(hash: WebHash, key: Uint8Array): any;
-} = async (hash: WebHash, key: Uint8Array, message: Uint8Array): Promise<Uint8Array> => {
+} = /* @__PURE__ */ (() => {
+  const hmac_ = async (hash: WebHash, key: Uint8Array, message: Uint8Array): Promise<Uint8Array> => {
   const crypto = _subtle();
   abytes(key);
   abytes(message);
@@ -79,9 +80,11 @@ export const hmac: {
   );
   return new Uint8Array(await crypto.sign('HMAC', wkey, message));
 };
-hmac.create = (_hash: WebHash, _key: Uint8Array) => {
+hmac_.create = (_hash: WebHash, _key: Uint8Array) => {
   throw new Error('not implemented');
 };
+return hmac_;
+})();
 
 /**
  * WebCrypto HKDF (RFC 5869): derive keys from an initial input.
