@@ -15,6 +15,7 @@ import './clone.test.ts';
 import './eskdf.test.ts';
 import './u64.test.ts';
 import './utils.test.ts';
+import './info.test.ts';
 
 init();
 should.runWhen(import.meta.url);

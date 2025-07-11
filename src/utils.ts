@@ -285,31 +285,37 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
 };
 
 export type HasherCons<T, Opts = undefined> = Opts extends undefined ? () => T : (opts?: Opts) => T;
+export type HashInfo = {
+  oid?: Uint8Array; // DER encoded OID in bytes
+};
 /** Hash function */
 export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
   outputLen: number;
   blockLen: number;
-} & (Opts extends undefined
-  ? {
-      (msg: Uint8Array): Uint8Array;
-      create(): T;
-    }
-  : {
-      (msg: Uint8Array, opts?: Opts): Uint8Array;
-      create(opts?: Opts): T;
-    });
+} & HashInfo &
+  (Opts extends undefined
+    ? {
+        (msg: Uint8Array): Uint8Array;
+        create(): T;
+      }
+    : {
+        (msg: Uint8Array, opts?: Opts): Uint8Array;
+        create(opts?: Opts): T;
+      });
 /** XOF with output */
 export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CHash<T, Opts>;
 
 export function createHasher<T extends Hash<T>, Opts = undefined>(
-  hashCons: HasherCons<T, Opts>
+  hashCons: HasherCons<T, Opts>,
+  info: HashInfo = {}
 ): CHash<T, Opts> {
   const hashC: any = (msg: Uint8Array, opts?: Opts) => hashCons(opts).update(msg).digest();
   const tmp = hashCons(undefined);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.create = (opts?: Opts) => hashCons(opts);
-  return hashC;
+  Object.assign(hashC, info);
+  return Object.freeze(hashC);
 }
 
 /** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
@@ -319,3 +325,8 @@ export function randomBytes(bytesLength = 32): Uint8Array {
     throw new Error('crypto.getRandomValues must be defined');
   return cr.getRandomValues(new Uint8Array(bytesLength));
 }
+
+// 06 09 60 86 48 01 65 03 04 02
+export const oidNist = (suffix: number): { oid: Uint8Array } => ({
+  oid: Uint8Array.from([0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, suffix]),
+});

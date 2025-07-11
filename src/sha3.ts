@@ -14,10 +14,12 @@ import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 import {
   abytes, aexists, anumber, aoutput,
   clean, createHasher,
+  oidNist,
   swap32IfBE,
   u32,
   type CHash, type CHashXOF,
   type Hash,
+  type HashInfo,
   type HashXOF
 } from './utils.ts';
 
@@ -223,17 +225,17 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   }
 }
 
-const gen = (suffix: number, blockLen: number, outputLen: number) =>
-  createHasher(() => new Keccak(blockLen, suffix, outputLen));
+const gen = (suffix: number, blockLen: number, outputLen: number, info: HashInfo = {}) =>
+  createHasher(() => new Keccak(blockLen, suffix, outputLen), info);
 
 /** SHA3-224 hash function. */
-export const sha3_224: CHash = /* @__PURE__ */ (() => gen(0x06, 144, 224 / 8))();
+export const sha3_224: CHash = /* @__PURE__ */ (() => gen(0x06, 144, 224 / 8, oidNist(0x07)))();
 /** SHA3-256 hash function. Different from keccak-256. */
-export const sha3_256: CHash = /* @__PURE__ */ (() => gen(0x06, 136, 256 / 8))();
+export const sha3_256: CHash = /* @__PURE__ */ (() => gen(0x06, 136, 256 / 8, oidNist(0x08)))();
 /** SHA3-384 hash function. */
-export const sha3_384: CHash = /* @__PURE__ */ (() => gen(0x06, 104, 384 / 8))();
+export const sha3_384: CHash = /* @__PURE__ */ (() => gen(0x06, 104, 384 / 8, oidNist(0x09)))();
 /** SHA3-512 hash function. */
-export const sha3_512: CHash = /* @__PURE__ */ (() => gen(0x06, 72, 512 / 8))();
+export const sha3_512: CHash = /* @__PURE__ */ (() => gen(0x06, 72, 512 / 8, oidNist(0x0a)))();
 
 /** keccak-224 hash function. */
 export const keccak_224: CHash = /* @__PURE__ */ (() => gen(0x01, 144, 224 / 8))();
@@ -246,15 +248,23 @@ export const keccak_512: CHash = /* @__PURE__ */ (() => gen(0x01, 72, 512 / 8))(
 
 export type ShakeOpts = { dkLen?: number };
 
-const genShake = (suffix: number, blockLen: number, outputLen: number) =>
+const genShake = (suffix: number, blockLen: number, outputLen: number, info: HashInfo = {}) =>
   createHasher<Keccak, ShakeOpts>(
     (opts: ShakeOpts = {}) =>
-      new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true)
+      new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true),
+    info
   );
 
 /** SHAKE128 XOF with 128-bit security. */
 export const shake128: CHashXOF<Keccak, ShakeOpts> = /* @__PURE__ */ (() =>
-  genShake(0x1f, 168, 128 / 8))();
+  genShake(0x1f, 168, 128 / 8, oidNist(0x0b)))();
 /** SHAKE256 XOF with 256-bit security. */
 export const shake256: CHashXOF<Keccak, ShakeOpts> = /* @__PURE__ */ (() =>
-  genShake(0x1f, 136, 256 / 8))();
+  genShake(0x1f, 136, 256 / 8, oidNist(0x0c)))();
+
+/** SHAKE128 XOF with 256-bit output (NIST version). */
+export const shake128_32: CHashXOF<Keccak, ShakeOpts> = /* @__PURE__ */ (() =>
+  genShake(0x1f, 168, 256 / 8, oidNist(0x0b)))();
+/** SHAKE256 XOF with 512-bit output (NIST version). */
+export const shake256_64: CHashXOF<Keccak, ShakeOpts> = /* @__PURE__ */ (() =>
+  genShake(0x1f, 136, 512 / 8, oidNist(0x0c)))();
