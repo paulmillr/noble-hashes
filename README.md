@@ -5,7 +5,7 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🔒 [**Audited**](#security) by an independent security firm
 - 🔻 Tree-shakeable: unused code is excluded from your builds
 - 🏎 Fast: hand-optimized for caveats of JS engines
-- 🔍 Reliable: chained / sliding window / DoS tests and fuzzing ensure correctness
+- 🔍 Reliable: chained / sliding window / DoS / ACVP tests and fuzzing
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2
 - 🥈 Optional, friendly wrapper over native WebCrypto
@@ -46,7 +46,7 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
-import { sha256 } from '@noble/hashes/sha2.js'; // ESM & Common.js
+import { sha256 } from '@noble/hashes/sha2.js';
 const hash = sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23]));
 
 // Available modules

@@ -26,6 +26,7 @@
     "test:node20": "cd test; npx tsc; node compiled/test/index.js",
     "test:dos": "node --experimental-strip-types test/slow-dos.test.ts",
     "test:big": "node --experimental-strip-types test/slow-big.test.ts",
+    "test:acvp": "node --experimental-strip-types test/slow-acvp.test.ts",
     "test:kdf": "node --experimental-strip-types test/slow-kdf.test.ts"
   },
   "author": "Paul Miller (https://paulmillr.com)",
@@ -55,6 +56,7 @@
     "sha1",
     "sha2",
     "sha3",
+    "blake",
     "blake2",
     "blake3",
     "hmac",

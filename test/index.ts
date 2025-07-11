@@ -9,6 +9,7 @@ import './keccak.test.ts';
 import './hmac.test.ts';
 import './kdf.test.ts';
 // import './argon2.test.js';
+import './acvp.test.ts';
 import './async.test.ts';
 import './clone.test.ts';
 import './eskdf.test.ts';
