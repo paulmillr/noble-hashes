@@ -68,22 +68,26 @@ export const hmac: {
   (hash: WebHash, key: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   create(hash: WebHash, key: Uint8Array): any;
 } = /* @__PURE__ */ (() => {
-  const hmac_ = async (hash: WebHash, key: Uint8Array, message: Uint8Array): Promise<Uint8Array> => {
-  const crypto = _subtle();
-  abytes(key);
-  abytes(message);
-  ahashWeb(hash);
-  // WebCrypto keys can't be zeroized
-  // prettier-ignore
-  const wkey = await crypto.importKey(
-    'raw', key, { name: 'HMAC', hash: hash.webCryptoName }, false, ['sign']
-  );
-  return new Uint8Array(await crypto.sign('HMAC', wkey, message));
-};
-hmac_.create = (_hash: WebHash, _key: Uint8Array) => {
-  throw new Error('not implemented');
-};
-return hmac_;
+  const hmac_ = async (
+    hash: WebHash,
+    key: Uint8Array,
+    message: Uint8Array
+  ): Promise<Uint8Array> => {
+    const crypto = _subtle();
+    abytes(key);
+    abytes(message);
+    ahashWeb(hash);
+    // WebCrypto keys can't be zeroized
+    // prettier-ignore
+    const wkey = await crypto.importKey(
+      'raw', key, { name: 'HMAC', hash: hash.webCryptoName }, false, ['sign']
+    );
+    return new Uint8Array(await crypto.sign('HMAC', wkey, message));
+  };
+  hmac_.create = (_hash: WebHash, _key: Uint8Array) => {
+    throw new Error('not implemented');
+  };
+  return hmac_;
 })();
 
 /**
