@@ -19,6 +19,7 @@ import {
   type HashXOF,
   type KDFInput,
   kdfInputToBytes,
+  type PRG,
   u32,
 } from './utils.ts';
 
@@ -469,7 +470,7 @@ export const HopMAC256: HopMAC = genHopMAC(kt256);
 /**
  * More at https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG.
  */
-export class KeccakPRG extends Keccak {
+export class KeccakPRG extends Keccak implements PRG {
   protected rate: number;
   constructor(capacity: number) {
     anumber(capacity);
@@ -481,7 +482,7 @@ export class KeccakPRG extends Keccak {
     this.rate = 1600 - capacity;
     this.posOut = Math.floor((this.rate + 7) / 8);
   }
-  keccak(): void {
+  protected keccak(): void {
     // Duplex padding
     this.state[this.pos] ^= 0x01;
     this.state[this.blockLen] ^= 0x02; // Rho is full bytes
@@ -494,18 +495,17 @@ export class KeccakPRG extends Keccak {
     this.posOut = this.blockLen;
     return this;
   }
-  feed(data: Uint8Array): this {
-    return this.update(data);
-  }
   protected finish(): void {}
   digestInto(_out: Uint8Array): Uint8Array {
     throw new Error('digest is not allowed, use .fetch instead');
   }
-  fetch(bytes: number): Uint8Array {
-    return this.xof(bytes);
+  addEntropy(seed: Uint8Array): void {
+    this.update(seed);
   }
-  // Ensure irreversibility (even if state leaked previous outputs cannot be computed)
-  forget(): void {
+  randomBytes(length: number): Uint8Array {
+    return this.xof(length);
+  }
+  clean(): void {
     if (this.rate < 1600 / 2 + 1) throw new Error('rate is too low to use .forget()');
     this.keccak();
     for (let i = 0; i < this.blockLen; i++) this.state[i] = 0;

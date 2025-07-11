@@ -267,6 +267,12 @@ export interface Hash<T> {
   clone(): T;
 }
 
+export interface PRG {
+  addEntropy(seed: Uint8Array): void;
+  randomBytes(length: number): Uint8Array;
+  clean(): void;
+}
+
 /**
  * XOF: streaming API to read digest in chunks.
  * Same as 'squeeze' in keccak/k12 and 'seek' in blake3, but more generic name.

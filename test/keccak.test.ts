@@ -196,15 +196,15 @@ describe('sha3-addons', () => {
     for (let i = 0; i < PRG_VECTORS.length; i++) {
       const v = PRG_VECTORS[i];
       const input = fromHex(v.input);
-      const p = keccakprg(+v.capacity);
-      p.feed(fromHex(v.input));
-      let out = p.fetch(v.output.length / 2);
+      const prg = keccakprg(+v.capacity);
+      prg.addEntropy(fromHex(v.input));
+      let out = prg.randomBytes(v.output.length / 2);
       if (out.length > 0 && out[0] & 1) {
-        if (out[0] & 2) p.feed(input);
+        if (out[0] & 2) prg.addEntropy(input);
         try {
-          p.forget();
+          prg.clean();
         } catch (e) {}
-        if (out[0] & 4) out = p.fetch(v.output.length / 2);
+        if (out[0] & 4) out = prg.randomBytes(v.output.length / 2);
       }
       eql(out, fromHex(v.output), `prg vector ${i} failed`);
     }
@@ -297,7 +297,9 @@ describe('sha3-addons', () => {
   should('Basic clone', () => {
     const a = utf8ToBytes('key');
     const b = utf8ToBytes('123');
-    const objs = [kmac128.create(a).update(b), keccakprg().feed(b)];
+    const prg = keccakprg();
+    prg.addEntropy(b);
+    const objs = [kmac128.create(a).update(b), prg];
     for (const o of objs) eql(o.clone(), o);
     const objs2 = [
       tuplehash128.create().update(b),
