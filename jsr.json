@@ -1,6 +1,6 @@
 {
   "name": "@noble/hashes",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0-beta.2",
   "exports": {
     ".": "./src/index.ts",
     "./_md.js": "./src/_md.ts",
@@ -17,6 +17,7 @@
     "./sha2.js": "./src/sha2.ts",
     "./sha3-addons.js": "./src/sha3-addons.ts",
     "./sha3.js": "./src/sha3.ts",
+    "./webcrypto.js": "./src/webcrypto.ts",
     "./utils.js": "./src/utils.ts"
   },
   "publish": {
