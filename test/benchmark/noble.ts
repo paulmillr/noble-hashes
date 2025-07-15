@@ -5,7 +5,7 @@ import { blake2b, blake2s } from '../../src/blake2.ts';
 import { blake3 } from '../../src/blake3.ts';
 import { hkdf } from '../../src/hkdf.ts';
 import { hmac } from '../../src/hmac.ts';
-import { ripemd160 } from '../../src/legacy.ts';
+import { md5, ripemd160, sha1 } from '../../src/legacy.ts';
 import { pbkdf2 } from '../../src/pbkdf2.ts';
 import { scrypt } from '../../src/scrypt.ts';
 import { sha256, sha512 } from '../../src/sha2.ts';
@@ -31,7 +31,7 @@ async function main() {
 
   // prettier-ignore
   const hashes = {
-    sha256, sha512, sha3_256, sha3_512, kt128, kt256, turboshake128, blake256, blake2b, blake2s, blake3, ripemd160,
+    sha256, sha512, sha3_256, sha3_512, kt128, kt256, turboshake128, blake256, blake2b, blake2s, blake3, ripemd160, md5, sha1
   };
   for (const { size, data } of buffers) {
     console.log('# ' + size);
