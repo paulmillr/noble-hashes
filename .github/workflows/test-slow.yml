@@ -24,7 +24,7 @@ jobs:
       - run: npm run test:big
   acvp:
     name: Tests against slow ACVP vectors
-    runs-on: macos-latest-xlarge
+    runs-on: ubuntu-latest
     env:
       MSHOULD_FAST: 1
     steps:
