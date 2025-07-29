@@ -12,7 +12,15 @@ import { hmac } from '../src/hmac.ts';
 import { md5, ripemd160, sha1 } from '../src/legacy.ts';
 import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
 import { scrypt, scryptAsync } from '../src/scrypt.ts';
-import { cshake128, HopMAC128, kmac128, kt128, parallelhash128, tuplehash128, turboshake128 } from '../src/sha3-addons.ts';
+import {
+  cshake128,
+  HopMAC128,
+  kmac128,
+  kt128,
+  parallelhash128,
+  tuplehash128,
+  turboshake128,
+} from '../src/sha3-addons.ts';
 import { sha3_256, shake128 } from '../src/sha3.ts';
 import { abytes, anumber } from '../src/utils.ts';
 import {
