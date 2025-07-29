@@ -13,9 +13,10 @@ import './acvp.test.ts';
 import './async.test.ts';
 import './clone.test.ts';
 import './eskdf.test.ts';
+import './info.test.ts';
 import './u64.test.ts';
 import './utils.test.ts';
-import './info.test.ts';
+// import './errors.test.ts';
 
 init();
 should.runWhen(import.meta.url);
