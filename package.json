@@ -17,7 +17,7 @@
     "bench:install": "cd test/benchmark; npm install",
     "build": "npm run build:clean; tsc",
     "build:clean": "rm -f *.{js,d.ts,js.map,d.ts.map}",
-    "build:release": "npx jsbt esbuild test/build",
+    "build:release": "npx --no @paulmillr/jsbt esbuild test/build",
     "lint": "prettier --check 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "test": "node --experimental-strip-types --no-warnings test/index.ts",

@@ -168,7 +168,7 @@ export async function eskdf(username: string, password: string): Promise<ESKDF> 
   let seed: Uint8Array | undefined = deriveMainSeed(username, password);
 
   function deriveCK(protocol: string, accountId: AccountID = 0, options?: KeyOpts): Uint8Array {
-    abytes(seed, 32);
+    abytes(seed!, 32);
     const { salt, info } = getSaltInfo(protocol, accountId); // validate protocol & accountId
     const keyLength = getKeyLength(options); // validate options
     const key = hkdf(sha256, seed!, salt, info, keyLength);

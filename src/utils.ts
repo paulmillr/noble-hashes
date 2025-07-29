@@ -14,10 +14,17 @@ export function anumber(n: number): void {
 }
 
 /** Asserts something is Uint8Array. */
-export function abytes(b: Uint8Array | undefined, ...lengths: number[]): void {
-  if (!isBytes(b)) throw new Error('Uint8Array expected');
-  if (lengths.length > 0 && !lengths.includes(b.length))
-    throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
+export function abytes(value: Uint8Array, length?: number, title: string = ''): Uint8Array {
+  const bytes = isBytes(value);
+  const len = value?.length;
+  const needsLen = length !== undefined;
+  if (!bytes || (needsLen && len !== length)) {
+    const prefix = title && `"${title}"`;
+    const ofLen = needsLen ? ` of length ${length}` : '';
+    const got = bytes ? `length=${len}` : `type=${typeof value}`;
+    throw new Error(prefix + 'expected Uint8Array' + ofLen + ', got ' + got);
+  }
+  return value;
 }
 
 /** Asserts something is hash */
