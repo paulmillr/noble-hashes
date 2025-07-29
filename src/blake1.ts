@@ -77,7 +77,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     this.counterLen = counterLen;
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
-    if (salt) {
+    if (salt !== undefined) {
       let slt = salt;
       abytes(slt);
       if (slt.length !== 4 * saltLen) throw new Error('wrong salt length');

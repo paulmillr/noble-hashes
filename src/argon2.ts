@@ -10,7 +10,16 @@
  */
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.ts';
 import { blake2b } from './blake2.ts';
-import { abytes, clean, kdfInputToBytes, nextTick, u32, u8, type KDFInput } from './utils.ts';
+import {
+  abytes,
+  anumber,
+  clean,
+  kdfInputToBytes,
+  nextTick,
+  u32,
+  u8,
+  type KDFInput,
+} from './utils.ts';
 
 const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];
@@ -203,15 +212,16 @@ function argon2Opts(opts: ArgonOpts) {
     maxmem: maxUint32 - 1,
     asyncTick: 10,
   };
-  for (let [k, v] of Object.entries(opts)) if (v != null) merged[k] = v;
+  for (let [k, v] of Object.entries(opts)) if (v !== undefined) merged[k] = v;
 
-  const { dkLen, p, m, t, version, onProgress } = merged;
+  const { dkLen, p, m, t, version, onProgress, asyncTick } = merged;
   if (!isU32(dkLen) || dkLen < 4) throw new Error('dkLen should be at least 4 bytes');
   if (!isU32(p) || p < 1 || p >= Math.pow(2, 24)) throw new Error('p should be 1 <= p < 2^24');
   if (!isU32(m)) throw new Error('m should be 0 <= m < 2^32');
   if (!isU32(t) || t < 1) throw new Error('t (iterations) should be 1 <= t < 2^32');
   if (onProgress !== undefined && typeof onProgress !== 'function')
     throw new Error('progressCb should be function');
+  anumber(asyncTick);
   /*
   Memory size m MUST be an integer number of kibibytes from 8*p to 2^(32)-1. The actual number of blocks is m', which is m rounded down to the nearest multiple of 4*p.
   */
@@ -231,7 +241,6 @@ function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: Argon
   if (!Object.values(AT).includes(type)) throw new Error('invalid type');
   let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } =
     argon2Opts(opts);
-
   // Validation
   key = abytesOrZero(key);
   personalization = abytesOrZero(personalization);
