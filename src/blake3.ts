@@ -2,7 +2,7 @@
  * Blake3 fast hash is Blake2 with reduced security (round count). Can also be used as MAC & KDF.
  *
  * It is advertised as "the fastest cryptographic hash". However, it isn't true in JS.
- * Why is this so slow? While it should be 6x faster than blake2b, perf diff is only 20%:
+ * Why is this so slow? While it must be 6x faster than blake2b, perf diff is only 20%:
  *
  * * There is only 30% reduction in number of rounds from blake2s
  * * Speed-up comes from tree structure, which is parallelized using SIMD & threading.
@@ -49,7 +49,7 @@ const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
  * Ensure to use EITHER `key` OR `context`, not both.
  *
  * * `key`: 32-byte MAC key.
- * * `context`: string for KDF. Should be hardcoded, globally unique, and application - specific.
+ * * `context`: string for KDF. must be hardcoded, globally unique, and application - specific.
  *   A good default format for the context string is "[application] [commit timestamp] [purpose]".
  */
 export type Blake3Opts = { dkLen?: number; key?: Uint8Array; context?: Uint8Array };
@@ -75,14 +75,13 @@ export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     const hasContext = context !== undefined;
     if (key !== undefined) {
       if (hasContext) throw new Error('Only "key" or "context" can be specified at same time');
-      abytes(key);
+      abytes(key, 32, 'key');
       const k = key.slice();
-      abytes(k, 32);
       this.IV = u32(k);
       swap32IfBE(this.IV);
       this.flags = flags | B3_Flags.KEYED_HASH;
     } else if (hasContext) {
-      abytes(context);
+      abytes(context, undefined, 'context');
       const ctx = context;
       const contextKey = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
         .update(ctx)

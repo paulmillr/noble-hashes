@@ -74,8 +74,8 @@ export const hmac: {
     message: Uint8Array
   ): Promise<Uint8Array> => {
     const crypto = _subtle();
-    abytes(key);
-    abytes(message);
+    abytes(key, undefined, 'key');
+    abytes(message, undefined, 'message');
     ahashWeb(hash);
     // WebCrypto keys can't be zeroized
     // prettier-ignore
@@ -117,10 +117,10 @@ export async function hkdf(
 ): Promise<Uint8Array> {
   const crypto = _subtle();
   ahashWeb(hash);
-  abytes(ikm);
-  anumber(length);
-  if (salt !== undefined) abytes(salt);
-  if (info !== undefined) abytes(info);
+  abytes(ikm, undefined, 'ikm');
+  anumber(length, 'length');
+  if (salt !== undefined) abytes(salt, undefined, 'salt');
+  if (info !== undefined) abytes(info, undefined, 'info');
   const wkey = await crypto.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
   const opts = {
     name: 'HKDF',
@@ -152,10 +152,10 @@ export async function pbkdf2(
   ahashWeb(hash);
   const _opts = checkOpts({ dkLen: 32 }, opts);
   const { c, dkLen } = _opts;
-  anumber(c);
-  anumber(dkLen);
-  const _password = kdfInputToBytes(password);
-  const _salt = kdfInputToBytes(salt);
+  anumber(c, 'c');
+  anumber(dkLen, 'dkLen');
+  const _password = kdfInputToBytes(password, 'password');
+  const _salt = kdfInputToBytes(salt, 'salt');
   const key = await crypto.importKey('raw', _password, 'PBKDF2', false, ['deriveBits']);
   const deriveOpts = { name: 'PBKDF2', salt: _salt, iterations: c, hash: hash.webCryptoName };
   return new Uint8Array(await crypto.deriveBits(deriveOpts, key, 8 * dkLen));

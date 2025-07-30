@@ -130,7 +130,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     this.enableXOF = enableXOF;
     this.rounds = rounds;
     // Can be passed from user as dkLen
-    anumber(outputLen);
+    anumber(outputLen, 'outputLen');
     // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
     // 0 < blockLen < 200
     if (!(0 < blockLen && blockLen < 200))

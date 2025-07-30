@@ -51,9 +51,9 @@ function chooseLen(opts: ShakeOpts, outputLen: number): number {
   return opts.dkLen === undefined ? outputLen : opts.dkLen;
 }
 
-const abytesOrZero = (buf?: Uint8Array) => {
+const abytesOrZero = (buf?: Uint8Array, title = '') => {
   if (buf === undefined) return EMPTY_BUFFER;
-  abytes(buf);
+  abytes(buf, undefined, title);
   return buf;
 };
 // NOTE: second modulo is necessary since we don't need to add padding if current element takes whole block
@@ -68,7 +68,7 @@ function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
   const blockLenBytes = leftEncode(hash.blockLen);
   const fn = opts.NISTfn === undefined ? EMPTY_BUFFER : kdfInputToBytes(opts.NISTfn);
   const fnLen = leftEncode(_8n * BigInt(fn.length)); // length in bits
-  const pers = abytesOrZero(opts.personalization);
+  const pers = abytesOrZero(opts.personalization, 'personalization');
   const persLen = leftEncode(_8n * BigInt(pers.length)); // length in bits
   if (!fn.length && !pers.length) return hash;
   hash.suffix = 0x04;
@@ -115,7 +115,7 @@ export class KMAC extends Keccak implements HashXOF<KMAC> {
   ) {
     super(blockLen, 0x1f, outputLen, enableXOF);
     cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
-    abytes(key);
+    abytes(key, undefined, 'key');
     // 1. newX = bytepad(encode_string(K), 168) || X || right_encode(L).
     const blockLenBytes = leftEncode(this.blockLen);
     const keyLen = leftEncode(_8n * BigInt(key.length));
@@ -322,7 +322,7 @@ export const parallelhash128xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ *
 export const parallelhash256xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ */ (() =>
   genPrl(136, 256 / 8, cshake256, true))();
 
-// Should be simple 'shake with 12 rounds', but no, we got whole new spec about Turbo SHAKE Pro MAX.
+// must be simple 'shake with 12 rounds', but no, we got whole new spec about Turbo SHAKE Pro MAX.
 export type TurboshakeOpts = ShakeOpts & {
   D?: number; // Domain separation byte
 };
@@ -332,7 +332,7 @@ const genTurboshake = (blockLen: number, outputLen: number) =>
     const D = opts.D === undefined ? 0x1f : opts.D;
     // Section 2.1 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/17/
     if (!Number.isSafeInteger(D) || D < 0x01 || D > 0x7f)
-      throw new Error('invalid domain separation byte must be 0x01..0x7f, got: ' + D);
+      throw new Error('"D" (domain separation byte) must be 0x01..0x7f, got: ' + D);
     return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);
   });
 
@@ -375,7 +375,7 @@ export class KangarooTwelve extends Keccak implements HashXOF<KangarooTwelve> {
   ) {
     super(blockLen, 0x07, outputLen, true, rounds);
     this.leafLen = leafLen;
-    this.personalization = abytesOrZero(opts.personalization);
+    this.personalization = abytesOrZero(opts.personalization, 'personalization');
   }
   update(data: Uint8Array): this {
     abytes(data);
@@ -474,7 +474,7 @@ export class KeccakPRG extends Keccak implements PRG {
   protected rate: number;
   constructor(capacity: number) {
     anumber(capacity);
-    // Rho should be full bytes
+    // Rho must be full bytes
     if (capacity < 0 || capacity > 1600 - 10 || (1600 - capacity - 2) % 8)
       throw new Error('invalid capacity');
     // blockLen = rho in bytes

@@ -28,12 +28,12 @@ function pbkdf2Init(hash: CHash, _password: KDFInput, _salt: KDFInput, _opts: Pb
   ahash(hash);
   const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);
   const { c, dkLen, asyncTick } = opts;
-  anumber(c);
-  anumber(dkLen);
-  anumber(asyncTick);
-  if (c < 1) throw new Error('iterations (c) should be >= 1');
-  const password = kdfInputToBytes(_password);
-  const salt = kdfInputToBytes(_salt);
+  anumber(c, 'c');
+  anumber(dkLen, 'dkLen');
+  anumber(asyncTick, 'asyncTick');
+  if (c < 1) throw new Error('iterations (c) must be >= 1');
+  const password = kdfInputToBytes(_password, 'password');
+  const salt = kdfInputToBytes(_salt, 'salt');
   // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
   const DK = new Uint8Array(dkLen);
   // U1 = PRF(Password, Salt + INT_32_BE(i))

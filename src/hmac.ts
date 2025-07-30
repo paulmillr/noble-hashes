@@ -14,7 +14,7 @@ export class HMAC<T extends Hash<T>> implements Hash<HMAC<T>> {
 
   constructor(hash: CHash, key: Uint8Array) {
     ahash(hash);
-    abytes(key);
+    abytes(key, undefined, 'key');
     this.iHash = hash.create() as T;
     if (typeof this.iHash.update !== 'function')
       throw new Error('Expected instance of class which extends utils.Hash');
@@ -40,7 +40,7 @@ export class HMAC<T extends Hash<T>> implements Hash<HMAC<T>> {
   }
   digestInto(out: Uint8Array): void {
     aexists(this);
-    abytes(out, this.outputLen);
+    abytes(out, this.outputLen, 'output');
     this.finished = true;
     this.iHash.digestInto(out);
     this.oHash.update(out);

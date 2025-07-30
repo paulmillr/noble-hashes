@@ -4,7 +4,7 @@
  * @module
  */
 import { hmac } from './hmac.ts';
-import { ahash, anumber, type CHash, clean } from './utils.ts';
+import { abytes, ahash, anumber, type CHash, clean } from './utils.ts';
 
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`
@@ -39,11 +39,12 @@ export function expand(
   length: number = 32
 ): Uint8Array {
   ahash(hash);
-  anumber(length);
+  anumber(length, 'length');
   const olen = hash.outputLen;
-  if (length > 255 * olen) throw new Error('Length should be <= 255*HashLen');
+  if (length > 255 * olen) throw new Error('Length must be <= 255*HashLen');
   const blocks = Math.ceil(length / olen);
   if (info === undefined) info = EMPTY_BUFFER;
+  else abytes(info, undefined, 'info');
   // first L(ength) octets of T
   const okm = new Uint8Array(blocks * olen);
   // Re-use HMAC instance between blocks

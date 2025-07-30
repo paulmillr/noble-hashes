@@ -10,24 +10,15 @@
  */
 import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.ts';
 import { blake2b } from './blake2.ts';
-import {
-  abytes,
-  anumber,
-  clean,
-  kdfInputToBytes,
-  nextTick,
-  u32,
-  u8,
-  type KDFInput,
-} from './utils.ts';
+import { anumber, clean, kdfInputToBytes, nextTick, u32, u8, type KDFInput } from './utils.ts';
 
 const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];
 
 const ARGON2_SYNC_POINTS = 4;
-const abytesOrZero = (buf?: KDFInput) => {
+const abytesOrZero = (buf?: KDFInput, errorTitle = '') => {
   if (buf === undefined) return Uint8Array.of();
-  return kdfInputToBytes(buf);
+  return kdfInputToBytes(buf, errorTitle);
 };
 
 // u32 * u32 = u64
@@ -215,35 +206,33 @@ function argon2Opts(opts: ArgonOpts) {
   for (let [k, v] of Object.entries(opts)) if (v !== undefined) merged[k] = v;
 
   const { dkLen, p, m, t, version, onProgress, asyncTick } = merged;
-  if (!isU32(dkLen) || dkLen < 4) throw new Error('dkLen should be at least 4 bytes');
-  if (!isU32(p) || p < 1 || p >= Math.pow(2, 24)) throw new Error('p should be 1 <= p < 2^24');
-  if (!isU32(m)) throw new Error('m should be 0 <= m < 2^32');
-  if (!isU32(t) || t < 1) throw new Error('t (iterations) should be 1 <= t < 2^32');
+  if (!isU32(dkLen) || dkLen < 4) throw new Error('"dkLen" must be 4..');
+  if (!isU32(p) || p < 1 || p >= Math.pow(2, 24)) throw new Error('"p" must be 1..2^24');
+  if (!isU32(m)) throw new Error('"m" must be 0..2^32');
+  if (!isU32(t) || t < 1) throw new Error('"t" (iterations) must be 1..2^32');
   if (onProgress !== undefined && typeof onProgress !== 'function')
-    throw new Error('progressCb should be function');
-  anumber(asyncTick);
+    throw new Error('"progressCb" must be a function');
+  anumber(asyncTick, 'asyncTick');
   /*
   Memory size m MUST be an integer number of kibibytes from 8*p to 2^(32)-1. The actual number of blocks is m', which is m rounded down to the nearest multiple of 4*p.
   */
-  if (!isU32(m) || m < 8 * p) throw new Error('memory should be at least 8*p bytes');
-  if (version !== 0x10 && version !== 0x13) throw new Error('unknown version=' + version);
+  if (!isU32(m) || m < 8 * p) throw new Error('"m" (memory) must be at least 8*p bytes');
+  if (version !== 0x10 && version !== 0x13)
+    throw new Error('"version" must be 0x10 or 0x13, got ' + version);
   return merged;
 }
 
 function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: ArgonOpts) {
-  password = kdfInputToBytes(password);
-  salt = kdfInputToBytes(salt);
-  abytes(password);
-  abytes(salt);
-  if (!isU32(password.length)) throw new Error('password should be less than 4 GB');
-  if (!isU32(salt.length) || salt.length < 8)
-    throw new Error('salt should be at least 8 bytes and less than 4 GB');
-  if (!Object.values(AT).includes(type)) throw new Error('invalid type');
+  password = kdfInputToBytes(password, 'password');
+  salt = kdfInputToBytes(salt, 'salt');
+  if (!isU32(password.length)) throw new Error('"password" must be less of length 1..4Gb');
+  if (!isU32(salt.length) || salt.length < 8) throw new Error('"salt" must be of length 8..4Gb');
+  if (!Object.values(AT).includes(type)) throw new Error('"type" was invalid');
   let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } =
     argon2Opts(opts);
   // Validation
-  key = abytesOrZero(key);
-  personalization = abytesOrZero(personalization);
+  key = abytesOrZero(key, 'key');
+  personalization = abytesOrZero(personalization, 'personalization');
   // H_0 = H^(64)(LE32(p) || LE32(T) || LE32(m) || LE32(t) ||
   //       LE32(v) || LE32(y) || LE32(length(P)) || P ||
   //       LE32(length(S)) || S ||  LE32(length(K)) || K ||
@@ -273,9 +262,7 @@ function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: Argon
   const segmentLen = Math.floor(laneLen / ARGON2_SYNC_POINTS);
   const memUsed = mP * 256;
   if (!isU32(maxmem) || memUsed > maxmem)
-    throw new Error(
-      'mem should be less than 2**32, got: maxmem=' + maxmem + ', memused=' + memUsed
-    );
+    throw new Error('"maxmem" expected <2**32, got: maxmem=' + maxmem + ', memused=' + memUsed);
   const B = new Uint32Array(memUsed);
   // Fill first blocks
   for (let l = 0; l < p; l++) {

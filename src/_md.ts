@@ -98,8 +98,8 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     this.process(view, 0);
     const oview = createView(out);
     const len = this.outputLen;
-    // NOTE: we do division by 4 later, which should be fused in single op with modulo by JIT
-    if (len % 4) throw new Error('_sha2: outputLen should be aligned to 32bit');
+    // NOTE: we do division by 4 later, which must be fused in single op with modulo by JIT
+    if (len % 4) throw new Error('_sha2: outputLen must be aligned to 32bit');
     const outLen = len / 4;
     const state = this.get();
     if (outLen > state.length) throw new Error('_sha2: outputLen bigger than state');

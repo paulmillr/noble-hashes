@@ -9,8 +9,11 @@ export function isBytes(a: unknown): a is Uint8Array {
 }
 
 /** Asserts something is positive integer. */
-export function anumber(n: number): void {
-  if (!Number.isSafeInteger(n) || n < 0) throw new Error('positive integer expected, got ' + n);
+export function anumber(n: number, title: string = ''): void {
+  if (!Number.isSafeInteger(n) || n < 0) {
+    const prefix = title && `"${title}" `;
+    throw new Error(`${prefix}expected integer >0, got ${n}`);
+  }
 }
 
 /** Asserts something is Uint8Array. */
@@ -19,7 +22,7 @@ export function abytes(value: Uint8Array, length?: number, title: string = ''): 
   const len = value?.length;
   const needsLen = length !== undefined;
   if (!bytes || (needsLen && len !== length)) {
-    const prefix = title && `"${title}"`;
+    const prefix = title && `"${title}" `;
     const ofLen = needsLen ? ` of length ${length}` : '';
     const got = bytes ? `length=${len}` : `type=${typeof value}`;
     throw new Error(prefix + 'expected Uint8Array' + ofLen + ', got ' + got);
@@ -30,7 +33,7 @@ export function abytes(value: Uint8Array, length?: number, title: string = ''): 
 /** Asserts something is hash */
 export function ahash(h: CHash): void {
   if (typeof h !== 'function' || typeof h.create !== 'function')
-    throw new Error('Hash should be wrapped by utils.createHasher');
+    throw new Error('Hash must wrapped by utils.createHasher');
   anumber(h.outputLen);
   anumber(h.blockLen);
 }
@@ -43,10 +46,10 @@ export function aexists(instance: any, checkFinished = true): void {
 
 /** Asserts output is properly-sized byte array */
 export function aoutput(out: any, instance: any): void {
-  abytes(out);
+  abytes(out, undefined, 'digestInto() output');
   const min = instance.outputLen;
   if (out.length < min) {
-    throw new Error('digestInto() expects output buffer of length at least ' + min);
+    throw new Error('"digestInto() output" expected to be of length >=' + min);
   }
 }
 
@@ -229,9 +232,9 @@ export type KDFInput = string | Uint8Array;
  * Helper for KDFs: consumes uint8array or string.
  * When string is passed, does utf8 decoding, using TextDecoder.
  */
-export function kdfInputToBytes(data: KDFInput): Uint8Array {
+export function kdfInputToBytes(data: KDFInput, errorTitle = ''): Uint8Array {
   if (typeof data === 'string') data = utf8ToBytes(data);
-  abytes(data);
+  abytes(data, undefined, errorTitle);
   return data;
 }
 
@@ -258,7 +261,7 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   opts?: T2
 ): T1 & T2 {
   if (opts !== undefined && {}.toString.call(opts) !== '[object Object]')
-    throw new Error('options should be object or undefined');
+    throw new Error('options must be object or undefined');
   const merged = Object.assign(defaults, opts);
   return merged as T1 & T2;
 }

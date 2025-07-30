@@ -114,14 +114,14 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
     _opts
   );
   const { N, r, p, dkLen, asyncTick, maxmem, onProgress } = opts;
-  anumber(N);
-  anumber(r);
-  anumber(p);
-  anumber(dkLen);
-  anumber(asyncTick);
-  anumber(maxmem);
+  anumber(N, 'N');
+  anumber(r, 'r');
+  anumber(p, 'p');
+  anumber(dkLen, 'dkLen');
+  anumber(asyncTick, 'asyncTick');
+  anumber(maxmem, 'maxmem');
   if (onProgress !== undefined && typeof onProgress !== 'function')
-    throw new Error('progressCb should be function');
+    throw new Error('progressCb must be a function');
   const blockSize = 128 * r;
   const blockSize32 = blockSize / 4;
 
@@ -131,21 +131,15 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
   // which used incorrect r: 1, p: 8. Also, the check seems to be a spec error:
   // https://www.rfc-editor.org/errata_search.php?rfc=7914
   const pow32 = Math.pow(2, 32);
-  if (N <= 1 || (N & (N - 1)) !== 0 || N > pow32) {
-    throw new Error('"N" must be a power of 2, and 2^1 <= N <= 2^32');
-  }
-  if (p < 1 || p > ((pow32 - 1) * 32) / blockSize) {
-    throw new Error('"p" must be positive integer <= ((2^32 - 1) * 32) / (128 * r)');
-  }
-  if (dkLen < 1 || dkLen > (pow32 - 1) * 32) {
-    throw new Error('"dkLen" should be positive integer <= (2^32 - 1) * 32');
-  }
+  if (N <= 1 || (N & (N - 1)) !== 0 || N > pow32)
+    throw new Error('"N" expected a power of 2, and 2^1 <= N <= 2^32');
+  if (p < 1 || p > ((pow32 - 1) * 32) / blockSize)
+    throw new Error('"p" expected integer 1..((2^32 - 1) * 32) / (128 * r)');
+  if (dkLen < 1 || dkLen > (pow32 - 1) * 32)
+    throw new Error('"dkLen" expected integer 1..(2^32 - 1) * 32');
   const memUsed = blockSize * (N + p);
-  if (memUsed > maxmem) {
-    throw new Error(
-      'memused is bigger than "maxmem". Expected 128 * r * (N + p) > maxmem of ' + maxmem
-    );
-  }
+  if (memUsed > maxmem)
+    throw new Error('"maxmem" limit was hit, expected 128*r*(N+p) > "maxmem"=' + maxmem);
   // [B0...Bp−1] ← PBKDF2HMAC-SHA256(Passphrase, Salt, 1, blockSize*ParallelizationFactor)
   // Since it has only one iteration there is no reason to use async variant
   const B = pbkdf2(sha256, password, salt, { c: 1, dkLen: blockSize * p });

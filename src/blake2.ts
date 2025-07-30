@@ -94,11 +94,9 @@ function checkBlake2Opts(
   if (outputLen < 0 || outputLen > keyLen) throw new Error('outputLen bigger than keyLen');
   const { key, salt, personalization } = opts;
   if (key !== undefined && (key.length < 1 || key.length > keyLen))
-    throw new Error('key length must be undefined or 1..' + keyLen);
-  if (salt !== undefined && salt.length !== saltLen)
-    throw new Error('salt must be undefined or ' + saltLen);
-  if (personalization !== undefined && personalization.length !== persLen)
-    throw new Error('personalization must be undefined or ' + persLen);
+    throw new Error('"key" expected to be undefined or of length=1..' + keyLen);
+  if (salt !== undefined) abytes(salt, saltLen, 'salt');
+  if (personalization !== undefined) abytes(personalization, persLen, 'personalization');
 }
 
 /** Internal base class for BLAKE2. */
@@ -228,12 +226,12 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
     let { key, personalization, salt } = opts;
     let keyLength = 0;
     if (key !== undefined) {
-      abytes(key);
+      abytes(key, undefined, 'key');
       keyLength = key.length;
     }
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt !== undefined) {
-      abytes(salt);
+      abytes(salt, undefined, 'salt');
       const slt = u32(salt);
       this.v4l ^= swap8IfBE(slt[0]);
       this.v4h ^= swap8IfBE(slt[1]);
@@ -241,7 +239,7 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
       this.v5h ^= swap8IfBE(slt[3]);
     }
     if (personalization !== undefined) {
-      abytes(personalization);
+      abytes(personalization, undefined, 'personalization');
       const pers = u32(personalization);
       this.v6l ^= swap8IfBE(pers[0]);
       this.v6h ^= swap8IfBE(pers[1]);
@@ -417,25 +415,24 @@ export class BLAKE2s extends BLAKE2<BLAKE2s> {
     let { key, personalization, salt } = opts;
     let keyLength = 0;
     if (key !== undefined) {
-      abytes(key);
+      abytes(key, undefined, 'key');
       keyLength = key.length;
     }
     this.v0 ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt !== undefined) {
-      abytes(salt);
+      abytes(salt, undefined, 'salt');
       const slt = u32(salt as Uint8Array);
       this.v4 ^= swap8IfBE(slt[0]);
       this.v5 ^= swap8IfBE(slt[1]);
     }
     if (personalization !== undefined) {
-      abytes(personalization);
+      abytes(personalization, undefined, 'personalization');
       const pers = u32(personalization as Uint8Array);
       this.v6 ^= swap8IfBE(pers[0]);
       this.v7 ^= swap8IfBE(pers[1]);
     }
     if (key !== undefined) {
       // Pad to blockLen and update
-      abytes(key);
       const tmp = new Uint8Array(this.blockLen);
       tmp.set(key);
       this.update(tmp);
