@@ -100,7 +100,7 @@ function checkBlake2Opts(
 }
 
 /** Internal base class for BLAKE2. */
-export abstract class BLAKE2<T extends BLAKE2<T>> implements Hash<T> {
+export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
   protected abstract compress(msg: Uint32Array, offset: number, isLast: boolean): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
@@ -200,7 +200,7 @@ export abstract class BLAKE2<T extends BLAKE2<T>> implements Hash<T> {
 }
 
 /** Internal blake2b hash class. */
-export class BLAKE2b extends BLAKE2<BLAKE2b> {
+export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
   // Same as SHA-512, but LE
   private v0l = B2B_IV[0] | 0;
   private v0h = B2B_IV[1] | 0;
@@ -347,10 +347,10 @@ export class BLAKE2b extends BLAKE2<BLAKE2b> {
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
-export const blake2b: CHash<BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher<
-  BLAKE2b,
+export const blake2b: CHash<_BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher<
+  _BLAKE2b,
   Blake2Opts
->((opts) => new BLAKE2b(opts));
+>((opts) => new _BLAKE2b(opts));
 
 // =================
 // Blake2S
@@ -397,7 +397,7 @@ export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds
 const B2S_IV = /* @__PURE__ */ SHA256_IV.slice();
 
 /** Internal blake2s hash class. */
-export class BLAKE2s extends BLAKE2<BLAKE2s> {
+export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
   // Internal state, same as SHA-256
   private v0 = B2S_IV[0] | 0;
   private v1 = B2S_IV[1] | 0;
@@ -485,7 +485,7 @@ export class BLAKE2s extends BLAKE2<BLAKE2s> {
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
-export const blake2s: CHash<BLAKE2s, Blake2Opts> = /* @__PURE__ */ createHasher<
-  BLAKE2s,
+export const blake2s: CHash<_BLAKE2s, Blake2Opts> = /* @__PURE__ */ createHasher<
+  _BLAKE2s,
   Blake2Opts
->((opts) => new BLAKE2s(opts));
+>((opts) => new _BLAKE2s(opts));

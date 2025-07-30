@@ -20,7 +20,7 @@ const SHA1_IV = /* @__PURE__ */ Uint32Array.from([
 const SHA1_W = /* @__PURE__ */ new Uint32Array(80);
 
 /** SHA1 legacy hash class. */
-export class SHA1 extends HashMD<SHA1> {
+export class _SHA1 extends HashMD<_SHA1> {
   private A = SHA1_IV[0] | 0;
   private B = SHA1_IV[1] | 0;
   private C = SHA1_IV[2] | 0;
@@ -87,7 +87,7 @@ export class SHA1 extends HashMD<SHA1> {
 }
 
 /** SHA1 (RFC 3174) legacy hash function. It was cryptographically broken. */
-export const sha1: CHash = /* @__PURE__ */ createHasher(() => new SHA1());
+export const sha1: CHash = /* @__PURE__ */ createHasher(() => new _SHA1());
 
 /** Per-round constants */
 const p32 = /* @__PURE__ */ Math.pow(2, 32);
@@ -101,7 +101,7 @@ const MD5_IV = /* @__PURE__ */ SHA1_IV.slice(0, 4);
 // Reusable temporary buffer
 const MD5_W = /* @__PURE__ */ new Uint32Array(16);
 /** MD5 legacy hash class. */
-export class MD5 extends HashMD<MD5> {
+export class _MD5 extends HashMD<_MD5> {
   private A = MD5_IV[0] | 0;
   private B = MD5_IV[1] | 0;
   private C = MD5_IV[2] | 0;
@@ -174,7 +174,7 @@ export class MD5 extends HashMD<MD5> {
  * - Non-linear index selection: huge speed-up for unroll
  * - Per round constants: more memory accesses, additional speed-up for unroll
  */
-export const md5: CHash = /* @__PURE__ */ createHasher(() => new MD5());
+export const md5: CHash = /* @__PURE__ */ createHasher(() => new _MD5());
 
 // RIPEMD-160
 
@@ -219,7 +219,7 @@ function ripemd_f(group: number, x: number, y: number, z: number): number {
 }
 // Reusable temporary buffer
 const BUF_160 = /* @__PURE__ */ new Uint32Array(16);
-export class RIPEMD160 extends HashMD<RIPEMD160> {
+export class _RIPEMD160 extends HashMD<_RIPEMD160> {
   private h0 = 0x67452301 | 0;
   private h1 = 0xefcdab89 | 0;
   private h2 = 0x98badcfe | 0;
@@ -290,4 +290,4 @@ export class RIPEMD160 extends HashMD<RIPEMD160> {
  * * https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
  * * https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
  */
-export const ripemd160: CHash = /* @__PURE__ */ createHasher(() => new RIPEMD160());
+export const ripemd160: CHash = /* @__PURE__ */ createHasher(() => new _RIPEMD160());

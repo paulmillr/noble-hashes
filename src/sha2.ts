@@ -108,7 +108,7 @@ abstract class SHA2_32B<T extends SHA2_32B<T>> extends HashMD<T> {
 }
 
 /** Internal SHA2-256 hash class. */
-export class SHA256 extends SHA2_32B<SHA256> {
+export class _SHA256 extends SHA2_32B<_SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
   protected A: number = SHA256_IV[0] | 0;
@@ -125,7 +125,7 @@ export class SHA256 extends SHA2_32B<SHA256> {
 }
 
 /** Internal SHA2-224 hash class. */
-export class SHA224 extends SHA2_32B<SHA224> {
+export class _SHA224 extends SHA2_32B<_SHA224> {
   protected A: number = SHA224_IV[0] | 0;
   protected B: number = SHA224_IV[1] | 0;
   protected C: number = SHA224_IV[2] | 0;
@@ -174,7 +174,7 @@ const SHA512_W_H = /* @__PURE__ */ new Uint32Array(80);
 const SHA512_W_L = /* @__PURE__ */ new Uint32Array(80);
 
 /** Internal 64-byte base SHA2 hash class. */
-export abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
+abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
   // h -- high 32 bits, l -- low 32 bits
@@ -308,7 +308,7 @@ export abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
 }
 
 /** Internal SHA2-512 hash class. */
-export class SHA512 extends SHA2_64B<SHA512> {
+export class _SHA512 extends SHA2_64B<_SHA512> {
   protected Ah: number = SHA512_IV[0] | 0;
   protected Al: number = SHA512_IV[1] | 0;
   protected Bh: number = SHA512_IV[2] | 0;
@@ -331,7 +331,7 @@ export class SHA512 extends SHA2_64B<SHA512> {
   }
 }
 
-export class SHA384 extends SHA2_64B<SHA384> {
+export class _SHA384 extends SHA2_64B<_SHA384> {
   protected Ah: number = SHA384_IV[0] | 0;
   protected Al: number = SHA384_IV[1] | 0;
   protected Bh: number = SHA384_IV[2] | 0;
@@ -374,7 +374,7 @@ const T256_IV = /* @__PURE__ */ Uint32Array.from([
 ]);
 
 /** Internal SHA2-512/224 hash class. */
-export class SHA512_224 extends SHA2_64B<SHA512_224> {
+export class _SHA512_224 extends SHA2_64B<_SHA512_224> {
   protected Ah: number = T224_IV[0] | 0;
   protected Al: number = T224_IV[1] | 0;
   protected Bh: number = T224_IV[2] | 0;
@@ -398,7 +398,7 @@ export class SHA512_224 extends SHA2_64B<SHA512_224> {
 }
 
 /** Internal SHA2-512/256 hash class. */
-export class SHA512_256 extends SHA2_64B<SHA512_256> {
+export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
   protected Ah: number = T256_IV[0] | 0;
   protected Al: number = T256_IV[1] | 0;
   protected Bh: number = T256_IV[2] | 0;
@@ -429,24 +429,24 @@ export class SHA512_256 extends SHA2_64B<SHA512_256> {
  * - Each sha256 hash is executing 2^18 bit operations.
  * - Good 2024 ASICs can do 200Th/sec with 3500 watts of power, corresponding to 2^36 hashes/joule.
  */
-export const sha256: CHash<SHA256> = /* @__PURE__ */ createHasher(
-  () => new SHA256(),
+export const sha256: CHash<_SHA256> = /* @__PURE__ */ createHasher(
+  () => new _SHA256(),
   oidNist(0x01)
 );
 /** SHA2-224 hash function from RFC 4634 */
-export const sha224: CHash<SHA224> = /* @__PURE__ */ createHasher(
-  () => new SHA224(),
+export const sha224: CHash<_SHA224> = /* @__PURE__ */ createHasher(
+  () => new _SHA224(),
   oidNist(0x04)
 );
 
 /** SHA2-512 hash function from RFC 4634. */
-export const sha512: CHash<SHA512> = /* @__PURE__ */ createHasher(
-  () => new SHA512(),
+export const sha512: CHash<_SHA512> = /* @__PURE__ */ createHasher(
+  () => new _SHA512(),
   oidNist(0x03)
 );
 /** SHA2-384 hash function from RFC 4634. */
-export const sha384: CHash<SHA384> = /* @__PURE__ */ createHasher(
-  () => new SHA384(),
+export const sha384: CHash<_SHA384> = /* @__PURE__ */ createHasher(
+  () => new _SHA384(),
   oidNist(0x02)
 );
 
@@ -454,15 +454,15 @@ export const sha384: CHash<SHA384> = /* @__PURE__ */ createHasher(
  * SHA2-512/256 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
  */
-export const sha512_256: CHash<SHA512_256> = /* @__PURE__ */ createHasher(
-  () => new SHA512_256(),
+export const sha512_256: CHash<_SHA512_256> = /* @__PURE__ */ createHasher(
+  () => new _SHA512_256(),
   oidNist(0x06)
 );
 /**
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
  */
-export const sha512_224: CHash<SHA512_224> = /* @__PURE__ */ createHasher(
-  () => new SHA512_224(),
+export const sha512_224: CHash<_SHA512_224> = /* @__PURE__ */ createHasher(
+  () => new _SHA512_224(),
   oidNist(0x05)
 );

@@ -13,7 +13,7 @@
  */
 import { SHA256_IV } from './_md.ts';
 import { fromBig } from './_u64.ts';
-import { BLAKE2, compress } from './blake2.ts';
+import { _BLAKE2, compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
@@ -55,7 +55,7 @@ const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
 export type Blake3Opts = { dkLen?: number; key?: Uint8Array; context?: Uint8Array };
 
 /** Blake3 hash. Can be used as MAC and KDF. */
-export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
+export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   private chunkPos = 0; // Position of current block in chunk
   private chunksDone = 0; // How many chunks we already have
   private flags = 0 | 0;
@@ -83,7 +83,7 @@ export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     } else if (hasContext) {
       abytes(context, undefined, 'context');
       const ctx = context;
-      const contextKey = new BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
+      const contextKey = new _BLAKE3({ dkLen: 32 }, B3_Flags.DERIVE_KEY_CONTEXT)
         .update(ctx)
         .digest();
       this.IV = u32(contextKey);
@@ -153,8 +153,8 @@ export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
     }
     this.pos = 0;
   }
-  _cloneInto(to?: BLAKE3): BLAKE3 {
-    to = super._cloneInto(to) as BLAKE3;
+  _cloneInto(to?: _BLAKE3): _BLAKE3 {
+    to = super._cloneInto(to) as _BLAKE3;
     const { IV, flags, state, chunkPos, posOut, chunkOut, stack, chunksDone } = this;
     to.state.set(state.slice());
     to.stack = stack.map((i) => Uint32Array.from(i));
@@ -270,7 +270,7 @@ export class BLAKE3 extends BLAKE2<BLAKE3> implements HashXOF<BLAKE3> {
  * const mac = blake3(data, { key: new Uint8Array(32) });
  * const kdf = blake3(data, { context: 'application name' });
  */
-export const blake3: CHashXOF<BLAKE3, Blake3Opts> = /* @__PURE__ */ createHasher<
-  BLAKE3,
+export const blake3: CHashXOF<_BLAKE3, Blake3Opts> = /* @__PURE__ */ createHasher<
+  _BLAKE3,
   Blake3Opts
->((opts = {}) => new BLAKE3(opts));
+>((opts = {}) => new _BLAKE3(opts));

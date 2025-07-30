@@ -495,46 +495,46 @@ class BLAKE1_64B extends BLAKE1<BLAKE1_64B> {
 }
 
 /** Internal blake1-224 hash class. */
-export class BLAKE224 extends BLAKE1_32B {
+export class _BLAKE224 extends BLAKE1_32B {
   constructor(opts: BlakeOpts = {}) {
     super(28, B224_IV, 0b0000_0000, opts);
   }
 }
 /** Internal blake1-256 hash class. */
-export class BLAKE256 extends BLAKE1_32B {
+export class _BLAKE256 extends BLAKE1_32B {
   constructor(opts: BlakeOpts = {}) {
     super(32, B256_IV, 0b0000_0001, opts);
   }
 }
 /** Internal blake1-384 hash class. */
-export class BLAKE384 extends BLAKE1_64B {
+export class _BLAKE384 extends BLAKE1_64B {
   constructor(opts: BlakeOpts = {}) {
     super(48, B384_IV, 0b0000_0000, opts);
   }
 }
 /** Internal blake1-512 hash class. */
-export class BLAKE512 extends BLAKE1_64B {
+export class _BLAKE512 extends BLAKE1_64B {
   constructor(opts: BlakeOpts = {}) {
     super(64, B512_IV, 0b0000_0001, opts);
   }
 }
 /** blake1-224 hash function */
-export const blake224: CHash<BLAKE224, BlakeOpts> = /* @__PURE__ */ createHasher<
-  BLAKE224,
+export const blake224: CHash<_BLAKE224, BlakeOpts> = /* @__PURE__ */ createHasher<
+  _BLAKE224,
   BlakeOpts
->((opts) => new BLAKE224(opts));
+>((opts) => new _BLAKE224(opts));
 /** blake1-256 hash function */
-export const blake256: CHash<BLAKE256, BlakeOpts> = /* @__PURE__ */ createHasher<
-  BLAKE256,
+export const blake256: CHash<_BLAKE256, BlakeOpts> = /* @__PURE__ */ createHasher<
+  _BLAKE256,
   BlakeOpts
->((opts) => new BLAKE256(opts));
+>((opts) => new _BLAKE256(opts));
 /** blake1-384 hash function */
-export const blake384: CHash<BLAKE384, BlakeOpts> = /* @__PURE__ */ createHasher<
-  BLAKE512,
+export const blake384: CHash<_BLAKE384, BlakeOpts> = /* @__PURE__ */ createHasher<
+  _BLAKE512,
   BlakeOpts
->((opts) => new BLAKE384(opts));
+>((opts) => new _BLAKE384(opts));
 /** blake1-512 hash function */
-export const blake512: CHash<BLAKE512, BlakeOpts> = /* @__PURE__ */ createHasher<
-  BLAKE512,
+export const blake512: CHash<_BLAKE512, BlakeOpts> = /* @__PURE__ */ createHasher<
+  _BLAKE512,
   BlakeOpts
->((opts) => new BLAKE512(opts));
+>((opts) => new _BLAKE512(opts));

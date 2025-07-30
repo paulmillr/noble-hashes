@@ -4,7 +4,7 @@
  */
 import { abytes, aexists, ahash, clean, type CHash, type Hash } from './utils.ts';
 
-export class HMAC<T extends Hash<T>> implements Hash<HMAC<T>> {
+export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
   oHash: T;
   iHash: T;
   blockLen: number;
@@ -52,7 +52,7 @@ export class HMAC<T extends Hash<T>> implements Hash<HMAC<T>> {
     this.digestInto(out);
     return out;
   }
-  _cloneInto(to?: HMAC<T>): HMAC<T> {
+  _cloneInto(to?: _HMAC<T>): _HMAC<T> {
     // Create new instance without calling constructor since key already in state and we don't know it.
     to ||= Object.create(Object.getPrototypeOf(this), {});
     const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
@@ -65,7 +65,7 @@ export class HMAC<T extends Hash<T>> implements Hash<HMAC<T>> {
     to.iHash = iHash._cloneInto(to.iHash);
     return to;
   }
-  clone(): HMAC<T> {
+  clone(): _HMAC<T> {
     return this._cloneInto();
   }
   destroy(): void {
@@ -87,7 +87,7 @@ export class HMAC<T extends Hash<T>> implements Hash<HMAC<T>> {
  */
 export const hmac: {
   (hash: CHash, key: Uint8Array, message: Uint8Array): Uint8Array;
-  create(hash: CHash, key: Uint8Array): HMAC<any>;
+  create(hash: CHash, key: Uint8Array): _HMAC<any>;
 } = (hash: CHash, key: Uint8Array, message: Uint8Array): Uint8Array =>
-  new HMAC<any>(hash, key).update(message).digest();
-hmac.create = (hash: CHash, key: Uint8Array) => new HMAC<any>(hash, key);
+  new _HMAC<any>(hash, key).update(message).digest();
+hmac.create = (hash: CHash, key: Uint8Array) => new _HMAC<any>(hash, key);
