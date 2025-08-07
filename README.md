@@ -152,7 +152,7 @@ const ec2 = cshake256(data, { personalization: 'def' });
 const et1 = turboshake128(data);
 const et2 = turboshake256(data, { D: 0x05 });
 // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash([data])
-const et3 = tuplehash256([utf8ToBytes('ab'), utf8ToBytes('c')]);
+const et3 = tuplehash256([new TextEncoder().encode('ab'), new TextEncoder().encode('c')]);
 // Not parallel in JS (similar to blake3 / kt128), added for compat
 const ep1 = parallelhash256(data, { blockLen: 8 });
 const kk = Uint8Array.from([0xca]);
