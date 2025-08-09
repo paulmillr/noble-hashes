@@ -154,7 +154,7 @@ export async function pbkdf2(
   const { c, dkLen } = _opts;
   anumber(c, 'c');
   anumber(dkLen, 'dkLen');
-  const _password = kdfInputToBytes(password, 'password');
+  const _password = kdfInputToBytes(password, 'password') as Uint8Array<ArrayBuffer>;
   const _salt = kdfInputToBytes(salt, 'salt');
   const key = await crypto.importKey('raw', _password.buffer, 'PBKDF2', false, ['deriveBits']);
   const deriveOpts = { name: 'PBKDF2', salt: _salt, iterations: c, hash: hash.webCryptoName };
