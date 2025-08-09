@@ -213,7 +213,7 @@ declare const TextDecoder: any;
  * Converts string to bytes using UTF8 encoding.
  * @example utf8ToBytes('abc') // Uint8Array.from([97, 98, 99])
  */
-export function utf8ToBytes(str: string): Uint8Array {
+export function utf8ToBytes(str: string): Uint8Array<ArrayBuffer> {
   if (typeof str !== 'string') throw new Error('string expected');
   return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
@@ -232,7 +232,7 @@ export type KDFInput = string | Uint8Array;
  * Helper for KDFs: consumes uint8array or string.
  * When string is passed, does utf8 decoding, using TextDecoder.
  */
-export function kdfInputToBytes(data: KDFInput, errorTitle = ''): Uint8Array {
+export function kdfInputToBytes(data: KDFInput, errorTitle = ''): Uint8Array<any> {
   if (typeof data === 'string') data = utf8ToBytes(data);
   abytes(data, undefined, errorTitle);
   return data;

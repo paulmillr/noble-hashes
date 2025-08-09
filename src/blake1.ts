@@ -340,10 +340,10 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
   // v[b] = rotr(v[b] ^ v[c], 25)
   ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
   ({ Bh, Bl } = { Bh: u64.rotrSH(Bh, Bl, 25), Bl: u64.rotrSL(Bh, Bl, 25) });
-  (BBUF[2 * a + 1] = Al), (BBUF[2 * a] = Ah);
-  (BBUF[2 * b + 1] = Bl), (BBUF[2 * b] = Bh);
-  (BBUF[2 * c + 1] = Cl), (BBUF[2 * c] = Ch);
-  (BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh);
+  ((BBUF[2 * a + 1] = Al), (BBUF[2 * a] = Ah));
+  ((BBUF[2 * b + 1] = Bl), (BBUF[2 * b] = Bh));
+  ((BBUF[2 * c + 1] = Cl), (BBUF[2 * c] = Ch));
+  ((BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh));
 }
 
 function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
@@ -365,10 +365,10 @@ function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
   // v[b] = rotr(v[b] ^ v[c], 11)
   ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
   ({ Bh, Bl } = { Bh: u64.rotrSH(Bh, Bl, 11), Bl: u64.rotrSL(Bh, Bl, 11) });
-  (BBUF[2 * a + 1] = Al), (BBUF[2 * a] = Ah);
-  (BBUF[2 * b + 1] = Bl), (BBUF[2 * b] = Bh);
-  (BBUF[2 * c + 1] = Cl), (BBUF[2 * c] = Ch);
-  (BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh);
+  ((BBUF[2 * a + 1] = Al), (BBUF[2 * a] = Ah));
+  ((BBUF[2 * b + 1] = Bl), (BBUF[2 * b] = Bh));
+  ((BBUF[2 * c + 1] = Cl), (BBUF[2 * c] = Ch));
+  ((BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh));
 }
 
 class BLAKE1_64B extends BLAKE1<BLAKE1_64B> {

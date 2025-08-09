@@ -77,10 +77,10 @@ function G(a: number, b: number, c: number, d: number) {
   ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
   ({ Bh, Bl } = { Bh: rotrBH(Bh, Bl, 63), Bl: rotrBL(Bh, Bl, 63) });
 
-  (A2_BUF[2 * a] = Al), (A2_BUF[2 * a + 1] = Ah);
-  (A2_BUF[2 * b] = Bl), (A2_BUF[2 * b + 1] = Bh);
-  (A2_BUF[2 * c] = Cl), (A2_BUF[2 * c + 1] = Ch);
-  (A2_BUF[2 * d] = Dl), (A2_BUF[2 * d + 1] = Dh);
+  ((A2_BUF[2 * a] = Al), (A2_BUF[2 * a + 1] = Ah));
+  ((A2_BUF[2 * b] = Bl), (A2_BUF[2 * b + 1] = Bh));
+  ((A2_BUF[2 * c] = Cl), (A2_BUF[2 * c + 1] = Ch));
+  ((A2_BUF[2 * d] = Dl), (A2_BUF[2 * d + 1] = Dh));
 }
 
 // prettier-ignore

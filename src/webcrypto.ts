@@ -24,7 +24,7 @@ export type WebHash = {
 };
 
 function createWebHash(name: string, blockLen: number, outputLen: number): WebHash {
-  const hashC: any = async (msg: Uint8Array) => {
+  const hashC: any = async (msg: Uint8Array<any>) => {
     abytes(msg);
     const crypto = _subtle();
     return new Uint8Array(await crypto.digest(name, msg));
@@ -70,8 +70,8 @@ export const hmac: {
 } = /* @__PURE__ */ (() => {
   const hmac_ = async (
     hash: WebHash,
-    key: Uint8Array,
-    message: Uint8Array
+    key: Uint8Array<any>,
+    message: Uint8Array<any>
   ): Promise<Uint8Array> => {
     const crypto = _subtle();
     abytes(key, undefined, 'key');
@@ -110,7 +110,7 @@ export const hmac: {
  */
 export async function hkdf(
   hash: WebHash,
-  ikm: Uint8Array,
+  ikm: Uint8Array<any>,
   salt: Uint8Array | undefined,
   info: Uint8Array | undefined,
   length: number
@@ -156,7 +156,7 @@ export async function pbkdf2(
   anumber(dkLen, 'dkLen');
   const _password = kdfInputToBytes(password, 'password');
   const _salt = kdfInputToBytes(salt, 'salt');
-  const key = await crypto.importKey('raw', _password, 'PBKDF2', false, ['deriveBits']);
+  const key = await crypto.importKey('raw', _password.buffer, 'PBKDF2', false, ['deriveBits']);
   const deriveOpts = { name: 'PBKDF2', salt: _salt, iterations: c, hash: hash.webCryptoName };
   return new Uint8Array(await crypto.deriveBits(deriveOpts, key, 8 * dkLen));
 }

@@ -52,10 +52,10 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: nu
   // v[b] = rotr(v[b] ^ v[c], 24)
   ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
   ({ Bh, Bl } = { Bh: u64.rotrSH(Bh, Bl, 24), Bl: u64.rotrSL(Bh, Bl, 24) });
-  (BBUF[2 * a] = Al), (BBUF[2 * a + 1] = Ah);
-  (BBUF[2 * b] = Bl), (BBUF[2 * b + 1] = Bh);
-  (BBUF[2 * c] = Cl), (BBUF[2 * c + 1] = Ch);
-  (BBUF[2 * d] = Dl), (BBUF[2 * d + 1] = Dh);
+  ((BBUF[2 * a] = Al), (BBUF[2 * a + 1] = Ah));
+  ((BBUF[2 * b] = Bl), (BBUF[2 * b + 1] = Bh));
+  ((BBUF[2 * c] = Cl), (BBUF[2 * c + 1] = Ch));
+  ((BBUF[2 * d] = Dl), (BBUF[2 * d + 1] = Dh));
 }
 
 function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
@@ -77,10 +77,10 @@ function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: nu
   // v[b] = rotr(v[b] ^ v[c], 63)
   ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
   ({ Bh, Bl } = { Bh: u64.rotrBH(Bh, Bl, 63), Bl: u64.rotrBL(Bh, Bl, 63) });
-  (BBUF[2 * a] = Al), (BBUF[2 * a + 1] = Ah);
-  (BBUF[2 * b] = Bl), (BBUF[2 * b + 1] = Bh);
-  (BBUF[2 * c] = Cl), (BBUF[2 * c + 1] = Ch);
-  (BBUF[2 * d] = Dl), (BBUF[2 * d + 1] = Dh);
+  ((BBUF[2 * a] = Al), (BBUF[2 * a + 1] = Ah));
+  ((BBUF[2 * b] = Bl), (BBUF[2 * b + 1] = Bh));
+  ((BBUF[2 * c] = Cl), (BBUF[2 * c + 1] = Ch));
+  ((BBUF[2 * d] = Dl), (BBUF[2 * d + 1] = Dh));
 }
 
 function checkBlake2Opts(
