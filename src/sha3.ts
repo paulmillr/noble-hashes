@@ -34,7 +34,7 @@ const _256n = BigInt(256);
 const _0x71n = BigInt(0x71);
 const SHA3_PI: number[] = [];
 const SHA3_ROTL: number[] = [];
-const _SHA3_IOTA: bigint[] = [];
+const _SHA3_IOTA: bigint[] = []; // no pure annotation: var is always used
 for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
   // Pi
   [x, y] = [y, (2 * x + 3 * y) % 5];
@@ -45,7 +45,7 @@ for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
   let t = _0n;
   for (let j = 0; j < 7; j++) {
     R = ((R << _1n) ^ ((R >> _7n) * _0x71n)) % _256n;
-    if (R & _2n) t ^= _1n << ((_1n << /* @__PURE__ */ BigInt(j)) - _1n);
+    if (R & _2n) t ^= _1n << ((_1n << BigInt(j)) - _1n);
   }
   _SHA3_IOTA.push(t);
 }

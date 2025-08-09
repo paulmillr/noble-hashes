@@ -433,15 +433,13 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
 }
 
 /** 128-bit KangarooTwelve: reduced 12-round keccak. */
-export const kt128: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher<
-  _KangarooTwelve,
-  KangarooOpts
->((opts: KangarooOpts = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts));
+export const kt128: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher(
+  (opts: KangarooOpts = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
+);
 /** 256-bit KangarooTwelve: reduced 12-round keccak. */
-export const kt256: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher<
-  _KangarooTwelve,
-  KangarooOpts
->((opts: KangarooOpts = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts));
+export const kt256: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher(
+  (opts: KangarooOpts = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
+);
 
 // MarsupilamiFourteen (14-rounds) can be defined as:
 // `new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)`
