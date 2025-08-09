@@ -270,7 +270,6 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
  * const mac = blake3(data, { key: new Uint8Array(32) });
  * const kdf = blake3(data, { context: 'application name' });
  */
-export const blake3: CHashXOF<_BLAKE3, Blake3Opts> = /* @__PURE__ */ createHasher<
-  _BLAKE3,
-  Blake3Opts
->((opts = {}) => new _BLAKE3(opts));
+export const blake3: CHashXOF<_BLAKE3, Blake3Opts> = /* @__PURE__ */ createHasher(
+  (opts = {}) => new _BLAKE3(opts)
+);

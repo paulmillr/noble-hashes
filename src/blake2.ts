@@ -347,10 +347,9 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
-export const blake2b: CHash<_BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher<
-  _BLAKE2b,
-  Blake2Opts
->((opts) => new _BLAKE2b(opts));
+export const blake2b: CHash<_BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher(
+  (opts) => new _BLAKE2b(opts)
+);
 
 // =================
 // Blake2S
@@ -485,7 +484,6 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
  * @param msg - message that would be hashed
  * @param opts - dkLen output length, key for MAC mode, salt, personalization
  */
-export const blake2s: CHash<_BLAKE2s, Blake2Opts> = /* @__PURE__ */ createHasher<
-  _BLAKE2s,
-  Blake2Opts
->((opts) => new _BLAKE2s(opts));
+export const blake2s: CHash<_BLAKE2s, Blake2Opts> = /* @__PURE__ */ createHasher(
+  (opts) => new _BLAKE2s(opts)
+);

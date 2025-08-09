@@ -338,5 +338,5 @@ export function randomBytes(bytesLength = 32): Uint8Array {
 
 // 06 09 60 86 48 01 65 03 04 02
 export const oidNist = (suffix: number): { oid: Uint8Array } => ({
-  oid: Uint8Array.from([6, 9, 0x60, 0x86, 0x48, 1, 0x65, 3, 4, 2, suffix]),
+  oid: Uint8Array.from([0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, suffix]),
 });

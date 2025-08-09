@@ -431,23 +431,23 @@ export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
  */
 export const sha256: CHash<_SHA256> = /* @__PURE__ */ createHasher(
   () => new _SHA256(),
-  oidNist(0x01)
+  /* @__PURE__ */ oidNist(0x01)
 );
 /** SHA2-224 hash function from RFC 4634 */
 export const sha224: CHash<_SHA224> = /* @__PURE__ */ createHasher(
   () => new _SHA224(),
-  oidNist(0x04)
+  /* @__PURE__ */ oidNist(0x04)
 );
 
 /** SHA2-512 hash function from RFC 4634. */
 export const sha512: CHash<_SHA512> = /* @__PURE__ */ createHasher(
   () => new _SHA512(),
-  oidNist(0x03)
+  /* @__PURE__ */ oidNist(0x03)
 );
 /** SHA2-384 hash function from RFC 4634. */
 export const sha384: CHash<_SHA384> = /* @__PURE__ */ createHasher(
   () => new _SHA384(),
-  oidNist(0x02)
+  /* @__PURE__ */ oidNist(0x02)
 );
 
 /**
@@ -456,7 +456,7 @@ export const sha384: CHash<_SHA384> = /* @__PURE__ */ createHasher(
  */
 export const sha512_256: CHash<_SHA512_256> = /* @__PURE__ */ createHasher(
   () => new _SHA512_256(),
-  oidNist(0x06)
+  /* @__PURE__ */ oidNist(0x06)
 );
 /**
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
@@ -464,5 +464,5 @@ export const sha512_256: CHash<_SHA512_256> = /* @__PURE__ */ createHasher(
  */
 export const sha512_224: CHash<_SHA512_224> = /* @__PURE__ */ createHasher(
   () => new _SHA512_224(),
-  oidNist(0x05)
+  /* @__PURE__ */ oidNist(0x05)
 );

@@ -99,11 +99,9 @@ export type ITupleHash = {
 //   create(opts?: ParallelOpts): ParallelHash;
 // };
 /** NIST cSHAKE-128 XOF. */
-export const cshake128: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ (() =>
-  gencShake(0x1f, 168, 128 / 8))();
+export const cshake128: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake(0x1f, 168, 16);
 /** NIST cSHAKE-256 XOF. */
-export const cshake256: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ (() =>
-  gencShake(0x1f, 136, 256 / 8))();
+export const cshake256: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake(0x1f, 136, 32);
 
 export class _KMAC extends Keccak implements HashXOF<_KMAC> {
   constructor(
@@ -151,22 +149,14 @@ function genKmac(blockLen: number, outputLen: number, xof = false) {
   return kmac;
 }
 
-export const kmac128: {
+export type IKMAC = {
   (key: Uint8Array, message: Uint8Array, opts?: KangarooOpts): Uint8Array;
   create(key: Uint8Array, opts?: cShakeOpts): _KMAC;
-} = /* @__PURE__ */ (() => genKmac(168, 128 / 8))();
-export const kmac256: {
-  (key: Uint8Array, message: Uint8Array, opts?: KangarooOpts): Uint8Array;
-  create(key: Uint8Array, opts?: KangarooOpts): _KMAC;
-} = /* @__PURE__ */ (() => genKmac(136, 256 / 8))();
-export const kmac128xof: {
-  (key: Uint8Array, message: Uint8Array, opts?: KangarooOpts): Uint8Array;
-  create(key: Uint8Array, opts?: KangarooOpts): _KMAC;
-} = /* @__PURE__ */ (() => genKmac(168, 128 / 8, true))();
-export const kmac256xof: {
-  (key: Uint8Array, message: Uint8Array, opts?: KangarooOpts): Uint8Array;
-  create(key: Uint8Array, opts?: KangarooOpts): _KMAC;
-} = /* @__PURE__ */ (() => genKmac(136, 256 / 8, true))();
+};
+export const kmac128: IKMAC = /* @__PURE__ */ genKmac(168, 16);
+export const kmac256: IKMAC = /* @__PURE__ */ genKmac(136, 32);
+export const kmac128xof: IKMAC = /* @__PURE__ */ genKmac(168, 16, true);
+export const kmac256xof: IKMAC = /* @__PURE__ */ genKmac(136, 32, true);
 
 // TupleHash
 // Usage: tuple(['ab', 'cd']) != tuple(['a', 'bcd'])
@@ -209,13 +199,13 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
 }
 
 /** 128-bit TupleHASH. */
-export const tuplehash128: ITupleHash = /* @__PURE__ */ (() => genTuple(168, 128 / 8))();
+export const tuplehash128: ITupleHash = /* @__PURE__ */ genTuple(168, 16);
 /** 256-bit TupleHASH. */
-export const tuplehash256: ITupleHash = /* @__PURE__ */ (() => genTuple(136, 256 / 8))();
+export const tuplehash256: ITupleHash = /* @__PURE__ */ genTuple(136, 32);
 /** 128-bit TupleHASH XOF. */
-export const tuplehash128xof: ITupleHash = /* @__PURE__ */ (() => genTuple(168, 128 / 8, true))();
+export const tuplehash128xof: ITupleHash = /* @__PURE__ */ genTuple(168, 16, true);
 /** 256-bit TupleHASH XOF. */
-export const tuplehash256xof: ITupleHash = /* @__PURE__ */ (() => genTuple(136, 256 / 8, true))();
+export const tuplehash256xof: ITupleHash = /* @__PURE__ */ genTuple(136, 32, true);
 
 // ParallelHash (same as K12/M14, but without speedup for inputs less 8kb, reduced number of rounds and more simple)
 type ParallelOpts = KangarooOpts & { blockLen?: number };
@@ -310,24 +300,38 @@ function genPrl(
 }
 
 /** 128-bit ParallelHash. In JS, it is not parallel. */
-export const parallelhash128: CHash<Keccak, ParallelOpts> = /* @__PURE__ */ (() =>
-  genPrl(168, 128 / 8, cshake128))();
+export const parallelhash128: CHash<Keccak, ParallelOpts> = /* @__PURE__ */ genPrl(
+  168,
+  16,
+  cshake128
+);
 /** 256-bit ParallelHash. In JS, it is not parallel. */
-export const parallelhash256: CHash<Keccak, ParallelOpts> = /* @__PURE__ */ (() =>
-  genPrl(136, 256 / 8, cshake256))();
+export const parallelhash256: CHash<Keccak, ParallelOpts> = /* @__PURE__ */ genPrl(
+  136,
+  32,
+  cshake256
+);
 /** 128-bit ParallelHash XOF. In JS, it is not parallel. */
-export const parallelhash128xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ */ (() =>
-  genPrl(168, 128 / 8, cshake128, true))();
+export const parallelhash128xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ */ genPrl(
+  168,
+  16,
+  cshake128,
+  true
+);
 /** 256-bit ParallelHash. In JS, it is not parallel. */
-export const parallelhash256xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ */ (() =>
-  genPrl(136, 256 / 8, cshake256, true))();
+export const parallelhash256xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ */ genPrl(
+  136,
+  32,
+  cshake256,
+  true
+);
 
 // must be simple 'shake with 12 rounds', but no, we got whole new spec about Turbo SHAKE Pro MAX.
 export type TurboshakeOpts = ShakeOpts & {
   D?: number; // Domain separation byte
 };
 
-const genTurboshake = (blockLen: number, outputLen: number) =>
+const genTurbo = (blockLen: number, outputLen: number) =>
   createHasher<Keccak, TurboshakeOpts>((opts: TurboshakeOpts = {}) => {
     const D = opts.D === undefined ? 0x1f : opts.D;
     // Section 2.1 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/17/
@@ -337,15 +341,9 @@ const genTurboshake = (blockLen: number, outputLen: number) =>
   });
 
 /** TurboSHAKE 128-bit: reduced 12-round keccak. */
-export const turboshake128: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurboshake(
-  168,
-  256 / 8
-);
+export const turboshake128: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurbo(168, 32);
 /** TurboSHAKE 256-bit: reduced 12-round keccak. */
-export const turboshake256: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurboshake(
-  136,
-  512 / 8
-);
+export const turboshake256: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurbo(136, 64);
 
 // Same as NIST rightEncode, but returns [0] for zero string
 function rightEncodeK12(n: number | bigint): Uint8Array {
@@ -435,15 +433,15 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
 }
 
 /** 128-bit KangarooTwelve: reduced 12-round keccak. */
-export const kt128: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ (() =>
-  createHasher<_KangarooTwelve, KangarooOpts>(
-    (opts: KangarooOpts = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
-  ))();
+export const kt128: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher<
+  _KangarooTwelve,
+  KangarooOpts
+>((opts: KangarooOpts = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts));
 /** 256-bit KangarooTwelve: reduced 12-round keccak. */
-export const kt256: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ (() =>
-  createHasher<_KangarooTwelve, KangarooOpts>(
-    (opts: KangarooOpts = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
-  ))();
+export const kt256: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher<
+  _KangarooTwelve,
+  KangarooOpts
+>((opts: KangarooOpts = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts));
 
 // MarsupilamiFourteen (14-rounds) can be defined as:
 // `new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)`
@@ -464,8 +462,8 @@ const genHopMAC =
  * HopMAC128(Key, M, C, L) = KT128(Key, KT128(M, C, 32), L)
  * HopMAC256(Key, M, C, L) = KT256(Key, KT256(M, C, 64), L)
  */
-export const HopMAC128: HopMAC = genHopMAC(kt128);
-export const HopMAC256: HopMAC = genHopMAC(kt256);
+export const HopMAC128: HopMAC = /* @__PURE__ */ genHopMAC(kt128);
+export const HopMAC256: HopMAC = /* @__PURE__ */ genHopMAC(kt256);
 
 /**
  * More at https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG.
@@ -474,13 +472,14 @@ export class _KeccakPRG extends Keccak implements PRG {
   protected rate: number;
   constructor(capacity: number) {
     anumber(capacity);
+    const rate = 1600 - capacity;
+    const rho = rate - 2;
     // Rho must be full bytes
-    if (capacity < 0 || capacity > 1600 - 10 || (1600 - capacity - 2) % 8)
-      throw new Error('invalid capacity');
+    if (capacity < 0 || capacity > 1600 - 10 || rho % 8) throw new Error('invalid capacity');
     // blockLen = rho in bytes
-    super((1600 - capacity - 2) / 8, 0, 0, true);
-    this.rate = 1600 - capacity;
-    this.posOut = Math.floor((this.rate + 7) / 8);
+    super(rho / 8, 0, 0, true);
+    this.rate = rate;
+    this.posOut = Math.floor((rate + 7) / 8);
   }
   protected keccak(): void {
     // Duplex padding
