@@ -1,6 +1,6 @@
 {
   "name": "@noble/hashes",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0-beta.4",
   "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
   "files": [
     "/*.js",

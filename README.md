@@ -9,7 +9,7 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2
 - 🥈 Optional, friendly wrapper over native WebCrypto
-- 🪶 20KB (gzipped) for everything, 2.4KB for single-hash build
+- 🪶 21KB (gzipped) for everything, 2.4KB for single-hash build
 
 Check out [Upgrading](#upgrading) for information about upgrading from previous versions.
 Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
