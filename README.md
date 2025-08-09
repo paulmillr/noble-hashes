@@ -69,11 +69,10 @@ import { hkdf } from '@noble/hashes/hkdf.js';
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt.js';
 import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js';
-
-// sha256, sha384, sha512, hmac, hkdf, pbkdf2
 import * as webcrypto from '@noble/hashes/webcrypto.js';
-// bytesToHex, bytesToUtf8, concatBytes
+// const { sha256, sha384, sha512, hmac, hkdf, pbkdf2 } = webcrypto;
 import * as utils from '@noble/hashes/utils.js';
+const { bytesToHex, concatBytes, equalBytes, hexToBytes } = utils;
 ```
 
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
