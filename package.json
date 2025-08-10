@@ -29,13 +29,6 @@
     "test:acvp": "node --experimental-strip-types test/slow-acvp.test.ts",
     "test:kdf": "node --experimental-strip-types test/slow-kdf.test.ts"
   },
-  "author": "Paul Miller (https://paulmillr.com)",
-  "homepage": "https://paulmillr.com/noble/",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/paulmillr/noble-hashes.git"
-  },
-  "license": "MIT",
   "devDependencies": {
     "@paulmillr/jsbt": "0.4.1",
     "@types/node": "24.2.1",
@@ -52,6 +45,13 @@
   "main": "index.js",
   "module": "index.js",
   "sideEffects": false,
+  "author": "Paul Miller (https://paulmillr.com)",
+  "homepage": "https://paulmillr.com/noble/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paulmillr/noble-hashes.git"
+  },
+  "license": "MIT",
   "keywords": [
     "sha1",
     "sha2",
