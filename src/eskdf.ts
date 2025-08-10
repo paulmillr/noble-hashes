@@ -15,12 +15,12 @@ import { abytes, bytesToHex, clean, createView, hexToBytes, kdfInputToBytes } fr
 const SCRYPT_FACTOR = 2 ** 19;
 const PBKDF2_FACTOR = 2 ** 17;
 
-// Scrypt KDF
+/** Scrypt KDF */
 export function scrypt(password: string, salt: string): Uint8Array {
   return _scrypt(password, salt, { N: SCRYPT_FACTOR, r: 8, p: 1, dkLen: 32 });
 }
 
-// PBKDF2-HMAC-SHA256
+/** PBKDF2-HMAC-SHA256 */
 export function pbkdf2(password: string, salt: string): Uint8Array {
   return _pbkdf2(sha256, password, salt, { c: PBKDF2_FACTOR, dkLen: 32 });
 }
@@ -130,7 +130,7 @@ function modReduceKey(key: Uint8Array, modulus: bigint): Uint8Array {
   return bytes;
 }
 
-// We are not using classes because constructor cannot be async
+/** Not using classes because constructor cannot be async */
 export interface ESKDF {
   /**
    * Derives a child key. Child key will not be associated with any

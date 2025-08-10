@@ -83,26 +83,16 @@ const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
     cshakePers(new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true), opts)
   );
 
-// TODO: refactor
-// export type ICShake = {
-//   (msg: Uint8Array, opts?: cShakeOpts): Uint8Array;
-//   outputLen: number;
-//   blockLen: number;
-//   create(opts: cShakeOpts): HashXOF<Keccak>;
-// };
 export type ITupleHash = {
   (messages: Uint8Array[], opts?: cShakeOpts): Uint8Array;
   create(opts?: cShakeOpts): _TupleHash;
 };
-// export type IParHash = {
-//   (message: Uint8Array, opts?: ParallelOpts): Uint8Array;
-//   create(opts?: ParallelOpts): ParallelHash;
-// };
-/** NIST cSHAKE-128 XOF. */
+/** 128-bit NIST cSHAKE XOF. */
 export const cshake128: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake(0x1f, 168, 16);
-/** NIST cSHAKE-256 XOF. */
+/** 256-bit NIST cSHAKE XOF. */
 export const cshake256: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake(0x1f, 136, 32);
 
+/** Internal KMAC mac class. */
 export class _KMAC extends Keccak implements HashXOF<_KMAC> {
   constructor(
     blockLen: number,
@@ -153,13 +143,16 @@ export type IKMAC = {
   (key: Uint8Array, message: Uint8Array, opts?: KangarooOpts): Uint8Array;
   create(key: Uint8Array, opts?: cShakeOpts): _KMAC;
 };
+/** 128-bit Keccak MAC. */
 export const kmac128: IKMAC = /* @__PURE__ */ genKmac(168, 16);
+/** 256-bit Keccak MAC. */
 export const kmac256: IKMAC = /* @__PURE__ */ genKmac(136, 32);
+/** 128-bit Keccak-MAC XOF. */
 export const kmac128xof: IKMAC = /* @__PURE__ */ genKmac(168, 16, true);
+/** 256-bit Keccak-MAC XOF. */
 export const kmac256xof: IKMAC = /* @__PURE__ */ genKmac(136, 32, true);
 
-// TupleHash
-// Usage: tuple(['ab', 'cd']) != tuple(['a', 'bcd'])
+/** Internal TupleHash class. */
 export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
   constructor(blockLen: number, outputLen: number, enableXOF: boolean, opts: cShakeOpts = {}) {
     super(blockLen, 0x1f, outputLen, enableXOF);
@@ -198,18 +191,20 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
   return tuple;
 }
 
-/** 128-bit TupleHASH. */
+/** 128-bit TupleHASH. tuple(['ab', 'cd']) != tuple(['a', 'bcd']) */
 export const tuplehash128: ITupleHash = /* @__PURE__ */ genTuple(168, 16);
-/** 256-bit TupleHASH. */
+/** 256-bit TupleHASH. tuple(['ab', 'cd']) != tuple(['a', 'bcd']) */
 export const tuplehash256: ITupleHash = /* @__PURE__ */ genTuple(136, 32);
 /** 128-bit TupleHASH XOF. */
 export const tuplehash128xof: ITupleHash = /* @__PURE__ */ genTuple(168, 16, true);
 /** 256-bit TupleHASH XOF. */
 export const tuplehash256xof: ITupleHash = /* @__PURE__ */ genTuple(136, 32, true);
 
-// ParallelHash (same as K12/M14, but without speedup for inputs less 8kb, reduced number of rounds and more simple)
+// Same as K12/M14, but without speedup for inputs less 8kb,
+// reduced number of rounds and simpler.
 type ParallelOpts = KangarooOpts & { blockLen?: number };
 
+/** Internal Parallel Keccak Hash class. */
 export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
   private leafHash?: Hash<Keccak>;
   protected leafCons: () => Hash<Keccak>;
@@ -326,9 +321,9 @@ export const parallelhash256xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ *
   true
 );
 
-// must be simple 'shake with 12 rounds', but no, we got whole new spec about Turbo SHAKE Pro MAX.
+/** D means Domain separation byte */
 export type TurboshakeOpts = ShakeOpts & {
-  D?: number; // Domain separation byte
+  D?: number;
 };
 
 const genTurbo = (blockLen: number, outputLen: number) =>
@@ -340,7 +335,10 @@ const genTurbo = (blockLen: number, outputLen: number) =>
     return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);
   });
 
-/** TurboSHAKE 128-bit: reduced 12-round keccak. */
+/**
+ * TurboSHAKE 128-bit: reduced 12-round keccak.
+ * Should've been a simple "shake with 12 rounds", but we got a whole new spec about Turbo SHAKE Pro MAX.
+ */
 export const turboshake128: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurbo(168, 32);
 /** TurboSHAKE 256-bit: reduced 12-round keccak. */
 export const turboshake256: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurbo(136, 64);
@@ -354,9 +352,11 @@ function rightEncodeK12(n: number | bigint): Uint8Array {
   return Uint8Array.from(res);
 }
 
+/** K12 options. */
 export type KangarooOpts = { dkLen?: number; personalization?: Uint8Array };
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
+/** Internal K12 hash class. */
 export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> {
   readonly chunkLen = 8192;
   private leafHash?: Keccak;
@@ -432,11 +432,11 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
   }
 }
 
-/** 128-bit KangarooTwelve: reduced 12-round keccak. */
+/** 128-bit KangarooTwelve (k12): reduced 12-round keccak. */
 export const kt128: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher(
   (opts: KangarooOpts = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
 );
-/** 256-bit KangarooTwelve: reduced 12-round keccak. */
+/** 256-bit KangarooTwelve (k12): reduced 12-round keccak. */
 export const kt256: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher(
   (opts: KangarooOpts = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
 );
@@ -444,6 +444,7 @@ export const kt256: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ creat
 // MarsupilamiFourteen (14-rounds) can be defined as:
 // `new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)`
 
+/** KangarooTwelve-based MAC options. */
 export type HopMAC = (
   key: Uint8Array,
   message: Uint8Array,
@@ -456,11 +457,14 @@ const genHopMAC =
     hash(key, { personalization: hash(message, { personalization }), dkLen });
 
 /**
+ * 128-bit KangarooTwelve-based MAC.
+ *
  * These untested (there is no test vectors or implementation available). Use at your own risk.
  * HopMAC128(Key, M, C, L) = KT128(Key, KT128(M, C, 32), L)
  * HopMAC256(Key, M, C, L) = KT256(Key, KT256(M, C, 64), L)
  */
 export const HopMAC128: HopMAC = /* @__PURE__ */ genHopMAC(kt128);
+/** 256-bit KangarooTwelve-based MAC. */
 export const HopMAC256: HopMAC = /* @__PURE__ */ genHopMAC(kt256);
 
 /**

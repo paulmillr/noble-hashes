@@ -108,8 +108,6 @@ export const swap8IfBE: (n: number) => number = isLE
   ? (n: number) => n
   : (n: number) => byteSwap(n);
 
-/** @deprecated */
-export const byteSwapIfBE: typeof swap8IfBE = swap8IfBE;
 /** In place byte swap for Uint32Array */
 export function byteSwap32(arr: Uint32Array): Uint32Array {
   for (let i = 0; i < arr.length; i++) {
@@ -256,6 +254,7 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
 }
 
 type EmptyObj = {};
+/** Merges default options and passed options. */
 export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   defaults: T1,
   opts?: T2
@@ -266,6 +265,7 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   return merged as T1 & T2;
 }
 
+/** Common interface for all hashes. */
 export interface Hash<T> {
   blockLen: number; // Bytes per block
   outputLen: number; // Bytes in output
@@ -277,6 +277,7 @@ export interface Hash<T> {
   clone(): T;
 }
 
+/** PseudoRandom (number) Generator */
 export interface PRG {
   addEntropy(seed: Uint8Array): void;
   randomBytes(length: number): Uint8Array;
@@ -294,7 +295,9 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
   xofInto(buf: Uint8Array): Uint8Array; // read buf.length bytes from digest stream into buf
 };
 
+/** Hash constructor */
 export type HasherCons<T, Opts = undefined> = Opts extends undefined ? () => T : (opts?: Opts) => T;
+/** Optional hash params. */
 export type HashInfo = {
   oid?: Uint8Array; // DER encoded OID in bytes
 };
@@ -315,6 +318,7 @@ export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
 /** XOF with output */
 export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CHash<T, Opts>;
 
+/** Creates function with outputLen, blockLen, create properties from a class constructor. */
 export function createHasher<T extends Hash<T>, Opts = undefined>(
   hashCons: HasherCons<T, Opts>,
   info: HashInfo = {}
@@ -336,7 +340,7 @@ export function randomBytes(bytesLength = 32): Uint8Array {
   return cr.getRandomValues(new Uint8Array(bytesLength));
 }
 
-// 06 09 60 86 48 01 65 03 04 02
-export const oidNist = (suffix: number): { oid: Uint8Array } => ({
+/** Creates OID opts for NIST hashes, with prefix 06 09 60 86 48 01 65 03 04 02. */
+export const oidNist = (suffix: number): Required<HashInfo> => ({
   oid: Uint8Array.from([0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, suffix]),
 });

@@ -331,6 +331,7 @@ export class _SHA512 extends SHA2_64B<_SHA512> {
   }
 }
 
+/** Internal SHA2-384 hash class. */
 export class _SHA384 extends SHA2_64B<_SHA384> {
   protected Ah: number = SHA384_IV[0] | 0;
   protected Al: number = SHA384_IV[1] | 0;

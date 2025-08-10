@@ -4,6 +4,7 @@
  */
 import { abytes, aexists, ahash, clean, type CHash, type Hash } from './utils.ts';
 
+/** Internal class for HMAC. */
 export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
   oHash: T;
   iHash: T;

@@ -266,6 +266,7 @@ export const keccak_384: CHash = /* @__PURE__ */ genKeccak(0x01, 104, 48);
 /** keccak-512 hash function. */
 export const keccak_512: CHash = /* @__PURE__ */ genKeccak(0x01, 72, 64);
 
+/** Options for SHAKE XOF. */
 export type ShakeOpts = { dkLen?: number };
 
 const genShake = (suffix: number, blockLen: number, outputLen: number, info: HashInfo = {}) =>

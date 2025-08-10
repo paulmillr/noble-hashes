@@ -19,7 +19,7 @@ const SHA1_IV = /* @__PURE__ */ Uint32Array.from([
 // Reusable temporary buffer
 const SHA1_W = /* @__PURE__ */ new Uint32Array(80);
 
-/** SHA1 legacy hash class. */
+/** Internal SHA1 legacy hash class. */
 export class _SHA1 extends HashMD<_SHA1> {
   private A = SHA1_IV[0] | 0;
   private B = SHA1_IV[1] | 0;
@@ -100,7 +100,7 @@ const MD5_IV = /* @__PURE__ */ SHA1_IV.slice(0, 4);
 
 // Reusable temporary buffer
 const MD5_W = /* @__PURE__ */ new Uint32Array(16);
-/** MD5 legacy hash class. */
+/** Internal MD5 legacy hash class. */
 export class _MD5 extends HashMD<_MD5> {
   private A = MD5_IV[0] | 0;
   private B = MD5_IV[1] | 0;
