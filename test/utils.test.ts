@@ -63,7 +63,7 @@ describe('utils', () => {
     const aa = Uint8Array.from([a]);
     const bb = Uint8Array.from([b]);
     const cc = Uint8Array.from([c]);
-    eql(concatBytes(), new Uint8Array());
+    eql(concatBytes(), Uint8Array.of());
     eql(concatBytes(aa, bb), Uint8Array.from([a, b]));
     eql(concatBytes(aa, bb, cc), Uint8Array.from([a, b, c]));
     for (let v of TYPE_TEST.bytes)

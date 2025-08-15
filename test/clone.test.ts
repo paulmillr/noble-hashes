@@ -25,14 +25,14 @@ const HASHES = {
     big: () => hmac.create(sha256, new Uint8Array([1, 2, 3, 4, 5])),
   },
   kmac: {
-    small: () => kmac256.create(new Uint8Array([])),
+    small: () => kmac256.create(Uint8Array.of()),
     big: () =>
       kmac256.create(new Uint8Array([11, 22, 33]), {
         personalization: new Uint8Array([44, 55, 66]),
       }),
   },
   kt128: {
-    small: () => kt128.create(new Uint8Array([])),
+    small: () => kt128.create(Uint8Array.of()),
     big: () =>
       kt128.create(new Uint8Array([11, 22, 33]), {
         personalization: new Uint8Array([44, 55, 66]),

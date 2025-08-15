@@ -404,12 +404,12 @@ const HASHES = {
   },
   // Hmac as hash
   'HMAC-SHA256': {
-    fn: hmac.bind(null, sha256, new Uint8Array()),
-    obj: hmac.create.bind(null, sha256, new Uint8Array()),
-    node: (buf) => Uint8Array.from(createHmac('sha256', new Uint8Array()).update(buf).digest()),
-    node_obj: () => createHmac('sha256', new Uint8Array()),
+    fn: hmac.bind(null, sha256, Uint8Array.of()),
+    obj: hmac.create.bind(null, sha256, Uint8Array.of()),
+    node: (buf) => Uint8Array.from(createHmac('sha256', Uint8Array.of()).update(buf).digest()),
+    node_obj: () => createHmac('sha256', Uint8Array.of()),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => createHmac('sha256', new Uint8Array()).update(i[2]).digest().toString('hex'))
+    // > NIST_VECTORS.map((i) => createHmac('sha256', Uint8Array.of()).update(i[2]).digest().toString('hex'))
     nist: [
       'fd7adb152c05ef80dccf50a1fa4c05d5a3ec6da95575fc312ae7c5d091836351',
       'b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad',
@@ -419,12 +419,12 @@ const HASHES = {
     ],
   },
   'HMAC-SHA512': {
-    fn: hmac.bind(null, sha512, new Uint8Array()),
-    obj: hmac.create.bind(null, sha512, new Uint8Array()),
-    node: (buf) => Uint8Array.from(createHmac('sha512', new Uint8Array()).update(buf).digest()),
-    node_obj: () => createHmac('sha512', new Uint8Array()),
+    fn: hmac.bind(null, sha512, Uint8Array.of()),
+    obj: hmac.create.bind(null, sha512, Uint8Array.of()),
+    node: (buf) => Uint8Array.from(createHmac('sha512', Uint8Array.of()).update(buf).digest()),
+    node_obj: () => createHmac('sha512', Uint8Array.of()),
     // There is no official vectors, so we created them via:
-    // > NIST_VECTORS.map((i) => createHmac('sha512', new Uint8Array()).update(i[2]).digest().toString('hex'))
+    // > NIST_VECTORS.map((i) => createHmac('sha512', Uint8Array.of()).update(i[2]).digest().toString('hex'))
     nist: [
       '29689f6b79a8dd686068c2eeae97fd8769ad3ba65cb5381f838358a8045a358ee3ba1739c689c7805e31734fb6072f87261d1256995370d55725cba00d10bdd0',
       'b936cee86c9f87aa5d3c6f2e84cb5a4239a5fe50480a6ec66b70ab5b1f4ac6730c6c515421b327ec1d69402e53dfb49ad7381eb067b338fd7b0cb22247225d47',

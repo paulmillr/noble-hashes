@@ -288,7 +288,7 @@ describe('blake', () => {
         h.digest();
         h.xof(10);
       }, 'XOF after digest');
-      const bigOut = blake3(new Uint8Array(), { dkLen: 130816 });
+      const bigOut = blake3(Uint8Array.of(), { dkLen: 130816 });
       const hashxof = blake3.create();
       const out = [];
       for (let i = 0; i < 512; i++) out.push(hashxof.xof(i));

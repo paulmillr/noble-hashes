@@ -44,7 +44,7 @@ const CSHAKE_VESTORS = [
   },
   {
     fn: cshake128,
-    data: new Uint8Array([]),
+    data: Uint8Array.of(),
     dkLen: 32,
     NISTfn: '',
     personalization: '',
@@ -75,7 +75,7 @@ const CSHAKE_VESTORS = [
   },
   {
     fn: cshake256,
-    data: new Uint8Array([]),
+    data: Uint8Array.of(),
     dkLen: 64,
     NISTfn: '',
     personalization: '',

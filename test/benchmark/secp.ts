@@ -28,7 +28,7 @@ const CASES = [
     key: new Uint8Array(32).fill(1),
     msgs: [
       new Uint8Array(32).fill(2),
-      new Uint8Array([3]),
+      Uint8Array.of(3),
       new Uint8Array(32).fill(4),
       new Uint8Array(32).fill(5),
     ],

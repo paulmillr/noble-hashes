@@ -80,7 +80,7 @@ const TYPE_TEST_BASE = [
   async () => {},
   class Test {},
   Symbol.for('a'),
-  new Proxy(new Uint8Array(), {
+  new Proxy(Uint8Array.of(), {
     get(t, p, r) {
       if (p === 'isProxy') return true;
       return Reflect.get(t, p, r);
@@ -90,7 +90,7 @@ const TYPE_TEST_BASE = [
 
 const TYPE_TEST_OPT = [
   '',
-  new Uint8Array(),
+  Uint8Array.of(),
   new (class Test {})(),
   class Test {},
   () => {},
@@ -101,7 +101,7 @@ const TYPE_TEST_OPT = [
 ];
 
 const TYPE_TEST_NOT_BOOL = [false, true];
-const TYPE_TEST_NOT_BYTES = ['', 'test', '1', new Uint8Array([]), new Uint8Array([1, 2, 3])];
+const TYPE_TEST_NOT_BYTES = ['', 'test', '1', Uint8Array.of(), new Uint8Array([1, 2, 3])];
 const TYPE_TEST_NOT_HEX = [
   '0xbe',
   ' 1 2 3 4 5',
@@ -133,7 +133,7 @@ export const SPACE = {
 };
 export const EMPTY = {
   str: '',
-  bytes: new Uint8Array([]),
+  bytes: Uint8Array.of(),
 };
 
 export const repeat = (buf, len) => {
@@ -168,9 +168,9 @@ export const getTypeTests = () => [
   ['0xbe', '"0xbe"'],
   ['keys', '"keys"'],
   [new String('1234'), 'String(1234)'],
-  [new Uint8Array([]), 'ui8a([])'],
-  [new Uint8Array([0]), 'ui8a([0])'],
-  [new Uint8Array([1]), 'ui8a([1])'],
+  [Uint8Array.of(), 'ui8a([])'],
+  [Uint8Array.of(0), 'ui8a([0])'],
+  [Uint8Array.of(1), 'ui8a([1])'],
   // [new Uint8Array(32).fill(1), 'ui8a(32*[1])'],
   [new Uint8Array(4096).fill(1), 'ui8a(4096*[1])'],
   [new Uint16Array(32).fill(1), 'ui16a(32*[1])'],

@@ -162,7 +162,7 @@ should('Hmac 4GB', async () => {
 });
 
 should('cshake >4gb (GH-101)', () => {
-  const rng = cshake128(new Uint8Array(), { dkLen: 536_871_912 + 1000 });
+  const rng = cshake128(Uint8Array.of(), { dkLen: 536_871_912 + 1000 });
   const S = rng.subarray(0, 536_871_912);
   const data = rng.subarray(536_871_912);
   const res = cshake128(data, { personalization: S, dkLen: 32 });

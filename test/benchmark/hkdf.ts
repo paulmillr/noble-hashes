@@ -12,12 +12,12 @@ const [password, salt] = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
 
 const HKDF = {
   'HKDF-SHA256': {
-    node: (len) => crypto.hkdfSync('sha256', password, salt, new Uint8Array(), len),
+    node: (len) => crypto.hkdfSync('sha256', password, salt, Uint8Array.of(), len),
     stable: (len) => new stableHKDF(stable256.SHA256, password, salt, undefined).expand(len),
     noble: (len) => hkdf(sha256, salt, password, undefined, len),
   },
   'HKDF-SHA512': {
-    node: (len) => crypto.hkdfSync('sha512', password, salt, new Uint8Array(), len),
+    node: (len) => crypto.hkdfSync('sha512', password, salt, Uint8Array.of(), len),
     stable: (len) => new stableHKDF(stable512.SHA512, password, salt, undefined).expand(len),
     noble: (len) => hkdf(sha512, salt, password, undefined, len),
   },

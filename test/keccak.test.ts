@@ -77,7 +77,7 @@ describe('sha3', () => {
   should('SHA3-256', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-256')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
-      const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
+      const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
       eql(sha3_256(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
     }
   });
@@ -85,7 +85,7 @@ describe('sha3', () => {
   should('SHA3-384', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-384')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
-      const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
+      const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
       eql(sha3_384(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
     }
   });
@@ -93,7 +93,7 @@ describe('sha3', () => {
   should('SHA3-512', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-512')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
-      const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
+      const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
       eql(sha3_512(msg), fromHex(v.MD), `len=${v.Len} hex=${v.Msg}`);
     }
   });
@@ -101,7 +101,7 @@ describe('sha3', () => {
   should('shake128', () => {
     for (let v of getVectors('ShortMsgKAT_SHAKE128')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
-      const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
+      const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
       eql(shake128(msg, { dkLen: 512 }), fromHex(v.Squeezed), `len=${v.Len} hex=${v.Msg}`);
     }
   });
@@ -109,7 +109,7 @@ describe('sha3', () => {
   should('shake256', () => {
     for (let v of getVectors('ShortMsgKAT_SHAKE256')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
-      const msg = +v.Len ? fromHex(v.Msg) : new Uint8Array([]);
+      const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
       eql(shake256(msg, { dkLen: 512 }), fromHex(v.Squeezed), `len=${v.Len} hex=${v.Msg}`);
     }
   });
@@ -317,7 +317,7 @@ describe('sha3-addons', () => {
     const GEN_VECTORS = jsonGZ('vectors/sha3-addons.json.gz').v;
 
     const tupleData = (hex) => {
-      const data = hex ? fromHex(hex) : new Uint8Array([]);
+      const data = hex ? fromHex(hex) : Uint8Array.of();
       const tuples = [];
       for (let i = 0; i < data.length; i++) tuples.push(data.slice(0, i));
       return tuples;

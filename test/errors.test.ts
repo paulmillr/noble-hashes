@@ -167,7 +167,7 @@ const green = (s) => `\x1b[32m${s}\x1b[0m`;
 // by using other elements
 const VALUES = {
   bool: [false, true],
-  bytes: [new Uint8Array([]), new Uint8Array(10), new Uint8Array([1, 2, 3])],
+  bytes: [Uint8Array.of(), new Uint8Array(10), new Uint8Array([1, 2, 3])],
   u32a: [new Uint32Array([1, 2, 3])],
   i32a: [new Int32Array([1, 2, 3])],
   u16a: [new Uint16Array([1, 2, 3])],
@@ -210,7 +210,7 @@ const VALUES = {
     new ArrayBuffer(100),
     new DataView(new ArrayBuffer(100)),
     Symbol.for('a'),
-    new Proxy(new Uint8Array(), {
+    new Proxy(Uint8Array.of(), {
       get(t, p, r) {
         if (p === 'isProxy') return true;
         return Reflect.get(t, p, r);

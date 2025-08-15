@@ -14,7 +14,7 @@ const { createHash, hkdfSync, pbkdf2Sync } = cryp;
 const isBunDeno = Boolean(process.versions.bun || process.versions.deno);
 // Random data, by using hash we trying to achieve uniform distribution of each byte values
 let start = new Uint8Array([1, 2, 3, 4, 5]);
-let RANDOM = new Uint8Array();
+let RANDOM = Uint8Array.of();
 // Fill with random data (1MB)
 for (let i = 0; i < 32 * 1024; i++)
   RANDOM = concatBytes(RANDOM, (start = createHash('sha256').update(start).digest()));
@@ -69,7 +69,7 @@ function executeKDFTests(limit = true) {
             'sha256',
             c.ikm,
             c.salt || new Uint8Array(32), // nodejs doesn't support optional salt
-            c.info || new Uint8Array(),
+            c.info || Uint8Array.of(),
             c.dkLen
           )
         );
