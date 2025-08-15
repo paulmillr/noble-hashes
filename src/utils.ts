@@ -205,10 +205,10 @@ export async function asyncLoop(
 
 // Global symbols, but ts doesn't see them: https://github.com/microsoft/TypeScript/issues/31535
 declare const TextEncoder: any;
-declare const TextDecoder: any;
 
 /**
  * Converts string to bytes using UTF8 encoding.
+ * Built-in doesn't validate input to be string: we do the check.
  * @example utf8ToBytes('abc') // Uint8Array.from([97, 98, 99])
  */
 export function utf8ToBytes(str: string): Uint8Array {
@@ -216,24 +216,16 @@ export function utf8ToBytes(str: string): Uint8Array {
   return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
 
-/**
- * Converts bytes to string using UTF8 encoding.
- * @example bytesToUtf8(Uint8Array.from([97, 98, 99])) // 'abc'
- */
-export function bytesToUtf8(bytes: Uint8Array): string {
-  return new TextDecoder().decode(bytes);
-}
-
 /** KDFs can accept string or Uint8Array for user convenience. */
 export type KDFInput = string | Uint8Array;
+
 /**
  * Helper for KDFs: consumes uint8array or string.
  * When string is passed, does utf8 decoding, using TextDecoder.
  */
 export function kdfInputToBytes(data: KDFInput, errorTitle = ''): Uint8Array {
-  if (typeof data === 'string') data = utf8ToBytes(data);
-  abytes(data, undefined, errorTitle);
-  return data;
+  if (typeof data === 'string') return utf8ToBytes(data);
+  return abytes(data, undefined, errorTitle);
 }
 
 /** Copies several Uint8Arrays into one. */
@@ -334,8 +326,8 @@ export function createHasher<T extends Hash<T>, Opts = undefined>(
 
 /** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
 export function randomBytes(bytesLength = 32): Uint8Array {
-  const cr = typeof globalThis != null && (globalThis as any).crypto;
-  if (!cr || typeof cr.getRandomValues !== 'function')
+  const cr = typeof globalThis === 'object' ? (globalThis as any).crypto : null;
+  if (typeof cr?.getRandomValues !== 'function')
     throw new Error('crypto.getRandomValues must be defined');
   return cr.getRandomValues(new Uint8Array(bytesLength));
 }

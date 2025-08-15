@@ -10,9 +10,9 @@ import {
 } from './utils.ts';
 
 function _subtle(): typeof crypto.subtle {
-  const cr = typeof globalThis != null && (globalThis as any).crypto;
-  const sb = cr.subtle;
-  if (sb != null && typeof sb === 'object') return sb;
+  const cr = typeof globalThis === 'object' ? (globalThis as any).crypto : null;
+  const sb = cr?.subtle;
+  if (typeof sb === 'object' && sb != null) return sb;
   throw new Error('crypto.subtle must be defined');
 }
 
