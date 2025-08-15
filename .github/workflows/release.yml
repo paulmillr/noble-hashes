@@ -5,7 +5,7 @@ on:
 jobs:
   release-js:
     name: 'jsbt v0.4.1'
-    uses: paulmillr/jsbt/.github/workflows/release.yml@2318b9efe24831b4bd4cadf720c96f071c69c64d
+    uses: paulmillr/jsbt/.github/workflows/release.yml@df058af02b73017cd1f281d85bf4360e07790db6
     with:
       build-path: test/build
       # slow-types: false
