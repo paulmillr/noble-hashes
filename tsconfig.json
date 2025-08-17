@@ -1,7 +1,6 @@
 {
   "extends": "@paulmillr/jsbt/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "outDir": "."
   },
   "include": [
