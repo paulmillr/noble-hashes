@@ -38,8 +38,6 @@ The library's initial development was funded by [Ethereum Foundation](https://et
 
 > `deno add jsr:@noble/hashes`
 
-> `deno doc jsr:@noble/hashes` # command-line documentation
-
 We support all major platforms and runtimes.
 For React Native, you may need a [polyfill for getRandomValues](https://github.com/LinusU/react-native-get-random-values).
 A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/releases) is also available.
