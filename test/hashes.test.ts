@@ -1,4 +1,4 @@
-import { describe, should } from 'micro-should';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';

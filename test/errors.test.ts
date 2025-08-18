@@ -1,4 +1,4 @@
-import { describe, should } from 'micro-should';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects } from 'node:assert';
 import { sha256, sha512 } from '../src/sha2.ts';
 import { bytesToHex, randomBytes } from '../src/utils.ts';

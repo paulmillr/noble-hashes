@@ -1,4 +1,4 @@
-import { describe, should } from 'micro-should';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { pbkdf2Async } from '../src/pbkdf2.ts';
 import { scrypt, scryptAsync } from '../src/scrypt.ts';

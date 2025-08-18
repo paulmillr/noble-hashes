@@ -1,4 +1,4 @@
-import { should } from 'micro-should';
+import { should } from '@paulmillr/jsbt/test.js';
 // import './blake.test.js';
 // Generic hash tests
 import { init } from './hashes.test.ts';

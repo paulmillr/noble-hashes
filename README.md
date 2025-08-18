@@ -429,7 +429,7 @@ can read application memory, you are doomed in any case:
 
 For this package, there are 0 dependencies; and a few dev dependencies:
 
-- micro-bmark, micro-should and jsbt are used for benchmarking / testing / build tooling and developed by the same author
+- jsbt contains helpers for building, benchmarking & testing secure JS apps. It is developed by the same author
 - prettier, fast-check and typescript are used for code quality / test generation / ts compilation. It's hard to audit their source code thoroughly and fully because of their size
 
 ### Randomness

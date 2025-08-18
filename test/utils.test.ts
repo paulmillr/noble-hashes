@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { describe, should } from 'micro-should';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { sha256 } from '../src/sha2.ts';
 import * as u from '../src/utils.ts';

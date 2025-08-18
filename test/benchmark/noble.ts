@@ -1,4 +1,4 @@
-import { mark } from 'micro-bmark';
+import bench from '@paulmillr/jsbt/bench.js';
 import { argon2id } from '../../src/argon2.ts';
 import { blake256 } from '../../src/blake1.ts';
 import { blake2b, blake2s } from '../../src/blake2.ts';
@@ -37,34 +37,34 @@ async function main() {
     console.log('# ' + size);
     for (const title in hashes) {
       const hash = hashes[title];
-      await mark(title, () => hash(data));
+      await bench(title, () => hash(data));
     }
     console.log();
   }
 
   console.log('# MAC');
   const etc = buf(32);
-  await mark('hmac(sha256)', 100000, () => hmac(sha256, etc, etc));
-  await mark('hmac(sha512)', 100000, () => hmac(sha512, etc, etc));
-  await mark('kmac256', 100000, () => kmac256(etc, etc));
-  await mark('blake3(key)', 100000, () => blake3(etc, { key: etc }));
+  await bench('hmac(sha256)', 100000, () => hmac(sha256, etc, etc));
+  await bench('hmac(sha512)', 100000, () => hmac(sha512, etc, etc));
+  await bench('kmac256', 100000, () => kmac256(etc, etc));
+  await bench('blake3(key)', 100000, () => blake3(etc, { key: etc }));
 
   console.log();
   console.log('# KDF');
   const pass = buf(12);
   const salt = buf(14);
-  await mark('hkdf(sha256)', 100000, () => hkdf(sha256, salt, pass, etc, 32));
-  await mark('blake3(context)', 100000, () => blake3(etc, { context: etc }));
-  await mark('pbkdf2(sha256, c: 2 ** 18)', 10, () =>
+  await bench('hkdf(sha256)', 100000, () => hkdf(sha256, salt, pass, etc, 32));
+  await bench('blake3(context)', 100000, () => blake3(etc, { context: etc }));
+  await bench('pbkdf2(sha256, c: 2 ** 18)', 10, () =>
     pbkdf2(sha256, pass, salt, { c: 2 ** 18, dkLen: 32 })
   );
-  await mark('pbkdf2(sha512, c: 2 ** 18)', 5, () =>
+  await bench('pbkdf2(sha512, c: 2 ** 18)', 5, () =>
     pbkdf2(sha512, pass, salt, { c: 2 ** 18, dkLen: 32 })
   );
-  await mark('scrypt(n: 2 ** 19, r: 8, p: 1)', 5, () =>
+  await bench('scrypt(n: 2 ** 19, r: 8, p: 1)', 5, () =>
     scrypt(pass, salt, { N: 2 ** 19, r: 8, p: 1, dkLen: 32 })
   );
-  await mark('argon2id(t: 1, m: 128MB)', () =>
+  await bench('argon2id(t: 1, m: 128MB)', () =>
     argon2id(pass, salt, { t: 1, m: 128 * 1024, p: 1, dkLen: 32 })
   );
 }

@@ -1,4 +1,4 @@
-import { describe, should } from 'micro-should';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { hmac } from '../src/hmac.ts';
 import { sha256, sha384, sha512 } from '../src/sha2.ts';

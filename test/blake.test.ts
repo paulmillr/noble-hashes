@@ -1,4 +1,4 @@
-import { describe, should } from 'micro-should';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { blake224, blake256, blake384, blake512 } from '../src/blake1.ts';
 import { blake2b, blake2s } from '../src/blake2.ts';

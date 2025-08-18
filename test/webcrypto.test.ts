@@ -1,4 +1,4 @@
-import { describe, should } from 'micro-should';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { hkdf } from '../src/hkdf.ts';
 import { hmac } from '../src/hmac.ts';

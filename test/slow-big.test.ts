@@ -1,4 +1,4 @@
-import { should } from 'micro-should';
+import { should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync as nodeScryptSync } from 'node:crypto';
 import { hkdf } from '../src/hkdf.ts';

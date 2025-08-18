@@ -1,4 +1,4 @@
-import mark from 'micro-bmark';
+import mark from '@paulmillr/jsbt/bench.js';
 import crypto from 'node:crypto';
 
 import { hmac } from '../../src/hmac.ts';

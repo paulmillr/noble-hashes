@@ -1,4 +1,4 @@
-import { describe, should } from 'micro-should';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { hkdf, extract as hkdf_extract } from '../src/hkdf.ts';
 import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
