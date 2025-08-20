@@ -1,5 +1,5 @@
+import compare from '@paulmillr/jsbt/bench-compare.js';
 import * as wasm from 'hash-wasm';
-import compare from 'micro-bmark/compare.js';
 import { argon2id } from '../../src/argon2.ts';
 
 const password = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]);

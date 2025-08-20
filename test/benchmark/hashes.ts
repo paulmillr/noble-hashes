@@ -1,4 +1,4 @@
-import compare from 'micro-bmark/compare.js';
+import compare from '@paulmillr/jsbt/bench-compare.js';
 // Noble
 import { blake256, blake512 } from '../../src/blake1.ts';
 import { blake2b, blake2s } from '../../src/blake2.ts';
@@ -12,19 +12,21 @@ import { sha3_256 } from '../../src/sha3.ts';
 // Others
 import stableb2b from '@stablelib/blake2b';
 import stableb2s from '@stablelib/blake2s';
+import { HKDF as stableHKDF } from '@stablelib/hkdf';
 import stableHmac from '@stablelib/hmac';
 import stable256 from '@stablelib/sha256';
 import stable3 from '@stablelib/sha3';
-import stable2_512 from '@stablelib/sha512';
+import { default as stable2_512, default as stable512 } from '@stablelib/sha512';
 import _blakehash from 'blake-hash/js.js';
 import createHash from 'create-hash/browser.js';
 import createHmac from 'create-hmac/browser.js';
 import { hash as fastsha256 } from 'fast-sha256';
 import wasm_ from 'hash-wasm';
 import jssha3 from 'js-sha3';
-import { createHash as crypto_createHash, createHmac as crypto_createHmac } from 'node:crypto';
+import { createHash as crypto_createHash, createHmac as crypto_createHmac, hkdfSync } from 'node:crypto';
 import { SHA3 as _SHA3 } from 'sha3';
 import nobleUnrolled from 'unrolled-nbl-hashes-sha3';
+import { hkdf } from '../../src/hkdf.ts';
 
 const wasm = {};
 const wrapBuf = (arrayBuffer) => new Uint8Array(arrayBuffer);
@@ -153,6 +155,37 @@ async function main() {
       },
     }
   );
+
+  await main_hkdf();
+}
+
+
+async function main_hkdf() {
+  // Usage:
+  // - basic: node hkdf.js
+  // - sha256 only: MBENCH_FILTER=SHA256 node hkdf.js
+  // - full: MBENCH_DIMS='length,algorithm,library' MBENCH_FILTER=SHA256 node hkdf.js
+  const [hkpassword, hksalt] = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
+  const HKDF = {
+    'HKDF-SHA256': {
+      node: (len) => hkdfSync('sha256', hkpassword, hksalt, Uint8Array.of(), len),
+      stable: (len) => new stableHKDF(stable256.SHA256, hkpassword, hksalt, undefined).expand(len),
+      noble: (len) => hkdf(sha256, hksalt, hkpassword, undefined, len),
+    },
+    'HKDF-SHA512': {
+      node: (len) => hkdfSync('sha512', hkpassword, hksalt, Uint8Array.of(), len),
+      stable: (len) => new stableHKDF(stable512.SHA512, hkpassword, hksalt, undefined).expand(len),
+      noble: (len) => hkdf(sha512, hksalt, hkpassword, undefined, len),
+    },
+  };
+  await compare('HKDFs', { length: { 32: 32, 64: 64, 256: 256 } }, HKDF, {
+    libDims: ['algorithm', 'library'],
+    defaults: { library: 'noble', buffer: '32B' },
+    samples: (length) => {
+      if (length <= 64) return 100_000;
+      return 25_000;
+    },
+  });
 }
 
 import url from 'node:url';

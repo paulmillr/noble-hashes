@@ -1,4 +1,4 @@
-import compare from 'micro-bmark/compare.js';
+import compare from '@paulmillr/jsbt/bench-compare.js';
 import crypto from 'node:crypto';
 // Noble
 import { scrypt, scryptAsync } from '../../src/scrypt.ts';
@@ -13,32 +13,32 @@ import scryptjs from 'scrypt-js';
 
 function scryptAsyncSync(iters) {
   let res = undefined; // workaround for bad scrypt api
-  _scryptAsync(password, salt, { N: iters, r: 8, p: 1, dkLen: 32, encoding: 'binary' }, (key) => {
+  _scryptAsync(spassword, ssalt, { N: iters, r: 8, p: 1, dkLen: 32, encoding: 'binary' }, (key) => {
     res = key;
   });
   return res;
 }
 
-const [password, salt] = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
+const [spassword, ssalt] = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
 
 const SCRYPT = {
   sync: {
     node: (iters) =>
-      crypto.scryptSync(password, salt, 32, { N: iters, r: 8, p: 1, maxmem: 1024 ** 4 }),
+      crypto.scryptSync(spassword, ssalt, 32, { N: iters, r: 8, p: 1, maxmem: 1024 ** 4 }),
     'scrypt-async': (iters) => scryptAsyncSync(iters),
-    'scrypt-js': (iters) => scryptjs.syncScrypt(password, salt, iters, 8, 1, 32),
-    stablelib: (iters) => stableScrypt(password, salt, iters, 8, 1, 32),
-    noble: (iters) => scrypt(password, salt, { N: iters, r: 8, p: 1, dkLen: 32 }),
+    'scrypt-js': (iters) => scryptjs.syncScrypt(spassword, ssalt, iters, 8, 1, 32),
+    stablelib: (iters) => stableScrypt(spassword, ssalt, iters, 8, 1, 32),
+    noble: (iters) => scrypt(spassword, ssalt, { N: iters, r: 8, p: 1, dkLen: 32 }),
   },
   async: {
     node: (iters) =>
       new Promise((resolve) =>
-        crypto.scrypt(password, salt, 32, { N: iters, r: 8, p: 1, maxmem: 1024 ** 4 }, resolve)
+        crypto.scrypt(spassword, ssalt, 32, { N: iters, r: 8, p: 1, maxmem: 1024 ** 4 }, resolve)
       ),
     'hash-wasm': async (iters) =>
       await wasm.scrypt({
         password: 'password',
-        salt,
+        salt: ssalt,
         costFactor: iters,
         blockSize: 8,
         parallelism: 1,
@@ -48,19 +48,19 @@ const SCRYPT = {
     'scrypt-async': (iters) =>
       new Promise((resolve) =>
         _scryptAsync(
-          password,
-          salt,
+          spassword,
+          ssalt,
           { N: iters, r: 8, p: 1, dkLen: 32, encoding: 'binary' },
           resolve
         )
       ),
-    'scrypt-js': (iters) => scryptjs.scrypt(password, salt, iters, 8, 1, 32),
-    stablelib: (iters) => stableScryptAsync(password, salt, iters, 8, 1, 32),
-    noble: (iters) => scryptAsync(password, salt, { N: iters, r: 8, p: 1, dkLen: 32 }),
+    'scrypt-js': (iters) => scryptjs.scrypt(spassword, ssalt, iters, 8, 1, 32),
+    stablelib: (iters) => stableScryptAsync(spassword, ssalt, iters, 8, 1, 32),
+    noble: (iters) => scryptAsync(spassword, ssalt, { N: iters, r: 8, p: 1, dkLen: 32 }),
   },
 };
 
-async function main() {
+async function main_scrypt() {
   // basic: node scrypt.js
   // full: MBENCH_DIMS='p,r,iters,sync,library' node scrypt.js
   await compare(
@@ -92,5 +92,5 @@ async function main() {
 
 import url from 'node:url';
 if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {
-  main();
+  main_scrypt();
 }

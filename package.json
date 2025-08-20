@@ -19,7 +19,6 @@
   "scripts": {
     "bench": "node test/benchmark/noble.ts",
     "bench:compare": "MBENCH_DIMS='algorithm,buffer,library' node test/benchmark/hashes.ts",
-    "bench:compare-hkdf": "MBENCH_DIMS='algorithm,length,library' node test/benchmark/hkdf.ts",
     "bench:compare-scrypt": "MBENCH_DIMS='iters,library' MBENCH_FILTER='async' node test/benchmark/scrypt.ts",
     "bench:install": "cd test/benchmark; npm install",
     "build": "tsc",
