@@ -555,21 +555,17 @@ v2.0 changelog:
 
 - `npm install && npm run build && npm test` will build the code and run tests.
 - `npm run lint` / `npm run format` will run linter / fix linter issues.
-- `npm run bench` will run benchmarks, which may need their deps first (`npm run bench:install`)
+- `npm run bench` will run benchmarks
 - `npm run build:release` will build single file
 - There is **additional** 20-min DoS test `npm run test:dos` and 2-hour "big" multicore test `npm run test:big`.
   See [our approach to testing](./test/README.md)
 
-NTT hashes are outside of scope of the library. They depend on some math which is not available in noble-hashes, it doesn't make sense to add it here. You can view some of them in different repos:
-
-- [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)
-- [Poseidon in noble-curves](https://github.com/paulmillr/noble-curves/blob/3d124dd3ecec8b6634cc0b2ba1c183aded5304f9/src/abstract/poseidon.ts)
-
-Polynomial MACs are also outside of scope of the library. They are rarely used outside of encryption. Check out [Poly1305 & GHash in noble-ciphers](https://github.com/paulmillr/noble-ciphers).
-
 Additional resources:
 
-- Check out [guidelines](https://github.com/paulmillr/guidelines) for coding practices
+- NTT hashes are outside of scope of the library. They depend on some math which is not available in noble-hashes, it doesn't make sense to add it here. You can view some of them in different repos:
+    - [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)
+    - [Poseidon in noble-curves](https://github.com/paulmillr/noble-curves/blob/3d124dd3ecec8b6634cc0b2ba1c183aded5304f9/src/abstract/poseidon.ts)
+- Polynomial MACs are also outside of scope of the library. They are rarely used outside of encryption. Check out [Poly1305 & GHash in noble-ciphers](https://github.com/paulmillr/noble-ciphers).
 - See [paulmillr.com/noble](https://paulmillr.com/noble/) for useful resources, articles, documentation and demos
   related to the library.
 
