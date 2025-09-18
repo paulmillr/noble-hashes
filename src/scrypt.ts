@@ -139,7 +139,7 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
     throw new Error('"dkLen" expected integer 1..(2^32 - 1) * 32');
   const memUsed = blockSize * (N + p);
   if (memUsed > maxmem)
-    throw new Error('"maxmem" limit was hit, expected 128*r*(N+p) > "maxmem"=' + maxmem);
+    throw new Error('"maxmem" limit was hit, expected 128*r*(N+p) <= "maxmem"=' + maxmem);
   // [B0...Bp−1] ← PBKDF2HMAC-SHA256(Passphrase, Salt, 1, blockSize*ParallelizationFactor)
   // Since it has only one iteration there is no reason to use async variant
   const B = pbkdf2(sha256, password, salt, { c: 1, dkLen: blockSize * p });
