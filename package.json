@@ -34,6 +34,25 @@
     "test:acvp": "node --experimental-strip-types test/slow-acvp.test.ts",
     "test:kdf": "node --experimental-strip-types test/slow-kdf.test.ts"
   },
+  "exports": {
+    ".": "./index.js",
+    "./_md.js": "./_md.js",
+    "./argon2.js": "./argon2.js",
+    "./blake1.js": "./blake1.js",
+    "./blake2.js": "./blake2.js",
+    "./blake3.js": "./blake3.js",
+    "./eskdf.js": "./eskdf.js",
+    "./hkdf.js": "./hkdf.js",
+    "./hmac.js": "./hmac.js",
+    "./legacy.js": "./legacy.js",
+    "./pbkdf2.js": "./pbkdf2.js",
+    "./scrypt.js": "./scrypt.js",
+    "./sha2.js": "./sha2.js",
+    "./sha3-addons.js": "./sha3-addons.js",
+    "./sha3.js": "./sha3.js",
+    "./webcrypto.js": "./webcrypto.js",
+    "./utils.js": "./utils.js"
+  },
   "engines": {
     "node": ">= 20.19.0"
   },
