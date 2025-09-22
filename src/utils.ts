@@ -12,7 +12,7 @@ export function isBytes(a: unknown): a is Uint8Array {
 export function anumber(n: number, title: string = ''): void {
   if (!Number.isSafeInteger(n) || n < 0) {
     const prefix = title && `"${title}" `;
-    throw new Error(`${prefix}expected integer >0, got ${n}`);
+    throw new Error(`${prefix}expected integer >= 0, got ${n}`);
   }
 }
 
