@@ -4,7 +4,7 @@
  * * cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants from
  *   [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
  * * KangarooTwelve 🦘 and TurboSHAKE - reduced-round keccak from
- *   [k12-draft-17](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/17/)
+ *   [RFC 9861](https://datatracker.ietf.org/doc/rfc9861/)
  * * KeccakPRG: Pseudo-random generator based on Keccak [(pdf)](https://keccak.team/files/CSF-0.1.pdf)
  * @module
  */
@@ -329,7 +329,7 @@ export type TurboshakeOpts = ShakeOpts & {
 const genTurbo = (blockLen: number, outputLen: number) =>
   createHasher<Keccak, TurboshakeOpts>((opts: TurboshakeOpts = {}) => {
     const D = opts.D === undefined ? 0x1f : opts.D;
-    // Section 2.1 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/17/
+    // Section 2.1 of https://datatracker.ietf.org/doc/rfc9861/
     if (!Number.isSafeInteger(D) || D < 0x01 || D > 0x7f)
       throw new Error('"D" (domain separation byte) must be 0x01..0x7f, got: ' + D);
     return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);

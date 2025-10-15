@@ -167,7 +167,7 @@ const rand1b = p.fetch(1);
 - cSHAKE, KMAC, TupleHash, ParallelHash + XOF are available, matching
   [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
 - Reduced-round Keccak KT128 (KangarooTwelve 🦘, K12) and TurboSHAKE are available, matching
-  [kangaroo-draft-17](https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/).
+  [RFC 9861](https://datatracker.ietf.org/doc/rfc9861/).
 - [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): pseudo-random generator based on Keccak
 
 #### blake1, blake2, blake3
