@@ -91,8 +91,17 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
     }
     // Chi (χ)
     for (let y = 0; y < 50; y += 10) {
-      for (let x = 0; x < 10; x++) B[x] = s[y + x];
-      for (let x = 0; x < 10; x++) s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
+      const b0 = s[y], b1 = s[y + 1], b2 = s[y + 2], b3 = s[y + 3];
+      s[y] ^= ~s[y + 2] & s[y + 4];
+      s[y + 1] ^= ~s[y + 3] & s[y + 5];
+      s[y + 2] ^= ~s[y + 4] & s[y + 6];
+      s[y + 3] ^= ~s[y + 5] & s[y + 7];
+      s[y + 4] ^= ~s[y + 6] & s[y + 8];
+      s[y + 5] ^= ~s[y + 7] & s[y + 9];
+      s[y + 6] ^= ~s[y + 8] & b0;
+      s[y + 7] ^= ~s[y + 9] & b1;
+      s[y + 8] ^= ~b0 & b2;
+      s[y + 9] ^= ~b1 & b3;
     }
     // Iota (ι)
     s[0] ^= SHA3_IOTA_H[round];
