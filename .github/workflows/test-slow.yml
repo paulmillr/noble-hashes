@@ -1,7 +1,7 @@
 name: Run slow JS tests
 on:
   schedule:
-    - cron: '0 12 * * *'
+    - cron: '0 12 * * 1,4' # 12:00 bi-weekly (mon, thu)
   workflow_dispatch:
 env:
   MSHOULD_FAST: 1
