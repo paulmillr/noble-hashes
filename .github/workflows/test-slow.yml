@@ -1,72 +1,26 @@
-name: Run slow JS tests
+name: Run slow TS tests
 on:
   schedule:
-    - cron: '0 12 * * 1,4' # 12:00 bi-weekly (mon, thu)
+    - cron: '0 12 * * 1,4' # 06:00 bi-weekly (mon, thu)
   workflow_dispatch:
-env:
-  MSHOULD_FAST: 1
 jobs:
-  big:
-    name: Test large inputs
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
-        with:
-          persist-credentials: false
-          submodules: true
-      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
-        with:
-          registry-url: "https://registry.npmjs.org"
-          cache: npm
-          node-version: 24
-      - run: npm install
-      - run: npm run build --if-present
-      - run: npm run test:big
-  acvp:
-    name: Tests against slow ACVP vectors
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
-        with:
-          persist-credentials: false
-          submodules: true
-      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
-        with:
-          registry-url: "https://registry.npmjs.org"
-          cache: npm
-          node-version: 24
-      - run: npm install
-      - run: npm run build --if-present
-      - run: npm run test:acvp
+  slow:
+    name: Slow large input tests
+    uses: paulmillr/jsbt/.github/workflows/test-ts-slow.yml@857e7538fb14d48feaaa1dda889d8d4d10b9289d
+    with:
+      npm-task: test:slow
   dos:
-    name: Test for DoS
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
-        with:
-          persist-credentials: false
-          submodules: true
-      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
-        with:
-          registry-url: "https://registry.npmjs.org"
-          cache: npm
-          node-version: 24
-      - run: npm install
-      - run: npm run build --if-present
-      - run: npm run test:dos
+    name: Slow DoS tests
+    uses: paulmillr/jsbt/.github/workflows/test-ts-slow.yml@857e7538fb14d48feaaa1dda889d8d4d10b9289d
+    with:
+      npm-task: test:dos
+  acvp:
+    name: Slow ACVP tests
+    uses: paulmillr/jsbt/.github/workflows/test-ts-slow.yml@857e7538fb14d48feaaa1dda889d8d4d10b9289d
+    with:
+      npm-task: test:acvp
   kdf:
-    name: Test slow KDFs
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
-        with:
-          persist-credentials: false
-          submodules: true
-      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
-        with:
-          registry-url: "https://registry.npmjs.org"
-          cache: npm
-          node-version: 24
-      - run: npm install
-      - run: npm run build --if-present
-      - run: npm run test:kdf
+    name: Slow KDF tests
+    uses: paulmillr/jsbt/.github/workflows/test-ts-slow.yml@857e7538fb14d48feaaa1dda889d8d4d10b9289d
+    with:
+      npm-task: test:kdf

@@ -30,7 +30,7 @@
     "test:deno": "deno --allow-env --allow-read test/index.ts",
     "test:node20": "cd test; npx tsc; node compiled/test/index.js",
     "test:dos": "node --experimental-strip-types test/slow-dos.test.ts",
-    "test:big": "node --experimental-strip-types test/slow-big.test.ts",
+    "test:slow": "node --experimental-strip-types test/slow-big.test.ts",
     "test:acvp": "node --experimental-strip-types test/slow-acvp.test.ts",
     "test:kdf": "node --experimental-strip-types test/slow-kdf.test.ts"
   },
