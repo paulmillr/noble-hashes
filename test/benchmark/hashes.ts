@@ -23,7 +23,11 @@ import createHmac from 'create-hmac/browser.js';
 import { hash as fastsha256 } from 'fast-sha256';
 import wasm_ from 'hash-wasm';
 import jssha3 from 'js-sha3';
-import { createHash as crypto_createHash, createHmac as crypto_createHmac, hkdfSync } from 'node:crypto';
+import {
+  createHash as crypto_createHash,
+  createHmac as crypto_createHmac,
+  hkdfSync,
+} from 'node:crypto';
 import { SHA3 as _SHA3 } from 'sha3';
 import nobleUnrolled from 'unrolled-nbl-hashes-sha3';
 import { hkdf } from '../../src/hkdf.ts';
@@ -153,12 +157,26 @@ async function main() {
         if (buf.length === 8 * 1024) return 6_250;
         return 250;
       },
+      metrics: {
+        'MiB/s': {
+          rev: true, // Bigger = better (green +%, red -%)
+          width: 7,
+          diff: true,
+          compute: (_obj, stats, perSec, buffer) => {
+            const MiB = 1024 * 1024;
+            const ns = 1e9;
+            const bytesPerOp = 1 * buffer.length;
+            if (stats.mean === 0n) return 0; // Edge: infinite speed
+            const speed = (bytesPerOp * ns) / (Number(stats.mean) * MiB);
+            return +`${speed.toFixed(0)}`;
+          },
+        },
+      },
     }
   );
 
   await main_hkdf();
 }
-
 
 async function main_hkdf() {
   // Usage:
@@ -180,7 +198,7 @@ async function main_hkdf() {
   };
   await compare('HKDFs', { length: { 32: 32, 64: 64, 256: 256 } }, HKDF, {
     libDims: ['algorithm', 'library'],
-    defaults: { library: 'noble', buffer: '32B' },
+    defaults: { library: 'noble', length: '32' },
     samples: (length) => {
       if (length <= 64) return 100_000;
       return 25_000;
