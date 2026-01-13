@@ -160,8 +160,8 @@ const ek13 = kt256(data); // kangarootwelve 256-bit
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
 // * with a capacity of 254 bits.
 const p = keccakprg(254);
-p.feed('test');
-const rand1b = p.fetch(1);
+p.addEntropy(Uint8Array.from([1, 2, 3]));
+const rand1b = p.randomBytes(32);
 ```
 
 - cSHAKE, KMAC, TupleHash, ParallelHash + XOF are available, matching
