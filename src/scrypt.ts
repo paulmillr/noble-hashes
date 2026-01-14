@@ -146,6 +146,7 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
   const B32 = u32(B);
   // Re-used between parallel iterations. Array(iterations) of B
   const V = u32(new Uint8Array(blockSize * N));
+  const V0 = new Uint32Array(V.buffer, V.byteOffset, blockSize32);
   const tmp = u32(new Uint8Array(blockSize));
   let blockMixCb = () => {};
   if (onProgress) {
@@ -160,7 +161,7 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
         onProgress(blockMixCnt / totalBlockMix);
     };
   }
-  return { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick };
+  return { N, r, p, dkLen, blockSize32, V, V0, B32, B, tmp, blockMixCb, asyncTick };
 }
 
 function scryptOutput(
@@ -181,7 +182,7 @@ function scryptOutput(
  * scrypt('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  */
 export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Uint8Array {
-  const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
+  const { N, r, p, dkLen, blockSize32, V, V0, B32, B, tmp, blockMixCb } = scryptInit(
     password,
     salt,
     opts
@@ -189,7 +190,8 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
   swap32IfBE(B32);
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
-    for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
+    const B32pi = new Uint32Array(B.buffer, B.byteOffset + Pi * 4, blockSize32);
+    V0.set(B32pi); // V[0] = B[i]
     for (let i = 0, pos = 0; i < N - 1; i++) {
       BlockMix(V, pos, V, (pos += blockSize32), r); // V[i] = BlockMix(V[i-1]);
       blockMixCb();
@@ -200,7 +202,8 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
       // First u32 of the last 64-byte block (u32 is LE)
       // & (N - 1) is % N as N is a power of 2, N & (N - 1) = 0 is checked above; >>> 0 for unsigned, input fits in u32
       const j = (B32[Pi + blockSize32 - 16] & (N - 1)) >>> 0; // j = Integrify(X) % iterations
-      for (let k = 0; k < blockSize32; k++) tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k]; // tmp = B ^ V[j]
+      tmp.set(B32pi); // tmp = B
+      for (let k = 0; k < blockSize32; k ++) tmp[k] ^= V[j * blockSize32 + k]; // tmp = B ^ V[j]
       BlockMix(tmp, 0, B32, Pi, r); // B = BlockMix(B ^ V[j])
       blockMixCb();
     }
@@ -219,7 +222,7 @@ export async function scryptAsync(
   salt: KDFInput,
   opts: ScryptOpts
 ): Promise<Uint8Array> {
-  const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(
+  const { N, r, p, dkLen, blockSize32, V, V0, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(
     password,
     salt,
     opts
@@ -227,7 +230,8 @@ export async function scryptAsync(
   swap32IfBE(B32);
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
-    for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
+    const B32pi = new Uint32Array(B.buffer, B.byteOffset + Pi * 4, blockSize32);
+    V0.set(B32pi); // V[0] = B[i]
     let pos = 0;
     await asyncLoop(N - 1, asyncTick, () => {
       BlockMix(V, pos, V, (pos += blockSize32), r); // V[i] = BlockMix(V[i-1]);
@@ -239,7 +243,8 @@ export async function scryptAsync(
       // First u32 of the last 64-byte block (u32 is LE)
       // & (N - 1) is % N as N is a power of 2, N & (N - 1) = 0 is checked above; >>> 0 for unsigned, input fits in u32
       const j = (B32[Pi + blockSize32 - 16] & (N - 1)) >>> 0; // j = Integrify(X) % iterations
-      for (let k = 0; k < blockSize32; k++) tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k]; // tmp = B ^ V[j]
+      tmp.set(B32pi); // tmp = B
+      for (let k = 0; k < blockSize32; k ++) tmp[k] ^= V[j * blockSize32 + k]; // tmp = B ^ V[j]
       BlockMix(tmp, 0, B32, Pi, r); // B = BlockMix(B ^ V[j])
       blockMixCb();
     });
