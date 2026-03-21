@@ -1,12 +1,17 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
-import { hkdf, extract as hkdf_extract } from '../src/hkdf.ts';
-import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
-import { scrypt, scryptAsync } from '../src/scrypt.ts';
-import { sha256, sha512 } from '../src/sha2.ts';
+import { pathToFileURL } from 'node:url';
 import { hexToBytes, utf8ToBytes } from '../src/utils.ts';
 import { executeKDFTests } from './generator.ts';
+import { PLATFORMS } from './platform.ts';
 import { EMPTY, fmt, SPACE, TYPE_TEST } from './utils.ts';
+
+const BT = { describe, should };
+export function test(variant: string, platform: any, { describe, should } = BT) {
+const { hkdf, extract: hkdf_extract } = platform;
+const { pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256, sha512 } = platform;
+const scryptMaxmem = platform.scryptMaxmem || ((opts) => 128 * opts.r * (opts.N + opts.p));
+
 // HKDF test vectors from RFC 5869
 const HKDF_VECTORS = [
   {
@@ -166,8 +171,7 @@ const PBKDF2_VECTORS = [
       '6a 27 2b de bb a1 d0 78 47 8f 62 b3 97 f3 3c 8d',
   },
 ];
-
-describe('hkdf', () => {
+describe(`hkdf (${variant})`, () => {
   for (let i = 0; i < HKDF_VECTORS.length; i++) {
     const t = HKDF_VECTORS[i];
     should(`HKDF vector (${i})`, () => {
@@ -200,7 +204,7 @@ describe('hkdf', () => {
   });
 });
 
-describe('scrypt', () => {
+describe(`scrypt (${variant})`, () => {
   for (let i = 0; i < SCRYPT_VECTORS.length; i++) {
     const t = SCRYPT_VECTORS[i];
     should(`Scrypt vector (${i})`, async () => {
@@ -255,14 +259,14 @@ describe('scrypt', () => {
   });
 
   should('Scrypt maxmem', async () => {
-    const opts = { N: 2 ** 10, r: 8, p: 16, dkLen: 64, maxmem: 128 * 8 * (2 ** 10 + 16) };
+    const opts = { N: 2 ** 10, r: 8, p: 16, dkLen: 64, maxmem: scryptMaxmem({ N: 2 ** 10, r: 8, p: 16 }) };
     scrypt('pwd', 'salt', opts);
     throws(() => scrypt('pwd', 'salt', { ...opts, maxmem: opts.maxmem - 1 }), `scrypt(maxmem+=1)`);
     throws(() => scrypt('pwd', 'salt', { ...opts, N: 2 ** 11 }), `scrypt(default maxmem)`);
   });
 });
 
-describe('PBKDF2', () => {
+describe(`PBKDF2 (${variant})`, () => {
   for (let i = 0; i < PBKDF2_VECTORS.length; i++) {
     const t = PBKDF2_VECTORS[i];
     should(`PBKDF2 vector (${i})`, async () => {
@@ -319,7 +323,11 @@ describe('PBKDF2', () => {
     );
   });
 });
+}
 
-executeKDFTests(true);
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  for (const k in PLATFORMS) test(k, PLATFORMS[k]);
+  for (const k in PLATFORMS) executeKDFTests(k, PLATFORMS[k], true);
+}
 
 should.runWhen(import.meta.url);

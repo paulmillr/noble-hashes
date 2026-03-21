@@ -1,11 +1,11 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
-import { hkdf } from '../src/hkdf.ts';
-import { hmac } from '../src/hmac.ts';
-import { pbkdf2 } from '../src/pbkdf2.ts';
-import { sha256, sha384, sha512 } from '../src/sha2.ts';
-import * as webcrypto from '../src/webcrypto.ts';
+import { pathToFileURL } from 'node:url';
+import { PLATFORMS } from './platform.ts';
 
+const BT = { describe, should };
+export function test(variant: string, platform: any, { describe, should } = BT) {
+const { hkdf, hmac, pbkdf2, sha256, sha384, sha512, web: webcrypto } = platform;
 const HASHES = {
   // sha1: { noble: sha1, web: webcrypto.sha1 },
   sha256: { noble: sha256, web: webcrypto.sha256 },
@@ -16,8 +16,7 @@ const HASHES = {
 const BUF1 = new Uint8Array([1, 2, 3]);
 const BUF2 = new Uint8Array([4, 5, 6, 7]);
 const BUF3 = new Uint8Array([8, 9, 10]);
-
-describe('webcrypto', () => {
+describe(`webcrypto (${variant})`, () => {
   for (const [name, { noble, web }] of Object.entries(HASHES)) {
     describe(name, () => {
       should('Basic', async () => {
@@ -64,5 +63,9 @@ describe('webcrypto', () => {
     });
   }
 });
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href)
+  for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
 should.runWhen(import.meta.url);

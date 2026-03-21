@@ -1,6 +1,7 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import {
   argon2d,
   argon2dAsync,
@@ -17,12 +18,8 @@ import { json, pattern, fmt } from './utils.ts';
 const argon2_vectors = json('./vectors/argon2.json');
 
 // Some vectors are very slow and are ran in slow-big.test.js.
-
-const asyncMap = new Map([
-  [argon2i, argon2iAsync],
-  [argon2d, argon2dAsync],
-  [argon2id, argon2idAsync],
-]);
+const BT = { describe, should };
+const DEFAULT_PLATFORM = { argon2d, argon2dAsync, argon2i, argon2iAsync, argon2id, argon2idAsync, scrypt, scryptAsync };
 
 // Takes 10h
 const SCRYPT_CASES = gen({
@@ -34,14 +31,18 @@ const SCRYPT_CASES = gen({
   salt: bytes(0, 1024),
 });
 
+export function testScrypt(variant = 'noble', platform = DEFAULT_PLATFORM, { should } = BT) {
+  const { scrypt } = platform;
+  const scryptAsync = platform.scryptAsync || scrypt.async;
 for (let i = 0; i < SCRYPT_CASES.length; i++) {
   const c = SCRYPT_CASES[i];
-  should(fmt`Scrypt generator (${i}): ${c}`, async () => {
+  should(fmt`Scrypt generator (${i}, ${variant}): ${c}`, async () => {
     const opt = { ...c, N: 2 ** c.N };
     const exp = Uint8Array.from(scryptSync(c.pwd, c.salt, c.dkLen, { maxmem: 1024 ** 4, ...opt }));
     eql(scrypt(c.pwd, c.salt, opt), exp, fmt`scrypt(${opt})`);
     eql(await scryptAsync(c.pwd, c.salt, opt), exp, fmt`scryptAsync(${opt})`);
   });
+}
 }
 
 const verySlowArgon = [
@@ -94,14 +95,27 @@ const verySlowArgon = [
   },
 ];
 
+export function testArgon(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should } = BT) {
+  const { argon2d, argon2i, argon2id } = platform;
+  const fnMap = new Map([
+    [DEFAULT_PLATFORM.argon2i, argon2i],
+    [DEFAULT_PLATFORM.argon2d, argon2d],
+    [DEFAULT_PLATFORM.argon2id, argon2id],
+  ]);
+  const asyncMap = new Map([
+    [DEFAULT_PLATFORM.argon2i, platform.argon2iAsync || argon2i.async],
+    [DEFAULT_PLATFORM.argon2d, platform.argon2dAsync || argon2d.async],
+    [DEFAULT_PLATFORM.argon2id, platform.argon2idAsync || argon2id.async],
+  ]);
 for (let i = 0; i < verySlowArgon.length; i++) {
   const v = verySlowArgon[i];
+  const fn = fnMap.get(v.fn) || v.fn;
   const ver = v.version || 0x13;
   const str = `m=${v.m}, t=${v.t}, p=${v.p}`;
-  const title = `argon #${i} ${v.fn.name}/v${ver} ${str}`;
+  const title = `argon(${variant}) #${i} ${fn.name}/v${ver} ${str}`;
   should(title, () => {
     const res = bytesToHex(
-      v.fn(v.password, v.salt, {
+      fn(v.password, v.salt, {
         m: v.m,
         p: v.p,
         t: v.t,
@@ -113,7 +127,7 @@ for (let i = 0; i < verySlowArgon.length; i++) {
     eql(res, v.exp);
   });
   should(`${title}: async`, async () => {
-    const asyncFn = asyncMap.get(v.fn);
+    const asyncFn = asyncMap.get(v.fn) || fn.async;
     const res = bytesToHex(
       await asyncFn(v.password, v.salt, {
         m: v.m,
@@ -128,7 +142,7 @@ for (let i = 0; i < verySlowArgon.length; i++) {
   });
 }
 
-describe('argon2 crosstest', () => {
+describe(`argon2 crosstest (${variant})`, () => {
   const algos = {
     argon2d: argon2d,
     argon2i: argon2i,
@@ -186,5 +200,10 @@ describe('argon2 crosstest', () => {
     }
   }
 });
+}
 
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  testScrypt();
+  testArgon();
+}
 should.runWhen(import.meta.url);

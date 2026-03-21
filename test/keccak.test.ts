@@ -3,39 +3,9 @@ import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import {
-  cshake128,
-  cshake256,
-  keccakprg,
-  kmac128,
-  kmac128xof,
-  kmac256,
-  kmac256xof,
-  kt128,
-  parallelhash128,
-  parallelhash128xof,
-  parallelhash256,
-  parallelhash256xof,
-  tuplehash128,
-  tuplehash256,
-  turboshake128,
-  turboshake256,
-} from '../src/sha3-addons.ts';
-import {
-  Keccak,
-  keccak_224,
-  keccak_256,
-  keccak_384,
-  keccak_512,
-  sha3_224,
-  sha3_256,
-  sha3_384,
-  sha3_512,
-  shake128,
-  shake256,
-} from '../src/sha3.ts';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 import { TYPE_TEST, jsonGZ } from './utils.ts';
 import {
   CSHAKE_VESTORS,
@@ -65,7 +35,38 @@ function getVectors(name) {
 
 const fromHex = (hex) => (hex ? hexToBytes(hex.replace(/ |\n/gm, '')) : EMPTY);
 
-describe('sha3', () => {
+const BT = { describe, should };
+export function test(variant: string, platform: any, { describe, should } = BT) {
+const {
+  cshake128,
+  cshake256,
+  Keccak,
+  keccak_224,
+  keccak_256,
+  keccak_384,
+  keccak_512,
+  keccakprg,
+  kmac128,
+  kmac128xof,
+  kmac256,
+  kmac256xof,
+  kt128,
+  parallelhash128,
+  parallelhash128xof,
+  parallelhash256,
+  parallelhash256xof,
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+  shake128,
+  shake256,
+  tuplehash128,
+  tuplehash256,
+  turboshake128,
+  turboshake256,
+} = platform;
+describe(`sha3 (${variant})`, () => {
   should('SHA3-224', () => {
     for (let v of getVectors('ShortMsgKAT_SHA3-224')) {
       if (+v.Len % 8) continue; // partial bytes is not supported
@@ -136,7 +137,27 @@ describe('sha3', () => {
   });
 });
 
-describe('sha3-addons', () => {
+describe(`sha3-addons (${variant})`, () => {
+if (
+    !cshake128 ||
+    !cshake256 ||
+    !Keccak ||
+    !keccakprg ||
+    !kmac128 ||
+    !kmac128xof ||
+    !kmac256 ||
+    !kmac256xof ||
+    !kt128 ||
+    !parallelhash128 ||
+    !parallelhash128xof ||
+    !parallelhash256 ||
+    !parallelhash256xof ||
+    !tuplehash128 ||
+    !tuplehash256 ||
+    !turboshake128 ||
+    !turboshake256
+)
+  return;
   should('cSHAKE', () => {
     for (let i = 0; i < CSHAKE_VESTORS.length; i++) {
       const v = CSHAKE_VESTORS[i];
@@ -401,5 +422,9 @@ describe('sha3-addons', () => {
     throws(() => new Keccak(0, 0x06, 224 / 8));
   });
 });
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href)
+  for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
 should.runWhen(import.meta.url);

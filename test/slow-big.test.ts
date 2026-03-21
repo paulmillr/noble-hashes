@@ -1,4 +1,4 @@
-import { should } from '@paulmillr/jsbt/test.js';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync as nodeScryptSync } from 'node:crypto';
 import { hkdf } from '../src/hkdf.ts';
@@ -7,6 +7,7 @@ import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
 import { scrypt, scryptAsync } from '../src/scrypt.ts';
 import { sha256, sha512 } from '../src/sha2.ts';
 import { cshake128 } from '../src/sha3-addons.ts';
+import { pathToFileURL } from 'node:url';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
 import { RANDOM, executeKDFTests } from './generator.ts';
 import { HASHES } from './hashes.test.ts';
@@ -32,9 +33,8 @@ const ZERO_1MB = new Uint8Array(1 * MB);
 // Scrypt stuff
 const PASSWORD = new Uint8Array([1, 2, 3]);
 const SALT = new Uint8Array([4, 5, 6]);
-
-// KDF tests. Takes 5-10 mins
-executeKDFTests(false);
+const DEFAULT_PLATFORM = { cshake128, hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256, sha512 };
+const BT = { describe, should };
 // Manually generated with pycryptodome, on input ZERO_4GB / ZERO_5GB
 const BIG_VECTORS = {
   SHA1: '13edccc7871c2016fbe8a2a0d808e19a90fbfc63',
@@ -69,6 +69,20 @@ const BIG_VECTORS = {
     'fd9560144f511dd565c0a37147bbaa1ba7aa3c53da056337341fda4c9e6cc8403dc596bf4d01e9130bc1abe733b1284ddfc666dc929c03d9305a80a736f52bb8',
 };
 
+export function test(
+  variant = 'noble',
+  platform = DEFAULT_PLATFORM,
+  hashes = HASHES,
+  kdf = executeKDFTests,
+  { describe, should } = BT,
+  { largeScryptR = true, scrypt25GB = 9 } = {}
+) {
+const { cshake128, hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256, sha512 } =
+  platform;
+const HASHES = hashes;
+const run = () => {
+// KDF tests. Takes 5-10 mins
+kdf(variant, platform, false);
 // Very slow hash test, hashes 16 gb of data. Tests overflows in u32/i32
 // Takes 4h
 for (let h in HASHES) {
@@ -103,8 +117,8 @@ for (let h in HASHES) {
 const opts_2gb = [
   { N: 2 ** 14, r: 2 ** 10, p: 1 },
   { N: 2 ** 23, r: 2, p: 1 },
-  { N: 2, r: 2 ** 23, p: 1 },
 ];
+if (largeScryptR) opts_2gb.push({ N: 2, r: 2 ** 23, p: 1 });
 for (const opts of opts_2gb) {
   should(fmt`Scrypt (2GB): ${opts}`, async () => {
     const exp = Uint8Array.from(
@@ -161,7 +175,7 @@ should('Hmac 4GB', async () => {
   eql(hmac(sha256, ZERO_4GB, ZERO_4GB), exp);
 });
 
-should('cshake >4gb (GH-101)', () => {
+if (cshake128) should('cshake >4gb (GH-101)', () => {
   const rng = cshake128(Uint8Array.of(), { dkLen: 536_871_912 + 1000 });
   const S = rng.subarray(0, 536_871_912);
   const data = rng.subarray(536_871_912);
@@ -203,10 +217,10 @@ if (supports5GB) {
   // 26: 1740d229ad1f230b75483687b1f167ef804203c261c4f2c3de7eed12226b857a
   // 27: 8ed4c994fab397a1c87c0f15ec810f0ca3ec8e9100bb3f49604a910527ad14df
   should('Scrypt (2**25)', async () => {
-    if (!supportsXgb(9)) return;
+    if (!supportsXgb(scrypt25GB)) return;
     const opts = { N: 2 ** 25, r: 2, p: 2 };
     const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
-    const nobleOpts = { ...opts, maxmem: 9 * GB };
+    const nobleOpts = { ...opts, maxmem: scrypt25GB * GB };
     eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
     eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
   });
@@ -225,6 +239,10 @@ if (supports5GB) {
     eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
   });
 }
+};
+return variant === 'noble' ? run() : describe(variant, run);
+}
 
 // non parallel: 14h, parallel: ~1h
+if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
 should.runWhen(import.meta.url);

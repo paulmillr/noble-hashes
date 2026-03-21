@@ -1,27 +1,8 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
-import { hmac } from '../src/hmac.ts';
-import { sha1 } from '../src/legacy.ts';
-import { pbkdf2 } from '../src/pbkdf2.ts';
-import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../src/sha2.ts';
-import {
-  cshake128,
-  cshake256,
-  kmac128,
-  kmac128xof,
-  kmac256,
-  kmac256xof,
-  parallelhash128,
-  parallelhash128xof,
-  parallelhash256,
-  parallelhash256xof,
-  tuplehash128,
-  tuplehash128xof,
-  tuplehash256,
-  tuplehash256xof,
-} from '../src/sha3-addons.ts';
-import { sha3_224, sha3_256, sha3_384, sha3_512, shake128, shake256 } from '../src/sha3.ts';
+import { pathToFileURL } from 'node:url';
 import { concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 import { jsonGZ } from './utils.ts';
 
 const loadACVP = (name, gzip = true) => {
@@ -159,6 +140,40 @@ const MC = {
   // cshake/tuple/parallel: bit level increments :(
 };
 
+const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
+const BT = { describe, should };
+function run(variant: string, platform: any, isSlow = false, { describe, should } = BT) {
+const {
+  hmac,
+  sha1,
+  pbkdf2,
+  sha224,
+  sha256,
+  sha384,
+  sha512,
+  sha512_224,
+  sha512_256,
+  cshake128,
+  cshake256,
+  kmac128,
+  kmac128xof,
+  kmac256,
+  kmac256xof,
+  parallelhash128,
+  parallelhash128xof,
+  parallelhash256,
+  parallelhash256xof,
+  tuplehash128,
+  tuplehash128xof,
+  tuplehash256,
+  tuplehash256xof,
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+  shake128,
+  shake256,
+} = platform;
 const HASHES = {
   'SHA2-224': { lib: sha224, groups: loadACVP('SHA2-224-1.0'), MC: MC.sha2 },
   'SHA2-256': { lib: sha256, groups: loadACVP('SHA2-256-1.0'), MC: MC.sha2 },
@@ -220,10 +235,11 @@ const MAC = {
   },
 };
 
-export function avcpTests(isSlow = false) {
-  describe('AVCP' + (isSlow ? ' slow' : ''), () => {
+  describe(`AVCP${isSlow ? ' slow' : ''} (${variant})`, () => {
     for (const name in HASHES) {
       const { lib, xof, groups, MC } = HASHES[name];
+      // Optional SHA3 addon entrypoints are not available on every platform.
+      if (!lib || groups.some(({ info }) => info.ip.xof && !xof)) continue;
       should(name, () => {
         for (const { info, tests } of groups) {
           if (info.ip.outLenIncrement && info.ip.outLenIncrement % 8) continue;
@@ -234,7 +250,8 @@ export function avcpTests(isSlow = false) {
             const opts = {
               personalization: t.ip.customization ? utf8ToBytes(t.ip.customization) : undefined,
               NISTfn: t.ip.functionName,
-              dkLen: t.ip.outLen / 8,
+              // Fixed-output hash vectors omit outLen, so avoid passing NaN through.
+              dkLen: t.ip.outLen === undefined ? undefined : t.ip.outLen / 8,
               blockLen: t.ip.blockSize,
             };
             const fn = info.ip.xof ? xof : lib;
@@ -273,8 +290,9 @@ export function avcpTests(isSlow = false) {
       });
     }
     for (const name in MAC) {
+      const { lib, xof, hash, groups } = MAC[name];
+      if (!lib || groups.some(({ info }) => info.ip.xof && !xof)) continue;
       should(name, () => {
-        const { lib, xof, hash, groups } = MAC[name];
         for (const { info, tests } of groups) {
           for (const t of tests) {
             // skip bit level stuff
@@ -321,6 +339,10 @@ export function avcpTests(isSlow = false) {
   });
 }
 
-avcpTests();
+export function avcpTests(isSlow = false, variant = 'noble', platform = DEFAULT_PLATFORM, bt = BT) {
+  run(variant, platform, isSlow, bt);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) avcpTests();
 
 should.runWhen(import.meta.url);

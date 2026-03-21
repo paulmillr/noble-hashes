@@ -1,12 +1,8 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import * as cryp from 'node:crypto';
-import { blake2b, blake2s } from '../src/blake2.ts';
-import { hkdf } from '../src/hkdf.ts';
-import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
-import { sha256, sha512 } from '../src/sha2.ts';
-import { sha3_256, sha3_512 } from '../src/sha3.ts';
 import { concatBytes } from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 import { fmt } from './utils.ts';
 
 const { createHash, hkdfSync, pbkdf2Sync } = cryp;
@@ -47,13 +43,16 @@ const gen = (obj) => {
   return res;
 };
 
-function executeKDFTests(limit = true) {
+const BT = { describe, should };
+function executeKDFTests(variant, platform, limit = true, { describe, should } = BT) {
+  const { hkdf } = platform;
+  const { blake2b, blake2s, pbkdf2, pbkdf2Async, sha256, sha512, sha3_256, sha3_512 } = platform;
   function genl(params) {
     const cases = gen(params);
     return limit ? cases.slice(0, 64) : cases;
   }
 
-  describe('generator', () => {
+  describe(`generator (${variant})`, () => {
     should('hkdf(sha256) generator', async () => {
       if (!hkdfSync) return;
       const cases = genl({

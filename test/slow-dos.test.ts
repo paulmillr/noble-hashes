@@ -1,10 +1,11 @@
-import { should } from '@paulmillr/jsbt/test.js';
+import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects } from 'node:assert';
 import { hkdf } from '../src/hkdf.ts';
 import { hmac } from '../src/hmac.ts';
 import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
 import { scrypt, scryptAsync } from '../src/scrypt.ts';
 import { sha256 } from '../src/sha2.ts';
+import { pathToFileURL } from 'node:url';
 import { createView } from '../src/utils.ts';
 import { RANDOM } from './generator.ts';
 import { HASHES } from './hashes.test.ts';
@@ -70,6 +71,8 @@ const MARGIN = (() => {
 })();
 
 console.log(`Time margin: ${MARGIN}`);
+const DEFAULT_PLATFORM = { hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256 };
+const BT = { describe, should };
 
 const SMALL_BUF = new Uint8Array(1024);
 // Check that there is linear relation between input size and running time of callback
@@ -93,6 +96,10 @@ async function isLinear(callback, iters = 128) {
   );
 }
 
+export function test(variant = 'noble', platform = DEFAULT_PLATFORM, hashes = HASHES, { describe, should } = BT) {
+const { hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256 } = platform;
+const HASHES = hashes;
+const run = () => {
 // Verify that it correctly detects functions with quadratic complexity
 should(
   'detect quadratic functions',
@@ -193,6 +200,10 @@ should(
     );
   })
 );
+};
+return variant === 'noble' ? run() : describe(`DoS (${variant})`, run);
+}
 
 // takes ~20min
+if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
 should.runWhen(import.meta.url);

@@ -1,8 +1,8 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
-import { hmac } from '../src/hmac.ts';
-import { sha256, sha384, sha512 } from '../src/sha2.ts';
+import { pathToFileURL } from 'node:url';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 import { EMPTY, fmt, SPACE, truncate, TYPE_TEST } from './utils.ts';
 
 // HMAC test vectors from RFC 4231
@@ -109,7 +109,10 @@ const HMAC_VECTORS = [
   },
 ];
 
-describe('hmac', () => {
+const BT = { describe, should };
+export function test(variant: string, platform: any, { describe, should } = BT) {
+const { hmac, sha256, sha384, sha512 } = platform;
+describe(`hmac (${variant})`, () => {
   for (let i = 0; i < HMAC_VECTORS.length; i++) {
     const t = HMAC_VECTORS[i];
     describe('vector ' + i, () => {
@@ -200,5 +203,9 @@ describe('hmac', () => {
     throws(() => hmac(fakeHash, EMPTY.str, EMPTY.str));
   });
 });
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href)
+  for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
 should.runWhen(import.meta.url);

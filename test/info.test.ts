@@ -1,11 +1,43 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
+import { pathToFileURL } from 'node:url';
 import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../src/sha2.ts';
 import { sha3_224, sha3_256, sha3_384, sha3_512, shake128_32, shake256_64 } from '../src/sha3.ts';
 import { sha1, md5 } from '../src/legacy.ts';
 
 const hashAlgs = '2.16.840.1.101.3.4.2.'; // hashAlgs OBJECT IDENTIFIER ::= { nistAlgorithms 2 }
-const OIDS = [
+const DEFAULT_PLATFORM = {
+  sha224,
+  sha256,
+  sha384,
+  sha512,
+  sha512_224,
+  sha512_256,
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+  shake128_32,
+  shake256_64,
+  md5,
+  sha1,
+};
+const getOids = ({
+  sha256,
+  sha384,
+  sha512,
+  sha224,
+  sha512_224,
+  sha512_256,
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+  shake128_32,
+  shake256_64,
+  md5,
+  sha1,
+}) => [
   // hashAlg: https://csrc.nist.gov/projects/computer-security-objects-register/algorithm-registration
   { hash: sha256, oid: hashAlgs + '1', collision: 128, preimage: 256 },
   { hash: sha384, oid: hashAlgs + '2', collision: 192, preimage: 384 },
@@ -66,7 +98,10 @@ function encodeOidDER(oidStr: string): Uint8Array {
   return new Uint8Array([...header, ...body]);
 }
 
-should('info', () => {
+const BT = { should };
+export function test(variant = 'noble', platform = DEFAULT_PLATFORM, { should } = BT) {
+const OIDS = getOids(platform);
+should(`info ${variant}`, () => {
   for (const { hash, oid: hashOid, collision, preimage } of OIDS) {
     if (hash.oid) eql(hash.oid, encodeOidDER(hashOid));
     // Verify that our calculations are same as NIST ones
@@ -76,5 +111,7 @@ should('info', () => {
     if (preimage) eql(preimageResistence, preimage);
   }
 });
+}
 
+if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
 should.runWhen(import.meta.url);

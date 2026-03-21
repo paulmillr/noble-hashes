@@ -1,5 +1,6 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
+import { pathToFileURL } from 'node:url';
 import { pbkdf2Async } from '../src/pbkdf2.ts';
 import { scrypt, scryptAsync } from '../src/scrypt.ts';
 import { sha256 } from '../src/sha2.ts';
@@ -39,12 +40,31 @@ class LoopWatcher {
 
 const PWD = new Uint8Array([1, 2, 3]);
 const SALT = new Uint8Array([4, 5, 6]);
-const KDFS = {
-  Scrypt: (ms) => scryptAsync(PWD, SALT, { N: 2 ** 18, r: 8, p: 1, asyncTick: ms }),
-  PBKDF2: (ms) => pbkdf2Async(sha256, PWD, SALT, { c: 2 ** 19, asyncTick: ms }),
+const BT = { describe, should };
+const DEFAULT = { sha256, scrypt, scryptAsync, pbkdf2Async };
+const DEFAULT_PROGRESS = {
+  scrypt,
+  scryptAsync,
+  len: 10083,
+  head: [
+    0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
+    0.00049591064453125,
+  ],
+  tail: [0.9996566772460938, 0.999755859375, 0.9998550415039062, 0.9999542236328125, 1],
 };
 
-describe('async', () => {
+export function test(
+  variant = 'noble',
+  { sha256, scrypt, scryptAsync, pbkdf2Async } = DEFAULT,
+  { describe, should } = BT,
+  PROGRESS = DEFAULT_PROGRESS
+) {
+  const KDFS = {
+    Scrypt: (ms) => scryptAsync(PWD, SALT, { N: 2 ** 18, r: 8, p: 1, asyncTick: ms }),
+    PBKDF2: (ms) => pbkdf2Async(sha256, PWD, SALT, { c: 2 ** 19, asyncTick: ms }),
+  };
+
+  describe(`async (${variant})`, () => {
   for (let kdf in KDFS) {
     for (let ms of [10, 25, 50, 100]) {
       should(`${kdf} (${ms}ms)`, async () => {
@@ -64,46 +84,34 @@ describe('async', () => {
       for (let val of res) eql(val, exp);
     });
   }
-
-  should('scrypt progreessCallback', () => {
+  should('scrypt progreessCallback', async () => {
     let t = [];
-    scrypt('', '', { N: 2 ** 18, r: 8, p: 1, onProgress: (per) => t.push(per) });
+    await PROGRESS.scrypt('', '', { N: 2 ** 18, r: 8, p: 1, onProgress: (per) => t.push(per) });
     // Should be called ~10k
-    eql(t.length, 10083);
+    eql(t.length, PROGRESS.len);
     // Should be exact numbers
-    eql(
-      t.slice(0, 5),
-      [
-        0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
-        0.00049591064453125,
-      ]
-    );
+    eql(t.slice(0, 5), PROGRESS.head);
     // Should end with 1
-    eql(
-      t.slice(-5),
-      [0.9996566772460938, 0.999755859375, 0.9998550415039062, 0.9999542236328125, 1]
-    );
+    eql(t.slice(-5), PROGRESS.tail);
   });
 
   should('scryptAsync progreessCallback', async () => {
     let t = [];
-    await scryptAsync('', '', { N: 2 ** 18, r: 8, p: 1, onProgress: (per) => t.push(per) });
+    await PROGRESS.scryptAsync('', '', {
+      N: 2 ** 18,
+      r: 8,
+      p: 1,
+      onProgress: (per) => t.push(per),
+    });
     // Should be called ~10k
-    eql(t.length, 10083);
+    eql(t.length, PROGRESS.len);
     // Should be exact numbers
-    eql(
-      t.slice(0, 5),
-      [
-        0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
-        0.00049591064453125,
-      ]
-    );
+    eql(t.slice(0, 5), PROGRESS.head);
     // Should end with 1
-    eql(
-      t.slice(-5),
-      [0.9996566772460938, 0.999755859375, 0.9998550415039062, 0.9999542236328125, 1]
-    );
+    eql(t.slice(-5), PROGRESS.tail);
   });
-});
+  });
+}
 
+if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
 should.runWhen(import.meta.url);

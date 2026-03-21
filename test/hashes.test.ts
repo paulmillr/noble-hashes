@@ -2,24 +2,8 @@ import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../src/sha2.ts';
-// prettier-ignore
-import { blake224, blake256, blake384, blake512 } from '../src/blake1.ts';
-import { blake2b, blake2s } from '../src/blake2.ts';
-import { blake3 } from '../src/blake3.ts';
-import { hmac } from '../src/hmac.ts';
-import { md5, ripemd160, sha1 } from '../src/legacy.ts';
-import { kt128, turboshake128, turboshake256 } from '../src/sha3-addons.ts';
-import {
-  keccak_256,
-  sha3_224,
-  sha3_256,
-  sha3_384,
-  sha3_512,
-  shake128,
-  shake256,
-} from '../src/sha3.ts';
 import { concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 import { fmt, repeat, TYPE_TEST } from './utils.ts';
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
@@ -42,6 +26,38 @@ const NIST_VECTORS = [
 const testBuf = new Uint8Array(4096);
 for (let i = 0; i < testBuf.length; i++) testBuf[i] = i;
 
+const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
+const BT = { describe, should };
+function getHashes(platform: any) {
+const {
+  sha224,
+  sha256,
+  sha384,
+  sha512,
+  sha512_224,
+  sha512_256,
+  blake224,
+  blake256,
+  blake384,
+  blake512,
+  blake2b,
+  blake2s,
+  blake3,
+  hmac,
+  md5,
+  ripemd160,
+  sha1,
+  kt128,
+  turboshake128,
+  turboshake256,
+  keccak_256,
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+  shake128,
+  shake256,
+} = platform;
 const HASHES = {
   SHA1: {
     fn: sha1,
@@ -233,7 +249,7 @@ const HASHES = {
   },
   KT128: {
     fn: kt128,
-    obj: kt128.create,
+    obj: kt128?.create,
     nist: [
       'ab174f328c55a5510b0b209791bf8b60e801a7cfc2aa42042dcb8f547fbe3a7d',
       '1ac2d450fc3b4205d19da7bfca1b37513c0803577ac7167f06fe2ce1f0ef39e5',
@@ -244,7 +260,7 @@ const HASHES = {
   },
   TURBOSHAKE128: {
     fn: turboshake128,
-    obj: turboshake128.create,
+    obj: turboshake128?.create,
     nist: [
       'dcf1646dfe993a8eb6b782d1faaca6d82416a5dcf1de98ee3c6dbc5e1dc63018',
       '1e415f1c5983aff2169217277d17bb538cd945a397ddec541f1ce41af2c1b74c',
@@ -255,7 +271,7 @@ const HASHES = {
   },
   TURBOSHAKE256: {
     fn: turboshake256,
-    obj: turboshake256.create,
+    obj: turboshake256?.create,
     nist: [
       '63824b1431a7372e85edc022c9d7afdd027472fcfa33c887d6f5aaf8dc5d4db68afbcb5714b49b7ffd8dd115dd5bd5436f837236845a230d6969a4083a113617',
       '367a329dafea871c7802ec67f905ae13c57695dc2c6663c61035f59a18f8e7db11edc0e12e91ea60eb6b32df06dd7f002fbafabb6e13ec1cc20d995547600db0',
@@ -434,17 +450,22 @@ const HASHES = {
     ],
   },
 };
+  for (const h in HASHES) if (!HASHES[h].fn || !HASHES[h].obj) delete HASHES[h];
+  return HASHES;
+}
+const HASHES = getHashes(DEFAULT_PLATFORM);
 
 let BUF_768 = new Uint8Array(256 * 3);
 // Fill with random data
 for (let i = 0; i < (256 * 3) / 32; i++)
   BUF_768.set(createHash('sha256').update(new Uint8Array(i)).digest(), i * 32);
 
-function init() {
+function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should } = BT) {
+  const HASHES = getHashes(platform);
   for (const h in HASHES) {
     const hash = HASHES[h];
 
-    describe(h, () => {
+    describe(`${h} (${variant})`, () => {
       // All hashes has NIST vectors, some generated manually
       should('NIST vectors', () => {
         for (let i = 0; i < NIST_VECTORS.length; i++) {
@@ -549,7 +570,7 @@ function init() {
   }
 }
 
-export { HASHES, init, NIST_VECTORS };
+export { HASHES, getHashes, init, NIST_VECTORS };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) init();
 should.runWhen(import.meta.url);

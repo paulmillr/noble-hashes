@@ -1,5 +1,6 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects } from 'node:assert';
+import { pathToFileURL } from 'node:url';
 import { sha256, sha512 } from '../src/sha2.ts';
 import { bytesToHex, randomBytes } from '../src/utils.ts';
 // prettier-ignore
@@ -32,9 +33,9 @@ import {
   sha512 as wsha512,
 } from '../src/webcrypto.ts';
 // TODO: would be nice to extract types from type definitions.
-const shakeOpts = { dkLen: 'number?' };
-const blake2Opts = { ...shakeOpts, key: 'bytes?', salt: 'bytes?', personalization: 'bytes?' };
-const blake3Opts = { ...shakeOpts, key: 'bytes?', context: 'bytes?' };
+export const shakeOpts = { dkLen: 'number?' };
+export const blake2Opts = { ...shakeOpts, key: 'bytes?', salt: 'bytes?', personalization: 'bytes?' };
+export const blake3Opts = { ...shakeOpts, key: 'bytes?', context: 'bytes?' };
 const k12Opts = { ...shakeOpts, personalization: 'bytes?' };
 const cShakeOpts = { ...k12Opts, NISTfn: 'kdf?' };
 const pbkdfOpts = {
@@ -82,9 +83,9 @@ const argonOpts = {
   },
   ret: 'bytes',
 };
-const hashArgs = { message: 'bytes' };
+export const hashArgs = { message: 'bytes' };
 
-const ALGO = {
+const DEFAULT_ALGO = {
   md5: { fn: md5, args: hashArgs, ret: 'bytes' },
   sha1: { fn: sha1, args: hashArgs, ret: 'bytes' },
   ripemd160: { fn: ripemd160, args: hashArgs, ret: 'bytes' },
@@ -152,6 +153,9 @@ const ALGO = {
   argon2d: { fn: argon2d, ...argonOpts },
   argon2dAsync: { fn: argon2dAsync, ...argonOpts },
 };
+const BT = { describe, should };
+export function test(variant = 'noble', ALGO = DEFAULT_ALGO, { describe, should } = BT) {
+describe(`Errors (${variant})`, () => {
 
 async function getError(fn) {
   try {
@@ -537,5 +541,8 @@ should('Errors', async () => {
       console.log(`- ${algoName.padEnd(algoNameLength, ' ')}: ${error.message}`);
   }
 });
+});
+}
 
+if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
 should.runWhen(import.meta.url);

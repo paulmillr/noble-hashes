@@ -1,9 +1,8 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
-import { blake224, blake256, blake384, blake512 } from '../src/blake1.ts';
-import { blake2b, blake2s } from '../src/blake2.ts';
-import { blake3 } from '../src/blake3.ts';
+import { pathToFileURL } from 'node:url';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 import { TYPE_TEST, json, pattern } from './utils.ts';
 
 const blake1_vectors = [
@@ -90,7 +89,10 @@ const blake1_vectors = [
   },
 ];
 
-describe('blake', () => {
+const BT = { describe, should };
+export function test(variant: string, platform: any, { describe, should } = BT) {
+  const { blake224, blake256, blake384, blake512, blake2b, blake2s, blake3 } = platform;
+  describe(`blake (${variant})`, () => {
   should('Blake1 vectors', () => {
     for (const v of blake1_vectors) {
       const msg = typeof v.input === 'string' ? hexToBytes(v.input, 'hex') : v.input;
@@ -295,6 +297,10 @@ describe('blake', () => {
       eql(concatBytes(...out), bigOut, 'xof check against fixed size');
     });
   });
-});
+  });
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href)
+  for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
 should.runWhen(import.meta.url);

@@ -1,17 +1,14 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
-import {
-  argon2d,
-  argon2dAsync,
-  argon2i,
-  argon2iAsync,
-  argon2id,
-  argon2idAsync,
-} from '../src/argon2.ts';
+import { pathToFileURL } from 'node:url';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 
 // Some vectors are very slow and are ran in slow-big.test.js.
 
+const BT = { describe, should };
+export function test(variant: string, platform: any, { describe, should } = BT) {
+const { argon2d, argon2dAsync, argon2i, argon2iAsync, argon2id, argon2idAsync } = platform;
 const asyncMap = new Map([
   [argon2i, argon2iAsync],
   [argon2d, argon2dAsync],
@@ -304,7 +301,7 @@ let VECTORS = [
   },
 ];
 
-describe('Argon2', () => {
+describe(`Argon2 (${variant})`, () => {
   should('types', async () => {
     const opt = {
       t: 2,
@@ -368,5 +365,9 @@ describe('Argon2', () => {
     });
   }
 });
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href)
+  for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
 should.runWhen(import.meta.url);

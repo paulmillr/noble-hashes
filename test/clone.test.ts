@@ -1,16 +1,15 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
-import { blake2b, blake2s } from '../src/blake2.ts';
-import { blake3 } from '../src/blake3.ts';
-import { hmac } from '../src/hmac.ts';
-import { ripemd160 } from '../src/legacy.ts';
-import { sha256, sha512 } from '../src/sha2.ts';
-import { kmac256, kt128 } from '../src/sha3-addons.ts';
-import { sha3_256, shake256 } from '../src/sha3.ts';
+import { pathToFileURL } from 'node:url';
 import { utf8ToBytes } from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 
 // small -- minimal personalization options, big -- all personalization options
 // test that clone works correctly if "to" is same class instance but with completely different personalization
+const BT = { describe, should };
+export function test(variant: string, platform: any, { describe, should } = BT) {
+const { blake2b, blake2s, blake3, hmac, kmac256, kt128, ripemd160, sha256, sha512, sha3_256, shake256 } =
+  platform;
 const HASHES = {
   sha256: { small: () => sha256.create() },
   sha512: { small: () => sha512.create() },
@@ -23,21 +22,6 @@ const HASHES = {
   hmac: {
     small: () => hmac.create(sha256, new Uint8Array([5, 4, 3, 2, 1])),
     big: () => hmac.create(sha256, new Uint8Array([1, 2, 3, 4, 5])),
-  },
-  kmac: {
-    small: () => kmac256.create(Uint8Array.of()),
-    big: () =>
-      kmac256.create(new Uint8Array([11, 22, 33]), {
-        personalization: new Uint8Array([44, 55, 66]),
-      }),
-  },
-  kt128: {
-    small: () => kt128.create(Uint8Array.of()),
-    big: () =>
-      kt128.create(new Uint8Array([11, 22, 33]), {
-        personalization: new Uint8Array([44, 55, 66]),
-        dkLen: 256,
-      }),
   },
   blake2s: {
     small: () => blake2s.create(),
@@ -66,9 +50,28 @@ const HASHES = {
     // derive has different IV
     big: () => blake3.create({ context: utf8ToBytes('someContext'), dkLen: 256 }),
   },
-};
+} as Record<string, { small: () => any; big?: () => any }>;
+if (kmac256) {
+  HASHES.kmac = {
+    small: () => kmac256.create(Uint8Array.of()),
+    big: () =>
+      kmac256.create(new Uint8Array([11, 22, 33]), {
+        personalization: new Uint8Array([44, 55, 66]),
+      }),
+  };
+}
+if (kt128) {
+  HASHES.kt128 = {
+    small: () => kt128.create(Uint8Array.of()),
+    big: () =>
+      kt128.create(new Uint8Array([11, 22, 33]), {
+        personalization: new Uint8Array([44, 55, 66]),
+        dkLen: 256,
+      }),
+  };
+}
 
-describe('clone', () => {
+describe(`clone (${variant})`, () => {
   for (let k in HASHES) {
     describe(k, () => {
       const small = HASHES[k].small;
@@ -142,5 +145,9 @@ describe('clone', () => {
     });
   }
 });
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href)
+  for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
 should.runWhen(import.meta.url);
