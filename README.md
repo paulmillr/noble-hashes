@@ -44,8 +44,8 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
-import { sha256 } from '@noble/hashes/sha2.js';
-const hash = sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23]));
+import { sha256 as noble_sha256 } from '@noble/hashes/sha2.js';
+const hash = noble_sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23]));
 
 // Available modules
 import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2.js';
@@ -144,8 +144,9 @@ import {
   turboshake128, turboshake256,
 } from '@noble/hashes/sha3-addons.js';
 const data = Uint8Array.from([0x10, 0x20, 0x30]);
-const ec1 = cshake128(data, { personalization: 'def' });
-const ec2 = cshake256(data, { personalization: 'def' });
+const personalization = new TextEncoder().encode('def');
+const ec1 = cshake128(data, { personalization });
+const ec2 = cshake256(data, { personalization });
 const et1 = turboshake128(data);
 const et2 = turboshake256(data, { D: 0x05 });
 // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash([data])
@@ -185,20 +186,21 @@ for (let hash of [blake224, blake256, blake384, blake512, blake2b, blake2s, blak
 
 // blake2 advanced usage
 const ab = Uint8Array.from([0x01]);
+const txt = new TextEncoder();
 blake2s(ab);
 blake2s(ab, { key: new Uint8Array(32) });
-blake2s(ab, { personalization: 'pers1234' });
-blake2s(ab, { salt: 'salt1234' });
+blake2s(ab, { personalization: txt.encode('pers1234') });
+blake2s(ab, { salt: txt.encode('salt1234') });
 blake2b(ab);
 blake2b(ab, { key: new Uint8Array(64) });
-blake2b(ab, { personalization: 'pers1234pers1234' });
-blake2b(ab, { salt: 'salt1234salt1234' });
+blake2b(ab, { personalization: txt.encode('pers1234pers1234') });
+blake2b(ab, { salt: txt.encode('salt1234salt1234') });
 
 // blake3 advanced usage
 blake3(ab);
 blake3(ab, { dkLen: 256 });
 blake3(ab, { key: new Uint8Array(32) });
-blake3(ab, { context: 'application-name' });
+blake3(ab, { context: txt.encode('application-name') });
 ```
 
 - Blake1 is legacy hash, one of SHA3 proposals. It is rarely used anywhere. See [pdf](https://www.aumasson.jp/blake/blake.pdf).
@@ -244,12 +246,11 @@ import { randomBytes } from '@noble/hashes/utils.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 const inputKey = randomBytes(32);
 const salt = randomBytes(32);
-const info = 'application-key';
+const info = new TextEncoder().encode('application-key');
 const hk1 = hkdf(sha256, inputKey, salt, info, 32);
 
 // == same as
 import { extract, expand } from '@noble/hashes/hkdf.js';
-import { sha256 } from '@noble/hashes/sha2.js';
 const prk = extract(sha256, inputKey, salt);
 const hk2 = expand(sha256, prk, info, 32);
 ```
@@ -337,6 +338,7 @@ Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 
 ```js
 import { sha256, sha384, sha512, hmac, hkdf, pbkdf2 } from '@noble/hashes/webcrypto.js';
+import { randomBytes } from '@noble/hashes/utils.js';
 const whash = await sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23]));
 
 const key = new Uint8Array(32).fill(1);
@@ -345,7 +347,7 @@ const wmac = await hmac(sha256, key, msg);
 
 const inputKey = randomBytes(32);
 const salt = randomBytes(32);
-const info = 'application-key';
+const info = new TextEncoder().encode('application-key');
 const hk1 = await hkdf(sha256, inputKey, salt, info, 32);
 
 const pbkey1 = await pbkdf2(sha256, 'password', 'salt', { c: 524288, dkLen: 32 });
@@ -462,19 +464,29 @@ sha512 x 740,740 ops/sec @ 1μs/op
 sha3_256 x 287,686 ops/sec @ 3μs/op
 sha3_512 x 288,267 ops/sec @ 3μs/op
 k12 x 476,190 ops/sec @ 2μs/op
-blake2b x 464,252 ops/sec @ 2μs/op
-blake2s x 766,871 ops/sec @ 1μs/op
-blake3 x 879,507 ops/sec @ 1μs/op
+blake2b x 410,340 ops/sec @ 2μs/op
+blake2s x 942,507 ops/sec @ 1μs/op
+blake3 x 1,006,036 ops/sec @ 994ns/op
+ripemd160 x 1,410,437 ops/sec @ 709ns/op
+md5 x 1,663,893 ops/sec @ 601ns/op
+sha1 x 1,589,825 ops/sec @ 629ns/op
 
 # 1MB
 sha256 x 331 ops/sec @ 3ms/op
-sha512 x 129 ops/sec @ 7ms/op
-sha3_256 x 38 ops/sec @ 25ms/op
-sha3_512 x 20 ops/sec @ 47ms/op
-k12 x 88 ops/sec @ 11ms/op
-blake2b x 69 ops/sec @ 14ms/op
-blake2s x 57 ops/sec @ 17ms/op
-blake3 x 72 ops/sec @ 13ms/op
+sha512 x 128 ops/sec @ 7ms/op
+sha3_256 x 39 ops/sec @ 25ms/op
+sha3_512 x 21 ops/sec @ 46ms/op
+kt128 x 91 ops/sec @ 10ms/op
+kt256 x 75 ops/sec @ 13ms/op
+turboshake128 x 93 ops/sec @ 10ms/op
+blake256 x 57 ops/sec @ 17ms/op
+blake2b x 61 ops/sec @ 16ms/op
+blake2s x 78 ops/sec @ 12ms/op
+blake3 x 95 ops/sec @ 10ms/op
+ripemd160 x 177 ops/sec @ 5ms/op
+md5 x 250 ops/sec @ 3ms/op
+sha1 x 416 ops/sec @ 2ms/op
+
 
 # MAC
 hmac(sha256) x 599,880 ops/sec @ 1μs/op

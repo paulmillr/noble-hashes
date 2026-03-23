@@ -2,9 +2,9 @@
  * SHA3 (keccak) hash function, based on a new "Sponge function" design.
  * Different from older hashes, the internal state is bigger than output size.
  *
- * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
- * [Website](https://keccak.team/keccak.html),
- * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
+ * Check out {@link https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf | FIPS-202},
+ * {@link https://keccak.team/keccak.html | Website},
+ * and {@link https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub | the differences between SHA-3 and Keccak}.
  *
  * Check out `sha3-addons` module for cSHAKE, k12, and others.
  * @module
@@ -57,7 +57,16 @@ const SHA3_IOTA_L = IOTAS[1];
 const rotlH = (h: number, l: number, s: number) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
 const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
 
-/** `keccakf1600` internal function, additionally allows to adjust round count. */
+/**
+ * `keccakf1600` internal permutation, additionally allows adjusting the round count.
+ * @param s - 5x5 Keccak state encoded as 50 uint32 words
+ * @param rounds - number of rounds to execute
+ * @example
+ * Permute a Keccak state with the default 24 rounds.
+ * ```ts
+ * keccakP(new Uint32Array(50));
+ * ```
+ */
 export function keccakP(s: Uint32Array, rounds: number = 24): void {
   const B = new Uint32Array(5 * 2);
   // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
@@ -101,7 +110,21 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
   clean(B);
 }
 
-/** Keccak sponge function. */
+/**
+ * Keccak sponge function.
+ * @param blockLen - absorb/squeeze rate in bytes
+ * @param suffix - domain separation suffix byte
+ * @param outputLen - default digest length in bytes
+ * @param enableXOF - whether XOF output is allowed
+ * @param rounds - number of Keccak-f rounds
+ * @example
+ * Build a sponge state, absorb bytes, then finalize a digest.
+ * ```ts
+ * const hash = new Keccak(136, 0x06, 32);
+ * hash.update(new Uint8Array([1, 2, 3]));
+ * hash.digest();
+ * ```
+ */
 export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   protected state: Uint8Array;
   protected pos = 0;
@@ -228,28 +251,64 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
 const genKeccak = (suffix: number, blockLen: number, outputLen: number, info: HashInfo = {}) =>
   createHasher(() => new Keccak(blockLen, suffix, outputLen), info);
 
-/** SHA3-224 hash function. */
+/**
+ * SHA3-224 hash function.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA3-224.
+ * ```ts
+ * sha3_224(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha3_224: CHash = /* @__PURE__ */ genKeccak(
   0x06,
   144,
   28,
   /* @__PURE__ */ oidNist(0x07)
 );
-/** SHA3-256 hash function. Different from keccak-256. */
+/**
+ * SHA3-256 hash function. Different from keccak-256.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA3-256.
+ * ```ts
+ * sha3_256(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha3_256: CHash = /* @__PURE__ */ genKeccak(
   0x06,
   136,
   32,
   /* @__PURE__ */ oidNist(0x08)
 );
-/** SHA3-384 hash function. */
+/**
+ * SHA3-384 hash function.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA3-384.
+ * ```ts
+ * sha3_384(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha3_384: CHash = /* @__PURE__ */ genKeccak(
   0x06,
   104,
   48,
   /* @__PURE__ */ oidNist(0x09)
 );
-/** SHA3-512 hash function. */
+/**
+ * SHA3-512 hash function.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA3-512.
+ * ```ts
+ * sha3_512(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha3_512: CHash = /* @__PURE__ */ genKeccak(
   0x06,
   72,
@@ -257,17 +316,56 @@ export const sha3_512: CHash = /* @__PURE__ */ genKeccak(
   /* @__PURE__ */ oidNist(0x0a)
 );
 
-/** keccak-224 hash function. */
+/**
+ * Keccak-224 hash function.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Keccak-224.
+ * ```ts
+ * keccak_224(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const keccak_224: CHash = /* @__PURE__ */ genKeccak(0x01, 144, 28);
-/** keccak-256 hash function. Different from SHA3-256. */
+/**
+ * Keccak-256 hash function. Different from SHA3-256.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Keccak-256.
+ * ```ts
+ * keccak_256(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const keccak_256: CHash = /* @__PURE__ */ genKeccak(0x01, 136, 32);
-/** keccak-384 hash function. */
+/**
+ * Keccak-384 hash function.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Keccak-384.
+ * ```ts
+ * keccak_384(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const keccak_384: CHash = /* @__PURE__ */ genKeccak(0x01, 104, 48);
-/** keccak-512 hash function. */
+/**
+ * Keccak-512 hash function.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Keccak-512.
+ * ```ts
+ * keccak_512(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const keccak_512: CHash = /* @__PURE__ */ genKeccak(0x01, 72, 64);
 
 /** Options for SHAKE XOF. */
-export type ShakeOpts = { dkLen?: number };
+export type ShakeOpts = {
+  /** Desired number of output bytes. */
+  dkLen?: number;
+};
 
 const genShake = (suffix: number, blockLen: number, outputLen: number, info: HashInfo = {}) =>
   createHasher<Keccak, ShakeOpts>(
@@ -276,20 +374,60 @@ const genShake = (suffix: number, blockLen: number, outputLen: number, info: Has
     info
   );
 
-/** SHAKE128 XOF with 128-bit security. */
+/**
+ * SHAKE128 XOF with 128-bit security.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output-length override. See {@link ShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHAKE128.
+ * ```ts
+ * shake128(new Uint8Array([97, 98, 99]), { dkLen: 32 });
+ * ```
+ */
 export const shake128: CHashXOF<Keccak, ShakeOpts> =
   /* @__PURE__ */
   genShake(0x1f, 168, 16, /* @__PURE__ */ oidNist(0x0b));
-/** SHAKE256 XOF with 256-bit security. */
+/**
+ * SHAKE256 XOF with 256-bit security.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output-length override. See {@link ShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHAKE256.
+ * ```ts
+ * shake256(new Uint8Array([97, 98, 99]), { dkLen: 64 });
+ * ```
+ */
 export const shake256: CHashXOF<Keccak, ShakeOpts> =
   /* @__PURE__ */
   genShake(0x1f, 136, 32, /* @__PURE__ */ oidNist(0x0c));
 
-/** SHAKE128 XOF with 256-bit output (NIST version). */
+/**
+ * SHAKE128 XOF with 256-bit output (NIST version).
+ * @param msg - message bytes to hash
+ * @param opts - Optional output-length override. See {@link ShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHAKE128 using a 32-byte default output.
+ * ```ts
+ * shake128_32(new Uint8Array([97, 98, 99]), { dkLen: 32 });
+ * ```
+ */
 export const shake128_32: CHashXOF<Keccak, ShakeOpts> =
   /* @__PURE__ */
   genShake(0x1f, 168, 32, /* @__PURE__ */ oidNist(0x0b));
-/** SHAKE256 XOF with 512-bit output (NIST version). */
+/**
+ * SHAKE256 XOF with 512-bit output (NIST version).
+ * @param msg - message bytes to hash
+ * @param opts - Optional output-length override. See {@link ShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHAKE256 using a 64-byte default output.
+ * ```ts
+ * shake256_64(new Uint8Array([97, 98, 99]), { dkLen: 64 });
+ * ```
+ */
 export const shake256_64: CHashXOF<Keccak, ShakeOpts> =
   /* @__PURE__ */
   genShake(0x1f, 136, 64, /* @__PURE__ */ oidNist(0x0c));

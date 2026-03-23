@@ -179,15 +179,28 @@ function indexAlpha(
  * * dkLen: desired number of output bytes.
  */
 export type ArgonOpts = {
-  t: number; // Time cost, iterations count
-  m: number; // Memory cost (in KB)
-  p: number; // Parallelization parameter
-  version?: number; // Default: 0x13 (19)
-  key?: KDFInput; // Optional key
-  personalization?: KDFInput; // Optional arbitrary extra data
-  dkLen?: number; // Desired number of returned bytes
-  asyncTick?: number; // Maximum time in ms for which async function can block execution
+  /** Time cost measured in iterations. */
+  t: number;
+  /** Memory cost in kibibytes. */
+  m: number;
+  /** Parallelization parameter. */
+  p: number;
+  /** Argon2 version number. Defaults to `0x13`. */
+  version?: number;
+  /** Optional secret key mixed into initialization. */
+  key?: KDFInput;
+  /** Optional personalization string or bytes. */
+  personalization?: KDFInput;
+  /** Desired number of output bytes. */
+  dkLen?: number;
+  /** Max scheduler block time in milliseconds for the async variants. */
+  asyncTick?: number;
+  /** Maximum temporary memory budget in bytes. */
   maxmem?: number;
+  /**
+   * Optional progress callback invoked during long-running derivations.
+   * param progress - completion fraction in the `0..1` range
+   */
   onProgress?: (progress: number) => void;
 };
 
@@ -400,13 +413,49 @@ function argon2(type: Types, password: KDFInput, salt: KDFInput, opts: ArgonOpts
   return argon2Output(B, p, laneLen, dkLen);
 }
 
-/** argon2d GPU-resistant version. */
+/**
+ * Argon2d GPU-resistant version.
+ * @param password - password or input key material
+ * @param salt - unique salt value
+ * @param opts - Argon2 cost and optional tuning parameters. See {@link ArgonOpts}.
+ * @returns Derived key bytes.
+ * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
+ * @example
+ * Derive a key with Argon2d.
+ * ```ts
+ * argon2d('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
+ * ```
+ */
 export const argon2d = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argond2d, password, salt, opts);
-/** argon2i side-channel-resistant version. */
+/**
+ * Argon2i side-channel-resistant version.
+ * @param password - password or input key material
+ * @param salt - unique salt value
+ * @param opts - Argon2 cost and optional tuning parameters. See {@link ArgonOpts}.
+ * @returns Derived key bytes.
+ * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
+ * @example
+ * Derive a key with Argon2i.
+ * ```ts
+ * argon2i('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
+ * ```
+ */
 export const argon2i = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argon2i, password, salt, opts);
-/** argon2id, combining i+d, the most popular version from RFC 9106 */
+/**
+ * Argon2id, combining i+d, the most popular version from RFC 9106.
+ * @param password - password or input key material
+ * @param salt - unique salt value
+ * @param opts - Argon2 cost and optional tuning parameters. See {@link ArgonOpts}.
+ * @returns Derived key bytes.
+ * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
+ * @example
+ * Derive a key with Argon2id.
+ * ```ts
+ * argon2id('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
+ * ```
+ */
 export const argon2id = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
   argon2(AT.Argon2id, password, salt, opts);
 
@@ -473,19 +522,55 @@ async function argon2Async(type: Types, password: KDFInput, salt: KDFInput, opts
   return argon2Output(B, p, laneLen, dkLen);
 }
 
-/** argon2d async GPU-resistant version. */
+/**
+ * Argon2d async GPU-resistant version.
+ * @param password - password or input key material
+ * @param salt - unique salt value
+ * @param opts - Argon2 cost and optional tuning parameters. See {@link ArgonOpts}.
+ * @returns Promise resolving to derived key bytes.
+ * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
+ * @example
+ * Derive a key with Argon2d asynchronously.
+ * ```ts
+ * await argon2dAsync('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
+ * ```
+ */
 export const argon2dAsync = (
   password: KDFInput,
   salt: KDFInput,
   opts: ArgonOpts
 ): Promise<Uint8Array> => argon2Async(AT.Argond2d, password, salt, opts);
-/** argon2i async side-channel-resistant version. */
+/**
+ * Argon2i async side-channel-resistant version.
+ * @param password - password or input key material
+ * @param salt - unique salt value
+ * @param opts - Argon2 cost and optional tuning parameters. See {@link ArgonOpts}.
+ * @returns Promise resolving to derived key bytes.
+ * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
+ * @example
+ * Derive a key with Argon2i asynchronously.
+ * ```ts
+ * await argon2iAsync('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
+ * ```
+ */
 export const argon2iAsync = (
   password: KDFInput,
   salt: KDFInput,
   opts: ArgonOpts
 ): Promise<Uint8Array> => argon2Async(AT.Argon2i, password, salt, opts);
-/** argon2id async, combining i+d, the most popular version from RFC 9106 */
+/**
+ * Argon2id async, combining i+d, the most popular version from RFC 9106.
+ * @param password - password or input key material
+ * @param salt - unique salt value
+ * @param opts - Argon2 cost and optional tuning parameters. See {@link ArgonOpts}.
+ * @returns Promise resolving to derived key bytes.
+ * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
+ * @example
+ * Derive a key with Argon2id asynchronously.
+ * ```ts
+ * await argon2idAsync('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
+ * ```
+ */
 export const argon2idAsync = (
   password: KDFInput,
   salt: KDFInput,

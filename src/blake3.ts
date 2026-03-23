@@ -52,7 +52,14 @@ const B3_SIGMA: Uint8Array = /* @__PURE__ */ (() => {
  * * `context`: string for KDF. must be hardcoded, globally unique, and application - specific.
  *   A good default format for the context string is "[application] [commit timestamp] [purpose]".
  */
-export type Blake3Opts = { dkLen?: number; key?: Uint8Array; context?: Uint8Array };
+export type Blake3Opts = {
+  /** Desired digest length in bytes. */
+  dkLen?: number;
+  /** Optional 32-byte MAC key. */
+  key?: Uint8Array;
+  /** Optional KDF context bytes. */
+  context?: Uint8Array;
+};
 
 /** Blake3 hash. Can be used as MAC and KDF. */
 export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
@@ -263,12 +270,18 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
 /**
  * BLAKE3 hash function. Can be used as MAC and KDF.
  * @param msg - message that would be hashed
- * @param opts - `dkLen` for output length, `key` for MAC mode, `context` for KDF mode
+ * @param opts - Optional output, MAC, or KDF configuration. See {@link Blake3Opts}.
+ * @returns Digest bytes.
  * @example
+ * Hash, MAC, or derive key material with BLAKE3.
+ * ```ts
+ * import { blake3 } from '@noble/hashes/blake3.js';
+ * import { utf8ToBytes } from '@noble/hashes/utils.js';
  * const data = new Uint8Array(32);
  * const hash = blake3(data);
  * const mac = blake3(data, { key: new Uint8Array(32) });
- * const kdf = blake3(data, { context: 'application name' });
+ * const kdf = blake3(data, { context: utf8ToBytes('application name') });
+ * ```
  */
 export const blake3: CHashXOF<_BLAKE3, Blake3Opts> = /* @__PURE__ */ createHasher(
   (opts = {}) => new _BLAKE3(opts)

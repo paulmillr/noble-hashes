@@ -16,11 +16,15 @@ import {
   type Hash
 } from './utils.ts';
 
-/** Blake hash options. dkLen is output length. key is used in MAC mode. salt is used in KDF mode. */
+/** Blake hash options. `dkLen` is output length. `key` is used in MAC mode. `salt` is used in KDF mode. */
 export type Blake2Opts = {
+  /** Desired digest length in bytes. */
   dkLen?: number;
+  /** Optional MAC key. */
   key?: Uint8Array;
+  /** Optional salt mixed into initialization. */
   salt?: Uint8Array;
+  /** Optional personalization bytes. */
   personalization?: Uint8Array;
 };
 
@@ -345,7 +349,13 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
 /**
  * Blake2b hash function. 64-bit. 1.5x slower than blake2s in JS.
  * @param msg - message that would be hashed
- * @param opts - dkLen output length, key for MAC mode, salt, personalization
+ * @param opts - Optional output, MAC, salt, and personalization settings. See {@link Blake2Opts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Blake2b.
+ * ```ts
+ * blake2b(new Uint8Array([97, 98, 99]));
+ * ```
  */
 export const blake2b: CHash<_BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE2b(opts)
@@ -357,19 +367,56 @@ export const blake2b: CHash<_BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher
 
 /** Internal type, 16 numbers. */
 // prettier-ignore
-export type Num16 = {
+export type _Num16 = {
   v0: number; v1: number; v2: number; v3: number;
   v4: number; v5: number; v6: number; v7: number;
   v8: number; v9: number; v10: number; v11: number;
   v12: number; v13: number; v14: number; v15: number;
 };
 
-/** BLAKE2-compress core method. */
+/**
+ * BLAKE2-compress core method.
+ * @param s - sigma schedule bytes
+ * @param offset - starting word offset inside `msg`
+ * @param msg - message words
+ * @param rounds - round count to execute
+ * @param v0 - state word 0
+ * @param v1 - state word 1
+ * @param v2 - state word 2
+ * @param v3 - state word 3
+ * @param v4 - state word 4
+ * @param v5 - state word 5
+ * @param v6 - state word 6
+ * @param v7 - state word 7
+ * @param v8 - state word 8
+ * @param v9 - state word 9
+ * @param v10 - state word 10
+ * @param v11 - state word 11
+ * @param v12 - state word 12
+ * @param v13 - state word 13
+ * @param v14 - state word 14
+ * @param v15 - state word 15
+ * @returns Updated compression state words.
+ * @example
+ * Run the BLAKE2 compression core on zeroed state and message words.
+ * ```ts
+ * import { compress } from '@noble/hashes/blake2.js';
+ * const state = compress(
+ *   new Uint8Array(16),
+ *   0,
+ *   new Uint32Array(16),
+ *   1,
+ *   0, 0, 0, 0, 0, 0, 0, 0,
+ *   0, 0, 0, 0, 0, 0, 0, 0
+ * );
+ * state.v0;
+ * ```
+ */
 // prettier-ignore
 export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds: number,
   v0: number, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number,
   v8: number, v9: number, v10: number, v11: number, v12: number, v13: number, v14: number, v15: number,
-): Num16 {
+): _Num16 {
   let j = 0;
   for (let i = 0; i < rounds; i++) {
     ({ a: v0, b: v4, c: v8, d: v12 } = G1s(v0, v4, v8, v12, msg[offset + s[j++]]));
@@ -482,7 +529,13 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
 /**
  * Blake2s hash function. Focuses on 8-bit to 32-bit platforms. 1.5x faster than blake2b in JS.
  * @param msg - message that would be hashed
- * @param opts - dkLen output length, key for MAC mode, salt, personalization
+ * @param opts - Optional output, MAC, salt, and personalization settings. See {@link Blake2Opts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Blake2s.
+ * ```ts
+ * blake2s(new Uint8Array([97, 98, 99]));
+ * ```
  */
 export const blake2s: CHash<_BLAKE2s, Blake2Opts> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE2s(opts)

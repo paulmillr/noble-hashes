@@ -1,8 +1,8 @@
 /**
  * SHA2 hash function. A.k.a. sha256, sha384, sha512, sha512_224, sha512_256.
  * SHA256 is the fastest hash implementable in JS, even faster than Blake3.
- * Check out [RFC 4634](https://www.rfc-editor.org/rfc/rfc4634) and
- * [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
+ * Check out {@link https://www.rfc-editor.org/rfc/rfc4634 | RFC 4634} and
+ * {@link https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf | FIPS 180-4}.
  * @module
  */
 import { Chi, HashMD, Maj, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
@@ -429,23 +429,57 @@ export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
  * - BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
  * - Each sha256 hash is executing 2^18 bit operations.
  * - Good 2024 ASICs can do 200Th/sec with 3500 watts of power, corresponding to 2^36 hashes/joule.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA2-256.
+ * ```ts
+ * sha256(new Uint8Array([97, 98, 99]));
+ * ```
  */
 export const sha256: CHash<_SHA256> = /* @__PURE__ */ createHasher(
   () => new _SHA256(),
   /* @__PURE__ */ oidNist(0x01)
 );
-/** SHA2-224 hash function from RFC 4634 */
+/**
+ * SHA2-224 hash function from RFC 4634.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA2-224.
+ * ```ts
+ * sha224(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha224: CHash<_SHA224> = /* @__PURE__ */ createHasher(
   () => new _SHA224(),
   /* @__PURE__ */ oidNist(0x04)
 );
 
-/** SHA2-512 hash function from RFC 4634. */
+/**
+ * SHA2-512 hash function from RFC 4634.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA2-512.
+ * ```ts
+ * sha512(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha512: CHash<_SHA512> = /* @__PURE__ */ createHasher(
   () => new _SHA512(),
   /* @__PURE__ */ oidNist(0x03)
 );
-/** SHA2-384 hash function from RFC 4634. */
+/**
+ * SHA2-384 hash function from RFC 4634.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA2-384.
+ * ```ts
+ * sha384(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha384: CHash<_SHA384> = /* @__PURE__ */ createHasher(
   () => new _SHA384(),
   /* @__PURE__ */ oidNist(0x02)
@@ -453,7 +487,14 @@ export const sha384: CHash<_SHA384> = /* @__PURE__ */ createHasher(
 
 /**
  * SHA2-512/256 "truncated" hash function, with improved resistance to length extension attacks.
- * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
+ * See the paper on {@link https://eprint.iacr.org/2010/548.pdf | truncated SHA512}.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA2-512/256.
+ * ```ts
+ * sha512_256(new Uint8Array([97, 98, 99]));
+ * ```
  */
 export const sha512_256: CHash<_SHA512_256> = /* @__PURE__ */ createHasher(
   () => new _SHA512_256(),
@@ -461,7 +502,14 @@ export const sha512_256: CHash<_SHA512_256> = /* @__PURE__ */ createHasher(
 );
 /**
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
- * See the paper on [truncated SHA512](https://eprint.iacr.org/2010/548.pdf).
+ * See the paper on {@link https://eprint.iacr.org/2010/548.pdf | truncated SHA512}.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA2-512/224.
+ * ```ts
+ * sha512_224(new Uint8Array([97, 98, 99]));
+ * ```
  */
 export const sha512_224: CHash<_SHA512_224> = /* @__PURE__ */ createHasher(
   () => new _SHA512_224(),

@@ -1,6 +1,6 @@
 /**
  * HKDF (RFC 5869): extract + expand in one step.
- * See https://soatok.blog/2021/11/17/understanding-hkdf/.
+ * See {@link https://soatok.blog/2021/11/17/understanding-hkdf/}.
  * @module
  */
 import { hmac } from './hmac.ts';
@@ -12,6 +12,14 @@ import { abytes, ahash, anumber, type CHash, clean } from './utils.ts';
  * @param hash - hash function that would be used (e.g. sha256)
  * @param ikm - input keying material, the initial key
  * @param salt - optional salt value (a non-secret random value)
+ * @returns Pseudorandom key derived from input keying material.
+ * @example
+ * Run the HKDF extract step.
+ * ```ts
+ * import { extract } from '@noble/hashes/hkdf.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
+ * extract(sha256, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
+ * ```
  */
 export function extract(hash: CHash, ikm: Uint8Array, salt?: Uint8Array): Uint8Array {
   ahash(hash);
@@ -31,6 +39,15 @@ const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
  * @param prk - a pseudorandom key of at least HashLen octets (usually, the output from the extract step)
  * @param info - optional context and application specific information (can be a zero-length string)
  * @param length - length of output keying material in bytes
+ * @returns Output keying material with the requested length.
+ * @throws If the requested output length exceeds the HKDF limit for the selected hash. {@link Error}
+ * @example
+ * Run the HKDF expand step.
+ * ```ts
+ * import { expand } from '@noble/hashes/hkdf.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
+ * expand(sha256, new Uint8Array(32), new Uint8Array([1, 2, 3]), 16);
+ * ```
  */
 export function expand(
   hash: CHash,
@@ -74,16 +91,21 @@ export function expand(
  * @param hash - hash function that would be used (e.g. sha256)
  * @param ikm - input keying material, the initial key
  * @param salt - optional salt value (a non-secret random value)
- * @param info - optional context and application specific information (can be a zero-length string)
+ * @param info - optional context and application specific information bytes
  * @param length - length of output keying material in bytes
+ * @returns Output keying material derived from the input key.
+ * @throws If the requested output length exceeds the HKDF limit for the selected hash. {@link Error}
  * @example
- * import { hkdf } from '@noble/hashes/hkdf';
- * import { sha256 } from '@noble/hashes/sha2';
- * import { randomBytes } from '@noble/hashes/utils';
+ * HKDF (RFC 5869): derive keys from an initial input.
+ * ```ts
+ * import { hkdf } from '@noble/hashes/hkdf.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
+ * import { randomBytes, utf8ToBytes } from '@noble/hashes/utils.js';
  * const inputKey = randomBytes(32);
  * const salt = randomBytes(32);
- * const info = 'application-key';
- * const hk1 = hkdf(sha256, inputKey, salt, info, 32);
+ * const info = utf8ToBytes('application-key');
+ * const okm = hkdf(sha256, inputKey, salt, info, 32);
+ * ```
  */
 export const hkdf = (
   hash: CHash,

@@ -12,15 +12,35 @@ import { abytes, bytesToHex, clean, createView, hexToBytes, kdfInputToBytes } fr
 // Uses HKDF in a non-standard way, so it's not "KDF-secure", only "PRF-secure".
 // Which is good enough: assume sha2-256 retained preimage resistance.
 
-const SCRYPT_FACTOR = 2 ** 19;
-const PBKDF2_FACTOR = 2 ** 17;
+const SCRYPT_FACTOR = /* @__PURE__ */ (() => 2 ** 19)();
+const PBKDF2_FACTOR = /* @__PURE__ */ (() => 2 ** 17)();
 
-/** Scrypt KDF */
+/**
+ * Scrypt KDF with ESKDF defaults.
+ * @param password - user password string
+ * @param salt - unique salt string
+ * @returns Derived 32-byte key.
+ * @example
+ * Derive the 32-byte scrypt key used by ESKDF.
+ * ```ts
+ * scrypt('password123', 'user@example.com');
+ * ```
+ */
 export function scrypt(password: string, salt: string): Uint8Array {
   return _scrypt(password, salt, { N: SCRYPT_FACTOR, r: 8, p: 1, dkLen: 32 });
 }
 
-/** PBKDF2-HMAC-SHA256 */
+/**
+ * PBKDF2-HMAC-SHA256 with ESKDF defaults.
+ * @param password - user password string
+ * @param salt - unique salt string
+ * @returns Derived 32-byte key.
+ * @example
+ * Derive the 32-byte PBKDF2 key used by ESKDF.
+ * ```ts
+ * pbkdf2('password123', 'user@example.com');
+ * ```
+ */
 export function pbkdf2(password: string, salt: string): Uint8Array {
   return _pbkdf2(sha256, password, salt, { c: PBKDF2_FACTOR, dkLen: 32 });
 }
@@ -42,6 +62,15 @@ function strHasLength(str: string, min: number, max: number): boolean {
 
 /**
  * Derives main seed. Takes a lot of time. Prefer `eskdf` method instead.
+ * @param username - account identifier used as public salt
+ * @param password - user password string
+ * @returns Main 32-byte seed for the account.
+ * @throws If the username or password length is invalid. {@link Error}
+ * @example
+ * Derive the main ESKDF seed from username and password.
+ * ```ts
+ * deriveMainSeed('example-user', 'example-password');
+ * ```
  */
 export function deriveMainSeed(username: string, password: string): Uint8Array {
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
@@ -59,9 +88,7 @@ export function deriveMainSeed(username: string, password: string): Uint8Array {
 
 type AccountID = number | string;
 
-/**
- * Converts protocol & accountId pair to HKDF salt & info params.
- */
+/** Converts protocol & accountId pair to HKDF salt & info params. */
 function getSaltInfo(protocol: string, accountId: AccountID = 0) {
   // Note that length here also repeats two lines below
   // We do an additional length check here to reduce the scope of DoS attacks
@@ -130,7 +157,7 @@ function modReduceKey(key: Uint8Array, modulus: bigint): Uint8Array {
   return bytes;
 }
 
-/** Not using classes because constructor cannot be async */
+/** Not using classes because constructor cannot be async. */
 export interface ESKDF {
   /**
    * Derives a child key. Child key will not be associated with any
@@ -138,17 +165,13 @@ export interface ESKDF {
    *
    * @param protocol - 3-15 character protocol name
    * @param accountId - numeric identifier of account
-   * @param options - `keyLength: 64` or `modulus: 41920438n`
-   * @example deriveChildKey('aes', 0)
+   * @param options - Optional child-key shaping parameters. See {@link KeyOpts}.
+   * @returns Derived child key bytes.
    */
   deriveChildKey: (protocol: string, accountId: AccountID, options?: KeyOpts) => Uint8Array;
-  /**
-   * Deletes the main seed from eskdf instance
-   */
+  /** Deletes the main seed from the ESKDF instance. */
   expire: () => void;
-  /**
-   * Account fingerprint
-   */
+  /** Human-readable account fingerprint derived from the main seed. */
   fingerprint: string;
 }
 
@@ -156,11 +179,16 @@ export interface ESKDF {
  * ESKDF
  * @param username - username, email, or identifier, min: 8 characters, should have enough entropy
  * @param password - password, min: 8 characters, should have enough entropy
+ * @returns Frozen API that derives child keys and exposes the account fingerprint.
+ * @throws If the username or password length is invalid. {@link Error}
  * @example
+ * Derive account-specific child keys from the main ESKDF seed.
+ * ```ts
  * const kdf = await eskdf('example-university', 'beginning-new-example');
  * const key = kdf.deriveChildKey('aes', 0);
- * console.log(kdf.fingerprint);
+ * const fingerprint = kdf.fingerprint;
  * kdf.expire();
+ * ```
  */
 export async function eskdf(username: string, password: string): Promise<ESKDF> {
   // We are using closure + object instead of class because

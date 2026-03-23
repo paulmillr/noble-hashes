@@ -1,7 +1,7 @@
 /**
  * Blake1 legacy hash function, one of SHA3 proposals.
  * Rarely used. Check out blake2 or blake3 instead.
- * https://www.aumasson.jp/blake/blake.pdf
+ * {@link https://www.aumasson.jp/blake/blake.pdf}
  *
  * In the best case, there are 0 allocations.
  *
@@ -34,8 +34,9 @@ import {
   type Hash
 } from './utils.ts';
 
-/** Blake1 options. Basically just "salt" */
+/** Blake1 options. Basically just `salt`. */
 export type BlakeOpts = {
+  /** Optional salt mixed into initialization. */
   salt?: Uint8Array;
 };
 
@@ -189,7 +190,7 @@ const B64C = /* @__PURE__ */ Uint32Array.from([
   0xba7c9045, 0xf12c7f99, 0x24a19947, 0xb3916cf7, 0x0801f2e2, 0x858efc16, 0x636920d8, 0x71574e69,
 ]);
 // first half of C512
-const B32C = B64C.slice(0, 16);
+const B32C = /* @__PURE__ */ B64C.slice(0, 16);
 
 const B256_IV = /* @__PURE__ */ SHA256_IV.slice();
 const B224_IV = /* @__PURE__ */ SHA224_IV.slice();
@@ -518,19 +519,59 @@ export class _BLAKE512 extends BLAKE1_64B {
     super(64, B512_IV, 0b0000_0001, opts);
   }
 }
-/** blake1-224 hash function */
+/**
+ * Blake1-224 hash function.
+ * @param msg - message bytes to hash
+ * @param opts - Optional Blake1 settings. See {@link BlakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Blake1-224.
+ * ```ts
+ * blake224(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const blake224: CHash<_BLAKE224, BlakeOpts> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE224(opts)
 );
-/** blake1-256 hash function */
+/**
+ * Blake1-256 hash function.
+ * @param msg - message bytes to hash
+ * @param opts - Optional Blake1 settings. See {@link BlakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Blake1-256.
+ * ```ts
+ * blake256(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const blake256: CHash<_BLAKE256, BlakeOpts> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE256(opts)
 );
-/** blake1-384 hash function */
+/**
+ * Blake1-384 hash function.
+ * @param msg - message bytes to hash
+ * @param opts - Optional Blake1 settings. See {@link BlakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Blake1-384.
+ * ```ts
+ * blake384(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const blake384: CHash<_BLAKE384, BlakeOpts> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE384(opts)
 );
-/** blake1-512 hash function */
+/**
+ * Blake1-512 hash function.
+ * @param msg - message bytes to hash
+ * @param opts - Optional Blake1 settings. See {@link BlakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with Blake1-512.
+ * ```ts
+ * blake512(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const blake512: CHash<_BLAKE512, BlakeOpts> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE512(opts)
 );

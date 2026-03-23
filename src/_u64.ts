@@ -1,6 +1,6 @@
 /**
  * Internal helpers for u64. BigUint64Array is too slow as per 2025, so we implement it using Uint32Array.
- * @todo re-check https://issues.chromium.org/issues/42212588
+ * @privateRemarks TODO: re-check {@link https://issues.chromium.org/issues/42212588}
  * @module
  */
 const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);

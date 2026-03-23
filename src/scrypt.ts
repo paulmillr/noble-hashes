@@ -93,12 +93,22 @@ function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, 
  * - `onProgress` - callback function that would be executed for progress report
  */
 export type ScryptOpts = {
-  N: number; // cost factor
-  r: number; // block size
-  p: number; // parallelization
-  dkLen?: number; // key length
-  asyncTick?: number; // block execution max time
+  /** CPU and memory work factor. Must be a power of two. */
+  N: number;
+  /** Block size parameter. */
+  r: number;
+  /** Parallelization factor. */
+  p: number;
+  /** Desired derived key length in bytes. */
+  dkLen?: number;
+  /** Max scheduler block time in milliseconds for the async variant. */
+  asyncTick?: number;
+  /** Maximum temporary memory budget in bytes. */
   maxmem?: number;
+  /**
+   * Optional progress callback invoked during long-running derivations.
+   * param progress - completion fraction in the `0..1` range
+   */
   onProgress?: (progress: number) => void;
 };
 
@@ -177,8 +187,16 @@ function scryptOutput(
 
 /**
  * Scrypt KDF from RFC 7914. See {@link ScryptOpts}.
+ * @param password - password or key material to derive from
+ * @param salt - unique salt bytes or string
+ * @param opts - Scrypt cost and memory parameters. See {@link ScryptOpts}.
+ * @returns Derived key bytes.
+ * @throws If the Scrypt cost, memory, or callback options are invalid. {@link Error}
  * @example
+ * Derive a key with scrypt.
+ * ```ts
  * scrypt('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
+ * ```
  */
 export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Uint8Array {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
@@ -211,8 +229,16 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
 
 /**
  * Scrypt KDF from RFC 7914. Async version. See {@link ScryptOpts}.
+ * @param password - password or key material to derive from
+ * @param salt - unique salt bytes or string
+ * @param opts - Scrypt cost and memory parameters. See {@link ScryptOpts}.
+ * @returns Promise resolving to derived key bytes.
+ * @throws If the Scrypt cost, memory, or callback options are invalid. {@link Error}
  * @example
+ * Derive a key with scrypt asynchronously.
+ * ```ts
  * await scryptAsync('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
+ * ```
  */
 export async function scryptAsync(
   password: KDFInput,

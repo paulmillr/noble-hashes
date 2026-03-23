@@ -16,10 +16,19 @@ function _subtle(): typeof crypto.subtle {
   throw new Error('crypto.subtle must be defined');
 }
 
+/** Callable WebCrypto hash function descriptor. */
 export type WebHash = {
+  /**
+   * Hashes one message with the selected WebCrypto digest.
+   * @param msg - message bytes to hash
+   * @returns Promise resolving to digest bytes.
+   */
   (msg: Uint8Array): Promise<Uint8Array>;
+  /** WebCrypto algorithm name passed to `crypto.subtle`. */
   webCryptoName: string;
+  /** Digest size in bytes. */
   outputLen: number;
+  /** Input block size in bytes. */
   blockLen: number;
 };
 
@@ -46,22 +55,51 @@ function ahashWeb(hash: WebHash) {
 /** WebCrypto SHA1 (RFC 3174) legacy hash function. It was cryptographically broken. */
 // export const sha1: WebHash = createHash('SHA-1', 64, 20);
 
-/** WebCrypto SHA2-256 hash function from RFC 4634. */
+/**
+ * WebCrypto SHA2-256 hash function from RFC 4634.
+ * @param msg - message bytes to hash
+ * @returns Promise resolving to digest bytes.
+ * @example
+ * Hash a message with WebCrypto SHA2-256.
+ * ```ts
+ * await sha256(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha256: WebHash = /* @__PURE__ */ createWebHash('SHA-256', 64, 32);
-/** WebCrypto SHA2-384 hash function from RFC 4634. */
+/**
+ * WebCrypto SHA2-384 hash function from RFC 4634.
+ * @param msg - message bytes to hash
+ * @returns Promise resolving to digest bytes.
+ * @example
+ * Hash a message with WebCrypto SHA2-384.
+ * ```ts
+ * await sha384(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha384: WebHash = /* @__PURE__ */ createWebHash('SHA-384', 128, 48);
-/** WebCrypto SHA2-512 hash function from RFC 4634. */
+/**
+ * WebCrypto SHA2-512 hash function from RFC 4634.
+ * @param msg - message bytes to hash
+ * @returns Promise resolving to digest bytes.
+ * @example
+ * Hash a message with WebCrypto SHA2-512.
+ * ```ts
+ * await sha512(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha512: WebHash = /* @__PURE__ */ createWebHash('SHA-512', 128, 64);
 
 /**
  * WebCrypto HMAC: RFC2104 message authentication code.
  * @param hash - function that would be used e.g. sha256. Webcrypto version.
- * @param key - key which would be used to authenticate message
- * @param message - message
+ * @param key - authentication key bytes
+ * @param message - message bytes to authenticate
+ * @returns Promise resolving to authentication tag bytes.
  * @example
- * ```js
+ * Compute an RFC 2104 HMAC with WebCrypto.
+ * ```ts
  * import { hmac, sha256 } from '@noble/hashes/webcrypto.js';
- * const mac1 = await hmac(sha256, 'key', 'message');
+ * await hmac(sha256, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
  * ```
  */
 export const hmac: {
@@ -100,16 +138,19 @@ export const hmac: {
  * @param hash - hash function that would be used (e.g. sha256). Webcrypto version.
  * @param ikm - input keying material, the initial key
  * @param salt - optional salt value (a non-secret random value)
- * @param info - optional context and application specific information (can be a zero-length string)
+ * @param info - optional context and application specific information bytes
  * @param length - length of output keying material in bytes
+ * @returns Promise resolving to derived key bytes.
+ * @throws If the current runtime does not provide `crypto.subtle`. {@link Error}
  * @example
- * ```js
+ * WebCrypto HKDF (RFC 5869): derive keys from an initial input.
+ * ```ts
  * import { hkdf, sha256 } from '@noble/hashes/webcrypto.js';
- * import { randomBytes } from '@noble/hashes/utils.js';
+ * import { randomBytes, utf8ToBytes } from '@noble/hashes/utils.js';
  * const inputKey = randomBytes(32);
  * const salt = randomBytes(32);
- * const info = 'application-key';
- * const hk1w = await hkdf(sha256, inputKey, salt, info, 32);
+ * const info = utf8ToBytes('application-key');
+ * const okm = await hkdf(sha256, inputKey, salt, info, 32);
  * ```
  */
 export async function hkdf(
@@ -140,9 +181,13 @@ export async function hkdf(
  * @param hash - hash function that would be used e.g. sha256. Webcrypto version.
  * @param password - password from which a derived key is generated
  * @param salt - cryptographic salt
- * @param opts - {c, dkLen} where c is work factor and dkLen is output message size
+ * @param opts - PBKDF2 work factor and output settings. See {@link Pbkdf2Opt}.
+ * @returns Promise resolving to derived key bytes.
+ * @throws If the current runtime does not provide `crypto.subtle`. {@link Error}
  * @example
- * ```js
+ * WebCrypto PBKDF2-HMAC: RFC 2898 key derivation function.
+ * ```ts
+ * import { pbkdf2, sha256 } from '@noble/hashes/webcrypto.js';
  * const key = await pbkdf2(sha256, 'password', 'salt', { dkLen: 32, c: Math.pow(2, 18) });
  * ```
  */

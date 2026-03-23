@@ -86,7 +86,16 @@ export class _SHA1 extends HashMD<_SHA1> {
   }
 }
 
-/** SHA1 (RFC 3174) legacy hash function. It was cryptographically broken. */
+/**
+ * SHA1 (RFC 3174) legacy hash function. It was cryptographically broken.
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHA1.
+ * ```ts
+ * sha1(new Uint8Array([97, 98, 99]));
+ * ```
+ */
 export const sha1: CHash = /* @__PURE__ */ createHasher(() => new _SHA1());
 
 /** Per-round constants */
@@ -173,6 +182,13 @@ export class _MD5 extends HashMD<_MD5> {
  * - Little-endian: could be faster, but will require more code
  * - Non-linear index selection: huge speed-up for unroll
  * - Per round constants: more memory accesses, additional speed-up for unroll
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with MD5.
+ * ```ts
+ * md5(new Uint8Array([97, 98, 99]));
+ * ```
  */
 export const md5: CHash = /* @__PURE__ */ createHasher(() => new _MD5());
 
@@ -287,7 +303,14 @@ export class _RIPEMD160 extends HashMD<_RIPEMD160> {
 
 /**
  * RIPEMD-160 - a legacy hash function from 1990s.
- * * https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
- * * https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
+ * * {@link https://homes.esat.kuleuven.be/~bosselae/ripemd160.html}
+ * * {@link https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf}
+ * @param msg - message bytes to hash
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with RIPEMD-160.
+ * ```ts
+ * ripemd160(new Uint8Array([97, 98, 99]));
+ * ```
  */
 export const ripemd160: CHash = /* @__PURE__ */ createHasher(() => new _RIPEMD160());

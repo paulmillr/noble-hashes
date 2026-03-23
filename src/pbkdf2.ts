@@ -19,8 +19,11 @@ import {
  * * asyncTick: max time in ms for which async function can block execution
  */
 export type Pbkdf2Opt = {
+  /** Iteration count. Higher values increase CPU cost. */
   c: number;
+  /** Desired derived key length in bytes. */
   dkLen?: number;
+  /** Max scheduler block time in milliseconds for the async variant. */
   asyncTick?: number;
 };
 // Common start and end for sync/async functions
@@ -61,9 +64,16 @@ function pbkdf2Output<T extends Hash<T>>(
  * @param hash - hash function that would be used e.g. sha256
  * @param password - password from which a derived key is generated
  * @param salt - cryptographic salt
- * @param opts - {c, dkLen} where c is work factor and dkLen is output message size
+ * @param opts - PBKDF2 work factor and output settings. See {@link Pbkdf2Opt}.
+ * @returns Derived key bytes.
+ * @throws If the PBKDF2 iteration count or derived-key settings are invalid. {@link Error}
  * @example
+ * PBKDF2-HMAC: RFC 2898 key derivation function.
+ * ```ts
+ * import { pbkdf2 } from '@noble/hashes/pbkdf2.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
  * const key = pbkdf2(sha256, 'password', 'salt', { dkLen: 32, c: Math.pow(2, 18) });
+ * ```
  */
 export function pbkdf2(
   hash: CHash,
@@ -96,8 +106,19 @@ export function pbkdf2(
 
 /**
  * PBKDF2-HMAC: RFC 2898 key derivation function. Async version.
+ * @param hash - hash function that would be used e.g. sha256
+ * @param password - password from which a derived key is generated
+ * @param salt - cryptographic salt
+ * @param opts - PBKDF2 work factor and output settings. See {@link Pbkdf2Opt}.
+ * @returns Promise resolving to derived key bytes.
+ * @throws If the PBKDF2 iteration count or derived-key settings are invalid. {@link Error}
  * @example
- * await pbkdf2Async(sha256, 'password', 'salt', { dkLen: 32, c: 500_000 });
+ * PBKDF2-HMAC: RFC 2898 key derivation function.
+ * ```ts
+ * import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
+ * const key = await pbkdf2Async(sha256, 'password', 'salt', { dkLen: 32, c: 500_000 });
+ * ```
  */
 export async function pbkdf2Async(
   hash: CHash,

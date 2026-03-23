@@ -2,10 +2,11 @@
  * SHA3 (keccak) addons.
  *
  * * cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants from
- *   [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
+ *   {@link https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf | NIST SP 800-185}
  * * KangarooTwelve 🦘 and TurboSHAKE - reduced-round keccak from
- *   [RFC 9861](https://datatracker.ietf.org/doc/rfc9861/)
- * * KeccakPRG: Pseudo-random generator based on Keccak [(pdf)](https://keccak.team/files/CSF-0.1.pdf)
+ *   {@link https://datatracker.ietf.org/doc/rfc9861/ | RFC 9861}
+ * * KeccakPRG: Pseudo-random generator based on Keccak
+ *   ({@link https://keccak.team/files/CSF-0.1.pdf | pdf})
  * @module
  */
 import { Keccak, type ShakeOpts } from './sha3.ts';
@@ -58,7 +59,13 @@ const abytesOrZero = (buf?: Uint8Array, title = '') => {
 };
 // NOTE: second modulo is necessary since we don't need to add padding if current element takes whole block
 const getPadding = (len: number, block: number) => new Uint8Array((block - (len % block)) % block);
-export type cShakeOpts = ShakeOpts & { personalization?: Uint8Array; NISTfn?: KDFInput };
+/** Options for cSHAKE and related SP 800-185 functions. */
+export type cShakeOpts = ShakeOpts & {
+  /** Optional personalization string mixed into domain separation. */
+  personalization?: Uint8Array;
+  /** Optional NIST function-name string used for domain separation. */
+  NISTfn?: KDFInput;
+};
 
 // Personalization
 function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
@@ -83,13 +90,45 @@ const gencShake = (suffix: number, blockLen: number, outputLen: number) =>
     cshakePers(new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true), opts)
   );
 
+/** TupleHash callable interface. */
 export type ITupleHash = {
+  /**
+   * Hashes an ordered tuple of byte arrays.
+   * @param messages - Ordered byte-array tuple to hash.
+   * @param opts - TupleHash output and personalization options. See {@link cShakeOpts}.
+   * @returns Digest bytes.
+   */
   (messages: Uint8Array[], opts?: cShakeOpts): Uint8Array;
+  /**
+   * Creates an incremental TupleHash state.
+   * @param opts - TupleHash output and personalization options. See {@link cShakeOpts}.
+   * @returns Stateful TupleHash instance.
+   */
   create(opts?: cShakeOpts): _TupleHash;
 };
-/** 128-bit NIST cSHAKE XOF. */
+/**
+ * 128-bit NIST cSHAKE XOF.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with cSHAKE128.
+ * ```ts
+ * cshake128(new Uint8Array([1, 2, 3]), { dkLen: 32 });
+ * ```
+ */
 export const cshake128: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake(0x1f, 168, 16);
-/** 256-bit NIST cSHAKE XOF. */
+/**
+ * 256-bit NIST cSHAKE XOF.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with cSHAKE256.
+ * ```ts
+ * cshake256(new Uint8Array([1, 2, 3]), { dkLen: 64 });
+ * ```
+ */
 export const cshake256: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake(0x1f, 136, 32);
 
 /** Internal KMAC mac class. */
@@ -139,17 +178,75 @@ function genKmac(blockLen: number, outputLen: number, xof = false) {
   return kmac;
 }
 
+/** KMAC callable interface. */
 export type IKMAC = {
+  /**
+   * Computes a keyed KMAC digest for one message.
+   * @param key - Secret key bytes.
+   * @param message - Message bytes to authenticate.
+   * @param opts - KMAC output and personalization options. See {@link KangarooOpts}.
+   * @returns Authentication tag bytes.
+   */
   (key: Uint8Array, message: Uint8Array, opts?: KangarooOpts): Uint8Array;
+  /**
+   * Creates an incremental KMAC state.
+   * @param key - Secret key bytes.
+   * @param opts - KMAC output and personalization options. See {@link cShakeOpts}.
+   * @returns Stateful KMAC instance.
+   */
   create(key: Uint8Array, opts?: cShakeOpts): _KMAC;
 };
-/** 128-bit Keccak MAC. */
+/**
+ * 128-bit Keccak MAC.
+ * @param key - MAC key bytes
+ * @param message - message bytes to authenticate
+ * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @returns Authentication tag bytes.
+ * @example
+ * Authenticate a message with KMAC128.
+ * ```ts
+ * kmac128(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
+ * ```
+ */
 export const kmac128: IKMAC = /* @__PURE__ */ genKmac(168, 16);
-/** 256-bit Keccak MAC. */
+/**
+ * 256-bit Keccak MAC.
+ * @param key - MAC key bytes
+ * @param message - message bytes to authenticate
+ * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @returns Authentication tag bytes.
+ * @example
+ * Authenticate a message with KMAC256.
+ * ```ts
+ * kmac256(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
+ * ```
+ */
 export const kmac256: IKMAC = /* @__PURE__ */ genKmac(136, 32);
-/** 128-bit Keccak-MAC XOF. */
+/**
+ * 128-bit Keccak-MAC XOF.
+ * @param key - MAC key bytes
+ * @param message - message bytes to authenticate
+ * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @returns Authentication tag bytes.
+ * @example
+ * Authenticate a message with KMAC128 XOF output.
+ * ```ts
+ * kmac128xof(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]), { dkLen: 32 });
+ * ```
+ */
 export const kmac128xof: IKMAC = /* @__PURE__ */ genKmac(168, 16, true);
-/** 256-bit Keccak-MAC XOF. */
+/**
+ * 256-bit Keccak-MAC XOF.
+ * @param key - MAC key bytes
+ * @param message - message bytes to authenticate
+ * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @returns Authentication tag bytes.
+ * @example
+ * Authenticate a message with KMAC256 XOF output.
+ * ```ts
+ * kmac256xof(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]), { dkLen: 64 });
+ * ```
+ */
 export const kmac256xof: IKMAC = /* @__PURE__ */ genKmac(136, 32, true);
 
 /** Internal TupleHash class. */
@@ -191,13 +288,53 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
   return tuple;
 }
 
-/** 128-bit TupleHASH. tuple(['ab', 'cd']) != tuple(['a', 'bcd']) */
+/**
+ * 128-bit TupleHASH. `tuple(['ab', 'cd']) != tuple(['a', 'bcd'])`.
+ * @param messages - ordered byte-array tuple
+ * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a tuple of byte arrays with TupleHash128.
+ * ```ts
+ * tuplehash128([new Uint8Array([1]), new Uint8Array([2])]);
+ * ```
+ */
 export const tuplehash128: ITupleHash = /* @__PURE__ */ genTuple(168, 16);
-/** 256-bit TupleHASH. tuple(['ab', 'cd']) != tuple(['a', 'bcd']) */
+/**
+ * 256-bit TupleHASH. `tuple(['ab', 'cd']) != tuple(['a', 'bcd'])`.
+ * @param messages - ordered byte-array tuple
+ * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a tuple of byte arrays with TupleHash256.
+ * ```ts
+ * tuplehash256([new Uint8Array([1]), new Uint8Array([2])]);
+ * ```
+ */
 export const tuplehash256: ITupleHash = /* @__PURE__ */ genTuple(136, 32);
-/** 128-bit TupleHASH XOF. */
+/**
+ * 128-bit TupleHASH XOF.
+ * @param messages - ordered byte-array tuple
+ * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a tuple of byte arrays with TupleHash128 XOF output.
+ * ```ts
+ * tuplehash128xof([new Uint8Array([1]), new Uint8Array([2])], { dkLen: 32 });
+ * ```
+ */
 export const tuplehash128xof: ITupleHash = /* @__PURE__ */ genTuple(168, 16, true);
-/** 256-bit TupleHASH XOF. */
+/**
+ * 256-bit TupleHASH XOF.
+ * @param messages - ordered byte-array tuple
+ * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a tuple of byte arrays with TupleHash256 XOF output.
+ * ```ts
+ * tuplehash256xof([new Uint8Array([1]), new Uint8Array([2])], { dkLen: 64 });
+ * ```
+ */
 export const tuplehash256xof: ITupleHash = /* @__PURE__ */ genTuple(136, 32, true);
 
 // Same as K12/M14, but without speedup for inputs less 8kb,
@@ -294,26 +431,66 @@ function genPrl(
   return parallel;
 }
 
-/** 128-bit ParallelHash. In JS, it is not parallel. */
+/**
+ * 128-bit ParallelHash. In JS, it is not parallel.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output, personalization, and chunking settings. See {@link ParallelOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with ParallelHash128.
+ * ```ts
+ * parallelhash128(new Uint8Array([1, 2, 3]));
+ * ```
+ */
 export const parallelhash128: CHash<Keccak, ParallelOpts> = /* @__PURE__ */ genPrl(
   168,
   16,
   cshake128
 );
-/** 256-bit ParallelHash. In JS, it is not parallel. */
+/**
+ * 256-bit ParallelHash. In JS, it is not parallel.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output, personalization, and chunking settings. See {@link ParallelOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with ParallelHash256.
+ * ```ts
+ * parallelhash256(new Uint8Array([1, 2, 3]));
+ * ```
+ */
 export const parallelhash256: CHash<Keccak, ParallelOpts> = /* @__PURE__ */ genPrl(
   136,
   32,
   cshake256
 );
-/** 128-bit ParallelHash XOF. In JS, it is not parallel. */
+/**
+ * 128-bit ParallelHash XOF. In JS, it is not parallel.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output, personalization, and chunking settings. See {@link ParallelOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with ParallelHash128 XOF output.
+ * ```ts
+ * parallelhash128xof(new Uint8Array([1, 2, 3]), { dkLen: 32 });
+ * ```
+ */
 export const parallelhash128xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ */ genPrl(
   168,
   16,
   cshake128,
   true
 );
-/** 256-bit ParallelHash. In JS, it is not parallel. */
+/**
+ * 256-bit ParallelHash XOF. In JS, it is not parallel.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output, personalization, and chunking settings. See {@link ParallelOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with ParallelHash256 XOF output.
+ * ```ts
+ * parallelhash256xof(new Uint8Array([1, 2, 3]), { dkLen: 64 });
+ * ```
+ */
 export const parallelhash256xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ */ genPrl(
   136,
   32,
@@ -321,8 +498,9 @@ export const parallelhash256xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ *
   true
 );
 
-/** D means Domain separation byte */
+/** TurboSHAKE options. `D` is the domain separation byte. */
 export type TurboshakeOpts = ShakeOpts & {
+  /** Optional domain separation byte in the `0x01..0x7f` range. */
   D?: number;
 };
 
@@ -338,9 +516,27 @@ const genTurbo = (blockLen: number, outputLen: number) =>
 /**
  * TurboSHAKE 128-bit: reduced 12-round keccak.
  * Should've been a simple "shake with 12 rounds", but we got a whole new spec about Turbo SHAKE Pro MAX.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output-length and domain-separation settings. See {@link TurboshakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with TurboSHAKE128.
+ * ```ts
+ * turboshake128(new Uint8Array([1, 2, 3]), { dkLen: 32 });
+ * ```
  */
 export const turboshake128: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurbo(168, 32);
-/** TurboSHAKE 256-bit: reduced 12-round keccak. */
+/**
+ * TurboSHAKE 256-bit: reduced 12-round keccak.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output-length and domain-separation settings. See {@link TurboshakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with TurboSHAKE256.
+ * ```ts
+ * turboshake256(new Uint8Array([1, 2, 3]), { dkLen: 64 });
+ * ```
+ */
 export const turboshake256: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurbo(136, 64);
 
 // Same as NIST rightEncode, but returns [0] for zero string
@@ -353,7 +549,12 @@ function rightEncodeK12(n: number | bigint): Uint8Array {
 }
 
 /** K12 options. */
-export type KangarooOpts = { dkLen?: number; personalization?: Uint8Array };
+export type KangarooOpts = {
+  /** Desired digest length in bytes. */
+  dkLen?: number;
+  /** Optional personalization string mixed into the sponge state. */
+  personalization?: Uint8Array;
+};
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
 /** Internal K12 hash class. */
@@ -432,11 +633,31 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
   }
 }
 
-/** 128-bit KangarooTwelve (k12): reduced 12-round keccak. */
+/**
+ * 128-bit KangarooTwelve (k12): reduced 12-round keccak.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with KangarooTwelve-128.
+ * ```ts
+ * kt128(new Uint8Array([1, 2, 3]));
+ * ```
+ */
 export const kt128: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher(
   (opts: KangarooOpts = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
 );
-/** 256-bit KangarooTwelve (k12): reduced 12-round keccak. */
+/**
+ * 256-bit KangarooTwelve (k12): reduced 12-round keccak.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with KangarooTwelve-256.
+ * ```ts
+ * kt256(new Uint8Array([1, 2, 3]));
+ * ```
+ */
 export const kt256: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ createHasher(
   (opts: KangarooOpts = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
 );
@@ -444,7 +665,7 @@ export const kt256: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ creat
 // MarsupilamiFourteen (14-rounds) can be defined as:
 // `new KangarooTwelve(136, 64, chooseLen(opts, 64), 14, opts)`
 
-/** KangarooTwelve-based MAC options. */
+/** KangarooTwelve-based MAC function type. */
 export type HopMAC = (
   key: Uint8Array,
   message: Uint8Array,
@@ -462,14 +683,34 @@ const genHopMAC =
  * These untested (there is no test vectors or implementation available). Use at your own risk.
  * HopMAC128(Key, M, C, L) = KT128(Key, KT128(M, C, 32), L)
  * HopMAC256(Key, M, C, L) = KT256(Key, KT256(M, C, 64), L)
+ * @param key - MAC key bytes
+ * @param message - message bytes to authenticate
+ * @param personalization - personalization bytes mixed into the inner hash
+ * @param dkLen - optional output length in bytes
+ * @returns Authentication tag bytes.
+ * @example
+ * Authenticate a message with HopMAC128.
+ * ```ts
+ * HopMAC128(new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3]), 32);
+ * ```
  */
 export const HopMAC128: HopMAC = /* @__PURE__ */ genHopMAC(kt128);
-/** 256-bit KangarooTwelve-based MAC. */
+/**
+ * 256-bit KangarooTwelve-based MAC.
+ * @param key - MAC key bytes
+ * @param message - message bytes to authenticate
+ * @param personalization - personalization bytes mixed into the inner hash
+ * @param dkLen - optional output length in bytes
+ * @returns Authentication tag bytes.
+ * @example
+ * Authenticate a message with HopMAC256.
+ * ```ts
+ * HopMAC256(new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3]), 64);
+ * ```
+ */
 export const HopMAC256: HopMAC = /* @__PURE__ */ genHopMAC(kt256);
 
-/**
- * More at https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG.
- */
+/** More at {@link https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG}. */
 export class _KeccakPRG extends Keccak implements PRG {
   protected rate: number;
   constructor(capacity: number) {
@@ -526,5 +767,16 @@ export class _KeccakPRG extends Keccak implements PRG {
   }
 }
 
-/** KeccakPRG: Pseudo-random generator based on Keccak. https://keccak.team/files/CSF-0.1.pdf */
+/**
+ * KeccakPRG: pseudo-random generator based on Keccak.
+ * See {@link https://keccak.team/files/CSF-0.1.pdf}.
+ * @param capacity - sponge capacity in bits
+ * @returns PRG instance backed by a Keccak sponge.
+ * @example
+ * Create a Keccak-based pseudorandom generator and read bytes from it.
+ * ```ts
+ * const prg = keccakprg(254);
+ * prg.randomBytes(8);
+ * ```
+ */
 export const keccakprg = (capacity = 254): _KeccakPRG => new _KeccakPRG(capacity);
