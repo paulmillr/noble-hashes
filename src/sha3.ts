@@ -99,7 +99,11 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
       s[PI + 1] = Tl;
     }
     // Chi (χ)
+    // Essentially:
+    // for (let x = 0; x < 10; x++) B[x] = s[y + x];
+    // for (let x = 0; x < 10; x++) s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
     for (let y = 0; y < 50; y += 10) {
+      // prettier-ignore
       const b0 = s[y], b1 = s[y + 1], b2 = s[y + 2], b3 = s[y + 3];
       s[y] ^= ~s[y + 2] & s[y + 4];
       s[y + 1] ^= ~s[y + 3] & s[y + 5];
