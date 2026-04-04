@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { _KangarooTwelve, _KeccakPRG, _ParallelHash } from '../src/sha3-addons.ts';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
 import { PLATFORMS } from './platform.ts';
 import { TYPE_TEST, jsonGZ } from './utils.ts';
@@ -41,6 +42,7 @@ const {
   cshake128,
   cshake256,
   Keccak,
+  keccakP,
   keccak_224,
   keccak_256,
   keccak_384,
@@ -51,6 +53,7 @@ const {
   kmac256,
   kmac256xof,
   kt128,
+  kt256,
   parallelhash128,
   parallelhash128xof,
   parallelhash256,
@@ -236,7 +239,66 @@ if (
     throws(() => keccakprg(1605));
     throws(() => keccakprg(-5));
     throws(() => keccakprg().digest());
-    throws(() => keccakprg().digestInto(EMPTY));
+    let err: Error | undefined;
+    try {
+      keccakprg().digestInto(EMPTY);
+    } catch (error) {
+      err = error as Error;
+    }
+    eql(err?.message, 'digest is not allowed, use .randomBytes() instead');
+  });
+  should('keccakprg clean throws after destroy', () => {
+    const prg = keccakprg();
+    prg.addEntropy(new Uint8Array([1, 2, 3]));
+    prg.destroy();
+    let clean = 'ok';
+    let randomBytes = 'ok';
+    try {
+      prg.clean();
+    } catch (error) {
+      clean = (error as Error).message;
+    }
+    try {
+      prg.randomBytes(1);
+    } catch (error) {
+      randomBytes = (error as Error).message;
+    }
+    eql(
+      { clean, randomBytes },
+      {
+        clean: 'Hash instance has been destroyed',
+        randomBytes: 'Hash instance has been destroyed',
+      }
+    );
+  });
+  should('Keccak._cloneInto overwrites destination blockLen', () => {
+    const src = new Keccak(136, 0x1f, 0, true);
+    const dst = new Keccak(168, 0x06, 32, false);
+    src.update(Uint8Array.from({ length: 91 }, (_, i) => (i * 7 + 5) & 255));
+    const cloned = src._cloneInto(dst);
+    eql(cloned.xof(160), src.clone().xof(160));
+  });
+  should('_KeccakPRG._cloneInto overwrites destination capacity-dependent state', () => {
+    const src = new _KeccakPRG(254);
+    src.addEntropy(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+    src.randomBytes(160);
+    const expected = src.clone();
+    const reused = src._cloneInto(new _KeccakPRG(262));
+    eql(reused.randomBytes(16), expected.randomBytes(16));
+  });
+
+  should('keccakP: rounds', () => {
+    throws(() => keccakP(new Uint32Array(50), 0));
+    throws(() => keccakP(new Uint32Array(50), 25));
+  });
+
+  should('sha3 digestInto only fills outputLen bytes', () => {
+    const msg = Uint8Array.from([1, 2, 3]);
+    const hash = sha3_256.create().update(msg);
+    const out = new Uint8Array(hash.outputLen + 8).fill(0xaa);
+    hash.digestInto(out);
+    eql(out.subarray(0, hash.outputLen), Uint8Array.from(createHash('sha3-256').update(msg).digest()));
+    eql(out.subarray(hash.outputLen), new Uint8Array(8).fill(0xaa));
   });
 
   should('XOF', () => {
@@ -333,6 +395,35 @@ if (
       eql(clone, o);
     }
   });
+  should('_ParallelHash._cloneInto clears stale destination leaf state', () => {
+    const leaf = () => cshake128.create({ dkLen: 32 });
+    const src = new _ParallelHash(168, 16, leaf, false, { blockLen: 12 });
+    const dst = new _ParallelHash(168, 16, leaf, false, { blockLen: 12 });
+    const msg = utf8ToBytes('xyz');
+    dst.update(utf8ToBytes('abc'));
+    const cloned = src._cloneInto(dst);
+    eql(
+      cloned.update(msg).digest(),
+      new _ParallelHash(168, 16, leaf, false, { blockLen: 12 }).update(msg).digest()
+    );
+  });
+  should('_KangarooTwelve._cloneInto clears stale destination leaf state', () => {
+    const mk = (len: number) => Uint8Array.from({ length: len }, (_, i) => (i * 11 + 7) & 0xff);
+    for (const [blockLen, leafLen, outLen] of [
+      [168, 32, 32],
+      [136, 64, 64],
+    ] as const) {
+      const src = new _KangarooTwelve(blockLen, leafLen, outLen, 12, {
+        personalization: Uint8Array.from([1, 2, 3]),
+      }).update(mk(10));
+      const dst = new _KangarooTwelve(blockLen, leafLen, outLen, 12, {
+        personalization: Uint8Array.from([9, 8, 7]),
+      }).update(mk(9000));
+      const cloned = src._cloneInto(dst);
+      const suffix = mk(32);
+      eql(cloned.update(suffix).digest(), src.clone().update(suffix).digest());
+    }
+  });
 
   should('various vectors for cshake, hmac, kt128, p, t', () => {
     const GEN_VECTORS = jsonGZ('vectors/sha3-addons.json.gz').v;
@@ -413,6 +504,46 @@ if (
       throws(() => h(EMPTY, { D: 0x80 }));
       h(EMPTY, { D: 1 }); // doesn't throw
       h(EMPTY, { D: 0x7f }); // doesn't throw
+    }
+  });
+
+  should('turboshake and k12: dkLen', () => {
+    for (const h of [turboshake128, turboshake256, kt128, kt256]) throws(() => h(EMPTY, { dkLen: 0 }));
+  });
+  should('ParallelHash blockLen=0', () => {
+    throws(() => parallelhash128(new Uint8Array([1, 2, 3]), { blockLen: 0, dkLen: 32 }));
+    throws(() => parallelhash256(new Uint8Array([1, 2, 3]), { blockLen: 0, dkLen: 64 }));
+    throws(() => parallelhash128xof(new Uint8Array([1, 2, 3]), { blockLen: 0, dkLen: 32 }));
+    throws(() => parallelhash256xof(new Uint8Array([1, 2, 3]), { blockLen: 0, dkLen: 64 }));
+  });
+  should('KangarooTwelve direct states detach personalization', () => {
+    const msg = Uint8Array.from([1, 2, 3, 4, 5, 6]);
+    for (const hash of [kt128, kt256]) {
+      const pers = Uint8Array.from([9, 8, 7]);
+      const state = hash.create({ personalization: pers, dkLen: hash.outputLen }).update(msg.subarray(0, 3));
+      pers.fill(0);
+      const out = state.update(msg.subarray(3)).digest();
+      const exp = hash(msg, { personalization: Uint8Array.from([9, 8, 7]), dkLen: hash.outputLen });
+      eql(out, exp);
+    }
+  });
+  should('KangarooTwelve clones keep personalization', () => {
+    const msg = Uint8Array.from([1, 2, 3, 4, 5, 6]);
+    for (const hash of [kt128, kt256]) {
+      const pers = Uint8Array.from([9, 8, 7]);
+      const state = hash.create({ personalization: pers, dkLen: hash.outputLen }).update(msg.subarray(0, 3));
+      const clone = state.clone();
+      const out1 = state.update(msg.subarray(3)).digest();
+      const out2 = clone.update(msg.subarray(3)).digest();
+      eql(out2, out1);
+
+      const pers2 = Uint8Array.from([9, 8, 7]);
+      const state2 = hash.create({ personalization: pers2, dkLen: hash.outputLen }).update(msg.subarray(0, 3));
+      const clone2 = state2.clone();
+      pers2.fill(0);
+      const out3 = clone2.update(msg.subarray(3)).digest();
+      const exp = hash(msg, { personalization: Uint8Array.from([9, 8, 7]), dkLen: hash.outputLen });
+      eql(out3, exp);
     }
   });
 

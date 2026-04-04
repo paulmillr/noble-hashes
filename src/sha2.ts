@@ -10,8 +10,8 @@ import * as u64 from './_u64.ts';
 import { type CHash, clean, createHasher, oidNist, rotr } from './utils.ts';
 
 /**
- * Round constants:
- * First 32 bits of fractional parts of the cube roots of the first 64 primes 2..311)
+ * SHA-224 / SHA-256 round constants from RFC 6234 §5.1: the first 32 bits
+ * of the cube roots of the first 64 primes (2..311).
  */
 // prettier-ignore
 const SHA256_K = /* @__PURE__ */ Uint32Array.from([
@@ -25,10 +25,10 @@ const SHA256_K = /* @__PURE__ */ Uint32Array.from([
   0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 ]);
 
-/** Reusable temporary buffer. "W" comes straight from spec. */
+/** Reusable SHA-224 / SHA-256 message schedule buffer `W_t` from RFC 6234 §6.2 step 1. */
 const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
 
-/** Internal 32-byte base SHA2 hash class. */
+/** Internal SHA-224 / SHA-256 compression engine from RFC 6234 §6.2. */
 abstract class SHA2_32B<T extends SHA2_32B<T>> extends HashMD<T> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
@@ -102,12 +102,15 @@ abstract class SHA2_32B<T extends SHA2_32B<T>> extends HashMD<T> {
     clean(SHA256_W);
   }
   destroy(): void {
+    // HashMD callers route post-destroy usability through `destroyed`; zeroizing alone still leaves
+    // update()/digest() callable on reused instances.
+    this.destroyed = true;
     this.set(0, 0, 0, 0, 0, 0, 0, 0);
     clean(this.buffer);
   }
 }
 
-/** Internal SHA2-256 hash class. */
+/** Internal SHA-256 hash class grounded in RFC 6234 §6.2. */
 export class _SHA256 extends SHA2_32B<_SHA256> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
@@ -124,7 +127,7 @@ export class _SHA256 extends SHA2_32B<_SHA256> {
   }
 }
 
-/** Internal SHA2-224 hash class. */
+/** Internal SHA-224 hash class grounded in RFC 6234 §6.2 and §8.5. */
 export class _SHA224 extends SHA2_32B<_SHA224> {
   protected A: number = SHA224_IV[0] | 0;
   protected B: number = SHA224_IV[1] | 0;
@@ -141,8 +144,8 @@ export class _SHA224 extends SHA2_32B<_SHA224> {
 
 // SHA2-512 is slower than sha256 in js because u64 operations are slow.
 
-// Round contants
-// First 32 bits of the fractional parts of the cube roots of the first 80 primes 2..409
+// SHA-384 / SHA-512 round constants from RFC 6234 §5.2:
+// 80 full 64-bit words split into high/low halves.
 // prettier-ignore
 const K512 = /* @__PURE__ */ (() => u64.split([
   '0x428a2f98d728ae22', '0x7137449123ef65cd', '0xb5c0fbcfec4d3b2f', '0xe9b5dba58189dbbc',
@@ -169,11 +172,12 @@ const K512 = /* @__PURE__ */ (() => u64.split([
 const SHA512_Kh = /* @__PURE__ */ (() => K512[0])();
 const SHA512_Kl = /* @__PURE__ */ (() => K512[1])();
 
-// Reusable temporary buffers
+// Reusable high-half schedule buffer for the RFC 6234 §6.4 64-bit `W_t` words.
 const SHA512_W_H = /* @__PURE__ */ new Uint32Array(80);
+// Reusable low-half schedule buffer for the RFC 6234 §6.4 64-bit `W_t` words.
 const SHA512_W_L = /* @__PURE__ */ new Uint32Array(80);
 
-/** Internal 64-byte base SHA2 hash class. */
+/** Internal SHA-384 / SHA-512 compression engine from RFC 6234 §6.4. */
 abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
   // We cannot use array here since array allows indexing by variable
   // which means optimizer/compiler cannot use registers.
@@ -245,7 +249,7 @@ abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
       const W2l = SHA512_W_L[i - 2] | 0;
       const s1h = u64.rotrSH(W2h, W2l, 19) ^ u64.rotrBH(W2h, W2l, 61) ^ u64.shrSH(W2h, W2l, 6);
       const s1l = u64.rotrSL(W2h, W2l, 19) ^ u64.rotrBL(W2h, W2l, 61) ^ u64.shrSL(W2h, W2l, 6);
-      // SHA256_W[i] = s0 + s1 + SHA256_W[i - 7] + SHA256_W[i - 16];
+      // SHA512_W[i] = s0 + s1 + SHA512_W[i - 7] + SHA512_W[i - 16];
       const SUMl = u64.add4L(s0l, s1l, SHA512_W_L[i - 7], SHA512_W_L[i - 16]);
       const SUMh = u64.add4H(SUMl, s0h, s1h, SHA512_W_H[i - 7], SHA512_W_H[i - 16]);
       SHA512_W_H[i] = SUMh | 0;
@@ -302,12 +306,15 @@ abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
     clean(SHA512_W_H, SHA512_W_L);
   }
   destroy(): void {
+    // HashMD callers route post-destroy usability through `destroyed`; zeroizing alone still leaves
+    // update()/digest() callable on reused instances.
+    this.destroyed = true;
     clean(this.buffer);
     this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   }
 }
 
-/** Internal SHA2-512 hash class. */
+/** Internal SHA-512 hash class grounded in RFC 6234 §6.3 and §6.4. */
 export class _SHA512 extends SHA2_64B<_SHA512> {
   protected Ah: number = SHA512_IV[0] | 0;
   protected Al: number = SHA512_IV[1] | 0;
@@ -331,7 +338,7 @@ export class _SHA512 extends SHA2_64B<_SHA512> {
   }
 }
 
-/** Internal SHA2-384 hash class. */
+/** Internal SHA-384 hash class grounded in RFC 6234 §6.3 and §6.4. */
 export class _SHA384 extends SHA2_64B<_SHA384> {
   protected Ah: number = SHA384_IV[0] | 0;
   protected Al: number = SHA384_IV[1] | 0;
@@ -359,22 +366,27 @@ export class _SHA384 extends SHA2_64B<_SHA384> {
  * Truncated SHA512/256 and SHA512/224.
  * SHA512_IV is XORed with 0xa5a5a5a5a5a5a5a5, then used as "intermediary" IV of SHA512/t.
  * Then t hashes string to produce result IV.
- * See `test/misc/sha2-gen-iv.js`.
+ * See the repo-side derivation recipe in `test/misc/sha2-gen-iv.js`.
+ * These IV literals are checked against that script rather than a dedicated
+ * local RFC section.
  */
 
-/** SHA512/224 IV */
+/** SHA-512/224 IV derived by the SHA-512/t recipe in `test/misc/sha2-gen-iv.js` and
+ * stored as sixteen big-endian 32-bit halves. */
 const T224_IV = /* @__PURE__ */ Uint32Array.from([
   0x8c3d37c8, 0x19544da2, 0x73e19966, 0x89dcd4d6, 0x1dfab7ae, 0x32ff9c82, 0x679dd514, 0x582f9fcf,
   0x0f6d2b69, 0x7bd44da8, 0x77e36f73, 0x04c48942, 0x3f9d85a8, 0x6a1d36c8, 0x1112e6ad, 0x91d692a1,
 ]);
 
-/** SHA512/256 IV */
+/** SHA-512/256 IV derived by the SHA-512/t recipe in `test/misc/sha2-gen-iv.js` and
+ * stored as sixteen big-endian 32-bit halves. */
 const T256_IV = /* @__PURE__ */ Uint32Array.from([
   0x22312194, 0xfc2bf72c, 0x9f555fa3, 0xc84c64c2, 0x2393b86b, 0x6f53b151, 0x96387719, 0x5940eabd,
   0x96283ee2, 0xa88effe3, 0xbe5e1e25, 0x53863992, 0x2b0199fc, 0x2c85b8aa, 0x0eb72ddc, 0x81c52ca2,
 ]);
 
-/** Internal SHA2-512/224 hash class. */
+/** Internal SHA-512/224 hash class using the derived `T224_IV` and the shared
+ * RFC 6234 §6.4 compression engine. */
 export class _SHA512_224 extends SHA2_64B<_SHA512_224> {
   protected Ah: number = T224_IV[0] | 0;
   protected Al: number = T224_IV[1] | 0;
@@ -398,7 +410,8 @@ export class _SHA512_224 extends SHA2_64B<_SHA512_224> {
   }
 }
 
-/** Internal SHA2-512/256 hash class. */
+/** Internal SHA-512/256 hash class using the derived `T256_IV` and the shared
+ * RFC 6234 §6.4 compression engine. */
 export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
   protected Ah: number = T256_IV[0] | 0;
   protected Al: number = T256_IV[1] | 0;

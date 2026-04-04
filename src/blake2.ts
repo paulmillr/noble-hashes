@@ -16,9 +16,13 @@ import {
   type Hash
 } from './utils.ts';
 
-/** Blake hash options. `dkLen` is output length. `key` is used in MAC mode. `salt` is used in KDF mode. */
+/**
+ * Blake hash options.
+ * `dkLen` is output length. `key` is used in MAC mode. `salt` is used in
+ * KDF mode.
+ */
 export type Blake2Opts = {
-  /** Desired digest length in bytes. */
+  /** Desired digest length in bytes. RFC 7693 uses 1..64 for blake2b and 1..32 for blake2s. */
   dkLen?: number;
   /** Optional MAC key. */
   key?: Uint8Array;
@@ -28,15 +32,16 @@ export type Blake2Opts = {
   personalization?: Uint8Array;
 };
 
-// Same as SHA512_IV, but swapped endianness: LE instead of BE. iv[1] is iv[0], etc.
+// Same IV words as `SHA512_IV`, but endian-swapped into LE u32 low/high halves
+// for the BLAKE2b u64 helpers below.
 const B2B_IV = /* @__PURE__ */ Uint32Array.from([
   0xf3bcc908, 0x6a09e667, 0x84caa73b, 0xbb67ae85, 0xfe94f82b, 0x3c6ef372, 0x5f1d36f1, 0xa54ff53a,
   0xade682d1, 0x510e527f, 0x2b3e6c1f, 0x9b05688c, 0xfb41bd6b, 0x1f83d9ab, 0x137e2179, 0x5be0cd19,
 ]);
-// Temporary buffer
+// Shared synchronous BLAKE2b work vector as LE u32 low/high halves.
 const BBUF = /* @__PURE__ */ new Uint32Array(32);
 
-// Mixing function G splitted in two halfs
+// BLAKE2b G mix split into two half-rounds over LE u32 low/high limbs.
 function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
   // NOTE: V is LE here
   const Xl = msg[x], Xh = msg[x + 1]; // prettier-ignore
@@ -62,6 +67,7 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: nu
   ((BBUF[2 * d] = Dl), (BBUF[2 * d + 1] = Dh));
 }
 
+// Second half-round of the same LE-limb BLAKE2b G mix; `x` is the message word offset.
 function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
   // NOTE: V is LE here
   const Xl = msg[x], Xh = msg[x + 1]; // prettier-ignore
@@ -95,8 +101,10 @@ function checkBlake2Opts(
   persLen: number
 ) {
   anumber(keyLen);
-  if (outputLen < 0 || outputLen > keyLen) throw new Error('outputLen bigger than keyLen');
+  // RFC 7693 §2.1 requires digest length nn in 1..keyLen.
+  if (outputLen <= 0 || outputLen > keyLen) throw new Error('outputLen bigger than keyLen');
   const { key, salt, personalization } = opts;
+  // This API uses `undefined` for the RFC 7693 `kk = 0` case, so a provided key must be non-empty.
   if (key !== undefined && (key.length < 1 || key.length > keyLen))
     throw new Error('"key" expected to be undefined or of length=1..' + keyLen);
   if (salt !== undefined) abytes(salt, saltLen, 'salt');
@@ -117,6 +125,7 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
   protected pos: number = 0;
   readonly blockLen: number;
   readonly outputLen: number;
+  readonly canXOF: boolean = false;
 
   constructor(blockLen: number, outputLen: number) {
     anumber(blockLen);
@@ -147,7 +156,7 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
       }
       const take = Math.min(blockLen - this.pos, len - pos);
       const dataOffset = offset + pos;
-      // full block && aligned to 4 bytes && not last in input
+      // Zero-copy only for full, 4-byte-aligned, non-final blocks.
       if (take === blockLen && !(dataOffset % 4) && pos + take < len) {
         const data32 = new Uint32Array(buf, dataOffset, Math.floor((len - pos) / 4));
         swap32IfBE(data32);
@@ -175,18 +184,32 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
     swap32IfBE(buffer32);
     this.compress(buffer32, 0, true);
     swap32IfBE(buffer32);
+    // Reject unaligned views explicitly instead of hiding them behind a full scratch copy.
+    if (out.byteOffset & 3)
+      throw new RangeError(
+        '"digestInto() output" expected 4-byte aligned byteOffset, got ' + out.byteOffset
+      );
+    const state = this.get();
     const out32 = u32(out);
-    this.get().forEach((v, i) => (out32[i] = swap8IfBE(v)));
+    const full = Math.floor(this.outputLen / 4);
+    for (let i = 0; i < full; i++) out32[i] = swap8IfBE(state[i]);
+    const tail = this.outputLen % 4;
+    if (!tail) return;
+    const off = full * 4;
+    const word = state[full];
+    for (let i = 0; i < tail; i++) out[off + i] = word >>> (8 * i);
   }
   digest(): Uint8Array {
     const { buffer, outputLen } = this;
     this.digestInto(buffer);
+    // Return a copy so callers do not alias the instance scratch buffer used during finalization.
     const res = buffer.slice(0, outputLen);
     this.destroy();
     return res;
   }
   _cloneInto(to?: T): T {
     const { buffer, length, finished, destroyed, outputLen, pos } = this;
+    // Recreate only `dkLen`; key/salt/personalization are already absorbed into the copied state.
     to ||= new (this.constructor as any)({ dkLen: outputLen }) as T;
     to.set(...this.get());
     to.buffer.set(buffer);
@@ -203,9 +226,9 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
   }
 }
 
-/** Internal blake2b hash class. */
+/** Internal blake2b hash class with state stored as LE u32 low/high halves. */
 export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
-  // Same as SHA-512, but LE
+  // Same IV words as SHA-512 / BLAKE2b, encoded as LE u32 low/high halves.
   private v0l = B2B_IV[0] | 0;
   private v0h = B2B_IV[1] | 0;
   private v1l = B2B_IV[2] | 0;
@@ -233,6 +256,8 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
       abytes(key, undefined, 'key');
       keyLength = key.length;
     }
+    // RFC 7693 §2.5: xor `p[0] = 0x0101kknn` into the low 32 bits of `h[0]`;
+    // the high 32 bits stay at `IV[0]`.
     this.v0l ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt !== undefined) {
       abytes(salt, undefined, 'salt');
@@ -302,6 +327,8 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
     }
     let j = 0;
     const s = BSIGMA;
+    // SIGMA selects 64-bit message words; multiply by 2 because `msg` stores
+    // each word as [low32, high32].
     for (let i = 0; i < 12; i++) {
       G1b(0, 4, 8, 12, msg, offset + 2 * s[j++]);
       G2b(0, 4, 8, 12, msg, offset + 2 * s[j++]);
@@ -349,7 +376,9 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
 /**
  * Blake2b hash function. 64-bit. 1.5x slower than blake2s in JS.
  * @param msg - message that would be hashed
- * @param opts - Optional output, MAC, salt, and personalization settings. See {@link Blake2Opts}.
+ * @param opts - Optional output, MAC, salt, and personalization settings.
+ *   `dkLen` must be 1..64 bytes; `salt` and `personalization`, if present,
+ *   must be 16 bytes each. See {@link Blake2Opts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with Blake2b.
@@ -376,8 +405,10 @@ export type _Num16 = {
 
 /**
  * BLAKE2-compress core method.
- * @param s - sigma schedule bytes
- * @param offset - starting word offset inside `msg`
+ * Runs only the round function over a caller-supplied local vector; callers initialize `v0..v15`
+ * and apply the final `h[i] ^= v[i] ^ v[i + 8]` fold themselves.
+ * @param s - flattened sigma schedule bytes
+ * @param offset - starting word offset inside `msg`, not a byte offset
  * @param msg - message words
  * @param rounds - round count to execute
  * @param v0 - state word 0
@@ -440,6 +471,7 @@ export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds
   return { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 };
 }
 
+// Blake2s reuses the SHA-256 IV words as-is.
 const B2S_IV = /* @__PURE__ */ SHA256_IV.slice();
 
 /** Internal blake2s hash class. */
@@ -464,6 +496,8 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
       abytes(key, undefined, 'key');
       keyLength = key.length;
     }
+    // RFC 7693 §2.5: xor `p[0] = 0x0101kknn` directly into `h[0]`, since
+    // BLAKE2s stores each state word as one `u32`.
     this.v0 ^= this.outputLen | (keyLength << 8) | (0x01 << 16) | (0x01 << 24);
     if (salt !== undefined) {
       abytes(salt, undefined, 'salt');
@@ -503,6 +537,8 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
   }
   protected compress(msg: Uint32Array, offset: number, isLast: boolean): void {
     const { h, l } = u64.fromBig(BigInt(this.length));
+    // Seed v8..v15 from the IV, xor the low/high 32-bit byte counter into
+    // v12/v13, and invert v14 on the final block.
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       compress(
@@ -529,7 +565,9 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
 /**
  * Blake2s hash function. Focuses on 8-bit to 32-bit platforms. 1.5x faster than blake2b in JS.
  * @param msg - message that would be hashed
- * @param opts - Optional output, MAC, salt, and personalization settings. See {@link Blake2Opts}.
+ * @param opts - Optional output, MAC, salt, and personalization settings.
+ *   `dkLen` must be 1..32 bytes; `salt` and `personalization`, if present,
+ *   must be 8 bytes each. See {@link Blake2Opts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with Blake2s.

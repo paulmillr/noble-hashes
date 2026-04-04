@@ -2,14 +2,19 @@
  * HMAC: RFC2104 message authentication code.
  * @module
  */
-import { abytes, aexists, ahash, clean, type CHash, type Hash } from './utils.ts';
+import { abytes, aexists, ahash, aoutput, clean, type CHash, type Hash } from './utils.ts';
 
-/** Internal class for HMAC. */
+/**
+ * Internal class for HMAC.
+ * Accepts any byte key, although RFC 2104 §3 recommends keys at least
+ * `HashLen` bytes long.
+ */
 export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
   oHash: T;
   iHash: T;
   blockLen: number;
   outputLen: number;
+  canXOF = false;
   private finished = false;
   private destroyed = false;
 
@@ -27,7 +32,8 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
     pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
     for (let i = 0; i < pad.length; i++) pad[i] ^= 0x36;
     this.iHash.update(pad);
-    // By doing update (processing of first block) of outer hash here we can re-use it between multiple calls via clone
+    // By doing update (processing of the first block) of the outer hash here,
+    // we can re-use it between multiple calls via clone.
     this.oHash = hash.create() as T;
     // Undo internal XOR && apply outer XOR
     for (let i = 0; i < pad.length; i++) pad[i] ^= 0x36 ^ 0x5c;
@@ -41,11 +47,14 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
   }
   digestInto(out: Uint8Array): void {
     aexists(this);
-    abytes(out, this.outputLen, 'output');
+    aoutput(out, this);
     this.finished = true;
-    this.iHash.digestInto(out);
-    this.oHash.update(out);
-    this.oHash.digestInto(out);
+    const buf = out.subarray(0, this.outputLen);
+    // Reuse the first outputLen bytes for the inner digest; the outer hash consumes them before
+    // overwriting that same prefix with the final tag, leaving any oversized tail untouched.
+    this.iHash.digestInto(buf);
+    this.oHash.update(buf);
+    this.oHash.digestInto(buf);
     this.destroy();
   }
   digest(): Uint8Array {
@@ -54,7 +63,8 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
     return out;
   }
   _cloneInto(to?: _HMAC<T>): _HMAC<T> {
-    // Create new instance without calling constructor since key already in state and we don't know it.
+    // Create new instance without calling constructor since the key
+    // is already in state and we don't know it.
     to ||= Object.create(Object.getPrototypeOf(this), {});
     const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
     to = to as this;

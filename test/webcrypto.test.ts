@@ -1,5 +1,5 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
-import { deepStrictEqual as eql, throws } from 'node:assert';
+import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { PLATFORMS } from './platform.ts';
 
@@ -23,6 +23,14 @@ describe(`webcrypto (${variant})`, () => {
         eql(await web(BUF1), noble(BUF1));
         eql(web.blockLen, noble.blockLen);
         eql(web.outputLen, noble.outputLen);
+      });
+      should('descriptor is immutable', async () => {
+        const desc = Object.getOwnPropertyDescriptor(web, 'webCryptoName');
+        throws(() => {
+          web.webCryptoName = 'SHA-512';
+        });
+        eql(Object.getOwnPropertyDescriptor(web, 'webCryptoName'), desc);
+        eql(await webcrypto.hmac(web, BUF1, BUF2), hmac(noble, BUF1, BUF2));
       });
       should('Stream', async () => {
         throws(() => web.create());
@@ -59,6 +67,7 @@ describe(`webcrypto (${variant})`, () => {
           await webcrypto.pbkdf2(web, 'pwd', 'salt', { c: 11, dkLen: 1000 }),
           pbkdf2(noble, 'pwd', 'salt', { c: 11, dkLen: 1000 })
         );
+        await rejects(() => webcrypto.pbkdf2(web, 'pwd', 'salt', { c: 1, dkLen: 0 }));
       });
     });
   }

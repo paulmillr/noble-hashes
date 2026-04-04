@@ -12,13 +12,16 @@ import { abytes, bytesToHex, clean, createView, hexToBytes, kdfInputToBytes } fr
 // Uses HKDF in a non-standard way, so it's not "KDF-secure", only "PRF-secure".
 // Which is good enough: assume sha2-256 retained preimage resistance.
 
+// Fixed ESKDF scrypt work factor: interactive-latency target with about 512 MiB RAM per derivation.
 const SCRYPT_FACTOR = /* @__PURE__ */ (() => 2 ** 19)();
+// Fixed ESKDF PBKDF2 work factor: CPU-only companion branch in the same rough
+// interactive-latency range.
 const PBKDF2_FACTOR = /* @__PURE__ */ (() => 2 ** 17)();
 
 /**
- * Scrypt KDF with ESKDF defaults.
- * @param password - user password string
- * @param salt - unique salt string
+ * Scrypt KDF with the fixed ESKDF policy tuple `{ N: 2^19, r: 8, p: 1, dkLen: 32 }`.
+ * @param password - user password string, UTF-8 encoded before entering RFC 7914
+ * @param salt - unique salt string, UTF-8 encoded before entering RFC 7914
  * @returns Derived 32-byte key.
  * @example
  * Derive the 32-byte scrypt key used by ESKDF.
@@ -31,9 +34,9 @@ export function scrypt(password: string, salt: string): Uint8Array {
 }
 
 /**
- * PBKDF2-HMAC-SHA256 with ESKDF defaults.
- * @param password - user password string
- * @param salt - unique salt string
+ * PBKDF2-HMAC-SHA256 with the fixed ESKDF policy tuple `{ sha256, c: 2^17, dkLen: 32 }`.
+ * @param password - user password string, UTF-8 encoded before entering PBKDF2-HMAC-SHA-256
+ * @param salt - unique salt string, UTF-8 encoded before entering PBKDF2-HMAC-SHA-256
  * @returns Derived 32-byte key.
  * @example
  * Derive the 32-byte PBKDF2 key used by ESKDF.
@@ -45,7 +48,7 @@ export function pbkdf2(password: string, salt: string): Uint8Array {
   return _pbkdf2(sha256, password, salt, { c: PBKDF2_FACTOR, dkLen: 32 });
 }
 
-// Combines two 32-byte byte arrays
+// Combines two 32-byte byte arrays into a fresh 32-byte result without aliasing either input.
 function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
   abytes(a, 32);
   abytes(b, 32);
@@ -56,12 +59,19 @@ function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
   return arr;
 }
 
+// All local string length checks are in JS UTF-16 code units, not UTF-8 bytes.
 function strHasLength(str: string, min: number, max: number): boolean {
   return typeof str === 'string' && str.length >= min && str.length <= max;
 }
 
 /**
- * Derives main seed. Takes a lot of time. Prefer `eskdf` method instead.
+ * Derives main seed. Takes a lot of time; prefer the higher-level `eskdf(...)`
+ * flow unless you specifically need the raw main seed.
+ * Derives main seed as
+ * `xor32(scrypt(password || 0x01, username || 0x01),
+ * pbkdf2(password || 0x02, username || 0x02))`.
+ * Username and password strings are encoded by the underlying KDFs after the
+ * local separator bytes are appended.
  * @param username - account identifier used as public salt
  * @param password - user password string
  * @returns Main 32-byte seed for the account.
@@ -75,8 +85,9 @@ function strHasLength(str: string, min: number, max: number): boolean {
 export function deriveMainSeed(username: string, password: string): Uint8Array {
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
   if (!strHasLength(password, 8, 255)) throw new Error('invalid password');
-  // Declared like this to throw off minifiers which auto-convert .fromCharCode(1) to actual string.
-  // String with non-ascii may be problematic in some envs
+  // Keep the protocol separators as the literal bytes 0x01 / 0x02 even after minification.
+  // Embedding them as non-printable characters directly can be awkward across
+  // JS tooling and environments.
   const codes = { _1: 1, _2: 2 };
   const sep = { s: String.fromCharCode(codes._1), p: String.fromCharCode(codes._2) };
   const scr = scrypt(password + sep.s, username + sep.s);
@@ -88,7 +99,11 @@ export function deriveMainSeed(username: string, password: string): Uint8Array {
 
 type AccountID = number | string;
 
-/** Converts protocol & accountId pair to HKDF salt & info params. */
+/**
+ * Converts protocol & accountId pair to HKDF params:
+ * `info` is UTF-8 protocol bytes, numeric ids become 4-byte BE `salt`,
+ * and string ids become UTF-8 `salt` bytes.
+ */
 function getSaltInfo(protocol: string, accountId: AccountID = 0) {
   // Note that length here also repeats two lines below
   // We do an additional length check here to reduce the scope of DoS attacks
@@ -96,9 +111,9 @@ function getSaltInfo(protocol: string, accountId: AccountID = 0) {
     throw new Error('invalid protocol');
   }
 
-  // Allow string account ids for some protocols
-  const allowsStr = /^password\d{0,3}|ssh|tor|file$/.test(protocol);
-  let salt: Uint8Array; // Extract salt. Default is undefined.
+  // Exact-match only: substring matches like `assh` / `mentor` must not widen the public whitelist.
+  const allowsStr = /^(password\d{0,3}|ssh|tor|file)$/.test(protocol);
+  let salt: Uint8Array; // Assigned below: either 4-byte BE account bytes or UTF-8 account bytes.
   if (typeof accountId === 'string') {
     if (!allowsStr) throw new Error('accountId must be a number');
     if (!strHasLength(accountId, 1, 255))
@@ -120,6 +135,8 @@ type OptsLength = { keyLength: number };
 type OptsMod = { modulus: bigint };
 type KeyOpts = undefined | OptsLength | OptsMod;
 
+// Local modulus-size helper, not a general bigint-byte-length primitive:
+// `<= 128n` is rejected by ESKDF policy.
 function countBytes(num: bigint): number {
   if (typeof num !== 'bigint' || num <= BigInt(128)) throw new Error('invalid number');
   return Math.ceil(num.toString(2).length / 8);
@@ -127,7 +144,8 @@ function countBytes(num: bigint): number {
 
 /**
  * Parses keyLength and modulus options to extract length of result key.
- * If modulus is used, adds 64 bits to it as per FIPS 186 B.4.1 to combat modulo bias.
+ * If modulus is used, adds 64 bits to it per the FIPS 186-5 Appendix A.3.1 /
+ * A.4.1 extra-bits guidance.
  */
 function getKeyLength(options: KeyOpts): number {
   if (!options || typeof options !== 'object') return 32;
@@ -135,7 +153,7 @@ function getKeyLength(options: KeyOpts): number {
   const hasMod = 'modulus' in options;
   if (hasLen && hasMod) throw new Error('cannot combine keyLength and modulus options');
   if (!hasLen && !hasMod) throw new Error('must have either keyLength or modulus option');
-  // FIPS 186 B.4.1 requires at least 64 more bits
+  // FIPS 186-5 Appendix A.3.1 / A.4.1 calls for at least 64 extra bits.
   const l = hasMod ? countBytes(options.modulus) + 8 : options.keyLength;
   if (!(typeof l === 'number' && l >= 16 && l <= 8192)) throw new Error('invalid keyLength');
   return l;
@@ -143,14 +161,17 @@ function getKeyLength(options: KeyOpts): number {
 
 /**
  * Converts key to bigint and divides it by modulus. Big Endian.
- * Implements FIPS 186 B.4.1, which removes 0 and modulo bias from output.
+ * Adapts FIPS 186-5 Appendix A.4.1: `getKeyLength()` already requested the
+ * extra 64-bit margin, and this step maps the result into `1..modulus-1`.
  */
 function modReduceKey(key: Uint8Array, modulus: bigint): Uint8Array {
   const _1 = BigInt(1);
   const num = BigInt('0x' + bytesToHex(key)); // check for ui8a, then bytesToNumber()
   const res = (num % (modulus - _1)) + _1; // Remove 0 from output
   if (res < _1) throw new Error('expected positive number'); // Guard against bad values
-  const len = key.length - 8; // FIPS requires 64 more bits = 8 bytes
+  // Strip the extra 64-bit margin that `getKeyLength()` requested
+  // for bias reduction.
+  const len = key.length - 8;
   const hex = res.toString(16).padStart(len * 2, '0'); // numberToHex()
   const bytes = hexToBytes(hex);
   if (bytes.length !== len) throw new Error('invalid length of result key');
@@ -164,14 +185,19 @@ export interface ESKDF {
    * other child key because of properties of underlying KDF.
    *
    * @param protocol - 3-15 character protocol name
-   * @param accountId - numeric identifier of account
+   * @param accountId - numeric account identifier, or a string id for
+   *   `password\d{0,3}`, `ssh`, `tor`, or `file`
    * @param options - Optional child-key shaping parameters. See {@link KeyOpts}.
    * @returns Derived child key bytes.
    */
   deriveChildKey: (protocol: string, accountId: AccountID, options?: KeyOpts) => Uint8Array;
   /** Deletes the main seed from the ESKDF instance. */
   expire: () => void;
-  /** Human-readable account fingerprint derived from the main seed. */
+  /**
+   * Human-readable fingerprint: first 6 bytes of
+   * `deriveChildKey('fingerprint', 0)`, formatted as uppercase
+   * colon-separated hex.
+   */
   fingerprint: string;
 }
 
@@ -196,14 +222,18 @@ export async function eskdf(username: string, password: string): Promise<ESKDF> 
   let seed: Uint8Array | undefined = deriveMainSeed(username, password);
 
   function deriveCK(protocol: string, accountId: AccountID = 0, options?: KeyOpts): Uint8Array {
+    // Reject expired instances before deriving any HKDF inputs from the closure-held seed.
     abytes(seed!, 32);
     const { salt, info } = getSaltInfo(protocol, accountId); // validate protocol & accountId
-    const keyLength = getKeyLength(options); // validate options
+    // Validate option shape and coarse length bounds;
+    // `hkdf()` still rejects non-integer lengths.
+    const keyLength = getKeyLength(options);
     const key = hkdf(sha256, seed!, salt, info, keyLength);
     // Modulus has already been validated
     return options && 'modulus' in options ? modReduceKey(key, options.modulus) : key;
   }
   function expire() {
+    // Overwrite the closure-held seed before dropping the reference.
     if (seed) seed.fill(1);
     seed = undefined;
   }

@@ -16,6 +16,7 @@ import { avcpTests } from './acvp.test.ts';
 import { test as clone } from './clone.test.ts';
 import './eskdf.test.ts';
 import { test as info } from './info.test.ts';
+import './noble-hashes-only.test.ts';
 import './u64.test.ts';
 import './utils.test.ts';
 // import './errors.test.ts';

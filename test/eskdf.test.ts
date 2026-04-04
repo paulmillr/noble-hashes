@@ -81,6 +81,17 @@ describe('eskdf', () => {
     throws(() => keyc.deriveChildKey('ssh', 'test'));
     throws(() => keyc.deriveChildKey('ssh', 0));
   });
+  should('protocol names use string account ids only where intended', async () => {
+    const keyc = await eskdf('test@test.com', 'test2test');
+    eql(keyc.deriveChildKey('ssh', 'acct').length, 32);
+    eql(keyc.deriveChildKey('tor', 'acct').length, 32);
+    eql(keyc.deriveChildKey('file', 'acct').length, 32);
+    eql(keyc.deriveChildKey('password123', 'acct').length, 32);
+    throws(() => keyc.deriveChildKey('assh', 'acct'));
+    throws(() => keyc.deriveChildKey('mentor', 'acct'));
+    throws(() => keyc.deriveChildKey('profile', 'acct'));
+    throws(() => keyc.deriveChildKey('xsshx', 'acct'));
+  });
 });
 
 should.runWhen(import.meta.url);

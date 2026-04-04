@@ -1,6 +1,8 @@
 /**
 
-SHA1 (RFC 3174), MD5 (RFC 1321) and RIPEMD160 (RFC 2286) legacy, weak hash functions.
+SHA1 (RFC 3174), MD5 (RFC 1321), and RIPEMD160 legacy, weak hash functions.
+RFC 2286 only covers HMAC-RIPEMD160 wrapper material and test vectors,
+not the base RIPEMD-160 compression spec.
 Don't use them in a new protocol. What "weak" means:
 
 - Collisions can be made with 2^18 effort in MD5, 2^60 in SHA1, 2^80 in RIPEMD160.
@@ -11,12 +13,12 @@ Don't use them in a new protocol. What "weak" means:
 import { Chi, HashMD, Maj } from './_md.ts';
 import { type CHash, clean, createHasher, rotl } from './utils.ts';
 
-/** Initial SHA1 state */
+/** Initial SHA-1 state from RFC 3174 §6.1. */
 const SHA1_IV = /* @__PURE__ */ Uint32Array.from([
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0,
 ]);
 
-// Reusable temporary buffer
+// Reusable 80-word SHA-1 message schedule buffer.
 const SHA1_W = /* @__PURE__ */ new Uint32Array(80);
 
 /** Internal SHA1 legacy hash class. */
@@ -81,6 +83,9 @@ export class _SHA1 extends HashMD<_SHA1> {
     clean(SHA1_W);
   }
   destroy(): void {
+    // HashMD callers route post-destroy usability through `destroyed`; zeroizing alone still leaves
+    // update()/digest() callable on reused instances.
+    this.destroyed = true;
     this.set(0, 0, 0, 0, 0);
     clean(this.buffer);
   }
@@ -98,16 +103,17 @@ export class _SHA1 extends HashMD<_SHA1> {
  */
 export const sha1: CHash = /* @__PURE__ */ createHasher(() => new _SHA1());
 
-/** Per-round constants */
+/** RFC 1321 `T[i]` uses `floor(2^32 * abs(sin(i)))`; this is the shared `2^32` scale factor. */
 const p32 = /* @__PURE__ */ Math.pow(2, 32);
+/** RFC 1321 `T[1..64]` table. */
 const K = /* @__PURE__ */ Array.from({ length: 64 }, (_, i) =>
   Math.floor(p32 * Math.abs(Math.sin(i + 1)))
 );
 
-/** md5 initial state: same as sha1, but 4 u32 instead of 5. */
+/** MD5 initial state from RFC 1321, stored as 4 u32 words. */
 const MD5_IV = /* @__PURE__ */ SHA1_IV.slice(0, 4);
 
-// Reusable temporary buffer
+// Reusable 16-word MD5 message block buffer.
 const MD5_W = /* @__PURE__ */ new Uint32Array(16);
 /** Internal MD5 legacy hash class. */
 export class _MD5 extends HashMD<_MD5> {
@@ -140,6 +146,7 @@ export class _MD5 extends HashMD<_MD5> {
         g = i;
         s = [7, 12, 17, 22];
       } else if (i < 32) {
+        // RFC 1321 round 2 uses G(B,C,D) = (B & D) | (C & ~D), which is `Chi(D, B, C)`.
         F = Chi(D, B, C);
         g = (5 * i + 1) % 16;
         s = [5, 9, 14, 20];
@@ -169,6 +176,9 @@ export class _MD5 extends HashMD<_MD5> {
     clean(MD5_W);
   }
   destroy(): void {
+    // HashMD callers route post-destroy usability through `destroyed`; zeroizing alone still leaves
+    // update()/digest() callable on reused instances.
+    this.destroyed = true;
     this.set(0, 0, 0, 0);
     clean(this.buffer);
   }
@@ -194,11 +204,13 @@ export const md5: CHash = /* @__PURE__ */ createHasher(() => new _MD5());
 
 // RIPEMD-160
 
+// Permutation repeatedly applied to derive the later RIPEMD-160 message-order tables.
 const Rho160 = /* @__PURE__ */ Uint8Array.from([
   7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
 ]);
 const Id160 = /* @__PURE__ */ (() => Uint8Array.from(new Array(16).fill(0).map((_, i) => i)))();
 const Pi160 = /* @__PURE__ */ (() => Id160.map((i) => (9 * i + 5) % 16))();
+// Five left/right message-word orderings for the RIPEMD-160 dual-lane rounds.
 const idxLR = /* @__PURE__ */ (() => {
   const L = [Id160];
   const R = [Pi160];
@@ -210,6 +222,7 @@ const idxL = /* @__PURE__ */ (() => idxLR[0])();
 const idxR = /* @__PURE__ */ (() => idxLR[1])();
 // const [idxL, idxR] = idxLR;
 
+// Base per-group shift table before the left/right message-order permutations are applied.
 const shifts160 = /* @__PURE__ */ [
   [11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8],
   [12, 13, 11, 15, 6, 9, 9, 7, 12, 15, 11, 13, 7, 8, 7, 7],
@@ -219,13 +232,16 @@ const shifts160 = /* @__PURE__ */ [
 ].map((i) => Uint8Array.from(i));
 const shiftsL160 = /* @__PURE__ */ idxL.map((idx, i) => idx.map((j) => shifts160[i][j]));
 const shiftsR160 = /* @__PURE__ */ idxR.map((idx, i) => idx.map((j) => shifts160[i][j]));
+// Five left-lane additive constants for RIPEMD-160.
 const Kl160 = /* @__PURE__ */ Uint32Array.from([
   0x00000000, 0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xa953fd4e,
 ]);
+// Five right-lane additive constants for RIPEMD-160.
 const Kr160 = /* @__PURE__ */ Uint32Array.from([
   0x50a28be6, 0x5c4dd124, 0x6d703ef3, 0x7a6d76e9, 0x00000000,
 ]);
-// It's called f() in spec.
+// Called `f()` in the spec; valid `group` values are 0..4, and out-of-range
+// inputs currently fall through to the group-4 branch.
 function ripemd_f(group: number, x: number, y: number, z: number): number {
   if (group === 0) return x ^ y ^ z;
   if (group === 1) return (x & y) | (~x & z);
@@ -233,8 +249,12 @@ function ripemd_f(group: number, x: number, y: number, z: number): number {
   if (group === 3) return (x & z) | (y & ~z);
   return x ^ (y | ~z);
 }
-// Reusable temporary buffer
+// Reusable 16-word RIPEMD-160 message block buffer.
 const BUF_160 = /* @__PURE__ */ new Uint32Array(16);
+/**
+ * Internal RIPEMD-160 legacy hash class.
+ * RFC 2286 only adds HMAC-RIPEMD160 material, not the core hash specification.
+ */
 export class _RIPEMD160 extends HashMD<_RIPEMD160> {
   private h0 = 0x67452301 | 0;
   private h1 = 0xefcdab89 | 0;
@@ -283,6 +303,7 @@ export class _RIPEMD160 extends HashMD<_RIPEMD160> {
       }
     }
     // Add the compressed chunk to the current hash value
+    // Final recombination cross-adds the left/right lane accumulators into the next h0..h4 order.
     this.set(
       (this.h1 + cl + dr) | 0,
       (this.h2 + dl + er) | 0,
@@ -303,6 +324,8 @@ export class _RIPEMD160 extends HashMD<_RIPEMD160> {
 
 /**
  * RIPEMD-160 - a legacy hash function from 1990s.
+ * RFC 2286 only covers HMAC-RIPEMD160 test material; the links below point
+ * at the base RIPEMD-160 references.
  * * {@link https://homes.esat.kuleuven.be/~bosselae/ripemd160.html}
  * * {@link https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf}
  * @param msg - message bytes to hash

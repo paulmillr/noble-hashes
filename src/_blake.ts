@@ -5,8 +5,10 @@
 import { rotr } from './utils.ts';
 
 /**
- * Internal blake variable.
- * For BLAKE2b, the two extra permutations for rounds 10 and 11 are SIGMA[10..11] = SIGMA[0..1].
+ * Internal blake permutation table.
+ * Rows `0..9` serve BLAKE2s, rows `0..11` serve BLAKE2b with `10..11 = 0..1`, and Blake1 also
+ * reuses the later rows shown below. Blake1 expands rounds `10..15` as `SIGMA[i % 10]`, so rows
+ * `10..15` intentionally repeat rows `0..5` for the 14-round (256) and 16-round (512) variants.
  */
 // prettier-ignore
 export const BSIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
@@ -32,7 +34,9 @@ export const BSIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
 // prettier-ignore
 export type Num4 = { a: number; b: number; c: number; d: number; };
 
-// Mixing function G splitted in two halfs
+// 32-bit / BLAKE2s first half of G, with the fixed `(16, 12)` rotation pair.
+// Parameter `x` is the RFC 7693 first-half message word, or Blake1's pre-mixed
+// `m[sigma[r][2i]] ^ u[sigma[r][2i+1]]` addend in the 32-bit path.
 export function G1s(a: number, b: number, c: number, d: number, x: number): Num4 {
   a = (a + b + x) | 0;
   d = rotr(d ^ a, 16);
@@ -41,6 +45,9 @@ export function G1s(a: number, b: number, c: number, d: number, x: number): Num4
   return { a, b, c, d };
 }
 
+// 32-bit / BLAKE2s second half of G.
+// Parameter `x` is the RFC 7693 second-half (`y`) message word, or Blake1's pre-mixed
+// `m[sigma[r][2i + 1]] ^ u[sigma[r][2i]]` addend in the 32-bit path.
 export function G2s(a: number, b: number, c: number, d: number, x: number): Num4 {
   a = (a + b + x) | 0;
   d = rotr(d ^ a, 8);

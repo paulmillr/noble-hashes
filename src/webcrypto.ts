@@ -42,9 +42,13 @@ function createWebHash(name: string, blockLen: number, outputLen: number): WebHa
   hashC.outputLen = outputLen;
   hashC.blockLen = blockLen;
   hashC.create = () => {
+    // Present only so this async wrapper satisfies the shared
+    // hash-wrapper shape checked by `ahashWeb()`.
     throw new Error('not implemented');
   };
-  return hashC;
+  // Later WebCrypto HMAC/HKDF/PBKDF2 calls read descriptor metadata directly, so freezing prevents
+  // callers from retargeting a `sha256` wrapper into a different backend digest by mutation.
+  return Object.freeze(hashC);
 }
 
 function ahashWeb(hash: WebHash) {
@@ -56,7 +60,7 @@ function ahashWeb(hash: WebHash) {
 // export const sha1: WebHash = createHash('SHA-1', 64, 20);
 
 /**
- * WebCrypto SHA2-256 hash function from RFC 4634.
+ * WebCrypto SHA2-256 hash function from RFC 6234.
  * @param msg - message bytes to hash
  * @returns Promise resolving to digest bytes.
  * @example
@@ -67,7 +71,7 @@ function ahashWeb(hash: WebHash) {
  */
 export const sha256: WebHash = /* @__PURE__ */ createWebHash('SHA-256', 64, 32);
 /**
- * WebCrypto SHA2-384 hash function from RFC 4634.
+ * WebCrypto SHA2-384 hash function from RFC 6234.
  * @param msg - message bytes to hash
  * @returns Promise resolving to digest bytes.
  * @example
@@ -78,7 +82,7 @@ export const sha256: WebHash = /* @__PURE__ */ createWebHash('SHA-256', 64, 32);
  */
 export const sha384: WebHash = /* @__PURE__ */ createWebHash('SHA-384', 128, 48);
 /**
- * WebCrypto SHA2-512 hash function from RFC 4634.
+ * WebCrypto SHA2-512 hash function from RFC 6234.
  * @param msg - message bytes to hash
  * @returns Promise resolving to digest bytes.
  * @example
@@ -95,6 +99,8 @@ export const sha512: WebHash = /* @__PURE__ */ createWebHash('SHA-512', 128, 64)
  * @param key - authentication key bytes
  * @param message - message bytes to authenticate
  * @returns Promise resolving to authentication tag bytes.
+ * `.create()` exists only to mirror the synchronous API surface
+ * and always throws `not implemented`.
  * @example
  * Compute an RFC 2104 HMAC with WebCrypto.
  * ```ts
@@ -139,8 +145,11 @@ export const hmac: {
  * @param ikm - input keying material, the initial key
  * @param salt - optional salt value (a non-secret random value)
  * @param info - optional context and application specific information bytes
- * @param length - length of output keying material in bytes
+ * @param length - length of output keying material in bytes.
+ *   RFC 5869 §2.3 allows `0..255*HashLen`, so `0` requests an empty OKM.
  * @returns Promise resolving to derived key bytes.
+ * The RFC `L <= 255 * HashLen` bound is currently enforced only by backend
+ * `deriveBits()` rejection, not by an explicit library-side guard.
  * @throws If the current runtime does not provide `crypto.subtle`. {@link Error}
  * @example
  * WebCrypto HKDF (RFC 5869): derive keys from an initial input.
@@ -177,12 +186,18 @@ export async function hkdf(
 }
 
 /**
- * WebCrypto PBKDF2-HMAC: RFC 2898 key derivation function
+ * WebCrypto PBKDF2-HMAC: RFC 8018 key derivation function.
  * @param hash - hash function that would be used e.g. sha256. Webcrypto version.
- * @param password - password from which a derived key is generated
- * @param salt - cryptographic salt
- * @param opts - PBKDF2 work factor and output settings. See {@link Pbkdf2Opt}.
+ * @param password - password from which a derived key is generated; string
+ *   inputs are normalized through `kdfInputToBytes()`, i.e. UTF-8
+ * @param salt - cryptographic salt; string inputs are normalized through
+ *   `kdfInputToBytes()`, i.e. UTF-8
+ * @param opts - PBKDF2 work factor and output settings. `dkLen`, if provided,
+ *   must be >= 1 per RFC 8018 §5.2. See {@link Pbkdf2Opt}.
  * @returns Promise resolving to derived key bytes.
+ * Positive-iteration enforcement is currently delegated to backend
+ * `deriveBits()` rejection (for example `c = 0`), not a dedicated
+ * library-side guard.
  * @throws If the current runtime does not provide `crypto.subtle`. {@link Error}
  * @example
  * WebCrypto PBKDF2-HMAC: RFC 2898 key derivation function.
@@ -203,6 +218,8 @@ export async function pbkdf2(
   const { c, dkLen } = _opts;
   anumber(c, 'c');
   anumber(dkLen, 'dkLen');
+  // RFC 8018 §5.2 defines dkLen as a positive integer.
+  if (dkLen < 1) throw new Error('"dkLen" must be >= 1');
   const _password = kdfInputToBytes(password, 'password');
   const _salt = kdfInputToBytes(salt, 'salt');
   const key = await crypto.importKey('raw', _password as BufferSource, 'PBKDF2', false, [

@@ -9,10 +9,12 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2
 - 🥈 Optional, friendly wrapper over native WebCrypto
-- 🪶 21KB (gzipped) for everything, 2.4KB for single-hash build
+- 🪶 22KB (gzipped) for everything, 2.4KB for single-hash build
 
+Use [awasm-noble](https://github.com/paulmillr/awasm-noble) if you need an even faster (WASM) alternative.
 Check out [Upgrading](#upgrading) for information about upgrading from previous versions.
 Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
+
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
 ### This library belongs to _noble_ cryptography
@@ -374,11 +376,13 @@ console.log(toHex(randomBytes(32)));
 
 ## Security
 
-The library has been independently audited:
+The library has been audited:
 
-- at version 1.0.0, in Jan 2022, by [Cure53](https://cure53.de)
+- at version 2.1.0, in Apr 2026, by ourselves (self-audited)
+  - Scope: everything
+  - [Changes since audit](https://github.com/paulmillr/noble-hashes/compare/2.1.0..main)
+- at version 1.0.0, in Jan 2022, independently, by [Cure53](https://cure53.de)
   - PDFs: [website](https://cure53.de/pentest-report_hashing-libs.pdf), [in-repo](./audit/2022-01-05-cure53-audit-nbl2.pdf)
-  - [Changes since audit](https://github.com/paulmillr/noble-hashes/compare/1.0.0..main).
   - Scope: everything, besides `blake3`, `sha3-addons`, `sha1` and `argon2`, which have not been audited
   - The audit has been funded by [Ethereum Foundation](https://ethereum.org/en/) with help of [Nomic Labs](https://nomiclabs.io)
 
@@ -449,85 +453,6 @@ This means SHA256 should be replaced with SHA512, SHA3-256 with SHA3-512, SHAKE1
 
 Australian ASD prohibits SHA256 and similar hashes [after 2030](https://www.cyber.gov.au/resources-business-and-government/essential-cyber-security/ism/cyber-security-guidelines/guidelines-cryptography).
 
-## Speed
-
-```sh
-npm run bench
-```
-
-Benchmarks measured on Apple M4.
-
-```
-# 32B
-sha256 x 2,016,129 ops/sec @ 496ns/op
-sha512 x 740,740 ops/sec @ 1μs/op
-sha3_256 x 287,686 ops/sec @ 3μs/op
-sha3_512 x 288,267 ops/sec @ 3μs/op
-k12 x 476,190 ops/sec @ 2μs/op
-blake2b x 410,340 ops/sec @ 2μs/op
-blake2s x 942,507 ops/sec @ 1μs/op
-blake3 x 1,006,036 ops/sec @ 994ns/op
-ripemd160 x 1,410,437 ops/sec @ 709ns/op
-md5 x 1,663,893 ops/sec @ 601ns/op
-sha1 x 1,589,825 ops/sec @ 629ns/op
-
-# 1MB
-sha256 x 331 ops/sec @ 3ms/op
-sha512 x 128 ops/sec @ 7ms/op
-sha3_256 x 39 ops/sec @ 25ms/op
-sha3_512 x 21 ops/sec @ 46ms/op
-kt128 x 91 ops/sec @ 10ms/op
-kt256 x 75 ops/sec @ 13ms/op
-turboshake128 x 93 ops/sec @ 10ms/op
-blake256 x 57 ops/sec @ 17ms/op
-blake2b x 61 ops/sec @ 16ms/op
-blake2s x 78 ops/sec @ 12ms/op
-blake3 x 95 ops/sec @ 10ms/op
-ripemd160 x 177 ops/sec @ 5ms/op
-md5 x 250 ops/sec @ 3ms/op
-sha1 x 416 ops/sec @ 2ms/op
-
-
-# MAC
-hmac(sha256) x 599,880 ops/sec @ 1μs/op
-hmac(sha512) x 197,122 ops/sec @ 5μs/op
-kmac256 x 87,981 ops/sec @ 11μs/op
-blake3(key) x 796,812 ops/sec @ 1μs/op
-
-# KDF
-hkdf(sha256) x 259,942 ops/sec @ 3μs/op
-blake3(context) x 424,808 ops/sec @ 2μs/op
-pbkdf2(sha256, c: 2 ** 18) x 5 ops/sec @ 197ms/op
-pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
-scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 400ms/op
-argon2id(t: 1, m: 256MB) 2881ms
-```
-
-Compare to native node.js implementation that uses C bindings instead of pure-js code:
-
-```
-# native (node) 32B
-sha256 x 2,267,573 ops/sec
-sha512 x 983,284 ops/sec
-sha3_256 x 1,522,070 ops/sec
-blake2b x 1,512,859 ops/sec
-blake2s x 1,821,493 ops/sec
-hmac(sha256) x 1,085,776 ops/sec
-hkdf(sha256) x 312,109 ops/sec
-# native (node) KDF
-pbkdf2(sha256, c: 2 ** 18) x 5 ops/sec @ 197ms/op
-pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
-scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 378ms/op
-```
-
-It is possible to [make this library 3x+ faster](./test/benchmark/README.md) by
-_doing code generation of full loop unrolls_. We've decided against it. Reasons:
-
-- current perf is good enough, even compared to other libraries - SHA256 only takes 500 nanoseconds
-- the library must be auditable, with minimum amount of code, and zero dependencies
-- most method invocations with the lib are going to be something like hashing 32b to 64kb of data
-- hashing big inputs is 10x faster with low-level languages, which means you should probably pick 'em instead
-
 ## Upgrading
 
 Supported node.js versions:
@@ -565,14 +490,69 @@ v2.0 changelog:
 - There is **additional** 20-min DoS test `npm run test:dos` and 2-hour multicore test `npm run test:slow`.
   See [our approach to testing](./test/README.md)
 
-Additional resources:
+Some hashes are outside of scope of the library:
+- [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)
+- [Poseidon in noble-curves](https://github.com/paulmillr/noble-curves/blob/3d124dd3ecec8b6634cc0b2ba1c183aded5304f9/src/abstract/poseidon.ts)
+- [Poly1305 & GHash in noble-ciphers](https://github.com/paulmillr/noble-ciphers)
 
-- NTT hashes are outside of scope of the library. They depend on some math which is not available in noble-hashes, it doesn't make sense to add it here. You can view some of them in different repos:
-    - [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)
-    - [Poseidon in noble-curves](https://github.com/paulmillr/noble-curves/blob/3d124dd3ecec8b6634cc0b2ba1c183aded5304f9/src/abstract/poseidon.ts)
-- Polynomial MACs are also outside of scope of the library. They are rarely used outside of encryption. Check out [Poly1305 & GHash in noble-ciphers](https://github.com/paulmillr/noble-ciphers).
-- See [paulmillr.com/noble](https://paulmillr.com/noble/) for useful resources, articles, documentation and demos
-  related to the library.
+See [paulmillr.com/noble](https://paulmillr.com/noble/) for useful resources, articles, documentation and demos related to the library.
+
+## Speed
+
+```sh
+npm run bench
+```
+
+Benchmarks measured on Apple M4. If you need truly exemplar performance, switch to [awasm-noble](https://github.com/paulmillr/awasm-noble).
+
+```
+# 32B
+sha256 x 2,016,129 ops/sec @ 496ns/op
+sha512 x 740,740 ops/sec @ 1μs/op
+sha3_256 x 287,686 ops/sec @ 3μs/op
+sha3_512 x 288,267 ops/sec @ 3μs/op
+k12 x 476,190 ops/sec @ 2μs/op
+blake2b x 410,340 ops/sec @ 2μs/op
+blake2s x 942,507 ops/sec @ 1μs/op
+blake3 x 1,006,036 ops/sec @ 994ns/op
+ripemd160 x 1,410,437 ops/sec @ 709ns/op
+md5 x 1,663,893 ops/sec @ 601ns/op
+sha1 x 1,589,825 ops/sec @ 629ns/op
+
+# 1MB
+sha256 x 331 ops/sec @ 3ms/op
+sha512 x 128 ops/sec @ 7ms/op
+sha3_256 x 39 ops/sec @ 25ms/op
+sha3_512 x 21 ops/sec @ 46ms/op
+kt128 x 91 ops/sec @ 10ms/op
+kt256 x 75 ops/sec @ 13ms/op
+turboshake128 x 93 ops/sec @ 10ms/op
+blake256 x 57 ops/sec @ 17ms/op
+blake2b x 61 ops/sec @ 16ms/op
+blake2s x 78 ops/sec @ 12ms/op
+blake3 x 95 ops/sec @ 10ms/op
+ripemd160 x 177 ops/sec @ 5ms/op
+md5 x 250 ops/sec @ 3ms/op
+sha1 x 416 ops/sec @ 2ms/op
+
+# MAC
+hmac(sha256) x 599,880 ops/sec @ 1μs/op
+hmac(sha512) x 197,122 ops/sec @ 5μs/op
+kmac256 x 87,981 ops/sec @ 11μs/op
+blake3(key) x 796,812 ops/sec @ 1μs/op
+
+# KDF
+hkdf(sha256) x 259,942 ops/sec @ 3μs/op
+blake3(context) x 424,808 ops/sec @ 2μs/op
+pbkdf2(sha256, c: 2 ** 18) x 5 ops/sec @ 197ms/op
+pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
+scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 400ms/op
+argon2id(t: 1, m: 256MB) 2881ms
+```
+
+The library could be 3x faster by utilizing loop unrolling. It isn't used because
+unrolling a) would increase bundle size b) make lib un-readable c) current perf is "fast enough"
+for most use-cases.
 
 ## License
 

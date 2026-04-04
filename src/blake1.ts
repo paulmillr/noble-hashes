@@ -40,10 +40,13 @@ export type BlakeOpts = {
   salt?: Uint8Array;
 };
 
-// Empty zero-filled salt
+// Shared unsalted sentinel, sized for the 64-bit path and reused by the 32-bit path via prefix.
 const EMPTY_SALT = /* @__PURE__ */ new Uint32Array(8);
 
+// Base destroy logic only clears salt-derived state; the partial message buffer and length/position
+// bookkeeping remain until the instance or backing buffer is reused.
 abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
+  readonly canXOF = false;
   protected finished = false;
   protected length = 0;
   protected pos = 0;
@@ -103,7 +106,8 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     let dataView;
     for (let pos = 0; pos < len; ) {
       const take = Math.min(blockLen - this.pos, len - pos);
-      // Fast path: we have at least one block in input, cast it to view and process
+      // Fast path only when there is no buffered partial block: `take === blockLen` implies
+      // `this.pos === 0`, so we can process full blocks directly from the input view.
       if (take === blockLen) {
         if (!dataView) dataView = createView(data);
         for (; blockLen <= len - pos; pos += blockLen) {
@@ -134,6 +138,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     to.set(...this.get());
     const { buffer, length, finished, destroyed, constants, salt, pos } = this;
     to.buffer.set(buffer);
+    // Clone salt-derived arrays by value so destroying the clone cannot wipe the source instance.
     to.constants = constants.slice();
     to.destroyed = destroyed;
     to.finished = finished;
@@ -166,7 +171,9 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     buffer[counterPos] |= lengthFlag; // Length flag
     // We always set 8 byte length flag. Because length will overflow significantly sooner.
     view.setBigUint64(blockLen - 8, counter, false);
-    this.compress(view, 0, this.pos !== 0); // don't add length if length is not empty block?
+    // Blake1 omits the counter from the extra all-padding block; only the block that still carries
+    // message bytes mixes in the final bit length.
+    this.compress(view, 0, this.pos !== 0);
     // Write output
     clean(buffer);
     const v = createView(out);
@@ -176,27 +183,37 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
   digest(): Uint8Array {
     const { buffer, outputLen } = this;
     this.digestInto(buffer);
+    // Return a copy so callers do not alias the instance scratch buffer used during finalization.
     const res = buffer.slice(0, outputLen);
     this.destroy();
     return res;
   }
 }
 
-// Constants
+// Blake1-512 / Blake1-384 constant table `C512`.
+// Stored as sixteen 64-bit constants split into `[high32, low32]` halves so
+// the Blake1-64 path can reuse one layout for both `v8..v15` initialization
+// and the permuted constant lookups.
 const B64C = /* @__PURE__ */ Uint32Array.from([
   0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344, 0xa4093822, 0x299f31d0, 0x082efa98, 0xec4e6c89,
   0x452821e6, 0x38d01377, 0xbe5466cf, 0x34e90c6c, 0xc0ac29b7, 0xc97c50dd, 0x3f84d5b5, 0xb5470917,
   0x9216d5d9, 0x8979fb1b, 0xd1310ba6, 0x98dfb5ac, 0x2ffd72db, 0xd01adfb7, 0xb8e1afed, 0x6a267e96,
   0xba7c9045, 0xf12c7f99, 0x24a19947, 0xb3916cf7, 0x0801f2e2, 0x858efc16, 0x636920d8, 0x71574e69,
 ]);
-// first half of C512
+// Blake1-256 / Blake1-224 constant table `C256`, derived as the first half of `C512`.
 const B32C = /* @__PURE__ */ B64C.slice(0, 16);
 
+// Blake1-256 IV cloned from SHA-256.
 const B256_IV = /* @__PURE__ */ SHA256_IV.slice();
+// Blake1-224 IV cloned from SHA-224.
 const B224_IV = /* @__PURE__ */ SHA224_IV.slice();
+// Blake1-384 IV cloned from the SHA-384 high-then-low 32-bit halves.
 const B384_IV = /* @__PURE__ */ SHA384_IV.slice();
+// Blake1-512 IV cloned from the SHA-512 high-then-low 32-bit halves.
 const B512_IV = /* @__PURE__ */ SHA512_IV.slice();
 
+// Precompute the odd/even companion constants used by all 14 Blake1-32 rounds.
+// Each pair stores `u[sigma[2i + 1]]` then `u[sigma[2i]]`, matching the `G1s` / `G2s` xor order.
 function generateTBL256() {
   const TBL = [];
   for (let i = 0, j = 0; i < 14; i++, j += 16) {
@@ -207,9 +224,10 @@ function generateTBL256() {
   }
   return new Uint32Array(TBL);
 }
-const TBL256 = /* @__PURE__ */ generateTBL256(); // C256[SIGMA[X]] precompute
+// Full 14-round companion-constant table for Blake1-32.
+const TBL256 = /* @__PURE__ */ generateTBL256();
 
-// Reusable temporary buffer
+// Shared synchronous message-word scratch for the 32-bit Blake1 path.
 const BLAKE256_W = /* @__PURE__ */ new Uint32Array(16);
 
 class BLAKE1_32B extends BLAKE1<BLAKE1_32B> {
@@ -255,7 +273,8 @@ class BLAKE1_32B extends BLAKE1<BLAKE1_32B> {
   }
   compress(view: DataView, offset: number, withLength = true): void {
     for (let i = 0; i < 16; i++, offset += 4) BLAKE256_W[i] = view.getUint32(offset, false);
-    // NOTE: we cannot re-use compress from blake2s, since there is additional xor over u256[SIGMA[e]]
+    // Cannot reuse blake2s compress: Blake1 mixes each message word with the companion constants
+    // precomputed in `TBL256`, rather than using the raw schedule words directly.
     let v00 = this.v0 | 0;
     let v01 = this.v1 | 0;
     let v02 = this.v2 | 0;
@@ -268,6 +287,8 @@ class BLAKE1_32B extends BLAKE1<BLAKE1_32B> {
     let v09 = this.constants[1] | 0;
     let v10 = this.constants[2] | 0;
     let v11 = this.constants[3] | 0;
+    // Blake1-32 injects the 64-bit bit counter as `[t0, t0, t1, t1]` across `v12..v15`; the
+    // final all-padding block passes `withLength = false`, leaving these lanes as raw constants.
     const { h, l } = u64.fromBig(BigInt(withLength ? this.length * 8 : 0));
     let v12 = (this.constants[4] ^ l) >>> 0;
     let v13 = (this.constants[5] ^ l) >>> 0;
@@ -304,9 +325,13 @@ class BLAKE1_32B extends BLAKE1<BLAKE1_32B> {
   }
 }
 
+// Shared Blake1-64 work vector storing 16 working words as adjacent high/low 32-bit halves.
 const BBUF = /* @__PURE__ */ new Uint32Array(32);
+// Shared synchronous message-word scratch for the 64-bit Blake1 path.
 const BLAKE512_W = /* @__PURE__ */ new Uint32Array(32);
 
+// Precompute the high/low companion constants used by all 16 Blake1-64 rounds.
+// Each quartet stores `u[sigma[2i + 1]]` high/low halves, then `u[sigma[2i]]` high/low halves.
 function generateTBL512() {
   const TBL = [];
   for (let r = 0, k = 0; r < 16; r++, k += 16) {
@@ -319,9 +344,10 @@ function generateTBL512() {
   }
   return new Uint32Array(TBL);
 }
-const TBL512 = /* @__PURE__ */ generateTBL512(); // C512[SIGMA[X]] precompute
+// Full 16-round companion-constant table as high/low halves.
+const TBL512 = /* @__PURE__ */ generateTBL512();
 
-// Mixing function G splitted in two halfs
+// Blake1-64 first half-round with rotations `32` and `25`; `k` is the half-call schedule index.
 function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
   const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
@@ -347,6 +373,7 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
   ((BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh));
 }
 
+// Blake1-64 second half-round with rotations `16` and `11`; `k` is the half-call schedule index.
 function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
   const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
@@ -372,6 +399,8 @@ function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
   ((BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh));
 }
 
+// Legacy field names keep the local `l/h` spelling, but array/state order stays `[high, low]` to
+// match the IV tables and `BBUF` layout.
 class BLAKE1_64B extends BLAKE1<BLAKE1_64B> {
   private v0l: number;
   private v0h: number;
@@ -450,6 +479,8 @@ class BLAKE1_64B extends BLAKE1<BLAKE1_64B> {
     this.get().forEach((v, i) => (BBUF[i] = v)); // First half from state.
     BBUF.set(this.constants.subarray(0, 16), 16);
     if (withLength) {
+      // Blake1-64 injects the 64-bit bit counter into `v12` and `v13`; the final all-padding
+      // block passes `withLength = false`, leaving the trailing constant lanes untouched.
       const { h, l } = u64.fromBig(BigInt(this.length * 8));
       BBUF[24] = (BBUF[24] ^ h) >>> 0;
       BBUF[25] = (BBUF[25] ^ l) >>> 0;
@@ -522,7 +553,8 @@ export class _BLAKE512 extends BLAKE1_64B {
 /**
  * Blake1-224 hash function.
  * @param msg - message bytes to hash
- * @param opts - Optional Blake1 settings. See {@link BlakeOpts}.
+ * @param opts - Optional Blake1 settings. See {@link BlakeOpts}. If set,
+ *   `opts.salt` must be exactly 16 bytes.
  * @returns Digest bytes.
  * @example
  * Hash a message with Blake1-224.
@@ -536,7 +568,8 @@ export const blake224: CHash<_BLAKE224, BlakeOpts> = /* @__PURE__ */ createHashe
 /**
  * Blake1-256 hash function.
  * @param msg - message bytes to hash
- * @param opts - Optional Blake1 settings. See {@link BlakeOpts}.
+ * @param opts - Optional Blake1 settings. See {@link BlakeOpts}. If set,
+ *   `opts.salt` must be exactly 16 bytes.
  * @returns Digest bytes.
  * @example
  * Hash a message with Blake1-256.
@@ -550,7 +583,8 @@ export const blake256: CHash<_BLAKE256, BlakeOpts> = /* @__PURE__ */ createHashe
 /**
  * Blake1-384 hash function.
  * @param msg - message bytes to hash
- * @param opts - Optional Blake1 settings. See {@link BlakeOpts}.
+ * @param opts - Optional Blake1 settings. See {@link BlakeOpts}. If set,
+ *   `opts.salt` must be exactly 32 bytes.
  * @returns Digest bytes.
  * @example
  * Hash a message with Blake1-384.
@@ -564,7 +598,8 @@ export const blake384: CHash<_BLAKE384, BlakeOpts> = /* @__PURE__ */ createHashe
 /**
  * Blake1-512 hash function.
  * @param msg - message bytes to hash
- * @param opts - Optional Blake1 settings. See {@link BlakeOpts}.
+ * @param opts - Optional Blake1 settings. See {@link BlakeOpts}. If set,
+ *   `opts.salt` must be exactly 32 bytes.
  * @returns Digest bytes.
  * @example
  * Hash a message with Blake1-512.

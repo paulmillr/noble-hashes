@@ -15,13 +15,13 @@ import {
 /**
  * PBKDF2 options:
  * * c: iterations, should probably be higher than 100_000
- * * dkLen: desired length of derived key in bytes
+ * * dkLen: desired length of derived key in bytes, must be >= 1 per RFC 8018 §5.2
  * * asyncTick: max time in ms for which async function can block execution
  */
 export type Pbkdf2Opt = {
   /** Iteration count. Higher values increase CPU cost. */
   c: number;
-  /** Desired derived key length in bytes. */
+  /** Desired derived key length in bytes, must be >= 1 per RFC 8018 §5.2. */
   dkLen?: number;
   /** Max scheduler block time in milliseconds for the async variant. */
   asyncTick?: number;
@@ -35,12 +35,18 @@ function pbkdf2Init(hash: CHash, _password: KDFInput, _salt: KDFInput, _opts: Pb
   anumber(dkLen, 'dkLen');
   anumber(asyncTick, 'asyncTick');
   if (c < 1) throw new Error('iterations (c) must be >= 1');
+  // RFC 8018 §5.2 defines `dkLen` as "a positive integer".
+  if (dkLen < 1) throw new Error('"dkLen" must be >= 1');
+  // RFC 8018 §5.2 step 1 requires rejecting oversize `dkLen`
+  // before allocating the destination buffer.
+  if (dkLen > (2 ** 32 - 1) * hash.outputLen) throw new Error('derived key too long');
   const password = kdfInputToBytes(_password, 'password');
   const salt = kdfInputToBytes(_salt, 'salt');
   // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
   const DK = new Uint8Array(dkLen);
   // U1 = PRF(Password, Salt + INT_32_BE(i))
   const PRF = hmac.create(hash, password);
+  // Cache PRF(P, S || ...) prefix state so each block only appends INT_32_BE(i).
   const PRFSalt = PRF._cloneInto().update(salt);
   return { c, dkLen, asyncTick, DK, PRF, PRFSalt };
 }
@@ -52,6 +58,8 @@ function pbkdf2Output<T extends Hash<T>>(
   prfW: Hash<T>,
   u: Uint8Array
 ) {
+  // Shared sync/async cleanup point: wipe transient PRF state
+  // while preserving the derived key buffer.
   PRF.destroy();
   PRFSalt.destroy();
   if (prfW) prfW.destroy();
@@ -60,11 +68,13 @@ function pbkdf2Output<T extends Hash<T>>(
 }
 
 /**
- * PBKDF2-HMAC: RFC 2898 key derivation function
+ * PBKDF2-HMAC: RFC 8018 key derivation function.
  * @param hash - hash function that would be used e.g. sha256
- * @param password - password from which a derived key is generated
- * @param salt - cryptographic salt
- * @param opts - PBKDF2 work factor and output settings. See {@link Pbkdf2Opt}.
+ * @param password - password from which a derived key is generated;
+ *   JS string inputs are UTF-8 encoded first
+ * @param salt - cryptographic salt; JS string inputs are UTF-8 encoded first
+ * @param opts - PBKDF2 work factor and output settings. `dkLen`, if provided,
+ *   must be >= 1 per RFC 8018 §5.2. See {@link Pbkdf2Opt}.
  * @returns Derived key bytes.
  * @throws If the PBKDF2 iteration count or derived-key settings are invalid. {@link Error}
  * @example
@@ -89,6 +99,8 @@ export function pbkdf2(
   // DK = T1 + T2 + ⋯ + Tdklen/hlen
   for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += PRF.outputLen) {
     // Ti = F(Password, Salt, c, i)
+    // The last Ti view can be shorter than hLen, which applies
+    // RFC 8018 §5.2 step 4's T_l<0..r-1> truncation without extra copies.
     const Ti = DK.subarray(pos, pos + PRF.outputLen);
     view.setInt32(0, ti, false);
     // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc
@@ -105,11 +117,15 @@ export function pbkdf2(
 }
 
 /**
- * PBKDF2-HMAC: RFC 2898 key derivation function. Async version.
+ * PBKDF2-HMAC: RFC 8018 key derivation function. Async version.
  * @param hash - hash function that would be used e.g. sha256
- * @param password - password from which a derived key is generated
- * @param salt - cryptographic salt
- * @param opts - PBKDF2 work factor and output settings. See {@link Pbkdf2Opt}.
+ * @param password - password from which a derived key is generated;
+ *   JS string inputs are UTF-8 encoded first
+ * @param salt - cryptographic salt; JS string inputs are UTF-8 encoded first
+ * @param opts - PBKDF2 work factor and output settings. `dkLen`, if provided,
+ *   must be >= 1 per RFC 8018 §5.2. `asyncTick` is only a local
+ *   scheduler-yield knob for this JS wrapper, not part of RFC 8018.
+ *   See {@link Pbkdf2Opt}.
  * @returns Promise resolving to derived key bytes.
  * @throws If the PBKDF2 iteration count or derived-key settings are invalid. {@link Error}
  * @example
@@ -134,6 +150,8 @@ export async function pbkdf2Async(
   // DK = T1 + T2 + ⋯ + Tdklen/hlen
   for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += PRF.outputLen) {
     // Ti = F(Password, Salt, c, i)
+    // The last Ti view can be shorter than hLen, which applies
+    // RFC 8018 §5.2 step 4's T_l<0..r-1> truncation without extra copies.
     const Ti = DK.subarray(pos, pos + PRF.outputLen);
     view.setInt32(0, ti, false);
     // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc

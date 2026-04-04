@@ -166,6 +166,19 @@ describe(`hmac (${variant})`, () => {
       'hmac.SPACE (full form stingr)'
     );
   });
+  should('digestInto keeps oversized output tails untouched', () => {
+    const key = utf8ToBytes('key');
+    const msg = utf8ToBytes('msg');
+    for (const hash of [sha256, sha512]) {
+      const exp = hmac(hash, key, msg);
+      throws(() => hmac.create(hash, key).update(msg).digestInto(new Uint8Array(exp.length - 1)), RangeError);
+      throws(() => hmac.create(hash, key).update(msg).digestInto('bad' as any), TypeError);
+      const out = new Uint8Array(exp.length + 8).fill(0xaa);
+      eql(hmac.create(hash, key).update(msg).digestInto(out), undefined);
+      eql(out.subarray(0, exp.length), exp);
+      eql(out.subarray(exp.length), new Uint8Array(8).fill(0xaa));
+    }
+  });
 
   should('Sha512/384 issue', () => {
     const h = hmac.create(

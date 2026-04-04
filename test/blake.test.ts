@@ -149,14 +149,25 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       eql(bytesToHex(hash(data, opt)), v.digest);
     }
   });
+  should('BLAKE2 digestInto accepts odd lengths', () => {
+    const outB = new Uint8Array(17);
+    blake2b.create({ dkLen: 17 }).update(data).digestInto(outB);
+    eql(bytesToHex(outB), 'c1f8306b76569775355538d7eda848b540');
+
+    const outS = new Uint8Array(15);
+    blake2s.create({ dkLen: 15 }).update(data).digestInto(outS);
+    eql(bytesToHex(outS), 'ff7ad4af516d3a39b8641c1cc14324');
+  });
 
   should('BLAKE2s: dkLen', () => {
     for (const dkLen of TYPE_TEST.int) throws(() => blake2s(data, { dkLen }));
+    throws(() => blake2s(data, { dkLen: 0 }));
     throws(() => blake2s(data, { dkLen: 33 }));
   });
 
   should('BLAKE2b: dkLen', () => {
     for (const dkLen of TYPE_TEST.int) throws(() => blake2b(data, { dkLen }));
+    throws(() => blake2b(data, { dkLen: 0 }));
     throws(() => blake2b(data, { dkLen: 65 }));
   });
 
@@ -244,11 +255,24 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         ])
       );
     });
+    should('BLAKE3 keyed state', () => {
+      const key = Uint8Array.from(Array.from({ length: 32 }, (_, i) => i + 1));
+      const msg = Uint8Array.from([1, 2, 3, 4, 5, 6]);
+      const state = blake3.create({ key, dkLen: 32 }).update(msg.subarray(0, 3));
+      key.fill(0);
+      const out = state.update(msg.subarray(3)).digest();
+      const exp = blake3(msg, {
+        key: Uint8Array.from(Array.from({ length: 32 }, (_, i) => i + 1)),
+        dkLen: 32,
+      });
+      eql(out, exp);
+    });
   });
 
   describe('blake3', () => {
     should('dkLen', () => {
       for (const dkLen of TYPE_TEST.int) throws(() => blake3(data, { dkLen }));
+      eql(blake3(data, { dkLen: 0 }), new Uint8Array(0));
     });
 
     should('not allow using both key + context', () => {

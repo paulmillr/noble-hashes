@@ -331,6 +331,9 @@ describe(`Argon2 (${variant})`, () => {
     });
     eql(t.length !== 0, true);
   });
+  should('maxmem is enforced in bytes', () => {
+    throws(() => argon2id('password', 'saltsalt', { t: 1, m: 8, p: 1, dkLen: 32, maxmem: 3000 }));
+  });
   for (let i = 0; i < VECTORS.length; i++) {
     const v = VECTORS[i];
     const ver = v.version || 0x13;

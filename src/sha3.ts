@@ -2,9 +2,11 @@
  * SHA3 (keccak) hash function, based on a new "Sponge function" design.
  * Different from older hashes, the internal state is bigger than output size.
  *
- * Check out {@link https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf | FIPS-202},
- * {@link https://keccak.team/keccak.html | Website},
- * and {@link https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub | the differences between SHA-3 and Keccak}.
+ * Check out
+ * {@link https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf | FIPS-202},
+ * {@link https://keccak.team/keccak.html | Website}, and
+ * {@link https://crypto.stackexchange.com/q/15727 | the differences between
+ * SHA-3 and Keccak}.
  *
  * Check out `sha3-addons` module for cSHAKE, k12, and others.
  * @module
@@ -31,6 +33,8 @@ const _1n = BigInt(1);
 const _2n = BigInt(2);
 const _7n = BigInt(7);
 const _256n = BigInt(256);
+// FIPS 202 Algorithm 5 rc(): when the outgoing bit is 1, the 8-bit LFSR xors
+// taps 0, 4, 5, and 6, which compresses to the feedback mask `0x71`.
 const _0x71n = BigInt(0x71);
 const SHA3_PI: number[] = [];
 const SHA3_ROTL: number[] = [];
@@ -50,6 +54,9 @@ for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
   _SHA3_IOTA.push(t);
 }
 const IOTAS = split(_SHA3_IOTA, true);
+// `split(..., true)` keeps the local little-endian lane-word layout used by
+// `state32`, so these `H` / `L` tables follow the file's first-word /
+// second-word lane slots rather than `_u64.ts`'s usual high/low naming.
 const SHA3_IOTA_H = IOTAS[0];
 const SHA3_IOTA_L = IOTAS[1];
 
@@ -59,7 +66,8 @@ const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : r
 
 /**
  * `keccakf1600` internal permutation, additionally allows adjusting the round count.
- * @param s - 5x5 Keccak state encoded as 50 uint32 words
+ * @param s - 5x5 Keccak state encoded as 25 lanes split into 50 uint32 words
+ *   in this file's local little-endian lane-word order
  * @param rounds - number of rounds to execute
  * @example
  * Permute a Keccak state with the default 24 rounds.
@@ -68,6 +76,9 @@ const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : r
  * ```
  */
 export function keccakP(s: Uint32Array, rounds: number = 24): void {
+  anumber(rounds, 'rounds');
+  // This implementation precomputes only the standard Keccak-f[1600] 24-round Iota table.
+  if (rounds < 1 || rounds > 24) throw new Error('"rounds" expected integer 1..24');
   const B = new Uint32Array(5 * 2);
   // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
   for (let round = 24 - rounds; round < 24; round++) {
@@ -99,12 +110,14 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
       s[PI + 1] = Tl;
     }
     // Chi (χ)
-    // Essentially:
+    // Same as:
     // for (let x = 0; x < 10; x++) B[x] = s[y + x];
     // for (let x = 0; x < 10; x++) s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
     for (let y = 0; y < 50; y += 10) {
-      // prettier-ignore
-      const b0 = s[y], b1 = s[y + 1], b2 = s[y + 2], b3 = s[y + 3];
+      const b0 = s[y],
+        b1 = s[y + 1],
+        b2 = s[y + 2],
+        b3 = s[y + 3];
       s[y] ^= ~s[y + 2] & s[y + 4];
       s[y + 1] ^= ~s[y + 3] & s[y + 5];
       s[y + 2] ^= ~s[y + 4] & s[y + 6];
@@ -127,7 +140,9 @@ export function keccakP(s: Uint32Array, rounds: number = 24): void {
  * Keccak sponge function.
  * @param blockLen - absorb/squeeze rate in bytes
  * @param suffix - domain separation suffix byte
- * @param outputLen - default digest length in bytes
+ * @param outputLen - default digest length in bytes. This base sponge only
+ *   requires a non-negative integer; wrappers that need positive output
+ *   lengths must enforce that themselves.
  * @param enableXOF - whether XOF output is allowed
  * @param rounds - number of Keccak-f rounds
  * @example
@@ -149,6 +164,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   public blockLen: number;
   public suffix: number;
   public outputLen: number;
+  public canXOF: boolean;
   protected enableXOF = false;
   protected rounds: number;
 
@@ -164,6 +180,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     this.suffix = suffix;
     this.outputLen = outputLen;
     this.enableXOF = enableXOF;
+    this.canXOF = enableXOF;
     this.rounds = rounds;
     // Can be passed from user as dkLen
     anumber(outputLen, 'outputLen');
@@ -200,8 +217,13 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     if (this.finished) return;
     this.finished = true;
     const { state, suffix, pos, blockLen } = this;
-    // Do the padding
+    // FIPS 202 appends the SHA3/SHAKE domain-separation suffix before pad10*1.
+    // These byte values already include the first padding bit, while the
+    // final `0x80` below supplies the closing `1` bit in the last rate byte.
     state[pos] ^= suffix;
+    // If that combined suffix lands in the last rate byte and already sets
+    // bit 7, absorb it first so the final pad10*1 bit can be xored into a
+    // fresh block.
     if ((suffix & 0x80) !== 0 && pos === blockLen - 1) this.keccak();
     state[blockLen - 1] ^= 0x80;
     this.keccak();
@@ -222,7 +244,9 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     return out;
   }
   xofInto(out: Uint8Array): Uint8Array {
-    // Sha3/Keccak usage with XOF is probably mistake, only SHAKE instances can do XOF
+    // Plain SHA3/Keccak usage with XOF is probably a mistake, but this base
+    // class is also reused by SHAKE/cSHAKE/KMAC/TupleHash/ParallelHash/
+    // TurboSHAKE/KangarooTwelve wrappers that intentionally enable XOF.
     if (!this.enableXOF) throw new Error('XOF is not possible for this instance');
     return this.writeInto(out);
   }
@@ -230,15 +254,17 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     anumber(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
-  digestInto(out: Uint8Array): Uint8Array {
+  digestInto(out: Uint8Array): void {
     aoutput(out, this);
     if (this.finished) throw new Error('digest() was already called');
-    this.writeInto(out);
+    // `aoutput(...)` allows oversized buffers; digestInto() must fill only the advertised digest.
+    this.writeInto(out.subarray(0, this.outputLen));
     this.destroy();
-    return out;
   }
   digest(): Uint8Array {
-    return this.digestInto(new Uint8Array(this.outputLen));
+    const out = new Uint8Array(this.outputLen);
+    this.digestInto(out);
+    return out;
   }
   destroy(): void {
     this.destroyed = true;
@@ -247,6 +273,9 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   _cloneInto(to?: Keccak): Keccak {
     const { blockLen, suffix, outputLen, rounds, enableXOF } = this;
     to ||= new Keccak(blockLen, suffix, outputLen, enableXOF, rounds);
+    // Reused destinations can come from a different rate/capacity variant, so clone must rewrite
+    // the sponge geometry as well as the state words.
+    to.blockLen = blockLen;
     to.state32.set(this.state32);
     to.pos = this.pos;
     to.posOut = this.posOut;
@@ -256,6 +285,9 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     to.suffix = suffix;
     to.outputLen = outputLen;
     to.enableXOF = enableXOF;
+    // Clones must preserve the public capability bit too; `_KMAC` reuses this path and deep clone
+    // tests compare instance fields directly, so leaving `canXOF` behind makes the clone lie.
+    to.canXOF = this.canXOF;
     to.destroyed = this.destroyed;
     return to;
   }
@@ -388,7 +420,7 @@ const genShake = (suffix: number, blockLen: number, outputLen: number, info: Has
   );
 
 /**
- * SHAKE128 XOF with 128-bit security.
+ * SHAKE128 XOF with 128-bit security and a 16-byte default output.
  * @param msg - message bytes to hash
  * @param opts - Optional output-length override. See {@link ShakeOpts}.
  * @returns Digest bytes.
@@ -402,7 +434,7 @@ export const shake128: CHashXOF<Keccak, ShakeOpts> =
   /* @__PURE__ */
   genShake(0x1f, 168, 16, /* @__PURE__ */ oidNist(0x0b));
 /**
- * SHAKE256 XOF with 256-bit security.
+ * SHAKE256 XOF with 256-bit security and a 32-byte default output.
  * @param msg - message bytes to hash
  * @param opts - Optional output-length override. See {@link ShakeOpts}.
  * @returns Digest bytes.

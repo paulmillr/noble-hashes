@@ -1,5 +1,6 @@
 /**
- * Audited & minimal JS implementation of hash functions, MACs and KDFs. Check out individual modules.
+ * Audited & minimal JS implementation of hash functions, MACs, and KDFs.
+ * Check out individual modules.
  * @module
  * @example
 ```js

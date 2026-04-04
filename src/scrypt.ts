@@ -15,6 +15,9 @@ import {
 
 // The main Scrypt loop: uses Salsa extensively.
 // Six versions of the function were tried, this is the fastest one.
+// RFC 7914 §3 / §4 step 2 applies Salsa20/8 to one 16-word (64-byte) block
+// after xor'ing two such blocks.
+// The local `y*` snapshot keeps the xor input stable even when `out` aliases `prev` or `input`.
 // prettier-ignore
 function XorAndSalsa(
   prev: Uint32Array,
@@ -24,7 +27,7 @@ function XorAndSalsa(
   out: Uint32Array,
   oi: number
 ) {
-  // Based on https://cr.yp.to/salsa20.html
+  // Based on https://cr.yp.to/salsa20.html and RFC 7914's Salsa20/8 core.
   // Xor blocks
   let y00 = prev[pi++] ^ input[ii++], y01 = prev[pi++] ^ input[ii++];
   let y02 = prev[pi++] ^ input[ii++], y03 = prev[pi++] ^ input[ii++];
@@ -70,15 +73,17 @@ function XorAndSalsa(
 }
 
 function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, r: number) {
-  // The block B is r 128-byte chunks (which is equivalent of 2r 64-byte chunks)
+  // The block B is `r` 128-byte chunks, i.e. `2r` 16-word (64-byte) Salsa blocks.
   let head = oi + 0;
   let tail = oi + 16 * r;
   for (let i = 0; i < 16; i++) out[tail + i] = input[ii + (2 * r - 1) * 16 + i]; // X ← B[2r−1]
   for (let i = 0; i < r; i++, head += 16, ii += 16) {
-    // We write odd & even Yi at same time. Even: 0bXXXXX0 Odd:  0bXXXXX1
+    // RFC 7914 §4 step 3 outputs `Y[0], Y[2], ...` first, then `Y[1], Y[3], ...`;
+    // `head` and `tail` lay out those even/odd halves in place.
     XorAndSalsa(out, tail, input, ii, out, head); // head[i] = Salsa(blockIn[2*i] ^ tail[i-1])
     if (i > 0) tail += 16; // First iteration overwrites tmp value in tail
-    XorAndSalsa(out, head, input, (ii += 16), out, tail); // tail[i] = Salsa(blockIn[2*i+1] ^ head[i])
+    // tail[i] = Salsa(blockIn[2*i+1] ^ head[i])
+    XorAndSalsa(out, head, input, (ii += 16), out, tail);
   }
 }
 
@@ -87,7 +92,7 @@ function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, 
  * - `N` is cpu/mem work factor (power of 2 e.g. `2**18`)
  * - `r` is block size (8 is common), fine-tunes sequential memory read size and performance
  * - `p` is parallelization factor (1 is common)
- * - `dkLen` is output key length in bytes e.g. 32.
+ * - `dkLen` is output key length in bytes e.g. 32, and must be >= 1 per RFC 7914 §2.
  * - `asyncTick` - (default: 10) max time in ms for which async function can block execution
  * - `maxmem` - (default: `1024 ** 3 + 1024` aka 1GB+1KB). A limit that the app could use for scrypt
  * - `onProgress` - callback function that would be executed for progress report
@@ -99,7 +104,7 @@ export type ScryptOpts = {
   r: number;
   /** Parallelization factor. */
   p: number;
-  /** Desired derived key length in bytes. */
+  /** Desired derived key length in bytes, must be >= 1 per RFC 7914 §2. */
   dkLen?: number;
   /** Max scheduler block time in milliseconds for the async variant. */
   asyncTick?: number;
@@ -145,11 +150,14 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
     throw new Error('"N" expected a power of 2, and 2^1 <= N <= 2^32');
   if (p < 1 || p > ((pow32 - 1) * 32) / blockSize)
     throw new Error('"p" expected integer 1..((2^32 - 1) * 32) / (128 * r)');
+  // RFC 7914 §2 defines `dkLen` as a positive integer.
   if (dkLen < 1 || dkLen > (pow32 - 1) * 32)
     throw new Error('"dkLen" expected integer 1..(2^32 - 1) * 32');
-  const memUsed = blockSize * (N + p);
+  // Include the shared `tmp` scratch block so `maxmem` matches noble's actual temporary allocation.
+  // Node requires more headroom here, so this accounting is intentionally noble-specific.
+  const memUsed = blockSize * (N + p + 1);
   if (memUsed > maxmem)
-    throw new Error('"maxmem" limit was hit, expected 128*r*(N+p) <= "maxmem"=' + maxmem);
+    throw new Error('"maxmem" limit was hit, expected 128*r*(N+p+1) <= "maxmem"=' + maxmem);
   // [B0...Bp−1] ← PBKDF2HMAC-SHA256(Passphrase, Salt, 1, blockSize*ParallelizationFactor)
   // Since it has only one iteration there is no reason to use async variant
   const B = pbkdf2(sha256, password, salt, { c: 1, dkLen: blockSize * p });
@@ -180,6 +188,7 @@ function scryptOutput(
   V: Uint32Array,
   tmp: Uint32Array
 ) {
+  // Shared final PBKDF2-and-cleanup step: keep the derived key, wipe the scrypt workspace.
   const res = pbkdf2(sha256, password, B, { c: 1, dkLen });
   clean(B, V, tmp);
   return res;
@@ -187,9 +196,11 @@ function scryptOutput(
 
 /**
  * Scrypt KDF from RFC 7914. See {@link ScryptOpts}.
- * @param password - password or key material to derive from
- * @param salt - unique salt bytes or string
- * @param opts - Scrypt cost and memory parameters. See {@link ScryptOpts}.
+ * @param password - password or key material to derive from;
+ *   JS string inputs are UTF-8 encoded first
+ * @param salt - unique salt bytes or string; JS string inputs are UTF-8 encoded first
+ * @param opts - Scrypt cost and memory parameters. `dkLen`, if provided,
+ *   must be >= 1 per RFC 7914 §2. See {@link ScryptOpts}.
  * @returns Derived key bytes.
  * @throws If the Scrypt cost, memory, or callback options are invalid. {@link Error}
  * @example
@@ -216,9 +227,14 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
     blockMixCb();
     for (let i = 0; i < N; i++) {
       // First u32 of the last 64-byte block (u32 is LE)
-      // & (N - 1) is % N as N is a power of 2, N & (N - 1) = 0 is checked above; >>> 0 for unsigned, input fits in u32
+      // RFC 7914 Integerify(X) uses the whole last 64-byte block, but mod N
+      // only depends on the low word here because N is a power of two and
+      // this implementation caps N at 2^32.
+      // & (N - 1) is % N as N is a power of 2, N & (N - 1) = 0 is checked
+      // above; >>> 0 for unsigned, input fits in u32.
       const j = (B32[Pi + blockSize32 - 16] & (N - 1)) >>> 0; // j = Integrify(X) % iterations
-      for (let k = 0; k < blockSize32; k++) tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k]; // tmp = B ^ V[j]
+      // tmp = B ^ V[j]
+      for (let k = 0; k < blockSize32; k++) tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k];
       BlockMix(tmp, 0, B32, Pi, r); // B = BlockMix(B ^ V[j])
       blockMixCb();
     }
@@ -229,9 +245,13 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
 
 /**
  * Scrypt KDF from RFC 7914. Async version. See {@link ScryptOpts}.
- * @param password - password or key material to derive from
- * @param salt - unique salt bytes or string
- * @param opts - Scrypt cost and memory parameters. See {@link ScryptOpts}.
+ * @param password - password or key material to derive from;
+ *   JS string inputs are UTF-8 encoded first
+ * @param salt - unique salt bytes or string; JS string inputs are UTF-8 encoded first
+ * @param opts - Scrypt cost and memory parameters. `dkLen`, if provided,
+ *   must be >= 1 per RFC 7914 §2. `asyncTick` is only a local
+ *   scheduler-yield control for this JS wrapper, not part of RFC 7914.
+ *   See {@link ScryptOpts}.
  * @returns Promise resolving to derived key bytes.
  * @throws If the Scrypt cost, memory, or callback options are invalid. {@link Error}
  * @example
@@ -263,9 +283,14 @@ export async function scryptAsync(
     blockMixCb();
     await asyncLoop(N, asyncTick, () => {
       // First u32 of the last 64-byte block (u32 is LE)
-      // & (N - 1) is % N as N is a power of 2, N & (N - 1) = 0 is checked above; >>> 0 for unsigned, input fits in u32
+      // RFC 7914 Integerify(X) uses the whole last 64-byte block, but mod N
+      // only depends on the low word here because N is a power of two and
+      // this implementation caps N at 2^32.
+      // & (N - 1) is % N as N is a power of 2, N & (N - 1) = 0 is checked
+      // above; >>> 0 for unsigned, input fits in u32.
       const j = (B32[Pi + blockSize32 - 16] & (N - 1)) >>> 0; // j = Integrify(X) % iterations
-      for (let k = 0; k < blockSize32; k++) tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k]; // tmp = B ^ V[j]
+      // tmp = B ^ V[j]
+      for (let k = 0; k < blockSize32; k++) tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k];
       BlockMix(tmp, 0, B32, Pi, r); // B = BlockMix(B ^ V[j])
       blockMixCb();
     });

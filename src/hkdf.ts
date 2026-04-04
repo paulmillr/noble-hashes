@@ -9,6 +9,7 @@ import { abytes, ahash, anumber, type CHash, clean } from './utils.ts';
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`
  * Arguments position differs from spec (IKM is first one, since it is not optional)
+ * Local validation only checks `hash`; `ikm` / `salt` byte validation is delegated to `hmac()`.
  * @param hash - hash function that would be used (e.g. sha256)
  * @param ikm - input keying material, the initial key
  * @param salt - optional salt value (a non-secret random value)
@@ -30,17 +31,23 @@ export function extract(hash: CHash, ikm: Uint8Array, salt?: Uint8Array): Uint8A
   return hmac(hash, salt, ikm);
 }
 
+// Shared mutable scratch byte for the RFC 5869 block counter `N`.
+// Safe to reuse because `expand()` is synchronous and resets it with `clean(...)` before returning.
 const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.of(0);
+// Shared RFC 5869 empty string for both `info === undefined` and the first-block `T(0)` input.
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
 /**
  * HKDF-expand from the spec. The most important part. `HKDF-Expand(PRK, info, L) -> OKM`
  * @param hash - hash function that would be used (e.g. sha256)
- * @param prk - a pseudorandom key of at least HashLen octets (usually, the output from the extract step)
+ * @param prk - a pseudorandom key of at least HashLen octets
+ *   (usually, the output from the extract step)
  * @param info - optional context and application specific information (can be a zero-length string)
- * @param length - length of output keying material in bytes
+ * @param length - length of output keying material in bytes.
+ *   RFC 5869 §2.3 allows `0..255*HashLen`, so `0` returns an empty OKM.
  * @returns Output keying material with the requested length.
- * @throws If the requested output length exceeds the HKDF limit for the selected hash. {@link Error}
+ * @throws If the requested output length exceeds the HKDF limit
+ *   for the selected hash. {@link Error}
  * @example
  * Run the HKDF expand step.
  * ```ts
@@ -57,7 +64,11 @@ export function expand(
 ): Uint8Array {
   ahash(hash);
   anumber(length, 'length');
+  abytes(prk, undefined, 'prk');
   const olen = hash.outputLen;
+  // RFC 5869 §2.3: PRK is "a pseudorandom key of at least HashLen octets".
+  if (prk.length < olen) throw new Error('"prk" must be at least HashLen octets');
+  // RFC 5869 §2.3 only bounds `L` by `<= 255*HashLen`; `L=0` is valid and yields empty OKM.
   if (length > 255 * olen) throw new Error('Length must be <= 255*HashLen');
   const blocks = Math.ceil(length / olen);
   if (info === undefined) info = EMPTY_BUFFER;
@@ -92,9 +103,11 @@ export function expand(
  * @param ikm - input keying material, the initial key
  * @param salt - optional salt value (a non-secret random value)
  * @param info - optional context and application specific information bytes
- * @param length - length of output keying material in bytes
+ * @param length - length of output keying material in bytes.
+ *   RFC 5869 §2.3 allows `0..255*HashLen`, so `0` returns an empty OKM.
  * @returns Output keying material derived from the input key.
- * @throws If the requested output length exceeds the HKDF limit for the selected hash. {@link Error}
+ * @throws If the requested output length exceeds the HKDF limit
+ *   for the selected hash. {@link Error}
  * @example
  * HKDF (RFC 5869): derive keys from an initial input.
  * ```ts

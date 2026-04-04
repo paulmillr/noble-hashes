@@ -5,13 +5,16 @@
 import { abytes, aexists, aoutput, clean, createView, type Hash } from './utils.ts';
 
 /**
- * Choice: returns bits from `b` when `a` is set, otherwise from `c`.
+ * Shared 32-bit conditional boolean primitive reused by SHA-256, SHA-1, and MD5 `F`.
+ * Returns bits from `b` when `a` is set, otherwise from `c`.
+ * The XOR form is equivalent to MD5's `F(X,Y,Z) = XY v not(X)Z` because the masked terms never
+ * set the same bit.
  * @param a - selector word
  * @param b - word chosen when selector bit is set
  * @param c - word chosen when selector bit is clear
  * @returns Mixed 32-bit word.
  * @example
- * Combine three words with the SHA2 choice primitive.
+ * Combine three words with the shared 32-bit choice primitive.
  * ```ts
  * Chi(0xffffffff, 0x12345678, 0x87654321);
  * ```
@@ -21,13 +24,14 @@ export function Chi(a: number, b: number, c: number): number {
 }
 
 /**
- * Majority function: returns bits shared by at least two inputs.
+ * Shared 32-bit majority primitive reused by SHA-256 and SHA-1.
+ * Returns bits shared by at least two inputs.
  * @param a - first input word
  * @param b - second input word
  * @param c - third input word
  * @returns Mixed 32-bit word.
  * @example
- * Combine three words with the SHA2 majority primitive.
+ * Combine three words with the shared 32-bit majority primitive.
  * ```ts
  * Maj(0xffffffff, 0x12345678, 0x87654321);
  * ```
@@ -39,6 +43,8 @@ export function Maj(a: number, b: number, c: number): number {
 /**
  * Merkle-Damgard hash construction base class.
  * Could be used to create MD5, RIPEMD, SHA1, SHA2.
+ * Accepts only byte-aligned `Uint8Array` input, even when the underlying spec describes bit
+ * strings with partial-byte tails.
  * @param blockLen - internal block size in bytes
  * @param outputLen - digest size in bytes
  * @param padOffset - trailing length field size in bytes
@@ -53,6 +59,8 @@ export function Maj(a: number, b: number, c: number): number {
  * ```
  */
 export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
+  // Subclasses must treat `buf` as read-only: `update()` may pass a direct view over caller input
+  // when it can process whole blocks without buffering first.
   protected abstract process(buf: DataView, offset: number): void;
   protected abstract get(): number[];
   protected abstract set(...args: number[]): void;
@@ -61,6 +69,7 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
 
   readonly blockLen: number;
   readonly outputLen: number;
+  readonly canXOF = false;
   readonly padOffset: number;
   readonly isLE: boolean;
 
@@ -87,7 +96,8 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     const len = data.length;
     for (let pos = 0; pos < len; ) {
       const take = Math.min(blockLen - this.pos, len - pos);
-      // Fast path: we have at least one block in input, cast it to view and process
+      // Fast path only when there is no buffered partial block: `take === blockLen` implies
+      // `this.pos === 0`, so we can process full blocks directly from the input view.
       if (take === blockLen) {
         const dataView = createView(data);
         for (; blockLen <= len - pos; pos += blockLen) this.process(dataView, pos);
@@ -125,9 +135,9 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     }
     // Pad until full block byte with zeros
     for (let i = pos; i < blockLen; i++) buffer[i] = 0;
-    // Note: sha512 requires length to be 128bit integer, but length in JS will overflow before that
-    // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
-    // So we just write lowest 64 bits of that value.
+    // `padOffset` reserves the whole length field. For SHA-384/512 the high 64 bits stay zero from
+    // the padding fill above, and JS will overflow before user input can make that half non-zero.
+    // So we only need to write the low 64 bits here.
     view.setBigUint64(blockLen - 8, BigInt(this.length * 8), isLE);
     this.process(view, 0);
     const oview = createView(out);
@@ -142,6 +152,8 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
   digest(): Uint8Array {
     const { buffer, outputLen } = this;
     this.digestInto(buffer);
+    // Copy before destroy(): subclasses wipe `buffer` during cleanup, but `digest()` must return
+    // fresh bytes to the caller.
     const res = buffer.slice(0, outputLen);
     this.destroy();
     return res;
@@ -154,6 +166,8 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     to.finished = finished;
     to.length = length;
     to.pos = pos;
+    // Only partial-block bytes need copying: when `length % blockLen === 0`, `pos === 0` and
+    // later `update()` / `digestInto()` overwrite `to.buffer` from the start before reading it.
     if (length % blockLen) to.buffer.set(buffer);
     return to as unknown as any;
   }
@@ -167,23 +181,32 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
  * Check out `test/misc/sha2-gen-iv.js` for recomputation guide.
  */
 
-/** Initial SHA256 state. Bits 0..32 of frac part of sqrt of primes 2..19. */
+/** Initial SHA256 state from RFC 6234 §6.1: the first 32 bits of the fractional parts of the
+ * square roots of the first eight prime numbers. Exported as a shared table; callers must treat
+ * it as read-only because constructors copy words from it by index. */
 export const SHA256_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ]);
 
-/** Initial SHA224 state. Bits 32..64 of frac part of sqrt of primes 23..53. */
+/** Initial SHA224 state `H(0)` from RFC 6234 §6.1. Exported as a shared table; callers must
+ * treat it as read-only because constructors copy words from it by index. */
 export const SHA224_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
   0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4,
 ]);
 
-/** Initial SHA384 state. Bits 0..64 of frac part of sqrt of primes 23..53. */
+/** Initial SHA384 state from RFC 6234 §6.3: eight RFC 64-bit `H(0)` words stored as sixteen
+ * big-endian 32-bit halves. Derived from the fractional parts of the square roots of the ninth
+ * through sixteenth prime numbers. Exported as a shared table; callers must treat it as read-only
+ * because constructors copy halves from it by index. */
 export const SHA384_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
   0xcbbb9d5d, 0xc1059ed8, 0x629a292a, 0x367cd507, 0x9159015a, 0x3070dd17, 0x152fecd8, 0xf70e5939,
   0x67332667, 0xffc00b31, 0x8eb44a87, 0x68581511, 0xdb0c2e0d, 0x64f98fa7, 0x47b5481d, 0xbefa4fa4,
 ]);
 
-/** Initial SHA512 state. Bits 0..64 of frac part of sqrt of primes 2..19. */
+/** Initial SHA512 state from RFC 6234 §6.3: eight RFC 64-bit `H(0)` words stored as sixteen
+ * big-endian 32-bit halves. Derived from the fractional parts of the square roots of the first
+ * eight prime numbers. Exported as a shared table; callers must treat it as read-only because
+ * constructors copy halves from it by index. */
 export const SHA512_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
   0x6a09e667, 0xf3bcc908, 0xbb67ae85, 0x84caa73b, 0x3c6ef372, 0xfe94f82b, 0xa54ff53a, 0x5f1d36f1,
   0x510e527f, 0xade682d1, 0x9b05688c, 0x2b3e6c1f, 0x1f83d9ab, 0xfb41bd6b, 0x5be0cd19, 0x137e2179,

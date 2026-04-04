@@ -8,9 +8,14 @@ import { EMPTY, fmt, SPACE, TYPE_TEST } from './utils.ts';
 
 const BT = { describe, should };
 export function test(variant: string, platform: any, { describe, should } = BT) {
-const { hkdf, extract: hkdf_extract } = platform;
-const { pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256, sha512 } = platform;
-const scryptMaxmem = platform.scryptMaxmem || ((opts) => 128 * opts.r * (opts.N + opts.p));
+const { expand, hkdf, extract: hkdf_extract } = platform;
+const { argon2id, argon2idAsync, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256, sha512 } = platform;
+const scryptMaxmem = platform.scryptMaxmem || ((opts) => 128 * opts.r * (opts.N + opts.p + 1));
+const progress1 = async (run: (onProgress: (progress: number) => void) => unknown | Promise<unknown>) => {
+  const t: number[] = [];
+  await run((progress) => t.push(progress));
+  eql({ called: t.length !== 0, last: t[t.length - 1] }, { called: true, last: 1 });
+};
 
 // HKDF test vectors from RFC 5869
 const HKDF_VECTORS = [
@@ -202,6 +207,9 @@ describe(`hkdf (${variant})`, () => {
     throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
     for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), fmt`hkdf(hash=${t})`);
   });
+  should('HKDF expand: PRK length', () => {
+    throws(() => expand(sha256, new Uint8Array(31), undefined, 32));
+  });
 });
 
 describe(`scrypt (${variant})`, () => {
@@ -266,6 +274,48 @@ describe(`scrypt (${variant})`, () => {
   });
 });
 
+describe(`KDF (${variant})`, () => {
+  should('progress 100%', async () => {
+    const scryptOpts = { N: 16, r: 1, p: 1, dkLen: 32 };
+    await progress1((onProgress) => scrypt('pwd', 'salt', { ...scryptOpts, onProgress }));
+    await progress1((onProgress) => scryptAsync('pwd', 'salt', { ...scryptOpts, onProgress }));
+    const argonOpts = { t: 1, m: 256, p: 1 };
+    await progress1((onProgress) => argon2id('password', 'diffsalt', { ...argonOpts, onProgress }));
+    await progress1((onProgress) => argon2idAsync('password', 'diffsalt', { ...argonOpts, onProgress }));
+  });
+
+  should('output length', async () => {
+    const outlen = async (
+      sync: (len: number) => Uint8Array,
+      async: undefined | ((len: number) => Promise<Uint8Array>) = undefined,
+      min = 1
+    ) => {
+      for (let len = 0; len < min; len++) {
+        throws(() => sync(len));
+        if (async) await rejects(() => async(len));
+      }
+      for (let len = min; len <= 128; len++) {
+        eql(sync(len).length, len);
+        if (async) eql((await async(len)).length, len);
+      }
+    };
+    await outlen((len) => hkdf(sha256, EMPTY.bytes, EMPTY.bytes, EMPTY.bytes, len), undefined, 0);
+    await outlen(
+      (len) => pbkdf2(sha256, 'pwd', 'salt', { c: 1, dkLen: len }),
+      (len) => pbkdf2Async(sha256, 'pwd', 'salt', { c: 1, dkLen: len })
+    );
+    await outlen(
+      (len) => scrypt('pwd', 'salt', { N: 16, r: 1, p: 1, dkLen: len }),
+      (len) => scryptAsync('pwd', 'salt', { N: 16, r: 1, p: 1, dkLen: len })
+    );
+    await outlen(
+      (len) => argon2id('password', 'diffsalt', { t: 1, m: 256, p: 1, dkLen: len }),
+      (len) => argon2idAsync('password', 'diffsalt', { t: 1, m: 256, p: 1, dkLen: len }),
+      4
+    );
+  });
+});
+
 describe(`PBKDF2 (${variant})`, () => {
   for (let i = 0; i < PBKDF2_VECTORS.length; i++) {
     const t = PBKDF2_VECTORS[i];
@@ -281,6 +331,17 @@ describe(`PBKDF2 (${variant})`, () => {
     pbkdf2(sha256, 'pwd', 'salt', opts);
     throws(() => pbkdf2(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }), `pbkdf2(c=0)`);
     await rejects(() => pbkdf2Async(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }), `pbkdf2(c=0)`);
+    const fakeHash = Object.assign((_msg: Uint8Array) => new Uint8Array([0]), {
+      outputLen: 1,
+      blockLen: 1,
+      create() {
+        throw new Error('pbkdf2 should reject dkLen before constructing PRF state');
+      },
+    });
+    throws(
+      () => pbkdf2(fakeHash as any, EMPTY.bytes, EMPTY.bytes, { c: 1, dkLen: 2 ** 40 }),
+      /derived key too long/i
+    );
     for (const t of TYPE_TEST.int) {
       throws(() => pbkdf2(sha256, 'pwd', 'salt', { ...opts, c: t }), fmt`pbkdf2(c=${t})`);
       await rejects(

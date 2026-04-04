@@ -2,7 +2,7 @@
  * SHA3 (keccak) addons.
  *
  * * cSHAKE, KMAC, TupleHash, ParallelHash + XOF variants from
- *   {@link https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf | NIST SP 800-185}
+ *   {@link https://csrc.nist.gov/pubs/sp/800/185/final | NIST SP 800-185}
  * * KangarooTwelve 🦘 and TurboSHAKE - reduced-round keccak from
  *   {@link https://datatracker.ietf.org/doc/rfc9861/ | RFC 9861}
  * * KeccakPRG: Pseudo-random generator based on Keccak
@@ -11,10 +11,13 @@
  */
 import { Keccak, type ShakeOpts } from './sha3.ts';
 import {
+  aexists,
   abytes,
   anumber,
   type CHash,
   type CHashXOF,
+  clean,
+  copyBytes,
   createHasher,
   type Hash,
   type HashXOF,
@@ -30,6 +33,8 @@ const _ffn = /* @__PURE__ */ BigInt(0xff);
 
 // It is safe to use bigints here, since they used only for length encoding (not actual data).
 // We use bigints in sha256 for lengths too.
+// Callers are still expected to supply SP 800-185-valid lengths
+// (`0 <= x < 2^2040`); this helper does not enforce that bound.
 function leftEncode(n: number | bigint): Uint8Array {
   n = BigInt(n);
   const res = [Number(n & _ffn)];
@@ -39,6 +44,7 @@ function leftEncode(n: number | bigint): Uint8Array {
   return new Uint8Array(res);
 }
 
+// Same caller contract as `leftEncode(...)`: lengths must already satisfy SP 800-185 §2.3.1.
 function rightEncode(n: number | bigint): Uint8Array {
   n = BigInt(n);
   const res = [Number(n & _ffn)];
@@ -48,6 +54,7 @@ function rightEncode(n: number | bigint): Uint8Array {
   return new Uint8Array(res);
 }
 
+// `dkLen` validation is deferred to the downstream Keccak constructor.
 function chooseLen(opts: ShakeOpts, outputLen: number): number {
   return opts.dkLen === undefined ? outputLen : opts.dkLen;
 }
@@ -57,27 +64,38 @@ const abytesOrZero = (buf?: Uint8Array, title = '') => {
   abytes(buf, undefined, title);
   return buf;
 };
-// NOTE: second modulo is necessary since we don't need to add padding if current element takes whole block
+// NOTE: second modulo is necessary since we don't need to add padding if the
+// current element takes a whole block.
+// Callers only pass the fixed positive Keccak rates here (`168` or `136`);
+// `block <= 0` is not validated locally.
 const getPadding = (len: number, block: number) => new Uint8Array((block - (len % block)) % block);
 /** Options for cSHAKE and related SP 800-185 functions. */
 export type cShakeOpts = ShakeOpts & {
   /** Optional personalization string mixed into domain separation. */
   personalization?: Uint8Array;
-  /** Optional NIST function-name string used for domain separation. */
+  /**
+   * Optional NIST function-name string used for domain separation.
+   * SP 800-185 reserves this for standardized function names; applications
+   * should generally stick to `personalization`.
+   */
   NISTfn?: KDFInput;
 };
 
 // Personalization
 function cshakePers(hash: Keccak, opts: cShakeOpts = {}): Keccak {
   if (!opts || (opts.personalization === undefined && opts.NISTfn === undefined)) return hash;
-  // Encode and pad inplace to avoid unneccesary memory copies/slices (so we don't need to zero them later)
-  // bytepad(encode_string(N) || encode_string(S), 168)
+  // Encode and pad inplace to avoid unneccesary memory copies/slices so we
+  // don't need to zero them later.
+  // bytepad(encode_string(N) || encode_string(S), rate), where `rate` is the
+  // current cSHAKE/KMAC/TupleHash/ParallelHash block length.
   const blockLenBytes = leftEncode(hash.blockLen);
   const fn = opts.NISTfn === undefined ? EMPTY_BUFFER : kdfInputToBytes(opts.NISTfn);
   const fnLen = leftEncode(_8n * BigInt(fn.length)); // length in bits
   const pers = abytesOrZero(opts.personalization, 'personalization');
   const persLen = leftEncode(_8n * BigInt(pers.length)); // length in bits
   if (!fn.length && !pers.length) return hash;
+  // SP 800-185 cSHAKE appends `00` instead of SHAKE's `1111`; in this Keccak implementation
+  // that changes the delimited suffix byte from `0x1f` to `0x04` once N or S is non-empty.
   hash.suffix = 0x04;
   hash.update(blockLenBytes).update(fnLen).update(fn).update(persLen).update(pers);
   let totalLen = blockLenBytes.length + fnLen.length + fn.length + persLen.length + pers.length;
@@ -109,7 +127,10 @@ export type ITupleHash = {
 /**
  * 128-bit NIST cSHAKE XOF.
  * @param msg - message bytes to hash
- * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @param opts - Optional output, personalization, and NIST function-name
+ *   settings. When both `NISTfn` and `personalization` are empty,
+ *   SP 800-185 defines this as plain SHAKE128. Defaults to 16 output bytes
+ *   when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with cSHAKE128.
@@ -121,7 +142,10 @@ export const cshake128: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake
 /**
  * 256-bit NIST cSHAKE XOF.
  * @param msg - message bytes to hash
- * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @param opts - Optional output, personalization, and NIST function-name
+ *   settings. When both `NISTfn` and `personalization` are empty,
+ *   SP 800-185 defines this as plain SHAKE256. Defaults to 32 output bytes
+ *   when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with cSHAKE256.
@@ -131,7 +155,11 @@ export const cshake128: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake
  */
 export const cshake256: CHashXOF<Keccak, cShakeOpts> = /* @__PURE__ */ gencShake(0x1f, 136, 32);
 
-/** Internal KMAC mac class. */
+/**
+ * Internal KMAC class.
+ * SP 800-185 §8.4.1 still recommends keys at least as long as the target
+ * security strength.
+ */
 export class _KMAC extends Keccak implements HashXOF<_KMAC> {
   constructor(
     blockLen: number,
@@ -141,9 +169,12 @@ export class _KMAC extends Keccak implements HashXOF<_KMAC> {
     opts: cShakeOpts = {}
   ) {
     super(blockLen, 0x1f, outputLen, enableXOF);
+    // Preload T = bytepad(encode_string("KMAC") || encode_string(S), rate); later updates append
+    // newX = bytepad(encode_string(K), rate) || X and `finish()` appends right_encode(L or 0).
     cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
     abytes(key, undefined, 'key');
-    // 1. newX = bytepad(encode_string(K), 168) || X || right_encode(L).
+    // 1. newX = bytepad(encode_string(K), rate) || X || right_encode(L),
+    // with `rate = this.blockLen`.
     const blockLenBytes = leftEncode(this.blockLen);
     const keyLen = leftEncode(_8n * BigInt(key.length));
     this.update(blockLenBytes).update(keyLen).update(key);
@@ -151,11 +182,14 @@ export class _KMAC extends Keccak implements HashXOF<_KMAC> {
     this.update(getPadding(totalLen, this.blockLen));
   }
   protected finish(): void {
-    if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen))); // outputLen in bits
+    // SP 800-185 uses right_encode(L) for fixed-length KMAC and right_encode(0) for KMACXOF.
+    // outputLen in bits
+    if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen)));
     super.finish();
   }
   _cloneInto(to?: _KMAC): _KMAC {
-    // Create new instance without calling constructor since key already in state and we don't know it.
+    // Create new instance without calling constructor since the key
+    // is already in state and we don't know it.
     // Force "to" to be instance of KMAC instead of Sha3.
     if (!to) {
       to = Object.create(Object.getPrototypeOf(this), {}) as _KMAC;
@@ -171,6 +205,8 @@ export class _KMAC extends Keccak implements HashXOF<_KMAC> {
 }
 
 function genKmac(blockLen: number, outputLen: number, xof = false) {
+  // One-shot XOF wrappers still finalize via `.digest()` because `_KMAC`
+  // already bakes the requested output length into the state.
   const kmac = (key: Uint8Array, message: Uint8Array, opts?: cShakeOpts): Uint8Array =>
     kmac.create(key, opts).update(message).digest();
   kmac.create = (key: Uint8Array, opts: cShakeOpts = {}) =>
@@ -200,7 +236,8 @@ export type IKMAC = {
  * 128-bit Keccak MAC.
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
- * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC128.
@@ -213,7 +250,8 @@ export const kmac128: IKMAC = /* @__PURE__ */ genKmac(168, 16);
  * 256-bit Keccak MAC.
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
- * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC256.
@@ -226,7 +264,8 @@ export const kmac256: IKMAC = /* @__PURE__ */ genKmac(136, 32);
  * 128-bit Keccak-MAC XOF.
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
- * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC128 XOF output.
@@ -239,7 +278,8 @@ export const kmac128xof: IKMAC = /* @__PURE__ */ genKmac(168, 16, true);
  * 256-bit Keccak-MAC XOF.
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
- * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC256 XOF output.
@@ -249,7 +289,11 @@ export const kmac128xof: IKMAC = /* @__PURE__ */ genKmac(168, 16, true);
  */
 export const kmac256xof: IKMAC = /* @__PURE__ */ genKmac(136, 32, true);
 
-/** Internal TupleHash class. */
+/**
+ * Internal TupleHash class for byte-array tuple elements.
+ * This implementation relies on SP 800-185's byte-oriented encoding form
+ * rather than arbitrary bit strings.
+ */
 export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
   constructor(blockLen: number, outputLen: number, enableXOF: boolean, opts: cShakeOpts = {}) {
     super(blockLen, 0x1f, outputLen, enableXOF);
@@ -257,14 +301,19 @@ export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
     // Change update after cshake processed
     this.update = (data: Uint8Array) => {
       abytes(data);
+      // SP 800-185 encodes each tuple element as
+      // encode_string(X[i]) = left_encode(len(X[i])) || X[i].
       super.update(leftEncode(_8n * BigInt(data.length)));
       super.update(data);
       return this;
     };
   }
   protected finish(): void {
+    // SP 800-185 uses right_encode(L) for fixed-length TupleHash
+    // and right_encode(0) for TupleHashXOF.
     if (!this.finished)
-      super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen))); // outputLen in bits
+      // outputLen in bits
+      super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen)));
     super.finish();
   }
   _cloneInto(to?: _TupleHash): _TupleHash {
@@ -277,6 +326,8 @@ export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
 }
 
 function genTuple(blockLen: number, outputLen: number, xof = false) {
+  // One-shot XOF wrappers still use `.digest()` because `_TupleHash` stores
+  // the requested output length in the state itself.
   const tuple = (messages: Uint8Array[], opts?: cShakeOpts): Uint8Array => {
     const h = tuple.create(opts);
     if (!Array.isArray(messages)) throw new Error('expected array of messages');
@@ -291,7 +342,8 @@ function genTuple(blockLen: number, outputLen: number, xof = false) {
 /**
  * 128-bit TupleHASH. `tuple(['ab', 'cd']) != tuple(['a', 'bcd'])`.
  * @param messages - ordered byte-array tuple
- * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a tuple of byte arrays with TupleHash128.
@@ -303,7 +355,8 @@ export const tuplehash128: ITupleHash = /* @__PURE__ */ genTuple(168, 16);
 /**
  * 256-bit TupleHASH. `tuple(['ab', 'cd']) != tuple(['a', 'bcd'])`.
  * @param messages - ordered byte-array tuple
- * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a tuple of byte arrays with TupleHash256.
@@ -315,7 +368,8 @@ export const tuplehash256: ITupleHash = /* @__PURE__ */ genTuple(136, 32);
 /**
  * 128-bit TupleHASH XOF.
  * @param messages - ordered byte-array tuple
- * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a tuple of byte arrays with TupleHash128 XOF output.
@@ -327,7 +381,8 @@ export const tuplehash128xof: ITupleHash = /* @__PURE__ */ genTuple(168, 16, tru
 /**
  * 256-bit TupleHASH XOF.
  * @param messages - ordered byte-array tuple
- * @param opts - Optional output and personalization settings. See {@link cShakeOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a tuple of byte arrays with TupleHash256 XOF output.
@@ -360,7 +415,12 @@ export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
     this.leafCons = leafCons;
     let { blockLen: B = 8 } = opts;
     anumber(B);
+    // blockLen=0 makes take=0 in update(), so pos never advances and the hash hangs.
+    if (B < 1) throw new Error('"blockLen" must be >= 1, got ' + B);
     this.chunkLen = B;
+    // SP 800-185 initializes z = left_encode(B); each completed chunk appends
+    // one fixed-size cSHAKE leaf digest before finish() adds right_encode(n)
+    // and right_encode(L or 0).
     super.update(leftEncode(B));
     // Change update after cshake processed
     this.update = (data: Uint8Array) => {
@@ -389,13 +449,24 @@ export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
       super.update(this.leafHash.digest());
       this.chunksDone++;
     }
+    // SP 800-185 finishes ParallelHash as
+    // z || right_encode(n) || right_encode(L); XOF mode replaces
+    // right_encode(L) with right_encode(0).
     super.update(rightEncode(this.chunksDone));
-    super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen))); // outputLen in bits
+    // outputLen in bits
+    super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen)));
     super.finish();
   }
   _cloneInto(to?: _ParallelHash): _ParallelHash {
     to ||= new _ParallelHash(this.blockLen, this.outputLen, this.leafCons, this.enableXOF);
+    to.leafCons = this.leafCons;
+    // Reused destinations can carry a stale partial leaf
+    // when the source is still on the root sponge.
     if (this.leafHash) to.leafHash = this.leafHash._cloneInto(to.leafHash as Keccak);
+    else if (to.leafHash) {
+      to.leafHash.destroy();
+      to.leafHash = undefined;
+    }
     to.chunkPos = this.chunkPos;
     to.chunkLen = this.chunkLen;
     to.chunksDone = this.chunksDone;
@@ -422,19 +493,25 @@ function genPrl(
     new _ParallelHash(
       blockLen,
       chooseLen(opts, outputLen),
+      // SP 800-185 fixes leaf digests at 256 bits for ParallelHash128 and
+      // 512 bits for ParallelHash256; only the final cSHAKE output uses the
+      // caller-selected dkLen.
       () => leaf.create({ dkLen: 2 * outputLen }),
       xof,
       opts
     );
   parallel.outputLen = outputLen;
   parallel.blockLen = blockLen;
+  parallel.canXOF = xof;
   return parallel;
 }
 
 /**
  * 128-bit ParallelHash. In JS, it is not parallel.
  * @param msg - message bytes to hash
- * @param opts - Optional output, personalization, and chunking settings. See {@link ParallelOpts}.
+ * @param opts - Optional output, personalization, and chunking settings.
+ *   Defaults to 16 output bytes when `dkLen` is omitted.
+ *   See {@link ParallelOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with ParallelHash128.
@@ -450,7 +527,9 @@ export const parallelhash128: CHash<Keccak, ParallelOpts> = /* @__PURE__ */ genP
 /**
  * 256-bit ParallelHash. In JS, it is not parallel.
  * @param msg - message bytes to hash
- * @param opts - Optional output, personalization, and chunking settings. See {@link ParallelOpts}.
+ * @param opts - Optional output, personalization, and chunking settings.
+ *   Defaults to 32 output bytes when `dkLen` is omitted.
+ *   See {@link ParallelOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with ParallelHash256.
@@ -466,7 +545,9 @@ export const parallelhash256: CHash<Keccak, ParallelOpts> = /* @__PURE__ */ genP
 /**
  * 128-bit ParallelHash XOF. In JS, it is not parallel.
  * @param msg - message bytes to hash
- * @param opts - Optional output, personalization, and chunking settings. See {@link ParallelOpts}.
+ * @param opts - Optional output, personalization, and chunking settings.
+ *   Defaults to 16 output bytes when `dkLen` is omitted.
+ *   See {@link ParallelOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with ParallelHash128 XOF output.
@@ -483,7 +564,9 @@ export const parallelhash128xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ *
 /**
  * 256-bit ParallelHash XOF. In JS, it is not parallel.
  * @param msg - message bytes to hash
- * @param opts - Optional output, personalization, and chunking settings. See {@link ParallelOpts}.
+ * @param opts - Optional output, personalization, and chunking settings.
+ *   Defaults to 32 output bytes when `dkLen` is omitted.
+ *   See {@link ParallelOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with ParallelHash256 XOF output.
@@ -498,7 +581,11 @@ export const parallelhash256xof: CHashXOF<Keccak, ParallelOpts> = /* @__PURE__ *
   true
 );
 
-/** TurboSHAKE options. `D` is the domain separation byte. */
+/**
+ * TurboSHAKE options.
+ * `D` is the domain separation byte; RFC 9861 defines output length `L`
+ * as a positive integer.
+ */
 export type TurboshakeOpts = ShakeOpts & {
   /** Optional domain separation byte in the `0x01..0x7f` range. */
   D?: number;
@@ -507,17 +594,24 @@ export type TurboshakeOpts = ShakeOpts & {
 const genTurbo = (blockLen: number, outputLen: number) =>
   createHasher<Keccak, TurboshakeOpts>((opts: TurboshakeOpts = {}) => {
     const D = opts.D === undefined ? 0x1f : opts.D;
-    // Section 2.1 of https://datatracker.ietf.org/doc/rfc9861/
+    // RFC 9861 §2.1 fixes the default `D = 0x1f`; §2.2 defines the 12-round
+    // TurboSHAKE family selected here.
     if (!Number.isSafeInteger(D) || D < 0x01 || D > 0x7f)
       throw new Error('"D" (domain separation byte) must be 0x01..0x7f, got: ' + D);
-    return new Keccak(blockLen, D, opts.dkLen === undefined ? outputLen : opts.dkLen, true, 12);
+    const dkLen = opts.dkLen === undefined ? outputLen : opts.dkLen;
+    // RFC 9861 §§2.1-2.2 define output length L as a positive integer.
+    if (dkLen < 1) throw new Error('"dkLen" must be >= 1');
+    return new Keccak(blockLen, D, dkLen, true, 12);
   });
 
 /**
  * TurboSHAKE 128-bit: reduced 12-round keccak.
- * Should've been a simple "shake with 12 rounds", but we got a whole new spec about Turbo SHAKE Pro MAX.
+ * Should've been a simple "shake with 12 rounds", but we got a whole new
+ * spec about Turbo SHAKE Pro MAX.
  * @param msg - message bytes to hash
- * @param opts - Optional output-length and domain-separation settings. See {@link TurboshakeOpts}.
+ * @param opts - Optional output-length and domain-separation settings.
+ *   RFC 9861 §2.1 defaults `D` to `0x1f`. Defaults to 32 output bytes when
+ *   `dkLen` is omitted. See {@link TurboshakeOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with TurboSHAKE128.
@@ -529,7 +623,9 @@ export const turboshake128: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ g
 /**
  * TurboSHAKE 256-bit: reduced 12-round keccak.
  * @param msg - message bytes to hash
- * @param opts - Optional output-length and domain-separation settings. See {@link TurboshakeOpts}.
+ * @param opts - Optional output-length and domain-separation settings.
+ *   RFC 9861 §2.1 defaults `D` to `0x1f`. Defaults to 64 output bytes when
+ *   `dkLen` is omitted. See {@link TurboshakeOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with TurboSHAKE256.
@@ -539,7 +635,8 @@ export const turboshake128: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ g
  */
 export const turboshake256: CHashXOF<Keccak, TurboshakeOpts> = /* @__PURE__ */ genTurbo(136, 64);
 
-// Same as NIST rightEncode, but returns [0] for zero string
+// Same as NIST rightEncode, but returns `[0]` for the zero string.
+// Callers still need to keep `x < 256^255` per RFC 9861 §3.3.
 function rightEncodeK12(n: number | bigint): Uint8Array {
   n = BigInt(n);
   const res: number[] = [];
@@ -550,9 +647,16 @@ function rightEncodeK12(n: number | bigint): Uint8Array {
 
 /** K12 options. */
 export type KangarooOpts = {
-  /** Desired digest length in bytes. */
+  /**
+   * Desired digest length in bytes.
+   * RFC 9861 §3 defines output length `L` as a positive integer.
+   */
   dkLen?: number;
-  /** Optional personalization string mixed into the sponge state. */
+  /**
+   * Optional personalization string mixed into the sponge state.
+   * Stateful K12 instances keep an internal copy so caller buffers can be
+   * wiped independently.
+   */
   personalization?: Uint8Array;
 };
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
@@ -573,8 +677,13 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
     opts: KangarooOpts
   ) {
     super(blockLen, 0x07, outputLen, true, rounds);
+    // RFC 9861 §3 defines output length L as a positive integer.
+    if (outputLen < 1) throw new Error('"dkLen" must be >= 1');
     this.leafLen = leafLen;
-    this.personalization = abytesOrZero(opts.personalization, 'personalization');
+    this.personalization =
+      opts.personalization === undefined
+        ? EMPTY_BUFFER
+        : copyBytes(abytes(opts.personalization, undefined, 'personalization'));
   }
   update(data: Uint8Array): this {
     abytes(data);
@@ -583,9 +692,14 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
       if (this.chunkPos == chunkLen) {
         if (this.leafHash) super.update(this.leafHash.digest());
         else {
+          // RFC 9861 §3.2 switches from SingleNode (`07`) to FinalNode (`06`)
+          // once S exceeds 8192 bytes and prefixes S_0 with
+          // `03 00 00 00 00 00 00 00`.
           this.suffix = 0x06; // Its safe to change suffix here since its used only in digest()
           super.update(Uint8Array.from([3, 0, 0, 0, 0, 0, 0, 0]));
         }
+        // Secondary chunks S_1..S_(n-1) become fixed-length
+        // CV_i = TurboSHAKE*(S_i, `0B`, 32|64) chaining values.
         this.leafHash = new Keccak(blockLen, 0x0b, leafLen, false, rounds);
         this.chunksDone++;
         this.chunkPos = 0;
@@ -602,9 +716,13 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
   protected finish(): void {
     if (this.finished) return;
     const { personalization } = this;
+    // RFC 9861 §3.2 forms S = M || C || length_encode(|C|) before any tree hashing logic.
     this.update(personalization).update(rightEncodeK12(personalization.length));
     // Leaf hash
     if (this.leafHash) {
+      // Multi-chunk K12 appends
+      // CV_1..CV_(n-1) || length_encode(n-1) || `FF FF`
+      // before the final TurboSHAKE call.
       super.update(this.leafHash.digest());
       super.update(rightEncodeK12(this.chunksDone));
       super.update(Uint8Array.from([0xff, 0xff]));
@@ -614,15 +732,28 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
   destroy(): void {
     super.destroy.call(this);
     if (this.leafHash) this.leafHash.destroy();
-    // We cannot zero personalization buffer since it is user provided and we don't want to mutate user input
+    // Personalization is copied on create/clone, so destroy can wipe it
+    // without touching caller input.
+    if (this.personalization !== EMPTY_BUFFER) clean(this.personalization);
     this.personalization = EMPTY_BUFFER;
   }
   _cloneInto(to?: _KangarooTwelve): _KangarooTwelve {
     const { blockLen, leafLen, leafHash, outputLen, rounds } = this;
-    to ||= new _KangarooTwelve(blockLen, leafLen, outputLen, rounds, {});
+    const personalization =
+      this.personalization === EMPTY_BUFFER ? EMPTY_BUFFER : copyBytes(this.personalization);
+    // Personalization is absorbed only during finish(), so clones need the same pending value.
+    to ||= new _KangarooTwelve(blockLen, leafLen, outputLen, rounds, {
+      personalization,
+    });
     super._cloneInto(to);
+    // Reused destinations can carry a stale leaf from an older multi-chunk state.
     if (leafHash) to.leafHash = leafHash._cloneInto(to.leafHash);
-    to.personalization.set(this.personalization);
+    else if (to.leafHash) {
+      to.leafHash.destroy();
+      to.leafHash = undefined;
+    }
+    // Snapshot the pending personalization so clone state does not alias caller-owned input.
+    to.personalization = personalization;
     to.leafLen = this.leafLen;
     to.chunkPos = this.chunkPos;
     to.chunksDone = this.chunksDone;
@@ -636,7 +767,8 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
 /**
  * 128-bit KangarooTwelve (k12): reduced 12-round keccak.
  * @param msg - message bytes to hash
- * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   32 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with KangarooTwelve-128.
@@ -650,7 +782,8 @@ export const kt128: CHash<_KangarooTwelve, KangarooOpts> = /* @__PURE__ */ creat
 /**
  * 256-bit KangarooTwelve (k12): reduced 12-round keccak.
  * @param msg - message bytes to hash
- * @param opts - Optional output and personalization settings. See {@link KangarooOpts}.
+ * @param opts - Optional output and personalization settings. Defaults to
+ *   64 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
  * @returns Digest bytes.
  * @example
  * Hash a message with KangarooTwelve-256.
@@ -683,6 +816,8 @@ const genHopMAC =
  * These untested (there is no test vectors or implementation available). Use at your own risk.
  * HopMAC128(Key, M, C, L) = KT128(Key, KT128(M, C, 32), L)
  * HopMAC256(Key, M, C, L) = KT256(Key, KT256(M, C, 64), L)
+ * The inner KangarooTwelve call always uses a fixed 32-byte digest here,
+ * regardless of the outer `dkLen`.
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param personalization - personalization bytes mixed into the inner hash
@@ -697,10 +832,14 @@ const genHopMAC =
 export const HopMAC128: HopMAC = /* @__PURE__ */ genHopMAC(kt128);
 /**
  * 256-bit KangarooTwelve-based MAC.
+ * Like `HopMAC128`, there are no test vectors or known independent
+ * implementations available for cross-checking.
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param personalization - personalization bytes mixed into the inner hash
- * @param dkLen - optional output length in bytes
+ * @param dkLen - optional output length in bytes. The inner KangarooTwelve
+ *   call still uses a fixed 64-byte digest here, regardless of the outer
+ *   `dkLen`.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with HopMAC256.
@@ -710,7 +849,12 @@ export const HopMAC128: HopMAC = /* @__PURE__ */ genHopMAC(kt128);
  */
 export const HopMAC256: HopMAC = /* @__PURE__ */ genHopMAC(kt256);
 
-/** More at {@link https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG}. */
+/**
+ * More at
+ * {@link https://github.com/XKCP/XKCP/tree/master/lib/high/Keccak/PRG}.
+ * Accepted capacities must keep `rho = 1598 - capacity` byte-aligned, and
+ * `.clean()` later also requires `rate > 801`.
+ */
 export class _KeccakPRG extends Keccak implements PRG {
   protected rate: number;
   constructor(capacity: number) {
@@ -738,8 +882,8 @@ export class _KeccakPRG extends Keccak implements PRG {
     return this;
   }
   protected finish(): void {}
-  digestInto(_out: Uint8Array): Uint8Array {
-    throw new Error('digest is not allowed, use .fetch instead');
+  digestInto(_out: Uint8Array): void {
+    throw new Error('digest is not allowed, use .randomBytes() instead');
   }
   addEntropy(seed: Uint8Array): void {
     this.update(seed);
@@ -748,6 +892,9 @@ export class _KeccakPRG extends Keccak implements PRG {
     return this.xof(length);
   }
   clean(): void {
+    // clean() mutates live sponge state just like randomBytes(),
+    // so destroyed instances must reject it.
+    aexists(this, false);
     if (this.rate < 1600 / 2 + 1) throw new Error('rate is too low to use .forget()');
     this.keccak();
     for (let i = 0; i < this.blockLen; i++) this.state[i] = 0;
@@ -770,7 +917,10 @@ export class _KeccakPRG extends Keccak implements PRG {
 /**
  * KeccakPRG: pseudo-random generator based on Keccak.
  * See {@link https://keccak.team/files/CSF-0.1.pdf}.
- * @param capacity - sponge capacity in bits
+ * @param capacity - sponge capacity in bits. Accepted values are those that
+ *   keep `rho = 1598 - capacity` byte-aligned; the default `254` is chosen
+ *   because it satisfies that duplex layout while leaving a wide byte-aligned
+ *   rate.
  * @returns PRG instance backed by a Keccak sponge.
  * @example
  * Create a Keccak-based pseudorandom generator and read bytes from it.

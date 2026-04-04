@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
+import { hmac } from '../src/hmac.ts';
 import { sha256 } from '../src/sha2.ts';
 import * as u from '../src/utils.ts';
 import {
@@ -79,6 +80,12 @@ describe('utils', () => {
       })
     )
   );
+  should('copyBytes detaches aliased inputs', () => {
+    const src = Uint8Array.from([1, 2, 3]);
+    const copy = u.copyBytes(src.subarray(0));
+    src.fill(0);
+    eql(copy, Uint8Array.from([1, 2, 3]));
+  });
 });
 
 describe('utils etc', () => {
@@ -119,7 +126,7 @@ describe('utils etc', () => {
       if (isLE) {
         eql(test.in, swap8IfBE(test.in));
       } else {
-        eql(test.out, swap8IfBE(test.in));
+        eql(test.out >>> 0, swap8IfBE(test.in));
       }
     });
   });
@@ -166,6 +173,13 @@ describe('utils etc', () => {
     const t2 = randomBytes(12);
     eql(t2 instanceof Uint8Array, true);
     eql(t2.length, 12);
+    throws(() => randomBytes(65537), (err) => {
+      eql(err instanceof RangeError, true);
+      eql(err.message, '"bytesLength" expected <= 65536, got 65537');
+      return true;
+    });
+    throws(() => randomBytes(1.9));
+    throws(() => randomBytes(NaN));
   });
   should('isBytes', () => {
     eql(isBytes(new Uint8Array(0)), true);
@@ -197,6 +211,32 @@ describe('assert', () => {
     eql(u.ahash(sha256), undefined);
     throws(() => u.ahash({}));
     throws(() => u.ahash({ blockLen: 1, outputLen: 1, create: () => {} }));
+    const hash = Object.assign((msg: Uint8Array) => new Uint8Array(), {
+      outputLen: 0,
+      blockLen: 0,
+      create() {
+        return {
+          outputLen: 0,
+          blockLen: 0,
+          update() {
+            return this;
+          },
+          digestInto() {},
+          digest() {
+            return new Uint8Array();
+          },
+          destroy() {},
+          _cloneInto() {
+            return this;
+          },
+          clone() {
+            return this;
+          },
+        };
+      },
+    });
+    throws(() => u.ahash(hash));
+    throws(() => hmac(hash, new Uint8Array([1]), new Uint8Array([2])));
   });
   should('aexists', () => {
     eql(u.aexists({}), undefined);

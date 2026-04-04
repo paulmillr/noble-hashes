@@ -14,17 +14,27 @@
  * ```
  */
 export function isBytes(a: unknown): a is Uint8Array {
-  return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
+  // Plain `instanceof Uint8Array` is too strict for some Buffer / proxy / cross-realm cases.
+  // The fallback still requires a real ArrayBuffer view, so plain
+  // JSON-deserialized `{ constructor: ... }` spoofing is rejected, and
+  // `BYTES_PER_ELEMENT === 1` keeps the fallback on byte-oriented views.
+  return (
+    a instanceof Uint8Array ||
+    (ArrayBuffer.isView(a) &&
+      a.constructor.name === 'Uint8Array' &&
+      'BYTES_PER_ELEMENT' in a &&
+      a.BYTES_PER_ELEMENT === 1)
+  );
 }
 
 /**
- * Asserts something is a positive integer.
+ * Asserts something is a non-negative integer.
  * @param n - number to validate
  * @param title - label included in thrown errors
  * @throws On wrong argument types. {@link TypeError}
  * @throws On wrong argument ranges or values. {@link RangeError}
  * @example
- * Validate a positive integer option.
+ * Validate a non-negative integer option.
  * ```ts
  * anumber(32, 'length');
  * ```
@@ -69,6 +79,11 @@ export function abytes(value: Uint8Array, length?: number, title: string = ''): 
   return value;
 }
 
+// copy bytes to new u8a. Because Buffer.slice aliases the same backing store.
+export function copyBytes(bytes: Uint8Array): Uint8Array {
+  return Uint8Array.from(bytes);
+}
+
 /**
  * Asserts something is a wrapped hash constructor.
  * @param h - hash constructor to validate
@@ -87,6 +102,10 @@ export function ahash(h: CHash): void {
     throw new TypeError('Hash must wrapped by utils.createHasher');
   anumber(h.outputLen);
   anumber(h.blockLen);
+  // HMAC and KDF callers treat these as real byte lengths; allowing zero lets fake wrappers pass
+  // validation and can produce empty outputs instead of failing fast.
+  if (h.outputLen < 1) throw new Error('"outputLen" must be >= 1');
+  if (h.blockLen < 1) throw new Error('"blockLen" must be >= 1');
 }
 
 /**
@@ -109,9 +128,10 @@ export function aexists(instance: any, checkFinished = true): void {
 }
 
 /**
- * Asserts output is a properly-sized byte array.
+ * Asserts output is a sufficiently-sized byte array.
  * @param out - destination buffer
  * @param instance - hash instance providing output length
+ * Oversized buffers are allowed; downstream code only promises to fill the first `outputLen` bytes.
  * @throws On wrong argument types. {@link TypeError}
  * @throws On wrong argument ranges or values. {@link RangeError}
  * @example
@@ -152,6 +172,8 @@ export function u8(arr: TypedArray): Uint8Array {
 
 /**
  * Casts a typed array view to Uint32Array.
+ * `arr.byteOffset` must already be 4-byte aligned or the platform
+ * Uint32Array constructor will throw.
  * @param arr - source typed array
  * @returns Uint32Array view over the same buffer.
  * @example
@@ -246,7 +268,7 @@ export function byteSwap(word: number): number {
   );
 }
 /**
- * Conditionally byte-swaps a uint32 on big-endian platforms.
+ * Conditionally byte-swaps one 32-bit word on big-endian platforms.
  * @param n - source word
  * @returns Original or byte-swapped word depending on platform endianness.
  * @example
@@ -257,12 +279,12 @@ export function byteSwap(word: number): number {
  */
 export const swap8IfBE: (n: number) => number = isLE
   ? (n: number) => n
-  : (n: number) => byteSwap(n);
+  : (n: number) => byteSwap(n) >>> 0;
 
 /**
  * Byte-swaps every word of a Uint32Array in place.
  * @param arr - array to mutate
- * @returns The same array after mutation.
+ * @returns The same array after mutation; callers pass live state arrays here.
  * @example
  * Reverse the byte order of every word in place.
  * ```ts
@@ -280,6 +302,7 @@ export function byteSwap32(arr: Uint32Array): Uint32Array {
  * Conditionally byte-swaps a Uint32Array on big-endian platforms.
  * @param u - array to normalize for host endianness
  * @returns Original or byte-swapped array depending on platform endianness.
+ *   On big-endian runtimes this mutates `u` in place via `byteSwap32(...)`.
  * @example
  * Normalize a word array for host endianness.
  * ```ts
@@ -301,7 +324,9 @@ const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
 );
 
 /**
- * Convert byte array to hex string. Uses built-in function, when available.
+ * Convert byte array to hex string.
+ * Uses the built-in function when available and assumes it matches the tested
+ * fallback semantics.
  * @param bytes - bytes to encode
  * @returns Lowercase hexadecimal string.
  * @throws On wrong argument types. {@link TypeError}
@@ -374,8 +399,8 @@ export function hexToBytes(hex: string): Uint8Array {
 
 /**
  * There is no setImmediate in browser and setTimeout is slow.
- * Call of async fn will return Promise, which will be fullfiled only on
- * next scheduler queue processing step and this is exactly what we need.
+ * This yields to the Promise/microtask scheduler queue, not to timers or the
+ * full macrotask event loop.
  * @example
  * Yield to the next scheduler tick.
  * ```ts
@@ -385,7 +410,8 @@ export function hexToBytes(hex: string): Uint8Array {
 export const nextTick = async (): Promise<void> => {};
 
 /**
- * Returns control to the event loop every `tick` milliseconds to avoid blocking.
+ * Returns control to the Promise/microtask scheduler every `tick`
+ * milliseconds to avoid blocking long loops.
  * @param iters - number of loop iterations to run
  * @param tick - maximum time slice in milliseconds
  * @param cb - callback executed on each iteration
@@ -417,6 +443,7 @@ declare const TextEncoder: any;
 /**
  * Converts string to bytes using UTF8 encoding.
  * Built-in doesn't validate input to be string: we do the check.
+ * Non-ASCII details are delegated to the platform `TextEncoder`.
  * @param str - string to encode
  * @returns UTF-8 encoded bytes.
  * @throws On wrong argument types. {@link TypeError}
@@ -435,8 +462,8 @@ export function utf8ToBytes(str: string): Uint8Array {
 export type KDFInput = string | Uint8Array;
 
 /**
- * Helper for KDFs: consumes uint8array or string.
- * When string is passed, does utf8 decoding, using TextDecoder.
+ * Helper for KDFs: consumes Uint8Array or string.
+ * String inputs are UTF-8 encoded; byte-array inputs stay aliased to the caller buffer.
  * @param data - user-provided KDF input
  * @param errorTitle - label included in thrown errors
  * @returns Byte representation of the input.
@@ -484,7 +511,7 @@ type EmptyObj = {};
  * Merges default options and passed options.
  * @param defaults - base option object
  * @param opts - user overrides
- * @returns Merged option object.
+ * @returns Merged option object. The merge mutates `defaults` in place.
  * @throws On wrong argument types. {@link TypeError}
  * @example
  * Merge user overrides onto default options.
@@ -508,6 +535,8 @@ export interface Hash<T> {
   blockLen: number;
   /** Bytes produced by `digest()`. */
   outputLen: number;
+  /** Whether the instance supports XOF-style variable-length output via `xof()` / `xofInto()`. */
+  canXOF: boolean;
   /**
    * Absorbs more message bytes into the running hash state.
    * @param buf - message chunk to absorb
@@ -592,6 +621,8 @@ export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
   outputLen: number;
   /** Input block size in bytes. */
   blockLen: number;
+  /** Whether `.create()` returns a hash instance that can be used as an XOF stream. */
+  canXOF: boolean;
 } & HashInfo &
   (Opts extends undefined
     ? {
@@ -610,6 +641,9 @@ export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CH
  * @param hashCons - hash constructor or factory
  * @param info - optional metadata such as DER OID
  * @returns Frozen callable hash wrapper with `.create()`.
+ *   Wrapper construction eagerly calls `hashCons(undefined)` once to read
+ *   `outputLen` / `blockLen`, so constructor side effects happen at module
+ *   init time.
  * @example
  * Wrap a stateful hash constructor into a callable helper.
  * ```ts
@@ -627,6 +661,7 @@ export function createHasher<T extends Hash<T>, Opts = undefined>(
   const tmp = hashCons(undefined);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
+  hashC.canXOF = tmp.canXOF;
   hashC.create = (opts?: Opts) => hashCons(opts);
   Object.assign(hashC, info);
   return Object.freeze(hashC);
@@ -636,7 +671,11 @@ export function createHasher<T extends Hash<T>, Opts = undefined>(
  * Cryptographically secure PRNG backed by `crypto.getRandomValues`.
  * @param bytesLength - number of random bytes to generate
  * @returns Random bytes.
- * @throws If the current runtime does not provide `crypto.getRandomValues`. {@link Error}
+ * The platform `getRandomValues()` implementation still defines any
+ * single-call length cap, and this helper rejects oversize requests
+ * with a stable library `RangeError` instead of host-specific errors.
+ * @throws If the current runtime does not provide `crypto.getRandomValues`,
+ *   or if `bytesLength > 65536`. {@link Error}
  * @example
  * Generate a fresh random key or nonce.
  * ```ts
@@ -644,15 +683,26 @@ export function createHasher<T extends Hash<T>, Opts = undefined>(
  * ```
  */
 export function randomBytes(bytesLength = 32): Uint8Array {
+  // Match the repo's other length-taking helpers instead of relying on Uint8Array coercion.
+  anumber(bytesLength, 'bytesLength');
   const cr = typeof globalThis === 'object' ? (globalThis as any).crypto : null;
   if (typeof cr?.getRandomValues !== 'function')
     throw new Error('crypto.getRandomValues must be defined');
+  // Web Cryptography API Level 2 §10.1.1:
+  // if `byteLength > 65536`, throw `QuotaExceededError`.
+  // Keep the guard explicit so callers can see the quota in code
+  // instead of discovering it by reading the spec or host errors.
+  // This wrapper surfaces the same quota as a stable library RangeError.
+  if (bytesLength > 65536)
+    throw new RangeError(`"bytesLength" expected <= 65536, got ${bytesLength}`);
   return cr.getRandomValues(new Uint8Array(bytesLength));
 }
 
 /**
  * Creates OID metadata for NIST hashes with prefix `06 09 60 86 48 01 65 03 04 02`.
- * @param suffix - final OID byte for the selected hash
+ * @param suffix - final OID byte for the selected hash.
+ *   The helper accepts any byte even though only the documented NIST hash
+ *   suffixes are meaningful downstream.
  * @returns Object containing the DER-encoded OID.
  * @example
  * Build OID metadata for a NIST hash.
@@ -661,5 +711,7 @@ export function randomBytes(bytesLength = 32): Uint8Array {
  * ```
  */
 export const oidNist = (suffix: number): Required<HashInfo> => ({
+  // Current NIST hashAlgs suffixes used here fit in one DER subidentifier octet.
+  // Larger suffix values would need base-128 OID encoding and a different length byte.
   oid: Uint8Array.from([0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, suffix]),
 });

@@ -494,6 +494,40 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
         tmp.update(utf8ToBytes('abc')).digest();
         throws(() => tmp.digest());
       });
+      should('throw after destroy', () => {
+        const tmp = hash.obj();
+        tmp.destroy();
+        throws(() => tmp.update(utf8ToBytes('abc')));
+        throws(() => tmp.digest());
+      });
+      should('digestInto matches fixed output contract', () => {
+        const msg = utf8ToBytes('abc');
+        const exp = hash.fn(msg);
+        throws(() => hash.obj().update(msg).digestInto(new Uint8Array(exp.length - 1)), RangeError);
+        throws(() => hash.obj().update(msg).digestInto('bad' as any), TypeError);
+        const exact = new Uint8Array(exp.length).fill(0xaa);
+        eql(hash.obj().update(msg).digestInto(exact), undefined);
+        eql(exact, exp);
+        const oversized = new Uint8Array(exp.length + 1).fill(0xaa);
+        eql(hash.obj().update(msg).digestInto(oversized), undefined);
+        eql(oversized.subarray(0, exp.length), exp);
+        eql(oversized.subarray(exp.length), new Uint8Array([0xaa]));
+      });
+      if (typeof hash.obj().xofInto === 'function')
+        should('xofInto matches stream output contract', () => {
+          const msg = utf8ToBytes('abc');
+          const tmp = hash.obj();
+          if (tmp.canXOF) {
+            const exp = hash.obj().update(msg).xof(73);
+            const out = new Uint8Array(73).fill(0xaa);
+            hash.obj().update(msg).xofInto(out);
+            eql(out, exp);
+            return;
+          }
+          throws(() => hash.obj().update(msg).xofInto(new Uint8Array(tmp.outputLen - 1)));
+          throws(() => hash.obj().update(msg).xofInto(new Uint8Array(tmp.outputLen)));
+          throws(() => hash.obj().update(msg).xofInto(new Uint8Array(tmp.outputLen + 1)));
+        });
       should('throw on wrong argument type', () => {
         // Allowed only: undefined (for compact form only), string, Uint8Array
         for (const t of TYPE_TEST.bytes) {

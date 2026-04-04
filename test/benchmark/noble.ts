@@ -44,24 +44,24 @@ async function main() {
 
   console.log('# MAC');
   const etc = buf(32);
-  await bench('hmac(sha256)', 100000, () => hmac(sha256, etc, etc));
-  await bench('hmac(sha512)', 100000, () => hmac(sha512, etc, etc));
-  await bench('kmac256', 100000, () => kmac256(etc, etc));
-  await bench('blake3(key)', 100000, () => blake3(etc, { key: etc }));
+  await bench('hmac(sha256)', () => hmac(sha256, etc, etc));
+  await bench('hmac(sha512)', () => hmac(sha512, etc, etc));
+  await bench('kmac256', () => kmac256(etc, etc));
+  await bench('blake3(key)', () => blake3(etc, { key: etc }));
 
   console.log();
   console.log('# KDF');
   const pass = buf(12);
   const salt = buf(14);
-  await bench('hkdf(sha256)', 100000, () => hkdf(sha256, salt, pass, etc, 32));
-  await bench('blake3(context)', 100000, () => blake3(etc, { context: etc }));
-  await bench('pbkdf2(sha256, c: 2 ** 18)', 10, () =>
+  await bench('hkdf(sha256)', () => hkdf(sha256, salt, pass, etc, 32));
+  await bench('blake3(context)', () => blake3(etc, { context: etc }));
+  await bench('pbkdf2(sha256, c: 2 ** 18)', () =>
     pbkdf2(sha256, pass, salt, { c: 2 ** 18, dkLen: 32 })
   );
-  await bench('pbkdf2(sha512, c: 2 ** 18)', 5, () =>
+  await bench('pbkdf2(sha512, c: 2 ** 18)', () =>
     pbkdf2(sha512, pass, salt, { c: 2 ** 18, dkLen: 32 })
   );
-  await bench('scrypt(n: 2 ** 19, r: 8, p: 1)', 5, () =>
+  await bench('scrypt(n: 2 ** 19, r: 8, p: 1)', () =>
     scrypt(pass, salt, { N: 2 ** 19, r: 8, p: 1, dkLen: 32 })
   );
   await bench('argon2id(t: 1, m: 128MB)', () =>
