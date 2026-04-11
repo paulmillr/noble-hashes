@@ -378,9 +378,9 @@ console.log(toHex(randomBytes(32)));
 
 The library has been audited:
 
-- at version 2.1.0, in Apr 2026, by ourselves (self-audited)
+- at version 2.2.0, in Apr 2026, by ourselves (self-audited)
   - Scope: everything
-  - [Changes since audit](https://github.com/paulmillr/noble-hashes/compare/2.1.0..main)
+  - [Changes since audit](https://github.com/paulmillr/noble-hashes/compare/2.2.0..main)
 - at version 1.0.0, in Jan 2022, independently, by [Cure53](https://cure53.de)
   - PDFs: [website](https://cure53.de/pentest-report_hashing-libs.pdf), [in-repo](./audit/2022-01-05-cure53-audit-nbl2.pdf)
   - Scope: everything, besides `blake3`, `sha3-addons`, `sha1` and `argon2`, which have not been audited
