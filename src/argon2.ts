@@ -26,7 +26,7 @@ import {
 
 // RFC 9106 §3.1 type `y`: 0 = Argon2d, 1 = Argon2i, 2 = Argon2id. The numeric values are the
 // spec-bound part here; the object keys are internal labels.
-const AT = { Argond2d: 0, Argon2i: 1, Argon2id: 2 } as const;
+const AT = { Argon2d: 0, Argon2i: 1, Argon2id: 2 } as const;
 type Types = (typeof AT)[keyof typeof AT];
 
 // RFC 9106 sync points constant `SL = 4`, fixed by the design rather than exposed as a tuning knob.
@@ -500,7 +500,7 @@ export const argon2d = (
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
   opts: TArg<ArgonOpts>
-): TRet<Uint8Array> => argon2(AT.Argond2d, password, salt, opts);
+): TRet<Uint8Array> => argon2(AT.Argon2d, password, salt, opts);
 /**
  * Argon2i side-channel-resistant version.
  * @param password - password or input key material
@@ -628,7 +628,7 @@ export const argon2dAsync = (
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
   opts: TArg<ArgonOpts>
-): Promise<TRet<Uint8Array>> => argon2Async(AT.Argond2d, password, salt, opts);
+): Promise<TRet<Uint8Array>> => argon2Async(AT.Argon2d, password, salt, opts);
 /**
  * Argon2i async side-channel-resistant version.
  * @param password - password or input key material
