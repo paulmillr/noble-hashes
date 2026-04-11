@@ -19,7 +19,16 @@ const argon2_vectors = json('./vectors/argon2.json');
 
 // Some vectors are very slow and are ran in slow-big.test.js.
 const BT = { describe, should };
-const DEFAULT_PLATFORM = { argon2d, argon2dAsync, argon2i, argon2iAsync, argon2id, argon2idAsync, scrypt, scryptAsync };
+const DEFAULT_PLATFORM = {
+  argon2d,
+  argon2dAsync,
+  argon2i,
+  argon2iAsync,
+  argon2id,
+  argon2idAsync,
+  scrypt,
+  scryptAsync,
+};
 
 // Takes 10h
 const SCRYPT_CASES = gen({
@@ -34,15 +43,17 @@ const SCRYPT_CASES = gen({
 export function testScrypt(variant = 'noble', platform = DEFAULT_PLATFORM, { should } = BT) {
   const { scrypt } = platform;
   const scryptAsync = platform.scryptAsync || scrypt.async;
-for (let i = 0; i < SCRYPT_CASES.length; i++) {
-  const c = SCRYPT_CASES[i];
-  should(fmt`Scrypt generator (${i}, ${variant}): ${c}`, async () => {
-    const opt = { ...c, N: 2 ** c.N };
-    const exp = Uint8Array.from(scryptSync(c.pwd, c.salt, c.dkLen, { maxmem: 1024 ** 4, ...opt }));
-    eql(scrypt(c.pwd, c.salt, opt), exp, fmt`scrypt(${opt})`);
-    eql(await scryptAsync(c.pwd, c.salt, opt), exp, fmt`scryptAsync(${opt})`);
-  });
-}
+  for (let i = 0; i < SCRYPT_CASES.length; i++) {
+    const c = SCRYPT_CASES[i];
+    should(fmt`Scrypt generator (${i}, ${variant}): ${c}`, async () => {
+      const opt = { ...c, N: 2 ** c.N };
+      const exp = Uint8Array.from(
+        scryptSync(c.pwd, c.salt, c.dkLen, { maxmem: 1024 ** 4, ...opt })
+      );
+      eql(scrypt(c.pwd, c.salt, opt), exp, fmt`scrypt(${opt})`);
+      eql(await scryptAsync(c.pwd, c.salt, opt), exp, fmt`scryptAsync(${opt})`);
+    });
+  }
 }
 
 const verySlowArgon = [
@@ -95,7 +106,11 @@ const verySlowArgon = [
   },
 ];
 
-export function testArgon(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should } = BT) {
+export function testArgon(
+  variant = 'noble',
+  platform = DEFAULT_PLATFORM,
+  { describe, should } = BT
+) {
   const { argon2d, argon2i, argon2id } = platform;
   const fnMap = new Map([
     [DEFAULT_PLATFORM.argon2i, argon2i],
@@ -107,99 +122,99 @@ export function testArgon(variant = 'noble', platform = DEFAULT_PLATFORM, { desc
     [DEFAULT_PLATFORM.argon2d, platform.argon2dAsync || argon2d.async],
     [DEFAULT_PLATFORM.argon2id, platform.argon2idAsync || argon2id.async],
   ]);
-for (let i = 0; i < verySlowArgon.length; i++) {
-  const v = verySlowArgon[i];
-  const fn = fnMap.get(v.fn) || v.fn;
-  const ver = v.version || 0x13;
-  const str = `m=${v.m}, t=${v.t}, p=${v.p}`;
-  const title = `argon(${variant}) #${i} ${fn.name}/v${ver} ${str}`;
-  should(title, () => {
-    const res = bytesToHex(
-      fn(v.password, v.salt, {
-        m: v.m,
-        p: v.p,
-        t: v.t,
-        key: v.secret,
-        personalization: v.data,
-        version: v.version,
-      })
-    );
-    eql(res, v.exp);
-  });
-  should(`${title}: async`, async () => {
-    const asyncFn = asyncMap.get(v.fn) || fn.async;
-    const res = bytesToHex(
-      await asyncFn(v.password, v.salt, {
-        m: v.m,
-        p: v.p,
-        t: v.t,
-        key: v.secret,
-        personalization: v.data,
-        version: v.version,
-      })
-    );
-    eql(res, v.exp);
-  });
-}
+  for (let i = 0; i < verySlowArgon.length; i++) {
+    const v = verySlowArgon[i];
+    const fn = fnMap.get(v.fn) || v.fn;
+    const ver = v.version || 0x13;
+    const str = `m=${v.m}, t=${v.t}, p=${v.p}`;
+    const title = `argon(${variant}) #${i} ${fn.name}/v${ver} ${str}`;
+    should(title, () => {
+      const res = bytesToHex(
+        fn(v.password, v.salt, {
+          m: v.m,
+          p: v.p,
+          t: v.t,
+          key: v.secret,
+          personalization: v.data,
+          version: v.version,
+        })
+      );
+      eql(res, v.exp);
+    });
+    should(`${title}: async`, async () => {
+      const asyncFn = asyncMap.get(v.fn) || fn.async;
+      const res = bytesToHex(
+        await asyncFn(v.password, v.salt, {
+          m: v.m,
+          p: v.p,
+          t: v.t,
+          key: v.secret,
+          personalization: v.data,
+          version: v.version,
+        })
+      );
+      eql(res, v.exp);
+    });
+  }
 
-describe(`argon2 crosstest (${variant})`, () => {
-  const algos = {
-    argon2d: argon2d,
-    argon2i: argon2i,
-    argon2id: argon2id,
-  };
-  const versions = {
-    '0x10': 0x10,
-    '0x13': 0x13,
-  };
-  const PASSWORD = [0, 1, 32, 64, 256, 64 * 1024, 256 * 1024, 1 * 1024];
-  const SALT = [8, 16, 32, 64, 256, 64 * 1024, 256 * 1024, 1 * 1024];
-  const SECRET = [undefined, 0, 1, 2, 4, 8, 256, 257, 1024, 2 ** 16];
-  const TIME = [1, 2, 4, 8, 256, 1024, 2 ** 16];
-  const OUTPUT = [32, 4, 16, 32, 64, 128, 512, 1024];
-  const P = [1, 2, 3, 4, 8, 16, 1024, 2 ** 16];
-  const M = [1, 2, 3, 4, 8, 16, 1024, 2 ** 16];
-  const PASS_PATTERN = new Uint8Array([1, 2, 3, 4, 5]);
-  const SALT_PATTERN = new Uint8Array([6, 7, 8, 9, 10]);
-  const SECRET_PATTERN = new Uint8Array([11, 12, 13, 14, 15]);
-  const allResults = [];
-  let currIndex = 0;
-  for (const algoName in algos) {
-    const fn = algos[algoName];
-    for (const verName in versions) {
-      const version = versions[verName];
-      for (let curPos = 0; curPos < 6; curPos++) {
-        const choice = (arr, i, pos) => arr[pos === curPos ? i % arr.length : 0];
-        for (let i = 0; i < 15; i++) {
-          const pass = pattern(PASS_PATTERN, choice(PASSWORD, i, 0));
-          const salt = pattern(SALT_PATTERN, choice(SALT, i, 1));
-          const sLen = choice(SECRET, i);
-          const secret = sLen === undefined ? undefined : pattern(SECRET_PATTERN, sLen);
-          const outputLen = choice(OUTPUT, i, 2);
-          const timeCost = choice(TIME, i, 3);
-          const parallelism = choice(P, i, 4);
-          const memoryCost = 8 * parallelism * choice(M, i, 5);
-          const opts = {
-            version,
-            p: parallelism, // 1..255
-            m: memoryCost, // 1..2**32-1
-            t: timeCost, // 1..2**32-1
-            dkLen: outputLen, // 4..2**32-1 but will fail if too long
-            key: secret,
-          };
-          const jopts = JSON.stringify(opts);
-          const vi = currIndex++;
-          should(`#${vi} ${algoName}(${pass.length}, ${salt.length}, opts=${jopts})`, () => {
-            const res = fn(pass, salt, opts);
-            const hex = bytesToHex(res);
-            eql(hex, argon2_vectors[vi]);
-            allResults.push(hex);
-          });
+  describe(`argon2 crosstest (${variant})`, () => {
+    const algos = {
+      argon2d: argon2d,
+      argon2i: argon2i,
+      argon2id: argon2id,
+    };
+    const versions = {
+      '0x10': 0x10,
+      '0x13': 0x13,
+    };
+    const PASSWORD = [0, 1, 32, 64, 256, 64 * 1024, 256 * 1024, 1 * 1024];
+    const SALT = [8, 16, 32, 64, 256, 64 * 1024, 256 * 1024, 1 * 1024];
+    const SECRET = [undefined, 0, 1, 2, 4, 8, 256, 257, 1024, 2 ** 16];
+    const TIME = [1, 2, 4, 8, 256, 1024, 2 ** 16];
+    const OUTPUT = [32, 4, 16, 32, 64, 128, 512, 1024];
+    const P = [1, 2, 3, 4, 8, 16, 1024, 2 ** 16];
+    const M = [1, 2, 3, 4, 8, 16, 1024, 2 ** 16];
+    const PASS_PATTERN = new Uint8Array([1, 2, 3, 4, 5]);
+    const SALT_PATTERN = new Uint8Array([6, 7, 8, 9, 10]);
+    const SECRET_PATTERN = new Uint8Array([11, 12, 13, 14, 15]);
+    const allResults = [];
+    let currIndex = 0;
+    for (const algoName in algos) {
+      const fn = algos[algoName];
+      for (const verName in versions) {
+        const version = versions[verName];
+        for (let curPos = 0; curPos < 6; curPos++) {
+          const choice = (arr, i, pos) => arr[pos === curPos ? i % arr.length : 0];
+          for (let i = 0; i < 15; i++) {
+            const pass = pattern(PASS_PATTERN, choice(PASSWORD, i, 0));
+            const salt = pattern(SALT_PATTERN, choice(SALT, i, 1));
+            const sLen = choice(SECRET, i);
+            const secret = sLen === undefined ? undefined : pattern(SECRET_PATTERN, sLen);
+            const outputLen = choice(OUTPUT, i, 2);
+            const timeCost = choice(TIME, i, 3);
+            const parallelism = choice(P, i, 4);
+            const memoryCost = 8 * parallelism * choice(M, i, 5);
+            const opts = {
+              version,
+              p: parallelism, // 1..255
+              m: memoryCost, // 1..2**32-1
+              t: timeCost, // 1..2**32-1
+              dkLen: outputLen, // 4..2**32-1 but will fail if too long
+              key: secret,
+            };
+            const jopts = JSON.stringify(opts);
+            const vi = currIndex++;
+            should(`#${vi} ${algoName}(${pass.length}, ${salt.length}, opts=${jopts})`, () => {
+              const res = fn(pass, salt, opts);
+              const hex = bytesToHex(res);
+              eql(hex, argon2_vectors[vi]);
+              allResults.push(hex);
+            });
+          }
         }
       }
     }
-  }
-});
+  });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

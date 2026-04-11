@@ -111,111 +111,125 @@ const HMAC_VECTORS = [
 
 const BT = { describe, should };
 export function test(variant: string, platform: any, { describe, should } = BT) {
-const { hmac, sha256, sha384, sha512 } = platform;
-describe(`hmac (${variant})`, () => {
-  for (let i = 0; i < HMAC_VECTORS.length; i++) {
-    const t = HMAC_VECTORS[i];
-    describe('vector ' + i, () => {
-      should('sha256 full', () => {
-        const h256 = hmac.create(sha256, t.key).update(concatBytes(...t.data));
-        eql(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+  const { hmac, sha256, sha384, sha512 } = platform;
+  describe(`hmac (${variant})`, () => {
+    for (let i = 0; i < HMAC_VECTORS.length; i++) {
+      const t = HMAC_VECTORS[i];
+      describe('vector ' + i, () => {
+        should('sha256 full', () => {
+          const h256 = hmac.create(sha256, t.key).update(concatBytes(...t.data));
+          eql(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+        });
+        should('sha256 partial', () => {
+          const h256 = hmac.create(sha256, t.key);
+          for (let d of t.data) h256.update(d);
+          eql(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
+        });
+        should('sha512 full', () => {
+          const h512 = hmac.create(sha512, t.key).update(concatBytes(...t.data));
+          eql(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
+        });
+        should('sha512 partial', () => {
+          const h512 = hmac.create(sha512, t.key);
+          for (let d of t.data) h512.update(d);
+          eql(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
+        });
       });
-      should('sha256 partial', () => {
-        const h256 = hmac.create(sha256, t.key);
-        for (let d of t.data) h256.update(d);
-        eql(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
-      });
-      should('sha512 full', () => {
-        const h512 = hmac.create(sha512, t.key).update(concatBytes(...t.data));
-        eql(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
-      });
-      should('sha512 partial', () => {
-        const h512 = hmac.create(sha512, t.key);
-        for (let d of t.data) h512.update(d);
-        eql(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
-      });
+    }
+
+    should('HMAC types', () => {
+      const key = utf8ToBytes('key');
+      const msg = utf8ToBytes('msg');
+      hmac(sha256, key, msg);
+      hmac.create(sha256, key);
+      for (const t of TYPE_TEST.bytes) {
+        throws(() => hmac(sha256, t, msg), fmt`hmac(key=${t})`);
+        throws(() => hmac(sha256, key, t), fmt`hmac(msg=${t})`);
+        throws(() => hmac.create(sha256, t), fmt`hmac.create(key=${t})`);
+      }
+      throws(() => hmac(sha256, undefined, msg), `hmac(key=undefined)`);
+      throws(() => hmac(sha256, key), `hmac(msg=undefined)`);
+      throws(() => hmac.create(sha256, undefined), `hmac.create(key=undefined)`);
+      // for (const t of TYPE_TEST.opts) {
+      //   throws(() => hmac(sha256, 'key', 'salt', t), fmt`hmac(opt=${t})`);
+      //   throws(() => hmac.create(sha256, 'key', t), fmt`hmac.create(opt=${t})`);
+      // }
+      for (const t of TYPE_TEST.hash) throws(() => hmac(t, key, msg), fmt`hmac(hash=${t})`);
+      eql(
+        hmac(sha512, SPACE.bytes, SPACE.bytes),
+        hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
+        'hmac.SPACE (full form bytes)'
+      );
+      eql(
+        hmac(sha512, SPACE.bytes, SPACE.bytes),
+        hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
+        'hmac.SPACE (full form stingr)'
+      );
     });
-  }
+    should('digestInto keeps oversized output tails untouched', () => {
+      const key = utf8ToBytes('key');
+      const msg = utf8ToBytes('msg');
+      for (const hash of [sha256, sha512]) {
+        const exp = hmac(hash, key, msg);
+        throws(
+          () =>
+            hmac
+              .create(hash, key)
+              .update(msg)
+              .digestInto(new Uint8Array(exp.length - 1)),
+          RangeError
+        );
+        throws(
+          () =>
+            hmac
+              .create(hash, key)
+              .update(msg)
+              .digestInto('bad' as any),
+          TypeError
+        );
+        const out = new Uint8Array(exp.length + 8).fill(0xaa);
+        eql(hmac.create(hash, key).update(msg).digestInto(out), undefined);
+        eql(out.subarray(0, exp.length), exp);
+        eql(out.subarray(exp.length), new Uint8Array(8).fill(0xaa));
+      }
+    });
 
-  should('HMAC types', () => {
-    const key = utf8ToBytes('key');
-    const msg = utf8ToBytes('msg');
-    hmac(sha256, key, msg);
-    hmac.create(sha256, key);
-    for (const t of TYPE_TEST.bytes) {
-      throws(() => hmac(sha256, t, msg), fmt`hmac(key=${t})`);
-      throws(() => hmac(sha256, key, t), fmt`hmac(msg=${t})`);
-      throws(() => hmac.create(sha256, t), fmt`hmac.create(key=${t})`);
-    }
-    throws(() => hmac(sha256, undefined, msg), `hmac(key=undefined)`);
-    throws(() => hmac(sha256, key), `hmac(msg=undefined)`);
-    throws(() => hmac.create(sha256, undefined), `hmac.create(key=undefined)`);
-    // for (const t of TYPE_TEST.opts) {
-    //   throws(() => hmac(sha256, 'key', 'salt', t), fmt`hmac(opt=${t})`);
-    //   throws(() => hmac.create(sha256, 'key', t), fmt`hmac.create(opt=${t})`);
-    // }
-    for (const t of TYPE_TEST.hash) throws(() => hmac(t, key, msg), fmt`hmac(hash=${t})`);
-    eql(
-      hmac(sha512, SPACE.bytes, SPACE.bytes),
-      hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
-      'hmac.SPACE (full form bytes)'
-    );
-    eql(
-      hmac(sha512, SPACE.bytes, SPACE.bytes),
-      hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
-      'hmac.SPACE (full form stingr)'
-    );
-  });
-  should('digestInto keeps oversized output tails untouched', () => {
-    const key = utf8ToBytes('key');
-    const msg = utf8ToBytes('msg');
-    for (const hash of [sha256, sha512]) {
-      const exp = hmac(hash, key, msg);
-      throws(() => hmac.create(hash, key).update(msg).digestInto(new Uint8Array(exp.length - 1)), RangeError);
-      throws(() => hmac.create(hash, key).update(msg).digestInto('bad' as any), TypeError);
-      const out = new Uint8Array(exp.length + 8).fill(0xaa);
-      eql(hmac.create(hash, key).update(msg).digestInto(out), undefined);
-      eql(out.subarray(0, exp.length), exp);
-      eql(out.subarray(exp.length), new Uint8Array(8).fill(0xaa));
-    }
-  });
+    should('Sha512/384 issue', () => {
+      const h = hmac.create(
+        sha384,
+        hexToBytes(
+          '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        )
+      );
+      h.update(
+        hexToBytes(
+          '010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101'
+        )
+      );
+      h.update(hexToBytes('00'));
+      h.update(
+        hexToBytes(
+          '6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf59a9083505bc92276aec4be312696ef7bf3bf603f4bbd381196a029f340585312313bca4a9b5b890efee42c77b1ee25fe'
+        )
+      );
+      eql(
+        bytesToHex(h.digest()),
+        'a1ae63339c4fac449464e302c61e8ceb5b28c04d108e022179ce6dabb2d3e310cb3bf41cd6013b3006f33c037e6b7fa8'
+      );
+    });
 
-  should('Sha512/384 issue', () => {
-    const h = hmac.create(
-      sha384,
-      hexToBytes(
-        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-      )
-    );
-    h.update(
-      hexToBytes(
-        '010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101'
-      )
-    );
-    h.update(hexToBytes('00'));
-    h.update(
-      hexToBytes(
-        '6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf59a9083505bc92276aec4be312696ef7bf3bf603f4bbd381196a029f340585312313bca4a9b5b890efee42c77b1ee25fe'
-      )
-    );
-    eql(
-      bytesToHex(h.digest()),
-      'a1ae63339c4fac449464e302c61e8ceb5b28c04d108e022179ce6dabb2d3e310cb3bf41cd6013b3006f33c037e6b7fa8'
-    );
+    should('not be created with invalid hash fn', () => {
+      function fakeHash() {}
+      fakeHash.create = () => {
+        return {};
+      };
+      fakeHash.update = () => {};
+      // no fakeHash.update()
+      fakeHash.blockLen = 32;
+      fakeHash.outputLen = 32;
+      throws(() => hmac(fakeHash, EMPTY.str, EMPTY.str));
+    });
   });
-
-  should('not be created with invalid hash fn', () => {
-    function fakeHash() {}
-    fakeHash.create = () => {
-      return {};
-    };
-    fakeHash.update = () => {};
-    // no fakeHash.update()
-    fakeHash.blockLen = 32;
-    fakeHash.outputLen = 32;
-    throws(() => hmac(fakeHash, EMPTY.str, EMPTY.str));
-  });
-});
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href)

@@ -96,112 +96,119 @@ async function isLinear(callback, iters = 128) {
   );
 }
 
-export function test(variant = 'noble', platform = DEFAULT_PLATFORM, hashes = HASHES, { describe, should } = BT) {
-const { hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256 } = platform;
-const HASHES = hashes;
-const run = () => {
-// Verify that it correctly detects functions with quadratic complexity
-should(
-  'detect quadratic functions',
-  retry(async () => {
-    // 16 iters since quadratic is very slow
-    console.log('Linear');
-    await isLinear((buf) => linear(buf), 16);
-    console.log('Linear const');
-    await isLinear((buf) => linearConst(buf), 16);
-    // Very close to linear, not much impact
-    console.log('Log2');
-    await isLinear((buf) => log2(buf), 16);
-    console.log('Log10');
-    await isLinear((buf) => log10(buf), 16);
-    console.log('Quadratic');
-    await rejects(() => isLinear((buf) => quadratic(buf), 16));
-    // Function itself is linear if we look on password/salt only, but there is quadratic relation
-    // between salt / pass length and iterations which makes function quadratic if we look at all inputs.
-    // Correct function should have time complexity like:
-    // C1*N + C2*M, where C1 and C2 is some constants, N and M is input
-    // However this implementation has time complexity like:
-    // (C1*N) * (C2*M) which is quadratic
-    console.log('PBKDF2 with DOS support');
-    await rejects(() => isLinear((buf) => pbkdf2DOS(sha256, buf, buf, buf.length), 16));
-  })
-);
-
-function pbkdf2DOS(hash, password, salt, c) {
-  const PBKDF_CNT = new Uint8Array(4);
-  const dkLen = 32;
-  const DK = new Uint8Array(dkLen);
-  const outputLen = 32;
-  for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
-    const Ti = DK.subarray(pos, pos + outputLen);
-    createView(PBKDF_CNT).setInt32(0, ti, false);
-    let u = hmac.create(hash, password).update(salt).update(PBKDF_CNT).digest();
-    Ti.set(u.subarray(0, Ti.length));
-    for (let ui = 1; ui < c; ui++) {
-      u = hmac(hash, password, u);
-      for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
-    }
-  }
-  return DK;
-}
-
-should('DoS: pbkdfDOS returns correct result', () => {
-  const password = new Uint8Array([1, 2, 3]);
-  const salt = new Uint8Array([4, 5, 6]);
-  eql(
-    pbkdf2(sha256, password, salt, { dkLen: 32, c: 1024 }),
-    pbkdf2DOS(sha256, password, salt, 1024)
-  );
-});
-
-for (const h in HASHES) {
-  const hash = HASHES[h];
-  should(
-    `DoS: ${h}`,
-    retry(async () => {
-      await isLinear((buf) => hash.fn(buf));
-    })
-  );
-}
-
-should(
-  `DoS: pbkdf2`,
-  retry(async () => {
-    await isLinear((buf) => pbkdf2(sha256, buf, buf, { c: buf.length, dkLen: 32 }));
-  })
-);
-
-should(
-  `DoS: pbkdf2Async`,
-  retry(async () => {
-    await isLinear((buf) => pbkdf2Async(sha256, buf, buf, { c: buf.length, dkLen: 32 }));
-  })
-);
-
-should(
-  `DoS: hkdf`,
-  retry(async () => {
-    await isLinear((buf) => hkdf(sha256, buf, buf, buf, 32));
-  })
-);
-
-should(
-  `DoS: scrypt`,
-  retry(async () => {
-    await isLinear((buf) => scrypt(buf, buf, { N: 1024, r: buf.length / 1024, p: 2, dkLen: 64 }));
-  })
-);
-
-should(
-  `DoS: scryptAsync`,
-  retry(async () => {
-    await isLinear((buf) =>
-      scryptAsync(buf, buf, { N: 1024, r: buf.length / 1024, p: 2, dkLen: 64 })
+export function test(
+  variant = 'noble',
+  platform = DEFAULT_PLATFORM,
+  hashes = HASHES,
+  { describe, should } = BT
+) {
+  const { hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256 } = platform;
+  const HASHES = hashes;
+  const run = () => {
+    // Verify that it correctly detects functions with quadratic complexity
+    should(
+      'detect quadratic functions',
+      retry(async () => {
+        // 16 iters since quadratic is very slow
+        console.log('Linear');
+        await isLinear((buf) => linear(buf), 16);
+        console.log('Linear const');
+        await isLinear((buf) => linearConst(buf), 16);
+        // Very close to linear, not much impact
+        console.log('Log2');
+        await isLinear((buf) => log2(buf), 16);
+        console.log('Log10');
+        await isLinear((buf) => log10(buf), 16);
+        console.log('Quadratic');
+        await rejects(() => isLinear((buf) => quadratic(buf), 16));
+        // Function itself is linear if we look on password/salt only, but there is quadratic relation
+        // between salt / pass length and iterations which makes function quadratic if we look at all inputs.
+        // Correct function should have time complexity like:
+        // C1*N + C2*M, where C1 and C2 is some constants, N and M is input
+        // However this implementation has time complexity like:
+        // (C1*N) * (C2*M) which is quadratic
+        console.log('PBKDF2 with DOS support');
+        await rejects(() => isLinear((buf) => pbkdf2DOS(sha256, buf, buf, buf.length), 16));
+      })
     );
-  })
-);
-};
-return variant === 'noble' ? run() : describe(`DoS (${variant})`, run);
+
+    function pbkdf2DOS(hash, password, salt, c) {
+      const PBKDF_CNT = new Uint8Array(4);
+      const dkLen = 32;
+      const DK = new Uint8Array(dkLen);
+      const outputLen = 32;
+      for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
+        const Ti = DK.subarray(pos, pos + outputLen);
+        createView(PBKDF_CNT).setInt32(0, ti, false);
+        let u = hmac.create(hash, password).update(salt).update(PBKDF_CNT).digest();
+        Ti.set(u.subarray(0, Ti.length));
+        for (let ui = 1; ui < c; ui++) {
+          u = hmac(hash, password, u);
+          for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
+        }
+      }
+      return DK;
+    }
+
+    should('DoS: pbkdfDOS returns correct result', () => {
+      const password = new Uint8Array([1, 2, 3]);
+      const salt = new Uint8Array([4, 5, 6]);
+      eql(
+        pbkdf2(sha256, password, salt, { dkLen: 32, c: 1024 }),
+        pbkdf2DOS(sha256, password, salt, 1024)
+      );
+    });
+
+    for (const h in HASHES) {
+      const hash = HASHES[h];
+      should(
+        `DoS: ${h}`,
+        retry(async () => {
+          await isLinear((buf) => hash.fn(buf));
+        })
+      );
+    }
+
+    should(
+      `DoS: pbkdf2`,
+      retry(async () => {
+        await isLinear((buf) => pbkdf2(sha256, buf, buf, { c: buf.length, dkLen: 32 }));
+      })
+    );
+
+    should(
+      `DoS: pbkdf2Async`,
+      retry(async () => {
+        await isLinear((buf) => pbkdf2Async(sha256, buf, buf, { c: buf.length, dkLen: 32 }));
+      })
+    );
+
+    should(
+      `DoS: hkdf`,
+      retry(async () => {
+        await isLinear((buf) => hkdf(sha256, buf, buf, buf, 32));
+      })
+    );
+
+    should(
+      `DoS: scrypt`,
+      retry(async () => {
+        await isLinear((buf) =>
+          scrypt(buf, buf, { N: 1024, r: buf.length / 1024, p: 2, dkLen: 64 })
+        );
+      })
+    );
+
+    should(
+      `DoS: scryptAsync`,
+      retry(async () => {
+        await isLinear((buf) =>
+          scryptAsync(buf, buf, { N: 1024, r: buf.length / 1024, p: 2, dkLen: 64 })
+        );
+      })
+    );
+  };
+  return variant === 'noble' ? run() : describe(`DoS (${variant})`, run);
 }
 
 // takes ~20min

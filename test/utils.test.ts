@@ -177,11 +177,14 @@ describe('utils etc', () => {
     const t2 = randomBytes(12);
     eql(t2 instanceof Uint8Array, true);
     eql(t2.length, 12);
-    throws(() => randomBytes(65537), (err) => {
-      eql(err instanceof RangeError, true);
-      eql(err.message, '"bytesLength" expected <= 65536, got 65537');
-      return true;
-    });
+    throws(
+      () => randomBytes(65537),
+      (err) => {
+        eql(err instanceof RangeError, true);
+        eql(err.message, '"bytesLength" expected <= 65536, got 65537');
+        return true;
+      }
+    );
     throws(() => randomBytes(1.9));
     throws(() => randomBytes(NaN));
   });

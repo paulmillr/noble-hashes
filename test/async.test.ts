@@ -65,51 +65,51 @@ export function test(
   };
 
   describe(`async (${variant})`, () => {
-  for (let kdf in KDFS) {
-    for (let ms of [10, 25, 50, 100]) {
-      should(`${kdf} (${ms}ms)`, async () => {
-        let w = new LoopWatcher();
-        await KDFS[kdf](ms);
-        const info = w.info(true);
-        // console.log('\tKDF took', info);
-        // we compare avg with exepcted+2ms to avoid flaky tests
-        eql(info.avg < ms + 2, true, 'avg');
-        eql(info.total > ms, true, 'total');
+    for (let kdf in KDFS) {
+      for (let ms of [10, 25, 50, 100]) {
+        should(`${kdf} (${ms}ms)`, async () => {
+          let w = new LoopWatcher();
+          await KDFS[kdf](ms);
+          const info = w.info(true);
+          // console.log('\tKDF took', info);
+          // we compare avg with exepcted+2ms to avoid flaky tests
+          eql(info.avg < ms + 2, true, 'avg');
+          eql(info.total > ms, true, 'total');
+        });
+      }
+      should(`${kdf} parallel`, async () => {
+        // Run 10 async job in parallel and verify that there is no corruption of internal state
+        const exp = Uint8Array.from(await KDFS[kdf](10)); // Make sure that there is no way to change output
+        const res = await Promise.all(Array.from({ length: 10 }, (i) => KDFS[kdf](1)));
+        for (let val of res) eql(val, exp);
       });
     }
-    should(`${kdf} parallel`, async () => {
-      // Run 10 async job in parallel and verify that there is no corruption of internal state
-      const exp = Uint8Array.from(await KDFS[kdf](10)); // Make sure that there is no way to change output
-      const res = await Promise.all(Array.from({ length: 10 }, (i) => KDFS[kdf](1)));
-      for (let val of res) eql(val, exp);
+    should('scrypt progreessCallback', async () => {
+      let t = [];
+      await PROGRESS.scrypt('', '', { N: 2 ** 18, r: 8, p: 1, onProgress: (per) => t.push(per) });
+      // Should be called ~10k
+      eql(t.length, PROGRESS.len);
+      // Should be exact numbers
+      eql(t.slice(0, 5), PROGRESS.head);
+      // Should end with 1
+      eql(t.slice(-5), PROGRESS.tail);
     });
-  }
-  should('scrypt progreessCallback', async () => {
-    let t = [];
-    await PROGRESS.scrypt('', '', { N: 2 ** 18, r: 8, p: 1, onProgress: (per) => t.push(per) });
-    // Should be called ~10k
-    eql(t.length, PROGRESS.len);
-    // Should be exact numbers
-    eql(t.slice(0, 5), PROGRESS.head);
-    // Should end with 1
-    eql(t.slice(-5), PROGRESS.tail);
-  });
 
-  should('scryptAsync progreessCallback', async () => {
-    let t = [];
-    await PROGRESS.scryptAsync('', '', {
-      N: 2 ** 18,
-      r: 8,
-      p: 1,
-      onProgress: (per) => t.push(per),
+    should('scryptAsync progreessCallback', async () => {
+      let t = [];
+      await PROGRESS.scryptAsync('', '', {
+        N: 2 ** 18,
+        r: 8,
+        p: 1,
+        onProgress: (per) => t.push(per),
+      });
+      // Should be called ~10k
+      eql(t.length, PROGRESS.len);
+      // Should be exact numbers
+      eql(t.slice(0, 5), PROGRESS.head);
+      // Should end with 1
+      eql(t.slice(-5), PROGRESS.tail);
     });
-    // Should be called ~10k
-    eql(t.length, PROGRESS.len);
-    // Should be exact numbers
-    eql(t.slice(0, 5), PROGRESS.head);
-    // Should end with 1
-    eql(t.slice(-5), PROGRESS.tail);
-  });
   });
 }
 

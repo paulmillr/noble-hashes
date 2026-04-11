@@ -100,17 +100,17 @@ function encodeOidDER(oidStr: string): Uint8Array {
 
 const BT = { should };
 export function test(variant = 'noble', platform = DEFAULT_PLATFORM, { should } = BT) {
-const OIDS = getOids(platform);
-should(`info ${variant}`, () => {
-  for (const { hash, oid: hashOid, collision, preimage } of OIDS) {
-    if (hash.oid) eql(hash.oid, encodeOidDER(hashOid));
-    // Verify that our calculations are same as NIST ones
-    const preimageResistence = hash.outputLen * 8;
-    const collisionResistance = (hash.outputLen * 8) / 2;
-    if (collision) eql(collisionResistance, collision);
-    if (preimage) eql(preimageResistence, preimage);
-  }
-});
+  const OIDS = getOids(platform);
+  should(`info ${variant}`, () => {
+    for (const { hash, oid: hashOid, collision, preimage } of OIDS) {
+      if (hash.oid) eql(hash.oid, encodeOidDER(hashOid));
+      // Verify that our calculations are same as NIST ones
+      const preimageResistence = hash.outputLen * 8;
+      const collisionResistance = (hash.outputLen * 8) / 2;
+      if (collision) eql(collisionResistance, collision);
+      if (preimage) eql(preimageResistence, preimage);
+    }
+  });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
