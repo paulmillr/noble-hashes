@@ -17,8 +17,9 @@ import { _BLAKE2, compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
+  clean,
   copyBytes,
-  clean, createHasher, swap32IfBE,
+  createHasher, swap32IfBE,
   u32, u8,
   type CHashXOF,
   type HashXOF,

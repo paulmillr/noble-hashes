@@ -6,14 +6,15 @@ import { pbkdf2 } from './pbkdf2.ts';
 import { sha256 } from './sha2.ts';
 // prettier-ignore
 import {
-	  anumber, asyncLoop,
-	  checkOpts, clean,
-	  type KDFInput, rotl,
-	  swap32IfBE,
-	  u32,
-	  type TArg,
-	  type TRet
-	} from './utils.ts';
+  anumber, asyncLoop,
+  checkOpts, clean,
+  rotl,
+  swap32IfBE,
+  u32,
+  type KDFInput,
+  type TArg,
+  type TRet
+} from './utils.ts';
 
 // The main Scrypt loop: uses Salsa extensively.
 // Six versions of the function were tried, this is the fastest one.

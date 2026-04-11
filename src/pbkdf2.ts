@@ -7,12 +7,12 @@ import { hmac } from './hmac.ts';
 import {
   ahash, anumber,
   asyncLoop, checkOpts, clean, createView, kdfInputToBytes,
-	  type CHash,
-	  type Hash,
-	  type KDFInput,
-	  type TArg,
-	  type TRet
-	} from './utils.ts';
+  type CHash,
+  type Hash,
+  type KDFInput,
+  type TArg,
+  type TRet
+} from './utils.ts';
 
 /**
  * PBKDF2 options:

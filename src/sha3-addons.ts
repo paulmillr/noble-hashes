@@ -11,8 +11,8 @@
  */
 import { Keccak, type ShakeOpts } from './sha3.ts';
 import {
-  aexists,
   abytes,
+  aexists,
   anumber,
   type CHash,
   type CHashXOF,
