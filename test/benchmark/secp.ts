@@ -36,12 +36,10 @@ const CASES = [
 ];
 
 const FNS = [hmac256node, hmac256noble];
-const samples = 20000;
-
 async function main() {
   for (const c of CASES) {
     console.log(`==== ${c.key.length} (${c.msgs.map((i) => i.length)}) ====`);
-    for (const fn of FNS) await mark(`${fn.name}`, samples, () => fn(c.key, ...c.msgs));
+    for (const fn of FNS) await mark(`${fn.name}`, () => fn(c.key, ...c.msgs));
   }
 }
 

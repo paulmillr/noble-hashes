@@ -85,6 +85,10 @@ describe('utils', () => {
     const copy = u.copyBytes(src.subarray(0));
     src.fill(0);
     eql(copy, Uint8Array.from([1, 2, 3]));
+    throws(() => u.copyBytes('ab' as any), TypeError);
+    throws(() => u.copyBytes([257, -1, 2.9] as any), TypeError);
+    throws(() => u.copyBytes(new Uint16Array([0x0102, 0x0304]) as any), TypeError);
+    throws(() => u.copyBytes(new DataView(new ArrayBuffer(4)) as any), TypeError);
   });
 });
 

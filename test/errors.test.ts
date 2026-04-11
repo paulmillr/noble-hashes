@@ -138,7 +138,13 @@ const DEFAULT_ALGO = {
   extract: { fn: extract, args: { hash: 'hash', ikm: 'bytes', salt: 'bytes?' }, ret: 'bytes' },
   expand: {
     fn: expand,
-    args: { hash: 'hash', prk: 'bytes', info: 'bytes?', dkLen: 'number?' },
+    // RFC 5869 requires PRK length >= HashLen; the generic byte fixture is only 10 bytes.
+    args: {
+      hash: 'hash',
+      prk: { TYPE: 'bytes', default: sha512(new Uint8Array()) },
+      info: 'bytes?',
+      dkLen: 'number?',
+    },
     ret: 'bytes',
   },
   pbkdf2: { fn: pbkdf2, ...pbkdfOpts },

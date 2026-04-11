@@ -320,6 +320,8 @@ describe(`Argon2 (${variant})`, () => {
     throws(() => argon2id('password', 'diffsalt', { ...opt, dkLen: 0 }));
     throws(() => argon2id('password', 'diffsalt', { ...opt, m: true }));
     throws(() => argon2id('password', 'diffsalt', { ...opt, m: 1 }));
+    for (const k of ['dkLen', 'm', 't', 'p', 'version', 'onProgress'])
+      throws(() => argon2id('password', 'diffsalt', { ...opt, [k]: null } as any));
     throws(() => argon2id('password', true, opt));
     throws(() => argon2id(true, 'diffsalt', opt));
     const t = [];
@@ -332,7 +334,9 @@ describe(`Argon2 (${variant})`, () => {
     eql(t.length !== 0, true);
   });
   should('maxmem is enforced in bytes', () => {
-    throws(() => argon2id('password', 'saltsalt', { t: 1, m: 8, p: 1, dkLen: 32, maxmem: 3000 }));
+    throws(() => argon2id('password', 'saltsalt', { t: 1, m: 8, p: 1, dkLen: 32, maxmem: 3000 }), {
+      message: '"maxmem" limit was hit: memUsed(mP*1024)=8192, maxmem=3000',
+    });
   });
   for (let i = 0; i < VECTORS.length; i++) {
     const v = VECTORS[i];

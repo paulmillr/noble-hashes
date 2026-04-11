@@ -236,6 +236,8 @@ describe(`scrypt (${variant})`, () => {
     // on progress callback
     throws(() => scrypt('pwd', 'salt', { ...opt, onProgress: true }));
     // P = 0
+    throws(() => scrypt('pwd', 'salt', { ...opt, p: 0 }));
+    await rejects(() => scryptAsync('pwd', 'salt', { ...opt, p: 0 }), `scrypt(p=0)`);
     throws(() => scrypt('pwd', 'salt', { ...opt, p: -1 }));
     throws(() => scrypt('pwd', 'salt', { ...opt, p: 2 ** 48 }));
     // dkLen
@@ -269,8 +271,13 @@ describe(`scrypt (${variant})`, () => {
   should('Scrypt maxmem', async () => {
     const opts = { N: 2 ** 10, r: 8, p: 16, dkLen: 64, maxmem: scryptMaxmem({ N: 2 ** 10, r: 8, p: 16 }) };
     scrypt('pwd', 'salt', opts);
-    throws(() => scrypt('pwd', 'salt', { ...opts, maxmem: opts.maxmem - 1 }), `scrypt(maxmem+=1)`);
-    throws(() => scrypt('pwd', 'salt', { ...opts, N: 2 ** 11 }), `scrypt(default maxmem)`);
+    throws(() => scrypt('pwd', 'salt', { ...opts, maxmem: opts.maxmem - 1 }), {
+      message: `"maxmem" limit was hit: memUsed(128*r*(N+p+1))=${opts.maxmem}, maxmem=${opts.maxmem - 1}`,
+    });
+    const maxmem2 = scryptMaxmem({ N: 2 ** 11, r: 8, p: 16 });
+    throws(() => scrypt('pwd', 'salt', { ...opts, N: 2 ** 11 }), {
+      message: `"maxmem" limit was hit: memUsed(128*r*(N+p+1))=${maxmem2}, maxmem=${opts.maxmem}`,
+    });
   });
 });
 
