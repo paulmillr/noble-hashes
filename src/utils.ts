@@ -4,6 +4,111 @@
  */
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 /**
+ * Bytes API type helpers for old + new TypeScript.
+ *
+ * TS 5.6 has `Uint8Array`, while TS 5.9+ made it generic `Uint8Array<ArrayBuffer>`.
+ * We can't use specific return type, because TS 5.6 will error.
+ * We can't use generic return type, because most TS 5.9 software will expect specific type.
+ *
+ * Maps typed-array input leaves to broad forms.
+ * These are compatibility adapters, not ownership guarantees.
+ *
+ * - `TArg` keeps byte inputs broad.
+ * - `TRet` marks byte outputs for TS 5.6 and TS 5.9+ compatibility.
+ */
+export type TypedArg<T> = T extends BigInt64Array
+  ? BigInt64Array
+  : T extends BigUint64Array
+    ? BigUint64Array
+    : T extends Float32Array
+      ? Float32Array
+      : T extends Float64Array
+        ? Float64Array
+        : T extends Int16Array
+          ? Int16Array
+          : T extends Int32Array
+            ? Int32Array
+            : T extends Int8Array
+              ? Int8Array
+              : T extends Uint16Array
+                ? Uint16Array
+                : T extends Uint32Array
+                  ? Uint32Array
+                  : T extends Uint8ClampedArray
+                    ? Uint8ClampedArray
+                    : T extends Uint8Array
+                      ? Uint8Array
+                      : never;
+/** Maps typed-array output leaves to narrow TS-compatible forms. */
+export type TypedRet<T> = T extends BigInt64Array
+  ? ReturnType<typeof BigInt64Array.of>
+  : T extends BigUint64Array
+    ? ReturnType<typeof BigUint64Array.of>
+    : T extends Float32Array
+      ? ReturnType<typeof Float32Array.of>
+      : T extends Float64Array
+        ? ReturnType<typeof Float64Array.of>
+        : T extends Int16Array
+          ? ReturnType<typeof Int16Array.of>
+          : T extends Int32Array
+            ? ReturnType<typeof Int32Array.of>
+            : T extends Int8Array
+              ? ReturnType<typeof Int8Array.of>
+              : T extends Uint16Array
+                ? ReturnType<typeof Uint16Array.of>
+                : T extends Uint32Array
+                  ? ReturnType<typeof Uint32Array.of>
+                  : T extends Uint8ClampedArray
+                    ? ReturnType<typeof Uint8ClampedArray.of>
+                    : T extends Uint8Array
+                      ? ReturnType<typeof Uint8Array.of>
+                      : never;
+/** Recursively adapts byte-carrying API input types. See {@link TypedArg}. */
+export type TArg<T> =
+  | T
+  | ([TypedArg<T>] extends [never]
+      ? T extends (...args: infer A) => infer R
+        ? ((...args: { [K in keyof A]: TRet<A[K]> }) => TArg<R>) & {
+            [K in keyof T]: T[K] extends (...args: any) => any ? T[K] : TArg<T[K]>;
+          }
+        : T extends [infer A, ...infer R]
+          ? [TArg<A>, ...{ [K in keyof R]: TArg<R[K]> }]
+          : T extends readonly [infer A, ...infer R]
+            ? readonly [TArg<A>, ...{ [K in keyof R]: TArg<R[K]> }]
+            : T extends (infer A)[]
+              ? TArg<A>[]
+              : T extends readonly (infer A)[]
+                ? readonly TArg<A>[]
+                : T extends Promise<infer A>
+                  ? Promise<TArg<A>>
+                  : T extends object
+                    ? { [K in keyof T]: TArg<T[K]> }
+                    : T
+      : TypedArg<T>);
+/** Recursively adapts byte-carrying API output types. See {@link TypedArg}. */
+export type TRet<T> = T extends unknown
+  ? T &
+      ([TypedRet<T>] extends [never]
+        ? T extends (...args: infer A) => infer R
+          ? ((...args: { [K in keyof A]: TArg<A[K]> }) => TRet<R>) & {
+              [K in keyof T]: T[K] extends (...args: any) => any ? T[K] : TRet<T[K]>;
+            }
+          : T extends [infer A, ...infer R]
+            ? [TRet<A>, ...{ [K in keyof R]: TRet<R[K]> }]
+            : T extends readonly [infer A, ...infer R]
+              ? readonly [TRet<A>, ...{ [K in keyof R]: TRet<R[K]> }]
+              : T extends (infer A)[]
+                ? TRet<A>[]
+                : T extends readonly (infer A)[]
+                  ? readonly TRet<A>[]
+                  : T extends Promise<infer A>
+                    ? Promise<TRet<A>>
+                    : T extends object
+                      ? { [K in keyof T]: TRet<T[K]> }
+                      : T
+        : TypedRet<T>)
+  : never;
+/**
  * Checks if something is Uint8Array. Be careful: nodejs Buffer will return true.
  * @param a - value to test
  * @returns `true` when the value is a Uint8Array-compatible view.
@@ -64,7 +169,11 @@ export function anumber(n: number, title: string = ''): void {
  * abytes(new Uint8Array([1, 2, 3]));
  * ```
  */
-export function abytes(value: Uint8Array, length?: number, title: string = ''): Uint8Array {
+export function abytes(
+  value: TArg<Uint8Array>,
+  length?: number,
+  title: string = ''
+): TRet<Uint8Array> {
   const bytes = isBytes(value);
   const len = value?.length;
   const needsLen = length !== undefined;
@@ -76,12 +185,25 @@ export function abytes(value: Uint8Array, length?: number, title: string = ''): 
     if (!bytes) throw new TypeError(message);
     throw new RangeError(message);
   }
-  return value;
+  return value as TRet<Uint8Array>;
 }
 
-// copy bytes to new u8a. Because Buffer.slice aliases the same backing store.
-export function copyBytes(bytes: Uint8Array): Uint8Array {
-  return Uint8Array.from(bytes);
+/**
+ * Copies bytes into a fresh Uint8Array.
+ * Buffer-style slices can alias the same backing store, so callers that need ownership should copy.
+ * @param bytes - source bytes to clone
+ * @returns Freshly allocated copy of `bytes`.
+ * @throws On wrong argument types. {@link TypeError}
+ * @example
+ * Clone a byte array before mutating it.
+ * ```ts
+ * const copy = copyBytes(new Uint8Array([1, 2, 3]));
+ * ```
+ */
+export function copyBytes(bytes: TArg<Uint8Array>): TRet<Uint8Array> {
+  // `Uint8Array.from(...)` would also accept arrays / other typed arrays. Keep this helper strict
+  // because callers use it at byte-validation boundaries before mutating the detached copy.
+  return Uint8Array.from(abytes(bytes)) as TRet<Uint8Array>;
 }
 
 /**
@@ -89,6 +211,7 @@ export function copyBytes(bytes: Uint8Array): Uint8Array {
  * @param h - hash constructor to validate
  * @throws On wrong argument types or invalid hash wrapper shape. {@link TypeError}
  * @throws On invalid hash metadata ranges or values. {@link RangeError}
+ * @throws If the hash metadata allows empty outputs or block sizes. {@link Error}
  * @example
  * Validate a callable hash wrapper.
  * ```ts
@@ -97,7 +220,7 @@ export function copyBytes(bytes: Uint8Array): Uint8Array {
  * ahash(sha256);
  * ```
  */
-export function ahash(h: CHash): void {
+export function ahash(h: TArg<CHash>): void {
   if (typeof h !== 'function' || typeof h.create !== 'function')
     throw new TypeError('Hash must wrapped by utils.createHasher');
   anumber(h.outputLen);
@@ -166,8 +289,8 @@ export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
  * u8(new Uint32Array([1, 2]));
  * ```
  */
-export function u8(arr: TypedArray): Uint8Array {
-  return new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+export function u8(arr: TArg<TypedArray>): TRet<Uint8Array> {
+  return new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength) as TRet<Uint8Array>;
 }
 
 /**
@@ -182,8 +305,12 @@ export function u8(arr: TypedArray): Uint8Array {
  * u32(new Uint8Array(8));
  * ```
  */
-export function u32(arr: TypedArray): Uint32Array {
-  return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
+export function u32(arr: TArg<TypedArray>): TRet<Uint32Array> {
+  return new Uint32Array(
+    arr.buffer,
+    arr.byteOffset,
+    Math.floor(arr.byteLength / 4)
+  ) as TRet<Uint32Array>;
 }
 
 /**
@@ -195,7 +322,7 @@ export function u32(arr: TypedArray): Uint32Array {
  * clean(new Uint8Array([1, 2, 3]));
  * ```
  */
-export function clean(...arrays: TypedArray[]): void {
+export function clean(...arrays: TArg<TypedArray[]>): void {
   for (let i = 0; i < arrays.length; i++) {
     arrays[i].fill(0);
   }
@@ -211,7 +338,7 @@ export function clean(...arrays: TypedArray[]): void {
  * createView(new Uint8Array(4));
  * ```
  */
-export function createView(arr: TypedArray): DataView {
+export function createView(arr: TArg<TypedArray>): DataView {
   return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
 }
 
@@ -291,11 +418,11 @@ export const swap8IfBE: (n: number) => number = isLE
  * byteSwap32(new Uint32Array([0x11223344]));
  * ```
  */
-export function byteSwap32(arr: Uint32Array): Uint32Array {
+export function byteSwap32(arr: TArg<Uint32Array>): TRet<Uint32Array> {
   for (let i = 0; i < arr.length; i++) {
     arr[i] = byteSwap(arr[i]);
   }
-  return arr;
+  return arr as TRet<Uint32Array>;
 }
 
 /**
@@ -309,8 +436,8 @@ export function byteSwap32(arr: Uint32Array): Uint32Array {
  * swap32IfBE(new Uint32Array([0x11223344]));
  * ```
  */
-export const swap32IfBE: (u: Uint32Array) => Uint32Array = isLE
-  ? (u: Uint32Array) => u
+export const swap32IfBE: (u: TArg<Uint32Array>) => TRet<Uint32Array> = isLE
+  ? (u: TArg<Uint32Array>) => u as TRet<Uint32Array>
   : byteSwap32;
 
 // Built-in hex conversion https://caniuse.com/mdn-javascript_builtins_uint8array_fromhex
@@ -336,7 +463,7 @@ const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
  * bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])); // 'cafe0123'
  * ```
  */
-export function bytesToHex(bytes: Uint8Array): string {
+export function bytesToHex(bytes: TArg<Uint8Array>): string {
   abytes(bytes);
   // @ts-ignore
   if (hasHexBuiltin) return bytes.toHex();
@@ -369,7 +496,7 @@ function asciiToBase16(ch: number): number | undefined {
  * hexToBytes('cafe0123'); // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
  * ```
  */
-export function hexToBytes(hex: string): Uint8Array {
+export function hexToBytes(hex: string): TRet<Uint8Array> {
   if (typeof hex !== 'string') throw new TypeError('hex string expected, got ' + typeof hex);
   if (hasHexBuiltin) {
     try {
@@ -453,7 +580,7 @@ declare const TextEncoder: any;
  * utf8ToBytes('abc'); // Uint8Array.from([97, 98, 99])
  * ```
  */
-export function utf8ToBytes(str: string): Uint8Array {
+export function utf8ToBytes(str: string): TRet<Uint8Array> {
   if (typeof str !== 'string') throw new TypeError('string expected');
   return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
@@ -474,7 +601,7 @@ export type KDFInput = string | Uint8Array;
  * kdfInputToBytes('password');
  * ```
  */
-export function kdfInputToBytes(data: KDFInput, errorTitle = ''): Uint8Array {
+export function kdfInputToBytes(data: TArg<KDFInput>, errorTitle = ''): TRet<Uint8Array> {
   if (typeof data === 'string') return utf8ToBytes(data);
   return abytes(data, undefined, errorTitle);
 }
@@ -490,7 +617,7 @@ export function kdfInputToBytes(data: KDFInput, errorTitle = ''): Uint8Array {
  * concatBytes(new Uint8Array([1]), new Uint8Array([2]));
  * ```
  */
-export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
+export function concatBytes(...arrays: TArg<Uint8Array[]>): TRet<Uint8Array> {
   let sum = 0;
   for (let i = 0; i < arrays.length; i++) {
     const a = arrays[i];
@@ -542,18 +669,18 @@ export interface Hash<T> {
    * @param buf - message chunk to absorb
    * @returns The same hash instance for chaining.
    */
-  update(buf: Uint8Array): this;
+  update(buf: TArg<Uint8Array>): this;
   /**
    * Finalizes the hash into a caller-provided buffer.
    * @param buf - destination buffer
    * @returns Nothing. Implementations write into `buf` in place.
    */
-  digestInto(buf: Uint8Array): void;
+  digestInto(buf: TArg<Uint8Array>): void;
   /**
    * Finalizes the hash and returns a freshly allocated digest.
    * @returns Digest bytes.
    */
-  digest(): Uint8Array;
+  digest(): TRet<Uint8Array>;
   /** Wipes internal state and makes the instance unusable. */
   destroy(): void;
   /**
@@ -576,13 +703,13 @@ export interface PRG {
    * @param seed - fresh entropy bytes
    * @returns Nothing. Implementations update internal state in place.
    */
-  addEntropy(seed: Uint8Array): void;
+  addEntropy(seed: TArg<Uint8Array>): void;
   /**
    * Generates pseudorandom output bytes.
    * @param length - number of bytes to generate
    * @returns Generated pseudorandom bytes.
    */
-  randomBytes(length: number): Uint8Array;
+  randomBytes(length: number): TRet<Uint8Array>;
   /** Wipes generator state and makes the instance unusable. */
   clean(): void;
 }
@@ -599,13 +726,13 @@ export type HashXOF<T extends Hash<T>> = Hash<T> & {
    * @param bytes - number of bytes to read
    * @returns Requested digest bytes.
    */
-  xof(bytes: number): Uint8Array;
+  xof(bytes: number): TRet<Uint8Array>;
   /**
    * Reads more bytes from the XOF stream into a caller-provided buffer.
    * @param buf - destination buffer
-   * @returns The same buffer after it has been filled.
+   * @returns Filled output buffer.
    */
-  xofInto(buf: Uint8Array): Uint8Array;
+  xofInto(buf: TArg<Uint8Array>): TRet<Uint8Array>;
 };
 
 /** Hash constructor or factory type. */
@@ -613,7 +740,7 @@ export type HasherCons<T, Opts = undefined> = Opts extends undefined ? () => T :
 /** Optional hash metadata. */
 export type HashInfo = {
   /** DER-encoded object identifier bytes for the hash algorithm. */
-  oid?: Uint8Array;
+  oid?: TRet<Uint8Array>;
 };
 /** Callable hash function type. */
 export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
@@ -626,11 +753,11 @@ export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
 } & HashInfo &
   (Opts extends undefined
     ? {
-        (msg: Uint8Array): Uint8Array;
+        (msg: TArg<Uint8Array>): TRet<Uint8Array>;
         create(): T;
       }
     : {
-        (msg: Uint8Array, opts?: Opts): Uint8Array;
+        (msg: TArg<Uint8Array>, opts?: TArg<Opts>): TRet<Uint8Array>;
         create(opts?: Opts): T;
       });
 /** Callable extendable-output hash function type. */
@@ -655,16 +782,19 @@ export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CH
  */
 export function createHasher<T extends Hash<T>, Opts = undefined>(
   hashCons: HasherCons<T, Opts>,
-  info: HashInfo = {}
-): CHash<T, Opts> {
-  const hashC: any = (msg: Uint8Array, opts?: Opts) => hashCons(opts).update(msg).digest();
+  info: TArg<HashInfo> = {}
+): TRet<CHash<T, Opts>> {
+  const hashC: any = (msg: TArg<Uint8Array>, opts?: TArg<Opts>) =>
+    hashCons(opts as Opts)
+      .update(msg)
+      .digest();
   const tmp = hashCons(undefined);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.canXOF = tmp.canXOF;
   hashC.create = (opts?: Opts) => hashCons(opts);
   Object.assign(hashC, info);
-  return Object.freeze(hashC);
+  return Object.freeze(hashC) as TRet<CHash<T, Opts>>;
 }
 
 /**
@@ -674,15 +804,16 @@ export function createHasher<T extends Hash<T>, Opts = undefined>(
  * The platform `getRandomValues()` implementation still defines any
  * single-call length cap, and this helper rejects oversize requests
  * with a stable library `RangeError` instead of host-specific errors.
- * @throws If the current runtime does not provide `crypto.getRandomValues`,
- *   or if `bytesLength > 65536`. {@link Error}
+ * @throws On wrong argument types. {@link TypeError}
+ * @throws On wrong argument ranges or values. {@link RangeError}
+ * @throws If the current runtime does not provide `crypto.getRandomValues`. {@link Error}
  * @example
  * Generate a fresh random key or nonce.
  * ```ts
  * const key = randomBytes(16);
  * ```
  */
-export function randomBytes(bytesLength = 32): Uint8Array {
+export function randomBytes(bytesLength = 32): TRet<Uint8Array> {
   // Match the repo's other length-taking helpers instead of relying on Uint8Array coercion.
   anumber(bytesLength, 'bytesLength');
   const cr = typeof globalThis === 'object' ? (globalThis as any).crypto : null;
@@ -710,7 +841,7 @@ export function randomBytes(bytesLength = 32): Uint8Array {
  * oidNist(0x01);
  * ```
  */
-export const oidNist = (suffix: number): Required<HashInfo> => ({
+export const oidNist = (suffix: number): TRet<Required<HashInfo>> => ({
   // Current NIST hashAlgs suffixes used here fit in one DER subidentifier octet.
   // Larger suffix values would need base-128 OID encoding and a different length byte.
   oid: Uint8Array.from([0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, suffix]),

@@ -5,6 +5,8 @@
  * @privateRemarks TODO: re-check {@link https://issues.chromium.org/issues/42212588}
  * @module
  */
+import type { TRet } from './utils.ts';
+
 const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
 const _32n = /* @__PURE__ */ BigInt(32);
 
@@ -23,7 +25,7 @@ function fromBig(
 
 // Split bigint list into `[highWords, lowWords]` when `le=false`; with `le=true`, the first array
 // holds the low halves because `fromBig(...)` swaps the semantic meaning of `h` and `l`.
-function split(lst: bigint[], le = false): Uint32Array[] {
+function split(lst: bigint[], le = false): TRet<Uint32Array[]> {
   const len = lst.length;
   let Ah = new Uint32Array(len);
   let Al = new Uint32Array(len);
@@ -31,7 +33,7 @@ function split(lst: bigint[], le = false): Uint32Array[] {
     const { h, l } = fromBig(lst[i], le);
     [Ah[i], Al[i]] = [h, l];
   }
-  return [Ah, Al];
+  return [Ah, Al] as TRet<Uint32Array[]>;
 }
 
 // Combine explicit `(high, low)` 32-bit halves into a bigint; `>>> 0` normalizes signed JS

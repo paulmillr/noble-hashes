@@ -13,7 +13,9 @@ import {
   swap32IfBE, swap8IfBE,
   u32,
   type CHash,
-  type Hash
+  type Hash,
+  type TArg,
+  type TRet
 } from './utils.ts';
 
 /**
@@ -42,7 +44,7 @@ const B2B_IV = /* @__PURE__ */ Uint32Array.from([
 const BBUF = /* @__PURE__ */ new Uint32Array(32);
 
 // BLAKE2b G mix split into two half-rounds over LE u32 low/high limbs.
-function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
+function G1b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, x: number) {
   // NOTE: V is LE here
   const Xl = msg[x], Xh = msg[x + 1]; // prettier-ignore
   let Al = BBUF[2 * a], Ah = BBUF[2 * a + 1]; // prettier-ignore
@@ -68,7 +70,7 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: nu
 }
 
 // Second half-round of the same LE-limb BLAKE2b G mix; `x` is the message word offset.
-function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
+function G2b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, x: number) {
   // NOTE: V is LE here
   const Xl = msg[x], Xh = msg[x + 1]; // prettier-ignore
   let Al = BBUF[2 * a], Ah = BBUF[2 * a + 1]; // prettier-ignore
@@ -95,7 +97,7 @@ function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: nu
 
 function checkBlake2Opts(
   outputLen: number,
-  opts: Blake2Opts | undefined = {},
+  opts: TArg<Blake2Opts | undefined> = {},
   keyLen: number,
   saltLen: number,
   persLen: number
@@ -135,7 +137,7 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
     this.buffer = new Uint8Array(blockLen);
     this.buffer32 = u32(this.buffer);
   }
-  update(data: Uint8Array): this {
+  update(data: TArg<Uint8Array>): this {
     aexists(this);
     abytes(data);
     // Main difference with other hashes: there is flag for last block,
@@ -174,7 +176,7 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
     }
     return this;
   }
-  digestInto(out: Uint8Array): void {
+  digestInto(out: TArg<Uint8Array>): void {
     aexists(this);
     aoutput(out, this);
     const { pos, buffer32 } = this;
@@ -199,13 +201,13 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
     const word = state[full];
     for (let i = 0; i < tail; i++) out[off + i] = word >>> (8 * i);
   }
-  digest(): Uint8Array {
+  digest(): TRet<Uint8Array> {
     const { buffer, outputLen } = this;
     this.digestInto(buffer);
     // Return a copy so callers do not alias the instance scratch buffer used during finalization.
     const res = buffer.slice(0, outputLen);
     this.destroy();
-    return res;
+    return res as TRet<Uint8Array>;
   }
   _cloneInto(to?: T): T {
     const { buffer, length, finished, destroyed, outputLen, pos } = this;
@@ -386,7 +388,7 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
  * blake2b(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const blake2b: CHash<_BLAKE2b, Blake2Opts> = /* @__PURE__ */ createHasher(
+export const blake2b: TRet<CHash<_BLAKE2b, Blake2Opts>> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE2b(opts)
 );
 
@@ -444,7 +446,7 @@ export type _Num16 = {
  * ```
  */
 // prettier-ignore
-export function compress(s: Uint8Array, offset: number, msg: Uint32Array, rounds: number,
+export function compress(s: TArg<Uint8Array>, offset: number, msg: TArg<Uint32Array>, rounds: number,
   v0: number, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number,
   v8: number, v9: number, v10: number, v11: number, v12: number, v13: number, v14: number, v15: number,
 ): _Num16 {
@@ -575,6 +577,6 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
  * blake2s(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const blake2s: CHash<_BLAKE2s, Blake2Opts> = /* @__PURE__ */ createHasher(
+export const blake2s: TRet<CHash<_BLAKE2s, Blake2Opts>> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE2s(opts)
 );

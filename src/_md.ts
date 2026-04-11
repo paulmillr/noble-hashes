@@ -2,7 +2,16 @@
  * Internal Merkle-Damgard hash utils.
  * @module
  */
-import { abytes, aexists, aoutput, clean, createView, type Hash } from './utils.ts';
+import {
+  abytes,
+  aexists,
+  aoutput,
+  clean,
+  createView,
+  type Hash,
+  type TArg,
+  type TRet,
+} from './utils.ts';
 
 /**
  * Shared 32-bit conditional boolean primitive reused by SHA-256, SHA-1, and MD5 `F`.
@@ -89,7 +98,7 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     this.buffer = new Uint8Array(blockLen);
     this.view = createView(this.buffer);
   }
-  update(data: Uint8Array): this {
+  update(data: TArg<Uint8Array>): this {
     aexists(this);
     abytes(data);
     const { view, buffer, blockLen } = this;
@@ -115,7 +124,7 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     this.roundClean();
     return this;
   }
-  digestInto(out: Uint8Array): void {
+  digestInto(out: TArg<Uint8Array>): void {
     aexists(this);
     aoutput(out, this);
     this.finished = true;
@@ -149,14 +158,14 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     if (outLen > state.length) throw new Error('_sha2: outputLen bigger than state');
     for (let i = 0; i < outLen; i++) oview.setUint32(4 * i, state[i], isLE);
   }
-  digest(): Uint8Array {
+  digest(): TRet<Uint8Array> {
     const { buffer, outputLen } = this;
     this.digestInto(buffer);
     // Copy before destroy(): subclasses wipe `buffer` during cleanup, but `digest()` must return
     // fresh bytes to the caller.
     const res = buffer.slice(0, outputLen);
     this.destroy();
-    return res;
+    return res as TRet<Uint8Array>;
   }
   _cloneInto(to?: T): T {
     to ||= new (this.constructor as any)() as T;
@@ -184,13 +193,13 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
 /** Initial SHA256 state from RFC 6234 §6.1: the first 32 bits of the fractional parts of the
  * square roots of the first eight prime numbers. Exported as a shared table; callers must treat
  * it as read-only because constructors copy words from it by index. */
-export const SHA256_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
+export const SHA256_IV: TRet<Uint32Array> = /* @__PURE__ */ Uint32Array.from([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ]);
 
 /** Initial SHA224 state `H(0)` from RFC 6234 §6.1. Exported as a shared table; callers must
  * treat it as read-only because constructors copy words from it by index. */
-export const SHA224_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
+export const SHA224_IV: TRet<Uint32Array> = /* @__PURE__ */ Uint32Array.from([
   0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4,
 ]);
 
@@ -198,7 +207,7 @@ export const SHA224_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
  * big-endian 32-bit halves. Derived from the fractional parts of the square roots of the ninth
  * through sixteenth prime numbers. Exported as a shared table; callers must treat it as read-only
  * because constructors copy halves from it by index. */
-export const SHA384_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
+export const SHA384_IV: TRet<Uint32Array> = /* @__PURE__ */ Uint32Array.from([
   0xcbbb9d5d, 0xc1059ed8, 0x629a292a, 0x367cd507, 0x9159015a, 0x3070dd17, 0x152fecd8, 0xf70e5939,
   0x67332667, 0xffc00b31, 0x8eb44a87, 0x68581511, 0xdb0c2e0d, 0x64f98fa7, 0x47b5481d, 0xbefa4fa4,
 ]);
@@ -207,7 +216,7 @@ export const SHA384_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
  * big-endian 32-bit halves. Derived from the fractional parts of the square roots of the first
  * eight prime numbers. Exported as a shared table; callers must treat it as read-only because
  * constructors copy halves from it by index. */
-export const SHA512_IV: Uint32Array = /* @__PURE__ */ Uint32Array.from([
+export const SHA512_IV: TRet<Uint32Array> = /* @__PURE__ */ Uint32Array.from([
   0x6a09e667, 0xf3bcc908, 0xbb67ae85, 0x84caa73b, 0x3c6ef372, 0xfe94f82b, 0xa54ff53a, 0x5f1d36f1,
   0x510e527f, 0xade682d1, 0x9b05688c, 0x2b3e6c1f, 0x1f83d9ab, 0xfb41bd6b, 0x5be0cd19, 0x137e2179,
 ]);

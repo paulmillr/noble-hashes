@@ -31,7 +31,9 @@ import {
   clean, createHasher,
   createView,
   type CHash,
-  type Hash
+  type Hash,
+  type TArg,
+  type TRet
 } from './utils.ts';
 
 /** Blake1 options. Basically just `salt`. */
@@ -97,7 +99,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
       this.constants = constants;
     }
   }
-  update(data: Uint8Array): this {
+  update(data: TArg<Uint8Array>): this {
     aexists(this);
     abytes(data);
     // From _md, but update length before each compress
@@ -150,7 +152,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
   clone(): T {
     return this._cloneInto();
   }
-  digestInto(out: Uint8Array): void {
+  digestInto(out: TArg<Uint8Array>): void {
     aexists(this);
     aoutput(out, this);
     this.finished = true;
@@ -180,13 +182,13 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     const state = this.get();
     for (let i = 0; i < this.outputLen / 4; ++i) v.setUint32(i * 4, state[i]);
   }
-  digest(): Uint8Array {
+  digest(): TRet<Uint8Array> {
     const { buffer, outputLen } = this;
     this.digestInto(buffer);
     // Return a copy so callers do not alias the instance scratch buffer used during finalization.
     const res = buffer.slice(0, outputLen);
     this.destroy();
-    return res;
+    return res as TRet<Uint8Array>;
   }
 }
 
@@ -348,7 +350,7 @@ function generateTBL512() {
 const TBL512 = /* @__PURE__ */ generateTBL512();
 
 // Blake1-64 first half-round with rotations `32` and `25`; `k` is the half-call schedule index.
-function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
+function G1b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, k: number) {
   const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
   let Al = BBUF[2 * a + 1], Ah = BBUF[2 * a]; // prettier-ignore
@@ -374,7 +376,7 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
 }
 
 // Blake1-64 second half-round with rotations `16` and `11`; `k` is the half-call schedule index.
-function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
+function G2b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, k: number) {
   const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
   let Al = BBUF[2 * a + 1], Ah = BBUF[2 * a]; // prettier-ignore
@@ -562,7 +564,7 @@ export class _BLAKE512 extends BLAKE1_64B {
  * blake224(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const blake224: CHash<_BLAKE224, BlakeOpts> = /* @__PURE__ */ createHasher(
+export const blake224: TRet<CHash<_BLAKE224, BlakeOpts>> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE224(opts)
 );
 /**
@@ -577,7 +579,7 @@ export const blake224: CHash<_BLAKE224, BlakeOpts> = /* @__PURE__ */ createHashe
  * blake256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const blake256: CHash<_BLAKE256, BlakeOpts> = /* @__PURE__ */ createHasher(
+export const blake256: TRet<CHash<_BLAKE256, BlakeOpts>> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE256(opts)
 );
 /**
@@ -592,7 +594,7 @@ export const blake256: CHash<_BLAKE256, BlakeOpts> = /* @__PURE__ */ createHashe
  * blake384(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const blake384: CHash<_BLAKE384, BlakeOpts> = /* @__PURE__ */ createHasher(
+export const blake384: TRet<CHash<_BLAKE384, BlakeOpts>> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE384(opts)
 );
 /**
@@ -607,6 +609,6 @@ export const blake384: CHash<_BLAKE384, BlakeOpts> = /* @__PURE__ */ createHashe
  * blake512(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const blake512: CHash<_BLAKE512, BlakeOpts> = /* @__PURE__ */ createHasher(
+export const blake512: TRet<CHash<_BLAKE512, BlakeOpts>> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE512(opts)
 );

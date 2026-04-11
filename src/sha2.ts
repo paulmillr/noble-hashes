@@ -7,7 +7,7 @@
  */
 import { Chi, HashMD, Maj, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
-import { type CHash, clean, createHasher, oidNist, rotr } from './utils.ts';
+import { type CHash, clean, createHasher, oidNist, rotr, type TRet } from './utils.ts';
 
 /**
  * SHA-224 / SHA-256 round constants from RFC 6234 §5.1: the first 32 bits
@@ -450,7 +450,7 @@ export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
  * sha256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha256: CHash<_SHA256> = /* @__PURE__ */ createHasher(
+export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ createHasher(
   () => new _SHA256(),
   /* @__PURE__ */ oidNist(0x01)
 );
@@ -464,7 +464,7 @@ export const sha256: CHash<_SHA256> = /* @__PURE__ */ createHasher(
  * sha224(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha224: CHash<_SHA224> = /* @__PURE__ */ createHasher(
+export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ createHasher(
   () => new _SHA224(),
   /* @__PURE__ */ oidNist(0x04)
 );
@@ -479,7 +479,7 @@ export const sha224: CHash<_SHA224> = /* @__PURE__ */ createHasher(
  * sha512(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha512: CHash<_SHA512> = /* @__PURE__ */ createHasher(
+export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ createHasher(
   () => new _SHA512(),
   /* @__PURE__ */ oidNist(0x03)
 );
@@ -493,7 +493,7 @@ export const sha512: CHash<_SHA512> = /* @__PURE__ */ createHasher(
  * sha384(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha384: CHash<_SHA384> = /* @__PURE__ */ createHasher(
+export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ createHasher(
   () => new _SHA384(),
   /* @__PURE__ */ oidNist(0x02)
 );
@@ -509,7 +509,7 @@ export const sha384: CHash<_SHA384> = /* @__PURE__ */ createHasher(
  * sha512_256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha512_256: CHash<_SHA512_256> = /* @__PURE__ */ createHasher(
+export const sha512_256: TRet<CHash<_SHA512_256>> = /* @__PURE__ */ createHasher(
   () => new _SHA512_256(),
   /* @__PURE__ */ oidNist(0x06)
 );
@@ -524,7 +524,7 @@ export const sha512_256: CHash<_SHA512_256> = /* @__PURE__ */ createHasher(
  * sha512_224(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha512_224: CHash<_SHA512_224> = /* @__PURE__ */ createHasher(
+export const sha512_224: TRet<CHash<_SHA512_224>> = /* @__PURE__ */ createHasher(
   () => new _SHA512_224(),
   /* @__PURE__ */ oidNist(0x05)
 );

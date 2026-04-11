@@ -7,27 +7,34 @@ import { hmac } from './hmac.ts';
 import {
   ahash, anumber,
   asyncLoop, checkOpts, clean, createView, kdfInputToBytes,
-  type CHash,
-  type Hash,
-  type KDFInput
-} from './utils.ts';
+	  type CHash,
+	  type Hash,
+	  type KDFInput,
+	  type TArg,
+	  type TRet
+	} from './utils.ts';
 
 /**
  * PBKDF2 options:
  * * c: iterations, should probably be higher than 100_000
- * * dkLen: desired length of derived key in bytes, must be >= 1 per RFC 8018 §5.2
+ * * dkLen: desired length of derived key in bytes, must be `>= 1` per RFC 8018 §5.2
  * * asyncTick: max time in ms for which async function can block execution
  */
 export type Pbkdf2Opt = {
   /** Iteration count. Higher values increase CPU cost. */
   c: number;
-  /** Desired derived key length in bytes, must be >= 1 per RFC 8018 §5.2. */
+  /** Desired derived key length in bytes, must be `>= 1` per RFC 8018 §5.2. */
   dkLen?: number;
   /** Max scheduler block time in milliseconds for the async variant. */
   asyncTick?: number;
 };
 // Common start and end for sync/async functions
-function pbkdf2Init(hash: CHash, _password: KDFInput, _salt: KDFInput, _opts: Pbkdf2Opt) {
+function pbkdf2Init(
+  hash: TArg<CHash>,
+  _password: TArg<KDFInput>,
+  _salt: TArg<KDFInput>,
+  _opts: TArg<Pbkdf2Opt>
+) {
   ahash(hash);
   const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);
   const { c, dkLen, asyncTick } = opts;
@@ -52,19 +59,19 @@ function pbkdf2Init(hash: CHash, _password: KDFInput, _salt: KDFInput, _opts: Pb
 }
 
 function pbkdf2Output<T extends Hash<T>>(
-  PRF: Hash<T>,
-  PRFSalt: Hash<T>,
-  DK: Uint8Array,
-  prfW: Hash<T>,
-  u: Uint8Array
-) {
+  PRF: TArg<Hash<T>>,
+  PRFSalt: TArg<Hash<T>>,
+  DK: TArg<Uint8Array>,
+  prfW: TArg<Hash<T> | undefined>,
+  u: TArg<Uint8Array>
+): TRet<Uint8Array> {
   // Shared sync/async cleanup point: wipe transient PRF state
   // while preserving the derived key buffer.
   PRF.destroy();
   PRFSalt.destroy();
   if (prfW) prfW.destroy();
   clean(u);
-  return DK;
+  return DK as TRet<Uint8Array>;
 }
 
 /**
@@ -74,7 +81,7 @@ function pbkdf2Output<T extends Hash<T>>(
  *   JS string inputs are UTF-8 encoded first
  * @param salt - cryptographic salt; JS string inputs are UTF-8 encoded first
  * @param opts - PBKDF2 work factor and output settings. `dkLen`, if provided,
- *   must be >= 1 per RFC 8018 §5.2. See {@link Pbkdf2Opt}.
+ *   must be `>= 1` per RFC 8018 §5.2. See {@link Pbkdf2Opt}.
  * @returns Derived key bytes.
  * @throws If the PBKDF2 iteration count or derived-key settings are invalid. {@link Error}
  * @example
@@ -86,11 +93,11 @@ function pbkdf2Output<T extends Hash<T>>(
  * ```
  */
 export function pbkdf2(
-  hash: CHash,
-  password: KDFInput,
-  salt: KDFInput,
-  opts: Pbkdf2Opt
-): Uint8Array {
+  hash: TArg<CHash>,
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<Pbkdf2Opt>
+): TRet<Uint8Array> {
   const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
   let prfW: any; // Working copy
   const arr = new Uint8Array(4);
@@ -123,7 +130,7 @@ export function pbkdf2(
  *   JS string inputs are UTF-8 encoded first
  * @param salt - cryptographic salt; JS string inputs are UTF-8 encoded first
  * @param opts - PBKDF2 work factor and output settings. `dkLen`, if provided,
- *   must be >= 1 per RFC 8018 §5.2. `asyncTick` is only a local
+ *   must be `>= 1` per RFC 8018 §5.2. `asyncTick` is only a local
  *   scheduler-yield knob for this JS wrapper, not part of RFC 8018.
  *   See {@link Pbkdf2Opt}.
  * @returns Promise resolving to derived key bytes.
@@ -137,11 +144,11 @@ export function pbkdf2(
  * ```
  */
 export async function pbkdf2Async(
-  hash: CHash,
-  password: KDFInput,
-  salt: KDFInput,
-  opts: Pbkdf2Opt
-): Promise<Uint8Array> {
+  hash: TArg<CHash>,
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<Pbkdf2Opt>
+): Promise<TRet<Uint8Array>> {
   const { c, dkLen, asyncTick, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
   let prfW: any; // Working copy
   const arr = new Uint8Array(4);

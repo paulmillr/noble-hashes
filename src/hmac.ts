@@ -2,7 +2,17 @@
  * HMAC: RFC2104 message authentication code.
  * @module
  */
-import { abytes, aexists, ahash, aoutput, clean, type CHash, type Hash } from './utils.ts';
+import {
+  abytes,
+  aexists,
+  ahash,
+  aoutput,
+  clean,
+  type CHash,
+  type Hash,
+  type TArg,
+  type TRet,
+} from './utils.ts';
 
 /**
  * Internal class for HMAC.
@@ -18,7 +28,7 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
   private finished = false;
   private destroyed = false;
 
-  constructor(hash: CHash, key: Uint8Array) {
+  constructor(hash: TArg<CHash>, key: TArg<Uint8Array>) {
     ahash(hash);
     abytes(key, undefined, 'key');
     this.iHash = hash.create() as T;
@@ -40,12 +50,12 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
     this.oHash.update(pad);
     clean(pad);
   }
-  update(buf: Uint8Array): this {
+  update(buf: TArg<Uint8Array>): this {
     aexists(this);
     this.iHash.update(buf);
     return this;
   }
-  digestInto(out: Uint8Array): void {
+  digestInto(out: TArg<Uint8Array>): void {
     aexists(this);
     aoutput(out, this);
     this.finished = true;
@@ -57,10 +67,10 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
     this.oHash.digestInto(buf);
     this.destroy();
   }
-  digest(): Uint8Array {
+  digest(): TRet<Uint8Array> {
     const out = new Uint8Array(this.oHash.outputLen);
     this.digestInto(out);
-    return out;
+    return out as TRet<Uint8Array>;
   }
   _cloneInto(to?: _HMAC<T>): _HMAC<T> {
     // Create new instance without calling constructor since the key
@@ -100,9 +110,17 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
  * const mac = hmac(sha256, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
  * ```
  */
-export const hmac: {
-  (hash: CHash, key: Uint8Array, message: Uint8Array): Uint8Array;
-  create(hash: CHash, key: Uint8Array): _HMAC<any>;
-} = (hash: CHash, key: Uint8Array, message: Uint8Array): Uint8Array =>
-  new _HMAC<any>(hash, key).update(message).digest();
-hmac.create = (hash: CHash, key: Uint8Array) => new _HMAC<any>(hash, key);
+type HmacFn = {
+  (hash: TArg<CHash>, key: TArg<Uint8Array>, message: TArg<Uint8Array>): TRet<Uint8Array>;
+  create(hash: TArg<CHash>, key: TArg<Uint8Array>): TRet<_HMAC<any>>;
+};
+export const hmac: TRet<HmacFn> = /* @__PURE__ */ (() => {
+  const hmac_ = ((
+    hash: TArg<CHash>,
+    key: TArg<Uint8Array>,
+    message: TArg<Uint8Array>
+  ): TRet<Uint8Array> => new _HMAC<any>(hash, key).update(message).digest()) as TRet<HmacFn>;
+  hmac_.create = (hash: TArg<CHash>, key: TArg<Uint8Array>): TRet<_HMAC<any>> =>
+    new _HMAC<any>(hash, key) as TRet<_HMAC<any>>;
+  return hmac_;
+})();

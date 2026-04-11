@@ -7,6 +7,8 @@ import {
   kdfInputToBytes,
   type CHash,
   type KDFInput,
+  type TArg,
+  type TRet,
 } from './utils.ts';
 
 function _subtle(): typeof crypto.subtle {
@@ -23,7 +25,7 @@ export type WebHash = {
    * @param msg - message bytes to hash
    * @returns Promise resolving to digest bytes.
    */
-  (msg: Uint8Array): Promise<Uint8Array>;
+  (msg: TArg<Uint8Array>): Promise<TRet<Uint8Array>>;
   /** WebCrypto algorithm name passed to `crypto.subtle`. */
   webCryptoName: string;
   /** Digest size in bytes. */
@@ -32,11 +34,11 @@ export type WebHash = {
   blockLen: number;
 };
 
-function createWebHash(name: string, blockLen: number, outputLen: number): WebHash {
-  const hashC: any = async (msg: Uint8Array) => {
+function createWebHash(name: string, blockLen: number, outputLen: number): TRet<WebHash> {
+  const hashC: any = async (msg: TArg<Uint8Array>): Promise<TRet<Uint8Array>> => {
     abytes(msg);
     const crypto = _subtle();
-    return new Uint8Array(await crypto.digest(name, msg as BufferSource));
+    return new Uint8Array(await crypto.digest(name, msg as BufferSource)) as TRet<Uint8Array>;
   };
   hashC.webCryptoName = name; // make sure it won't interfere with function name
   hashC.outputLen = outputLen;
@@ -48,11 +50,11 @@ function createWebHash(name: string, blockLen: number, outputLen: number): WebHa
   };
   // Later WebCrypto HMAC/HKDF/PBKDF2 calls read descriptor metadata directly, so freezing prevents
   // callers from retargeting a `sha256` wrapper into a different backend digest by mutation.
-  return Object.freeze(hashC);
+  return Object.freeze(hashC) as TRet<WebHash>;
 }
 
-function ahashWeb(hash: WebHash) {
-  ahash(hash as any as CHash);
+function ahashWeb(hash: TArg<WebHash>) {
+  ahash(hash as unknown as TArg<CHash>);
   if (typeof hash.webCryptoName !== 'string') throw new Error('non-web hash');
 }
 
@@ -69,7 +71,7 @@ function ahashWeb(hash: WebHash) {
  * await sha256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha256: WebHash = /* @__PURE__ */ createWebHash('SHA-256', 64, 32);
+export const sha256: TRet<WebHash> = /* @__PURE__ */ createWebHash('SHA-256', 64, 32);
 /**
  * WebCrypto SHA2-384 hash function from RFC 6234.
  * @param msg - message bytes to hash
@@ -80,7 +82,7 @@ export const sha256: WebHash = /* @__PURE__ */ createWebHash('SHA-256', 64, 32);
  * await sha384(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha384: WebHash = /* @__PURE__ */ createWebHash('SHA-384', 128, 48);
+export const sha384: TRet<WebHash> = /* @__PURE__ */ createWebHash('SHA-384', 128, 48);
 /**
  * WebCrypto SHA2-512 hash function from RFC 6234.
  * @param msg - message bytes to hash
@@ -91,7 +93,7 @@ export const sha384: WebHash = /* @__PURE__ */ createWebHash('SHA-384', 128, 48)
  * await sha512(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha512: WebHash = /* @__PURE__ */ createWebHash('SHA-512', 128, 64);
+export const sha512: TRet<WebHash> = /* @__PURE__ */ createWebHash('SHA-512', 128, 64);
 
 /**
  * WebCrypto HMAC: RFC2104 message authentication code.
@@ -108,15 +110,20 @@ export const sha512: WebHash = /* @__PURE__ */ createWebHash('SHA-512', 128, 64)
  * await hmac(sha256, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
  * ```
  */
-export const hmac: {
-  (hash: WebHash, key: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
-  create(hash: WebHash, key: Uint8Array): any;
-} = /* @__PURE__ */ (() => {
+type WebHmacFn = {
+  (
+    hash: TArg<WebHash>,
+    key: TArg<Uint8Array>,
+    message: TArg<Uint8Array>
+  ): Promise<TRet<Uint8Array>>;
+  create(hash: TArg<WebHash>, key: TArg<Uint8Array>): any;
+};
+export const hmac: TRet<WebHmacFn> = /* @__PURE__ */ (() => {
   const hmac_ = async (
-    hash: WebHash,
-    key: Uint8Array,
-    message: Uint8Array
-  ): Promise<Uint8Array> => {
+    hash: TArg<WebHash>,
+    key: TArg<Uint8Array>,
+    message: TArg<Uint8Array>
+  ): Promise<TRet<Uint8Array>> => {
     const crypto = _subtle();
     abytes(key, undefined, 'key');
     abytes(message, undefined, 'message');
@@ -130,12 +137,14 @@ export const hmac: {
       false,
       ['sign']
     );
-    return new Uint8Array(await crypto.sign('HMAC', wkey, message as BufferSource));
+    return new Uint8Array(
+      await crypto.sign('HMAC', wkey, message as BufferSource)
+    ) as TRet<Uint8Array>;
   };
-  hmac_.create = (_hash: WebHash, _key: Uint8Array) => {
+  hmac_.create = (_hash: TArg<WebHash>, _key: TArg<Uint8Array>) => {
     throw new Error('not implemented');
   };
-  return hmac_;
+  return hmac_ as TRet<WebHmacFn>;
 })();
 
 /**
@@ -163,12 +172,12 @@ export const hmac: {
  * ```
  */
 export async function hkdf(
-  hash: WebHash,
-  ikm: Uint8Array,
-  salt: Uint8Array | undefined,
-  info: Uint8Array | undefined,
+  hash: TArg<WebHash>,
+  ikm: TArg<Uint8Array>,
+  salt: TArg<Uint8Array | undefined>,
+  info: TArg<Uint8Array | undefined>,
   length: number
-): Promise<Uint8Array> {
+): Promise<TRet<Uint8Array>> {
   const crypto = _subtle();
   ahashWeb(hash);
   abytes(ikm, undefined, 'ikm');
@@ -182,7 +191,7 @@ export async function hkdf(
     salt: salt === undefined ? new Uint8Array(0) : salt,
     info: info === undefined ? new Uint8Array(0) : info,
   };
-  return new Uint8Array(await crypto.deriveBits(opts, wkey, 8 * length));
+  return new Uint8Array(await crypto.deriveBits(opts, wkey, 8 * length)) as TRet<Uint8Array>;
 }
 
 /**
@@ -193,7 +202,7 @@ export async function hkdf(
  * @param salt - cryptographic salt; string inputs are normalized through
  *   `kdfInputToBytes()`, i.e. UTF-8
  * @param opts - PBKDF2 work factor and output settings. `dkLen`, if provided,
- *   must be >= 1 per RFC 8018 §5.2. See {@link Pbkdf2Opt}.
+ *   must be `>= 1` per RFC 8018 §5.2. See {@link Pbkdf2Opt}.
  * @returns Promise resolving to derived key bytes.
  * Positive-iteration enforcement is currently delegated to backend
  * `deriveBits()` rejection (for example `c = 0`), not a dedicated
@@ -207,11 +216,11 @@ export async function hkdf(
  * ```
  */
 export async function pbkdf2(
-  hash: WebHash,
-  password: KDFInput,
-  salt: KDFInput,
+  hash: TArg<WebHash>,
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
   opts: Pbkdf2Opt
-): Promise<Uint8Array> {
+): Promise<TRet<Uint8Array>> {
   const crypto = _subtle();
   ahashWeb(hash);
   const _opts = checkOpts({ dkLen: 32 }, opts);
@@ -226,5 +235,5 @@ export async function pbkdf2(
     'deriveBits',
   ]);
   const deriveOpts = { name: 'PBKDF2', salt: _salt, iterations: c, hash: hash.webCryptoName };
-  return new Uint8Array(await crypto.deriveBits(deriveOpts, key, 8 * dkLen));
+  return new Uint8Array(await crypto.deriveBits(deriveOpts, key, 8 * dkLen)) as TRet<Uint8Array>;
 }

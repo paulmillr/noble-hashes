@@ -6,7 +6,16 @@ import { hkdf } from './hkdf.ts';
 import { pbkdf2 as _pbkdf2 } from './pbkdf2.ts';
 import { scrypt as _scrypt } from './scrypt.ts';
 import { sha256 } from './sha2.ts';
-import { abytes, bytesToHex, clean, createView, hexToBytes, kdfInputToBytes } from './utils.ts';
+import {
+  abytes,
+  bytesToHex,
+  clean,
+  createView,
+  hexToBytes,
+  kdfInputToBytes,
+  type TArg,
+  type TRet,
+} from './utils.ts';
 
 // A tiny KDF for various applications like AES key-gen.
 // Uses HKDF in a non-standard way, so it's not "KDF-secure", only "PRF-secure".
@@ -29,7 +38,7 @@ const PBKDF2_FACTOR = /* @__PURE__ */ (() => 2 ** 17)();
  * scrypt('password123', 'user@example.com');
  * ```
  */
-export function scrypt(password: string, salt: string): Uint8Array {
+export function scrypt(password: string, salt: string): TRet<Uint8Array> {
   return _scrypt(password, salt, { N: SCRYPT_FACTOR, r: 8, p: 1, dkLen: 32 });
 }
 
@@ -44,19 +53,19 @@ export function scrypt(password: string, salt: string): Uint8Array {
  * pbkdf2('password123', 'user@example.com');
  * ```
  */
-export function pbkdf2(password: string, salt: string): Uint8Array {
+export function pbkdf2(password: string, salt: string): TRet<Uint8Array> {
   return _pbkdf2(sha256, password, salt, { c: PBKDF2_FACTOR, dkLen: 32 });
 }
 
 // Combines two 32-byte byte arrays into a fresh 32-byte result without aliasing either input.
-function xor32(a: Uint8Array, b: Uint8Array): Uint8Array {
+function xor32(a: TArg<Uint8Array>, b: TArg<Uint8Array>): TRet<Uint8Array> {
   abytes(a, 32);
   abytes(b, 32);
   const arr = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
     arr[i] = a[i] ^ b[i];
   }
-  return arr;
+  return arr as TRet<Uint8Array>;
 }
 
 // All local string length checks are in JS UTF-16 code units, not UTF-8 bytes.
@@ -67,9 +76,9 @@ function strHasLength(str: string, min: number, max: number): boolean {
 /**
  * Derives main seed. Takes a lot of time; prefer the higher-level `eskdf(...)`
  * flow unless you specifically need the raw main seed.
- * Derives main seed as
- * `xor32(scrypt(password || 0x01, username || 0x01),
- * pbkdf2(password || 0x02, username || 0x02))`.
+ * Derives the main seed by xor'ing two branches:
+ * the scrypt branch uses a `0x01` separator byte on username/password,
+ * and the PBKDF2 branch uses `0x02`.
  * Username and password strings are encoded by the underlying KDFs after the
  * local separator bytes are appended.
  * @param username - account identifier used as public salt
@@ -82,7 +91,7 @@ function strHasLength(str: string, min: number, max: number): boolean {
  * deriveMainSeed('example-user', 'example-password');
  * ```
  */
-export function deriveMainSeed(username: string, password: string): Uint8Array {
+export function deriveMainSeed(username: string, password: string): TRet<Uint8Array> {
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
   if (!strHasLength(password, 8, 255)) throw new Error('invalid password');
   // Keep the protocol separators as the literal bytes 0x01 / 0x02 even after minification.
@@ -164,7 +173,7 @@ function getKeyLength(options: KeyOpts): number {
  * Adapts FIPS 186-5 Appendix A.4.1: `getKeyLength()` already requested the
  * extra 64-bit margin, and this step maps the result into `1..modulus-1`.
  */
-function modReduceKey(key: Uint8Array, modulus: bigint): Uint8Array {
+function modReduceKey(key: TArg<Uint8Array>, modulus: bigint): TRet<Uint8Array> {
   const _1 = BigInt(1);
   const num = BigInt('0x' + bytesToHex(key)); // check for ui8a, then bytesToNumber()
   const res = (num % (modulus - _1)) + _1; // Remove 0 from output
@@ -190,7 +199,7 @@ export interface ESKDF {
    * @param options - Optional child-key shaping parameters. See {@link KeyOpts}.
    * @returns Derived child key bytes.
    */
-  deriveChildKey: (protocol: string, accountId: AccountID, options?: KeyOpts) => Uint8Array;
+  deriveChildKey: (protocol: string, accountId: AccountID, options?: KeyOpts) => TRet<Uint8Array>;
   /** Deletes the main seed from the ESKDF instance. */
   expire: () => void;
   /**
@@ -216,12 +225,16 @@ export interface ESKDF {
  * kdf.expire();
  * ```
  */
-export async function eskdf(username: string, password: string): Promise<ESKDF> {
+export async function eskdf(username: string, password: string): Promise<TRet<ESKDF>> {
   // We are using closure + object instead of class because
   // we want to make `seed` non-accessible for any external function.
   let seed: Uint8Array | undefined = deriveMainSeed(username, password);
 
-  function deriveCK(protocol: string, accountId: AccountID = 0, options?: KeyOpts): Uint8Array {
+  function deriveCK(
+    protocol: string,
+    accountId: AccountID = 0,
+    options?: KeyOpts
+  ): TRet<Uint8Array> {
     // Reject expired instances before deriving any HKDF inputs from the closure-held seed.
     abytes(seed!, 32);
     const { salt, info } = getSaltInfo(protocol, accountId); // validate protocol & accountId

@@ -2,7 +2,7 @@
  * Internal helpers for blake hash.
  * @module
  */
-import { rotr } from './utils.ts';
+import { rotr, type TRet } from './utils.ts';
 
 /**
  * Internal blake permutation table.
@@ -11,7 +11,7 @@ import { rotr } from './utils.ts';
  * `10..15` intentionally repeat rows `0..5` for the 14-round (256) and 16-round (512) variants.
  */
 // prettier-ignore
-export const BSIGMA: Uint8Array = /* @__PURE__ */ Uint8Array.from([
+export const BSIGMA: TRet<Uint8Array> = /* @__PURE__ */ Uint8Array.from([
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
   14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
   11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,

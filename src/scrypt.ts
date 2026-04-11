@@ -6,12 +6,14 @@ import { pbkdf2 } from './pbkdf2.ts';
 import { sha256 } from './sha2.ts';
 // prettier-ignore
 import {
-  anumber, asyncLoop,
-  checkOpts, clean,
-  type KDFInput, rotl,
-  swap32IfBE,
-  u32
-} from './utils.ts';
+	  anumber, asyncLoop,
+	  checkOpts, clean,
+	  type KDFInput, rotl,
+	  swap32IfBE,
+	  u32,
+	  type TArg,
+	  type TRet
+	} from './utils.ts';
 
 // The main Scrypt loop: uses Salsa extensively.
 // Six versions of the function were tried, this is the fastest one.
@@ -20,11 +22,11 @@ import {
 // The local `y*` snapshot keeps the xor input stable even when `out` aliases `prev` or `input`.
 // prettier-ignore
 function XorAndSalsa(
-  prev: Uint32Array,
+  prev: TArg<Uint32Array>,
   pi: number,
-  input: Uint32Array,
+  input: TArg<Uint32Array>,
   ii: number,
-  out: Uint32Array,
+  out: TArg<Uint32Array>,
   oi: number
 ) {
   // Based on https://cr.yp.to/salsa20.html and RFC 7914's Salsa20/8 core.
@@ -72,7 +74,13 @@ function XorAndSalsa(
   out[oi++] = (y14 + x14) | 0; out[oi++] = (y15 + x15) | 0;
 }
 
-function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, r: number) {
+function BlockMix(
+  input: TArg<Uint32Array>,
+  ii: number,
+  out: TArg<Uint32Array>,
+  oi: number,
+  r: number
+) {
   // The block B is `r` 128-byte chunks, i.e. `2r` 16-word (64-byte) Salsa blocks.
   let head = oi + 0;
   let tail = oi + 16 * r;
@@ -92,7 +100,7 @@ function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, 
  * - `N` is cpu/mem work factor (power of 2 e.g. `2**18`)
  * - `r` is block size (8 is common), fine-tunes sequential memory read size and performance
  * - `p` is parallelization factor (1 is common)
- * - `dkLen` is output key length in bytes e.g. 32, and must be >= 1 per RFC 7914 §2.
+ * - `dkLen` is output key length in bytes e.g. 32, and must be `>= 1` per RFC 7914 §2.
  * - `asyncTick` - (default: 10) max time in ms for which async function can block execution
  * - `maxmem` - (default: `1024 ** 3 + 1024` aka 1GB+1KB). A limit that the app could use for scrypt
  * - `onProgress` - callback function that would be executed for progress report
@@ -104,7 +112,7 @@ export type ScryptOpts = {
   r: number;
   /** Parallelization factor. */
   p: number;
-  /** Desired derived key length in bytes, must be >= 1 per RFC 7914 §2. */
+  /** Desired derived key length in bytes, must be `>= 1` per RFC 7914 §2. */
   dkLen?: number;
   /** Max scheduler block time in milliseconds for the async variant. */
   asyncTick?: number;
@@ -118,7 +126,7 @@ export type ScryptOpts = {
 };
 
 // Common prologue and epilogue for sync/async functions
-function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
+function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: TArg<ScryptOpts>) {
   // Maxmem - 1GB+1KB by default
   const opts = checkOpts(
     {
@@ -157,7 +165,9 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
   // Node requires more headroom here, so this accounting is intentionally noble-specific.
   const memUsed = blockSize * (N + p + 1);
   if (memUsed > maxmem)
-    throw new Error('"maxmem" limit was hit, expected 128*r*(N+p+1) <= "maxmem"=' + maxmem);
+    throw new Error(
+      '"maxmem" limit was hit: memUsed(128*r*(N+p+1))=' + memUsed + ', maxmem=' + maxmem
+    );
   // [B0...Bp−1] ← PBKDF2HMAC-SHA256(Passphrase, Salt, 1, blockSize*ParallelizationFactor)
   // Since it has only one iteration there is no reason to use async variant
   const B = pbkdf2(sha256, password, salt, { c: 1, dkLen: blockSize * p });
@@ -182,12 +192,12 @@ function scryptInit(password: KDFInput, salt: KDFInput, _opts?: ScryptOpts) {
 }
 
 function scryptOutput(
-  password: KDFInput,
+  password: TArg<KDFInput>,
   dkLen: number,
-  B: Uint8Array,
-  V: Uint32Array,
-  tmp: Uint32Array
-) {
+  B: TArg<Uint8Array>,
+  V: TArg<Uint32Array>,
+  tmp: TArg<Uint32Array>
+): TRet<Uint8Array> {
   // Shared final PBKDF2-and-cleanup step: keep the derived key, wipe the scrypt workspace.
   const res = pbkdf2(sha256, password, B, { c: 1, dkLen });
   clean(B, V, tmp);
@@ -200,7 +210,7 @@ function scryptOutput(
  *   JS string inputs are UTF-8 encoded first
  * @param salt - unique salt bytes or string; JS string inputs are UTF-8 encoded first
  * @param opts - Scrypt cost and memory parameters. `dkLen`, if provided,
- *   must be >= 1 per RFC 7914 §2. See {@link ScryptOpts}.
+ *   must be `>= 1` per RFC 7914 §2. See {@link ScryptOpts}.
  * @returns Derived key bytes.
  * @throws If the Scrypt cost, memory, or callback options are invalid. {@link Error}
  * @example
@@ -209,7 +219,11 @@ function scryptOutput(
  * scrypt('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  * ```
  */
-export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Uint8Array {
+export function scrypt(
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ScryptOpts>
+): TRet<Uint8Array> {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
     password,
     salt,
@@ -249,7 +263,7 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
  *   JS string inputs are UTF-8 encoded first
  * @param salt - unique salt bytes or string; JS string inputs are UTF-8 encoded first
  * @param opts - Scrypt cost and memory parameters. `dkLen`, if provided,
- *   must be >= 1 per RFC 7914 §2. `asyncTick` is only a local
+ *   must be `>= 1` per RFC 7914 §2. `asyncTick` is only a local
  *   scheduler-yield control for this JS wrapper, not part of RFC 7914.
  *   See {@link ScryptOpts}.
  * @returns Promise resolving to derived key bytes.
@@ -261,10 +275,10 @@ export function scrypt(password: KDFInput, salt: KDFInput, opts: ScryptOpts): Ui
  * ```
  */
 export async function scryptAsync(
-  password: KDFInput,
-  salt: KDFInput,
-  opts: ScryptOpts
-): Promise<Uint8Array> {
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ScryptOpts>
+): Promise<TRet<Uint8Array>> {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(
     password,
     salt,

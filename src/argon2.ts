@@ -20,6 +20,8 @@ import {
   u32,
   u8,
   type KDFInput,
+  type TArg,
+  type TRet,
 } from './utils.ts';
 
 // RFC 9106 §3.1 type `y`: 0 = Argon2d, 1 = Argon2i, 2 = Argon2id. The numeric values are the
@@ -31,7 +33,7 @@ type Types = (typeof AT)[keyof typeof AT];
 const ARGON2_SYNC_POINTS = 4;
 // Preserve Argon2's `LE32(len(X)) || X` encoding for omitted
 // optional fields by emitting empty bytes.
-const abytesOrZero = (buf?: KDFInput, errorTitle = '') => {
+const abytesOrZero = (buf?: TArg<KDFInput>, errorTitle = ''): TRet<Uint8Array> => {
   if (buf === undefined) return Uint8Array.of();
   return kdfInputToBytes(buf, errorTitle);
 };
@@ -122,7 +124,7 @@ function P(
   G(v03, v04, v09, v14);
 }
 
-function block(x: Uint32Array, xPos: number, yPos: number, outPos: number, needXor: boolean) {
+function block(x: TArg<Uint32Array>, xPos: number, yPos: number, outPos: number, needXor: boolean) {
   for (let i = 0; i < 256; i++) A2_BUF[i] = x[xPos + i] ^ x[yPos + i];
   // rows (8 consecutive 16-register groups)
   for (let i = 0; i < 128; i += 16) {
@@ -149,7 +151,7 @@ function block(x: Uint32Array, xPos: number, yPos: number, outPos: number, needX
 
 // Variable-Length Hash Function H'
 // Returns bytes, not words; 1024-byte block callers explicitly reinterpret with `u32(...)`.
-function Hp(A: Uint32Array, dkLen: number): Uint8Array {
+function Hp(A: TArg<Uint32Array>, dkLen: number): TRet<Uint8Array> {
   const A8 = u8(A);
   const T = new Uint32Array(1);
   const T8 = u8(T);
@@ -175,7 +177,7 @@ function Hp(A: Uint32Array, dkLen: number): Uint8Array {
   out.set(blake2b(V, { dkLen: dkLen - pos }), pos);
   clean(V, T);
   // H' is byte-oriented; returning `u32(out)` would silently drop dkLen % 4 tail bytes.
-  return out;
+  return out as TRet<Uint8Array>;
 }
 
 // Used only inside process block!
@@ -203,12 +205,7 @@ function indexAlpha(
   return (startPos + rel) % laneLen;
 }
 
-/**
- * Argon2 options.
- * * t: time cost, m: mem cost in kb, p: parallelization.
- * * key: optional key. personalization: arbitrary extra data.
- * * dkLen: desired number of output bytes, must be >= 4 per RFC 9106 §3.1.
- */
+/** Argon2 cost, output, and optional secret/personalization inputs. */
 export type ArgonOpts = {
   /** Time cost measured in iterations. */
   t: number;
@@ -222,10 +219,7 @@ export type ArgonOpts = {
   key?: KDFInput;
   /** Optional personalization string or bytes. */
   personalization?: KDFInput;
-  /**
-   * Desired number of output bytes.
-   * RFC 9106 §3.1 requires tag length `T` to be in `4..2^32-1`.
-   */
+  /** Desired output length in bytes. RFC 9106 §3.1 requires `T` in the 4..(2^32 - 1) range. */
   dkLen?: number;
   /** Max scheduler block time in milliseconds for the async variants. */
   asyncTick?: number;
@@ -245,7 +239,7 @@ function isU32(num: number) {
   return Number.isSafeInteger(num) && num >= 0 && num < maxUint32;
 }
 
-function argon2Opts(opts: ArgonOpts) {
+function argon2Opts(opts: TArg<ArgonOpts>) {
   const merged: any = {
     version: 0x13,
     dkLen: 32,
@@ -277,7 +271,12 @@ function argon2Opts(opts: ArgonOpts) {
   return merged;
 }
 
-function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: ArgonOpts) {
+function argon2Init(
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  type: Types,
+  opts: TArg<ArgonOpts>
+) {
   password = kdfInputToBytes(password, 'password');
   salt = kdfInputToBytes(salt, 'salt');
   if (!isU32(password.length)) throw new Error('"password" must be less of length 1..4Gb');
@@ -322,8 +321,9 @@ function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: Argon
   const segmentLen = Math.floor(laneLen / ARGON2_SYNC_POINTS);
   // `maxmem` is documented in bytes; compare against the actual 1024-byte block allocation.
   const memUsed = mP * 1024;
-  if (!isU32(maxmem) || memUsed > maxmem)
-    throw new Error('"maxmem" expected <2**32, got: maxmem=' + maxmem + ', memused=' + memUsed);
+  if (!isU32(maxmem)) throw new Error('"maxmem" expected <2**32, got ' + maxmem);
+  if (memUsed > maxmem)
+    throw new Error('"maxmem" limit was hit: memUsed(mP*1024)=' + memUsed + ', maxmem=' + maxmem);
   const B = new Uint32Array(memUsed / 4);
   // Fill first blocks
   for (let l = 0; l < p; l++) {
@@ -354,22 +354,27 @@ function argon2Init(password: KDFInput, salt: KDFInput, type: Types, opts: Argon
   return { type, mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick };
 }
 
-function argon2Output(B: Uint32Array, p: number, laneLen: number, dkLen: number) {
+function argon2Output(
+  B: TArg<Uint32Array>,
+  p: number,
+  laneLen: number,
+  dkLen: number
+): TRet<Uint8Array> {
   const B_final = new Uint32Array(256);
   for (let l = 0; l < p; l++)
     for (let j = 0; j < 256; j++) B_final[j] ^= B[256 * (laneLen * l + laneLen - 1) + j];
   // RFC 9106 steps 7-8 feed the byte string `C` into `H'^T(C)`, so normalize the xor'ed words
   // back to spec byte order before `Hp(...)` reinterprets them as bytes.
   const res = Hp(swap32IfBE(B_final), dkLen);
-  // Wipe both the xor scratch and the full working matrix once the final digest bytes are materialized.
-  // JS cleanup is still only best-effort overall, but this local buffer is no longer needed here.
+  // Wipe both the xor scratch and the full working matrix once final digest bytes exist.
+  // JS cleanup is still only best-effort, but this local buffer is no longer needed here.
   clean(B, B_final);
   return res;
 }
 
 function processBlock(
-  B: Uint32Array,
-  address: Uint32Array,
+  B: TArg<Uint32Array>,
+  address: TArg<Uint32Array>,
   l: number,
   r: number,
   s: number,
@@ -409,7 +414,12 @@ function processBlock(
   block(B, 256 * prev, 256 * refBlock, offset * 256, needXor);
 }
 
-function argon2(type: Types, password: KDFInput, salt: KDFInput, opts: ArgonOpts) {
+function argon2(
+  type: Types,
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ArgonOpts>
+): TRet<Uint8Array> {
   const { mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock } = argon2Init(
     password,
     salt,
@@ -486,8 +496,11 @@ function argon2(type: Types, password: KDFInput, salt: KDFInput, opts: ArgonOpts
  * argon2d('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
  */
-export const argon2d = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
-  argon2(AT.Argond2d, password, salt, opts);
+export const argon2d = (
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ArgonOpts>
+): TRet<Uint8Array> => argon2(AT.Argond2d, password, salt, opts);
 /**
  * Argon2i side-channel-resistant version.
  * @param password - password or input key material
@@ -501,8 +514,11 @@ export const argon2d = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Ui
  * argon2i('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
  */
-export const argon2i = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
-  argon2(AT.Argon2i, password, salt, opts);
+export const argon2i = (
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ArgonOpts>
+): TRet<Uint8Array> => argon2(AT.Argon2i, password, salt, opts);
 /**
  * Argon2id, combining i+d, the most popular version from RFC 9106.
  * @param password - password or input key material
@@ -516,10 +532,18 @@ export const argon2i = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Ui
  * argon2id('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
  */
-export const argon2id = (password: KDFInput, salt: KDFInput, opts: ArgonOpts): Uint8Array =>
-  argon2(AT.Argon2id, password, salt, opts);
+export const argon2id = (
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ArgonOpts>
+): TRet<Uint8Array> => argon2(AT.Argon2id, password, salt, opts);
 
-async function argon2Async(type: Types, password: KDFInput, salt: KDFInput, opts: ArgonOpts) {
+async function argon2Async(
+  type: Types,
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ArgonOpts>
+): Promise<TRet<Uint8Array>> {
   const { mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick } =
     argon2Init(password, salt, type, opts);
   // Pre-loop setup
@@ -601,10 +625,10 @@ async function argon2Async(type: Types, password: KDFInput, salt: KDFInput, opts
  * ```
  */
 export const argon2dAsync = (
-  password: KDFInput,
-  salt: KDFInput,
-  opts: ArgonOpts
-): Promise<Uint8Array> => argon2Async(AT.Argond2d, password, salt, opts);
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ArgonOpts>
+): Promise<TRet<Uint8Array>> => argon2Async(AT.Argond2d, password, salt, opts);
 /**
  * Argon2i async side-channel-resistant version.
  * @param password - password or input key material
@@ -619,10 +643,10 @@ export const argon2dAsync = (
  * ```
  */
 export const argon2iAsync = (
-  password: KDFInput,
-  salt: KDFInput,
-  opts: ArgonOpts
-): Promise<Uint8Array> => argon2Async(AT.Argon2i, password, salt, opts);
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ArgonOpts>
+): Promise<TRet<Uint8Array>> => argon2Async(AT.Argon2i, password, salt, opts);
 /**
  * Argon2id async, combining i+d, the most popular version from RFC 9106.
  * @param password - password or input key material
@@ -637,7 +661,7 @@ export const argon2iAsync = (
  * ```
  */
 export const argon2idAsync = (
-  password: KDFInput,
-  salt: KDFInput,
-  opts: ArgonOpts
-): Promise<Uint8Array> => argon2Async(AT.Argon2id, password, salt, opts);
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  opts: TArg<ArgonOpts>
+): Promise<TRet<Uint8Array>> => argon2Async(AT.Argon2id, password, salt, opts);

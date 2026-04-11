@@ -22,7 +22,9 @@ import {
   type CHash, type CHashXOF,
   type Hash,
   type HashInfo,
-  type HashXOF
+  type HashXOF,
+  type TArg,
+  type TRet
 } from './utils.ts';
 
 // No __PURE__ annotations in sha3 header:
@@ -69,13 +71,14 @@ const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : r
  * @param s - 5x5 Keccak state encoded as 25 lanes split into 50 uint32 words
  *   in this file's local little-endian lane-word order
  * @param rounds - number of rounds to execute
+ * @throws If `rounds` is outside the supported `1..24` range. {@link Error}
  * @example
  * Permute a Keccak state with the default 24 rounds.
  * ```ts
  * keccakP(new Uint32Array(50));
  * ```
  */
-export function keccakP(s: Uint32Array, rounds: number = 24): void {
+export function keccakP(s: TArg<Uint32Array>, rounds: number = 24): void {
   anumber(rounds, 'rounds');
   // This implementation precomputes only the standard Keccak-f[1600] 24-round Iota table.
   if (rounds < 1 || rounds > 24) throw new Error('"rounds" expected integer 1..24');
@@ -201,7 +204,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     this.posOut = 0;
     this.pos = 0;
   }
-  update(data: Uint8Array): this {
+  update(data: TArg<Uint8Array>): this {
     aexists(this);
     abytes(data);
     const { blockLen, state } = this;
@@ -228,7 +231,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     state[blockLen - 1] ^= 0x80;
     this.keccak();
   }
-  protected writeInto(out: Uint8Array): Uint8Array {
+  protected writeInto(out: TArg<Uint8Array>): TRet<Uint8Array> {
     aexists(this, false);
     abytes(out);
     this.finish();
@@ -241,30 +244,30 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
       this.posOut += take;
       pos += take;
     }
-    return out;
+    return out as TRet<Uint8Array>;
   }
-  xofInto(out: Uint8Array): Uint8Array {
+  xofInto(out: TArg<Uint8Array>): TRet<Uint8Array> {
     // Plain SHA3/Keccak usage with XOF is probably a mistake, but this base
     // class is also reused by SHAKE/cSHAKE/KMAC/TupleHash/ParallelHash/
     // TurboSHAKE/KangarooTwelve wrappers that intentionally enable XOF.
     if (!this.enableXOF) throw new Error('XOF is not possible for this instance');
     return this.writeInto(out);
   }
-  xof(bytes: number): Uint8Array {
+  xof(bytes: number): TRet<Uint8Array> {
     anumber(bytes);
     return this.xofInto(new Uint8Array(bytes));
   }
-  digestInto(out: Uint8Array): void {
+  digestInto(out: TArg<Uint8Array>): void {
     aoutput(out, this);
     if (this.finished) throw new Error('digest() was already called');
     // `aoutput(...)` allows oversized buffers; digestInto() must fill only the advertised digest.
     this.writeInto(out.subarray(0, this.outputLen));
     this.destroy();
   }
-  digest(): Uint8Array {
+  digest(): TRet<Uint8Array> {
     const out = new Uint8Array(this.outputLen);
     this.digestInto(out);
-    return out;
+    return out as TRet<Uint8Array>;
   }
   destroy(): void {
     this.destroyed = true;
@@ -293,8 +296,12 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   }
 }
 
-const genKeccak = (suffix: number, blockLen: number, outputLen: number, info: HashInfo = {}) =>
-  createHasher(() => new Keccak(blockLen, suffix, outputLen), info);
+const genKeccak = (
+  suffix: number,
+  blockLen: number,
+  outputLen: number,
+  info: TArg<HashInfo> = {}
+) => createHasher(() => new Keccak(blockLen, suffix, outputLen), info);
 
 /**
  * SHA3-224 hash function.
@@ -306,7 +313,7 @@ const genKeccak = (suffix: number, blockLen: number, outputLen: number, info: Ha
  * sha3_224(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha3_224: CHash = /* @__PURE__ */ genKeccak(
+export const sha3_224: TRet<CHash> = /* @__PURE__ */ genKeccak(
   0x06,
   144,
   28,
@@ -322,7 +329,7 @@ export const sha3_224: CHash = /* @__PURE__ */ genKeccak(
  * sha3_256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha3_256: CHash = /* @__PURE__ */ genKeccak(
+export const sha3_256: TRet<CHash> = /* @__PURE__ */ genKeccak(
   0x06,
   136,
   32,
@@ -338,7 +345,7 @@ export const sha3_256: CHash = /* @__PURE__ */ genKeccak(
  * sha3_384(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha3_384: CHash = /* @__PURE__ */ genKeccak(
+export const sha3_384: TRet<CHash> = /* @__PURE__ */ genKeccak(
   0x06,
   104,
   48,
@@ -354,7 +361,7 @@ export const sha3_384: CHash = /* @__PURE__ */ genKeccak(
  * sha3_512(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha3_512: CHash = /* @__PURE__ */ genKeccak(
+export const sha3_512: TRet<CHash> = /* @__PURE__ */ genKeccak(
   0x06,
   72,
   64,
@@ -371,7 +378,7 @@ export const sha3_512: CHash = /* @__PURE__ */ genKeccak(
  * keccak_224(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const keccak_224: CHash = /* @__PURE__ */ genKeccak(0x01, 144, 28);
+export const keccak_224: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 144, 28);
 /**
  * Keccak-256 hash function. Different from SHA3-256.
  * @param msg - message bytes to hash
@@ -382,7 +389,7 @@ export const keccak_224: CHash = /* @__PURE__ */ genKeccak(0x01, 144, 28);
  * keccak_256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const keccak_256: CHash = /* @__PURE__ */ genKeccak(0x01, 136, 32);
+export const keccak_256: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 136, 32);
 /**
  * Keccak-384 hash function.
  * @param msg - message bytes to hash
@@ -393,7 +400,7 @@ export const keccak_256: CHash = /* @__PURE__ */ genKeccak(0x01, 136, 32);
  * keccak_384(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const keccak_384: CHash = /* @__PURE__ */ genKeccak(0x01, 104, 48);
+export const keccak_384: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 104, 48);
 /**
  * Keccak-512 hash function.
  * @param msg - message bytes to hash
@@ -404,7 +411,7 @@ export const keccak_384: CHash = /* @__PURE__ */ genKeccak(0x01, 104, 48);
  * keccak_512(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const keccak_512: CHash = /* @__PURE__ */ genKeccak(0x01, 72, 64);
+export const keccak_512: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 72, 64);
 
 /** Options for SHAKE XOF. */
 export type ShakeOpts = {
@@ -412,7 +419,7 @@ export type ShakeOpts = {
   dkLen?: number;
 };
 
-const genShake = (suffix: number, blockLen: number, outputLen: number, info: HashInfo = {}) =>
+const genShake = (suffix: number, blockLen: number, outputLen: number, info: TArg<HashInfo> = {}) =>
   createHasher<Keccak, ShakeOpts>(
     (opts: ShakeOpts = {}) =>
       new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true),
@@ -430,7 +437,7 @@ const genShake = (suffix: number, blockLen: number, outputLen: number, info: Has
  * shake128(new Uint8Array([97, 98, 99]), { dkLen: 32 });
  * ```
  */
-export const shake128: CHashXOF<Keccak, ShakeOpts> =
+export const shake128: TRet<CHashXOF<Keccak, ShakeOpts>> =
   /* @__PURE__ */
   genShake(0x1f, 168, 16, /* @__PURE__ */ oidNist(0x0b));
 /**
@@ -444,7 +451,7 @@ export const shake128: CHashXOF<Keccak, ShakeOpts> =
  * shake256(new Uint8Array([97, 98, 99]), { dkLen: 64 });
  * ```
  */
-export const shake256: CHashXOF<Keccak, ShakeOpts> =
+export const shake256: TRet<CHashXOF<Keccak, ShakeOpts>> =
   /* @__PURE__ */
   genShake(0x1f, 136, 32, /* @__PURE__ */ oidNist(0x0c));
 
@@ -459,7 +466,7 @@ export const shake256: CHashXOF<Keccak, ShakeOpts> =
  * shake128_32(new Uint8Array([97, 98, 99]), { dkLen: 32 });
  * ```
  */
-export const shake128_32: CHashXOF<Keccak, ShakeOpts> =
+export const shake128_32: TRet<CHashXOF<Keccak, ShakeOpts>> =
   /* @__PURE__ */
   genShake(0x1f, 168, 32, /* @__PURE__ */ oidNist(0x0b));
 /**
@@ -473,6 +480,6 @@ export const shake128_32: CHashXOF<Keccak, ShakeOpts> =
  * shake256_64(new Uint8Array([97, 98, 99]), { dkLen: 64 });
  * ```
  */
-export const shake256_64: CHashXOF<Keccak, ShakeOpts> =
+export const shake256_64: TRet<CHashXOF<Keccak, ShakeOpts>> =
   /* @__PURE__ */
   genShake(0x1f, 136, 64, /* @__PURE__ */ oidNist(0x0c));

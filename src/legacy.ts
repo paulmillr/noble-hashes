@@ -11,7 +11,7 @@ Don't use them in a new protocol. What "weak" means:
  * @module
  */
 import { Chi, HashMD, Maj } from './_md.ts';
-import { type CHash, clean, createHasher, rotl } from './utils.ts';
+import { type CHash, clean, createHasher, rotl, type TRet } from './utils.ts';
 
 /** Initial SHA-1 state from RFC 3174 §6.1. */
 const SHA1_IV = /* @__PURE__ */ Uint32Array.from([
@@ -101,7 +101,7 @@ export class _SHA1 extends HashMD<_SHA1> {
  * sha1(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha1: CHash = /* @__PURE__ */ createHasher(() => new _SHA1());
+export const sha1: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _SHA1());
 
 /** RFC 1321 `T[i]` uses `floor(2^32 * abs(sin(i)))`; this is the shared `2^32` scale factor. */
 const p32 = /* @__PURE__ */ Math.pow(2, 32);
@@ -200,7 +200,7 @@ export class _MD5 extends HashMD<_MD5> {
  * md5(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const md5: CHash = /* @__PURE__ */ createHasher(() => new _MD5());
+export const md5: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _MD5());
 
 // RIPEMD-160
 
@@ -336,4 +336,4 @@ export class _RIPEMD160 extends HashMD<_RIPEMD160> {
  * ripemd160(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const ripemd160: CHash = /* @__PURE__ */ createHasher(() => new _RIPEMD160());
+export const ripemd160: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _RIPEMD160());

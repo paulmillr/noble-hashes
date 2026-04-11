@@ -4,7 +4,7 @@
  * @module
  */
 import { hmac } from './hmac.ts';
-import { abytes, ahash, anumber, type CHash, clean } from './utils.ts';
+import { abytes, ahash, anumber, type CHash, clean, type TArg, type TRet } from './utils.ts';
 
 /**
  * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`
@@ -22,7 +22,11 @@ import { abytes, ahash, anumber, type CHash, clean } from './utils.ts';
  * extract(sha256, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
  * ```
  */
-export function extract(hash: CHash, ikm: Uint8Array, salt?: Uint8Array): Uint8Array {
+export function extract(
+  hash: TArg<CHash>,
+  ikm: TArg<Uint8Array>,
+  salt?: TArg<Uint8Array>
+): TRet<Uint8Array> {
   ahash(hash);
   // NOTE: some libraries treat zero-length array as 'not provided';
   // we don't, since we have undefined as 'not provided'
@@ -57,11 +61,11 @@ const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
  * ```
  */
 export function expand(
-  hash: CHash,
-  prk: Uint8Array,
-  info?: Uint8Array,
+  hash: TArg<CHash>,
+  prk: TArg<Uint8Array>,
+  info?: TArg<Uint8Array>,
   length: number = 32
-): Uint8Array {
+): TRet<Uint8Array> {
   ahash(hash);
   anumber(length, 'length');
   abytes(prk, undefined, 'prk');
@@ -93,7 +97,7 @@ export function expand(
   HMAC.destroy();
   HMACTmp.destroy();
   clean(T, HKDF_COUNTER);
-  return okm.slice(0, length);
+  return okm.slice(0, length) as TRet<Uint8Array>;
 }
 
 /**
@@ -121,9 +125,9 @@ export function expand(
  * ```
  */
 export const hkdf = (
-  hash: CHash,
-  ikm: Uint8Array,
-  salt: Uint8Array | undefined,
-  info: Uint8Array | undefined,
+  hash: TArg<CHash>,
+  ikm: TArg<Uint8Array>,
+  salt: TArg<Uint8Array | undefined>,
+  info: TArg<Uint8Array | undefined>,
   length: number
-): Uint8Array => expand(hash, extract(hash, ikm, salt), info, length);
+): TRet<Uint8Array> => expand(hash, extract(hash, ikm, salt), info, length);
