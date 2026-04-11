@@ -76,12 +76,13 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
     // Create new instance without calling constructor since the key
     // is already in state and we don't know it.
     to ||= Object.create(Object.getPrototypeOf(this), {});
-    const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
+    const { oHash, iHash, finished, destroyed, blockLen, outputLen, canXOF } = this;
     to = to as this;
     to.finished = finished;
     to.destroyed = destroyed;
     to.blockLen = blockLen;
     to.outputLen = outputLen;
+    to.canXOF = canXOF;
     to.oHash = oHash._cloneInto(to.oHash);
     to.iHash = iHash._cloneInto(to.iHash);
     return to;
