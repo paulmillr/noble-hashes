@@ -1,27 +1,10 @@
 import { should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { pathToFileURL } from 'node:url';
-import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '../src/sha2.ts';
-import { sha3_224, sha3_256, sha3_384, sha3_512, shake128_32, shake256_64 } from '../src/sha3.ts';
-import { sha1, md5 } from '../src/legacy.ts';
+import { PLATFORMS } from './platform.ts';
 
 const hashAlgs = '2.16.840.1.101.3.4.2.'; // hashAlgs OBJECT IDENTIFIER ::= { nistAlgorithms 2 }
-const DEFAULT_PLATFORM = {
-  sha224,
-  sha256,
-  sha384,
-  sha512,
-  sha512_224,
-  sha512_256,
-  sha3_224,
-  sha3_256,
-  sha3_384,
-  sha3_512,
-  shake128_32,
-  shake256_64,
-  md5,
-  sha1,
-};
+const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 const getOids = ({
   sha256,
   sha384,

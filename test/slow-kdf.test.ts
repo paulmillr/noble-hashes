@@ -10,25 +10,16 @@ import {
   argon2id,
   argon2idAsync,
 } from '../src/argon2.ts';
-import { scrypt, scryptAsync } from '../src/scrypt.ts';
 import { bytesToHex } from '../src/utils.ts';
 import { bytes, gen, integer } from './generator.ts';
+import { PLATFORMS } from './platform.ts';
 import { json, pattern, fmt } from './utils.ts';
 
 const argon2_vectors = json('./vectors/argon2.json');
 
 // Some vectors are very slow and are ran in slow-big.test.js.
 const BT = { describe, should };
-const DEFAULT_PLATFORM = {
-  argon2d,
-  argon2dAsync,
-  argon2i,
-  argon2iAsync,
-  argon2id,
-  argon2idAsync,
-  scrypt,
-  scryptAsync,
-};
+const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 
 // Takes 10h
 const SCRYPT_CASES = gen({
@@ -111,16 +102,23 @@ export function testArgon(
   platform = DEFAULT_PLATFORM,
   { describe, should } = BT
 ) {
-  const { argon2d, argon2i, argon2id } = platform;
+  const {
+    argon2d: platformArgon2d,
+    argon2i: platformArgon2i,
+    argon2id: platformArgon2id,
+  } = platform;
   const fnMap = new Map([
-    [DEFAULT_PLATFORM.argon2i, argon2i],
-    [DEFAULT_PLATFORM.argon2d, argon2d],
-    [DEFAULT_PLATFORM.argon2id, argon2id],
+    // Key these maps by the imported noble functions from this file, not by the injected platform.
+    // Reused hosts like awasm pass different function objects, so using `platform.argon2*` as the
+    // map key breaks the async lookup and falls through to missing `.async` methods.
+    [argon2i, platformArgon2i],
+    [argon2d, platformArgon2d],
+    [argon2id, platformArgon2id],
   ]);
   const asyncMap = new Map([
-    [DEFAULT_PLATFORM.argon2i, platform.argon2iAsync || argon2i.async],
-    [DEFAULT_PLATFORM.argon2d, platform.argon2dAsync || argon2d.async],
-    [DEFAULT_PLATFORM.argon2id, platform.argon2idAsync || argon2id.async],
+    [argon2i, platform.argon2iAsync || argon2iAsync],
+    [argon2d, platform.argon2dAsync || argon2dAsync],
+    [argon2id, platform.argon2idAsync || argon2idAsync],
   ]);
   for (let i = 0; i < verySlowArgon.length; i++) {
     const v = verySlowArgon[i];
@@ -159,9 +157,9 @@ export function testArgon(
 
   describe(`argon2 crosstest (${variant})`, () => {
     const algos = {
-      argon2d: argon2d,
-      argon2i: argon2i,
-      argon2id: argon2id,
+      argon2d: platformArgon2d,
+      argon2i: platformArgon2i,
+      argon2id: platformArgon2id,
     };
     const versions = {
       '0x10': 0x10,

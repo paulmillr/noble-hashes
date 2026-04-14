@@ -1,16 +1,11 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync as nodeScryptSync } from 'node:crypto';
-import { hkdf } from '../src/hkdf.ts';
-import { hmac } from '../src/hmac.ts';
-import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
-import { scrypt, scryptAsync } from '../src/scrypt.ts';
-import { sha256, sha512 } from '../src/sha2.ts';
-import { cshake128 } from '../src/sha3-addons.ts';
 import { pathToFileURL } from 'node:url';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
 import { RANDOM, executeKDFTests } from './generator.ts';
 import { HASHES } from './hashes.test.ts';
+import { PLATFORMS } from './platform.ts';
 import { fmt } from './utils.ts';
 
 const KB = 1024;
@@ -33,17 +28,7 @@ const ZERO_1MB = new Uint8Array(1 * MB);
 // Scrypt stuff
 const PASSWORD = new Uint8Array([1, 2, 3]);
 const SALT = new Uint8Array([4, 5, 6]);
-const DEFAULT_PLATFORM = {
-  cshake128,
-  hkdf,
-  hmac,
-  pbkdf2,
-  pbkdf2Async,
-  scrypt,
-  scryptAsync,
-  sha256,
-  sha512,
-};
+const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 const BT = { describe, should };
 // Manually generated with pycryptodome, on input ZERO_4GB / ZERO_5GB
 const BIG_VECTORS = {
@@ -152,7 +137,8 @@ export function test(
           maxmem: 4 * 1024 ** 3 + 128 * 1024 + 128 * 1024 * 2, // 8 GB (V) + 128kb (B) + 256kb (XY)
         })
       );
-      const nobleOpts = { ...opts, maxmem: 4 * 1024 ** 3 + 128 * 1024 }; // We don't have XY buffer
+      // noble counts the shared `tmp` scratch block in maxmem too, so V+B needs one extra block.
+      const nobleOpts = { ...opts, maxmem: 4 * 1024 ** 3 + 128 * 1024 * 2 };
       eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
       eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
     });

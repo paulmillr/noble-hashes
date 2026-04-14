@@ -1,14 +1,10 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects } from 'node:assert';
-import { hkdf } from '../src/hkdf.ts';
-import { hmac } from '../src/hmac.ts';
-import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
-import { scrypt, scryptAsync } from '../src/scrypt.ts';
-import { sha256 } from '../src/sha2.ts';
 import { pathToFileURL } from 'node:url';
 import { createView } from '../src/utils.ts';
 import { RANDOM } from './generator.ts';
 import { HASHES } from './hashes.test.ts';
+import { PLATFORMS } from './platform.ts';
 import { stats } from './utils.ts';
 
 const getTime = () => Number(process.hrtime.bigint());
@@ -71,7 +67,7 @@ const MARGIN = (() => {
 })();
 
 console.log(`Time margin: ${MARGIN}`);
-const DEFAULT_PLATFORM = { hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256 };
+const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 const BT = { describe, should };
 
 const SMALL_BUF = new Uint8Array(1024);

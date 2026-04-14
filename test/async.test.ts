@@ -1,10 +1,8 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { pathToFileURL } from 'node:url';
-import { pbkdf2Async } from '../src/pbkdf2.ts';
-import { scrypt, scryptAsync } from '../src/scrypt.ts';
-import { sha256 } from '../src/sha2.ts';
 import * as utils from '../src/utils.ts';
+import { PLATFORMS } from './platform.ts';
 
 // Collect statistic about block of event loop by sync code
 class LoopWatcher {
@@ -41,10 +39,10 @@ class LoopWatcher {
 const PWD = new Uint8Array([1, 2, 3]);
 const SALT = new Uint8Array([4, 5, 6]);
 const BT = { describe, should };
-const DEFAULT = { sha256, scrypt, scryptAsync, pbkdf2Async };
+const DEFAULT = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 const DEFAULT_PROGRESS = {
-  scrypt,
-  scryptAsync,
+  scrypt: DEFAULT.scrypt,
+  scryptAsync: DEFAULT.scryptAsync,
   len: 10083,
   head: [
     0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
