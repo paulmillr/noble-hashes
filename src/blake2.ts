@@ -3,7 +3,7 @@
  * b could have been faster, but there is no fast u64 in js, so s is 1.5x faster.
  * @module
  */
-import { BSIGMA, G1s, G2s } from './_blake.ts';
+import { BSIGMA } from './_blake.ts';
 import { SHA256_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
 // prettier-ignore
@@ -450,25 +450,48 @@ export function compress(s: TArg<Uint8Array>, offset: number, msg: TArg<Uint32Ar
   v0: number, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number,
   v8: number, v9: number, v10: number, v11: number, v12: number, v13: number, v14: number, v15: number,
 ): _Num16 {
+  // Implementation note: the round body below is the inlined form of
+  //   G1s(a, b, c, d, x):  a = (a + b + x) | 0;  d = rotr(d ^ a, 16);
+  //                        c = (c + d) | 0;      b = rotr(b ^ c, 12);
+  //   G2s(a, b, c, d, x):  a = (a + b + x) | 0;  d = rotr(d ^ a,  8);
+  //                        c = (c + d) | 0;      b = rotr(b ^ c,  7);
+  //   rotr(w, s) = (w << (32 - s)) | (w >>> s)
+  // G1s / G2s were previously called as functions (one per column/diagonal
+  // step). Each call returned a fresh `{ a, b, c, d }` object that the
+  // caller destructured — 16 object allocations per round × R rounds per
+  // compress invocation. V8 does not reliably escape-analyze these away on
+  // the hashing hot path, so workloads that run many independent hashes see
+  // minor-GC time dominate compress CPU time.
+  // The G1s / G2s exports in _blake.ts are kept — blake1 still uses them
+  // outside the hot loop; the inlining is scoped only to this compress body.
   let j = 0;
+  let x: number, t: number;
   for (let i = 0; i < rounds; i++) {
-    ({ a: v0, b: v4, c: v8, d: v12 } = G1s(v0, v4, v8, v12, msg[offset + s[j++]]));
-    ({ a: v0, b: v4, c: v8, d: v12 } = G2s(v0, v4, v8, v12, msg[offset + s[j++]]));
-    ({ a: v1, b: v5, c: v9, d: v13 } = G1s(v1, v5, v9, v13, msg[offset + s[j++]]));
-    ({ a: v1, b: v5, c: v9, d: v13 } = G2s(v1, v5, v9, v13, msg[offset + s[j++]]));
-    ({ a: v2, b: v6, c: v10, d: v14 } = G1s(v2, v6, v10, v14, msg[offset + s[j++]]));
-    ({ a: v2, b: v6, c: v10, d: v14 } = G2s(v2, v6, v10, v14, msg[offset + s[j++]]));
-    ({ a: v3, b: v7, c: v11, d: v15 } = G1s(v3, v7, v11, v15, msg[offset + s[j++]]));
-    ({ a: v3, b: v7, c: v11, d: v15 } = G2s(v3, v7, v11, v15, msg[offset + s[j++]]));
+    // column mixing: G(v0,v4,v8,v12) (G1 + G2)
+    x = msg[offset + s[j++]]; v0 = (v0 + v4 + x) | 0; t = v12 ^ v0; v12 = (t << 16) | (t >>> 16); v8  = (v8  + v12) | 0; t = v4 ^ v8;  v4 = (t << 20) | (t >>> 12);
+    x = msg[offset + s[j++]]; v0 = (v0 + v4 + x) | 0; t = v12 ^ v0; v12 = (t << 24) | (t >>> 8);  v8  = (v8  + v12) | 0; t = v4 ^ v8;  v4 = (t << 25) | (t >>> 7);
+    // G(v1,v5,v9,v13)
+    x = msg[offset + s[j++]]; v1 = (v1 + v5 + x) | 0; t = v13 ^ v1; v13 = (t << 16) | (t >>> 16); v9  = (v9  + v13) | 0; t = v5 ^ v9;  v5 = (t << 20) | (t >>> 12);
+    x = msg[offset + s[j++]]; v1 = (v1 + v5 + x) | 0; t = v13 ^ v1; v13 = (t << 24) | (t >>> 8);  v9  = (v9  + v13) | 0; t = v5 ^ v9;  v5 = (t << 25) | (t >>> 7);
+    // G(v2,v6,v10,v14)
+    x = msg[offset + s[j++]]; v2 = (v2 + v6 + x) | 0; t = v14 ^ v2; v14 = (t << 16) | (t >>> 16); v10 = (v10 + v14) | 0; t = v6 ^ v10; v6 = (t << 20) | (t >>> 12);
+    x = msg[offset + s[j++]]; v2 = (v2 + v6 + x) | 0; t = v14 ^ v2; v14 = (t << 24) | (t >>> 8);  v10 = (v10 + v14) | 0; t = v6 ^ v10; v6 = (t << 25) | (t >>> 7);
+    // G(v3,v7,v11,v15)
+    x = msg[offset + s[j++]]; v3 = (v3 + v7 + x) | 0; t = v15 ^ v3; v15 = (t << 16) | (t >>> 16); v11 = (v11 + v15) | 0; t = v7 ^ v11; v7 = (t << 20) | (t >>> 12);
+    x = msg[offset + s[j++]]; v3 = (v3 + v7 + x) | 0; t = v15 ^ v3; v15 = (t << 24) | (t >>> 8);  v11 = (v11 + v15) | 0; t = v7 ^ v11; v7 = (t << 25) | (t >>> 7);
 
-    ({ a: v0, b: v5, c: v10, d: v15 } = G1s(v0, v5, v10, v15, msg[offset + s[j++]]));
-    ({ a: v0, b: v5, c: v10, d: v15 } = G2s(v0, v5, v10, v15, msg[offset + s[j++]]));
-    ({ a: v1, b: v6, c: v11, d: v12 } = G1s(v1, v6, v11, v12, msg[offset + s[j++]]));
-    ({ a: v1, b: v6, c: v11, d: v12 } = G2s(v1, v6, v11, v12, msg[offset + s[j++]]));
-    ({ a: v2, b: v7, c: v8, d: v13 } = G1s(v2, v7, v8, v13, msg[offset + s[j++]]));
-    ({ a: v2, b: v7, c: v8, d: v13 } = G2s(v2, v7, v8, v13, msg[offset + s[j++]]));
-    ({ a: v3, b: v4, c: v9, d: v14 } = G1s(v3, v4, v9, v14, msg[offset + s[j++]]));
-    ({ a: v3, b: v4, c: v9, d: v14 } = G2s(v3, v4, v9, v14, msg[offset + s[j++]]));
+    // diagonal mixing: G(v0,v5,v10,v15)
+    x = msg[offset + s[j++]]; v0 = (v0 + v5 + x) | 0; t = v15 ^ v0; v15 = (t << 16) | (t >>> 16); v10 = (v10 + v15) | 0; t = v5 ^ v10; v5 = (t << 20) | (t >>> 12);
+    x = msg[offset + s[j++]]; v0 = (v0 + v5 + x) | 0; t = v15 ^ v0; v15 = (t << 24) | (t >>> 8);  v10 = (v10 + v15) | 0; t = v5 ^ v10; v5 = (t << 25) | (t >>> 7);
+    // G(v1,v6,v11,v12)
+    x = msg[offset + s[j++]]; v1 = (v1 + v6 + x) | 0; t = v12 ^ v1; v12 = (t << 16) | (t >>> 16); v11 = (v11 + v12) | 0; t = v6 ^ v11; v6 = (t << 20) | (t >>> 12);
+    x = msg[offset + s[j++]]; v1 = (v1 + v6 + x) | 0; t = v12 ^ v1; v12 = (t << 24) | (t >>> 8);  v11 = (v11 + v12) | 0; t = v6 ^ v11; v6 = (t << 25) | (t >>> 7);
+    // G(v2,v7,v8,v13)
+    x = msg[offset + s[j++]]; v2 = (v2 + v7 + x) | 0; t = v13 ^ v2; v13 = (t << 16) | (t >>> 16); v8  = (v8  + v13) | 0; t = v7 ^ v8;  v7 = (t << 20) | (t >>> 12);
+    x = msg[offset + s[j++]]; v2 = (v2 + v7 + x) | 0; t = v13 ^ v2; v13 = (t << 24) | (t >>> 8);  v8  = (v8  + v13) | 0; t = v7 ^ v8;  v7 = (t << 25) | (t >>> 7);
+    // G(v3,v4,v9,v14)
+    x = msg[offset + s[j++]]; v3 = (v3 + v4 + x) | 0; t = v14 ^ v3; v14 = (t << 16) | (t >>> 16); v9  = (v9  + v14) | 0; t = v4 ^ v9;  v4 = (t << 20) | (t >>> 12);
+    x = msg[offset + s[j++]]; v3 = (v3 + v4 + x) | 0; t = v14 ^ v3; v14 = (t << 24) | (t >>> 8);  v9  = (v9  + v14) | 0; t = v4 ^ v9;  v4 = (t << 25) | (t >>> 7);
   }
   return { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 };
 }
