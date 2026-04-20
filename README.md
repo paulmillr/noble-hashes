@@ -503,7 +503,14 @@ See [paulmillr.com/noble](https://paulmillr.com/noble/) for useful resources, ar
 npm run bench
 ```
 
-Benchmarks measured on Apple M4. If you need truly exemplar performance, switch to [awasm-noble](https://github.com/paulmillr/awasm-noble).
+Benchmarks measured on Apple M4.
+
+The library could be 3x faster by utilizing loop unrolling. It isn't used because
+unrolling a) would increase bundle size b) make lib un-readable c) current perf is "fast enough"
+for most use-cases.
+
+If you need truly exemplar performance, switch to [awasm-noble](https://github.com/paulmillr/awasm-noble),
+which does unrolling in an auditable way and allows to achieve 10GB/s BLAKE3.
 
 ```
 # 32B
@@ -549,10 +556,6 @@ pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
 scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 400ms/op
 argon2id(t: 1, m: 256MB) 2881ms
 ```
-
-The library could be 3x faster by utilizing loop unrolling. It isn't used because
-unrolling a) would increase bundle size b) make lib un-readable c) current perf is "fast enough"
-for most use-cases.
 
 ## License
 
