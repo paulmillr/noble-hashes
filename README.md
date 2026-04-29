@@ -11,10 +11,6 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🥈 Optional, friendly wrapper over native WebCrypto
 - 🪶 22KB (gzipped) for everything, 2.4KB for single-hash build
 
-Use [awasm-noble](https://github.com/paulmillr/awasm-noble) if you need an even faster (WASM) alternative.
-Check out [Upgrading](#upgrading) for information about upgrading from previous versions.
-Take a glance at [GitHub Discussions](https://github.com/paulmillr/noble-hashes/discussions) for questions and support.
-
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
 ### This library belongs to _noble_ cryptography
@@ -31,6 +27,7 @@ The library's initial development was funded by [Ethereum Foundation](https://et
   [post-quantum](https://github.com/paulmillr/noble-post-quantum),
   5kb [secp256k1](https://github.com/paulmillr/noble-secp256k1) /
   [ed25519](https://github.com/paulmillr/noble-ed25519)
+- WASM version: [awasm-noble](https://github.com/paulmillr/awasm-noble)
 - [Check out the homepage](https://paulmillr.com/noble/)
   for reading resources, documentation, and apps built with noble
 
