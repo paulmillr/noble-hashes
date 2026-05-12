@@ -112,6 +112,9 @@ type AccountID = number | string;
  * Converts protocol & accountId pair to HKDF params:
  * `info` is UTF-8 protocol bytes, numeric ids become 4-byte BE `salt`,
  * and string ids become UTF-8 `salt` bytes.
+ * Numeric and string account ids share the existing salt byte namespace;
+ * changing this would require a new ESKDF encoding, so callers should use one account
+ * id kind per application.
  */
 function getSaltInfo(protocol: string, accountId: AccountID = 0) {
   // Note that length here also repeats two lines below
@@ -164,6 +167,7 @@ function getKeyLength(options: KeyOpts): number {
   if (!hasLen && !hasMod) throw new Error('must have either keyLength or modulus option');
   // FIPS 186-5 Appendix A.3.1 / A.4.1 calls for at least 64 extra bits.
   const l = hasMod ? countBytes(options.modulus) + 8 : options.keyLength;
+  // HKDF-SHA256 ultimately caps output at 8160 bytes; values above that still fail in hkdf().
   if (!(typeof l === 'number' && l >= 16 && l <= 8192)) throw new Error('invalid keyLength');
   return l;
 }

@@ -306,6 +306,7 @@ const genKeccak = (
 /**
  * SHA3-224 hash function.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA3-224.
@@ -322,6 +323,7 @@ export const sha3_224: TRet<CHash> = /* @__PURE__ */ genKeccak(
 /**
  * SHA3-256 hash function. Different from keccak-256.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA3-256.
@@ -338,6 +340,7 @@ export const sha3_256: TRet<CHash> = /* @__PURE__ */ genKeccak(
 /**
  * SHA3-384 hash function.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA3-384.
@@ -354,6 +357,7 @@ export const sha3_384: TRet<CHash> = /* @__PURE__ */ genKeccak(
 /**
  * SHA3-512 hash function.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA3-512.
@@ -371,6 +375,7 @@ export const sha3_512: TRet<CHash> = /* @__PURE__ */ genKeccak(
 /**
  * Keccak-224 hash function.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with Keccak-224.
@@ -382,6 +387,7 @@ export const keccak_224: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 144, 28);
 /**
  * Keccak-256 hash function. Different from SHA3-256.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with Keccak-256.
@@ -393,6 +399,7 @@ export const keccak_256: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 136, 32);
 /**
  * Keccak-384 hash function.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with Keccak-384.
@@ -404,6 +411,7 @@ export const keccak_384: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 104, 48);
 /**
  * Keccak-512 hash function.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with Keccak-512.

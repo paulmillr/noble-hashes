@@ -263,7 +263,7 @@ export type IKMAC = {
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param opts - Optional output and personalization settings. Defaults to
- *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
+ *   16 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC128.
@@ -277,7 +277,7 @@ export const kmac128: TRet<IKMAC> = /* @__PURE__ */ genKmac(168, 16);
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param opts - Optional output and personalization settings. Defaults to
- *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
+ *   32 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC256.
@@ -291,7 +291,7 @@ export const kmac256: TRet<IKMAC> = /* @__PURE__ */ genKmac(136, 32);
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param opts - Optional output and personalization settings. Defaults to
- *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
+ *   16 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC128 XOF output.
@@ -305,7 +305,7 @@ export const kmac128xof: TRet<IKMAC> = /* @__PURE__ */ genKmac(168, 16, true);
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param opts - Optional output and personalization settings. Defaults to
- *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
+ *   32 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC256 XOF output.

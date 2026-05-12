@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, should } from '@paulmillr/jsbt/test.js';
-import { deepStrictEqual as eql, throws } from 'node:assert';
+import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { hmac } from '../src/hmac.ts';
 import { sha256 } from '../src/sha2.ts';
 import * as u from '../src/utils.ts';
@@ -251,7 +251,12 @@ describe('assert', () => {
   });
   should('aoutput', () => {
     eql(u.aoutput(new Uint8Array(10), { outputLen: 5 }), undefined);
-    throws(() => u.aoutput(new Uint8Array(1), { outputLen: 5 }));
+    throws(() => u.aoutput(new Uint8Array(1), { outputLen: 5 }), />= 5/);
+  });
+  should('asyncLoop validates inputs', async () => {
+    await rejects(() => u.asyncLoop(Number.NaN, 0, () => {}));
+    await rejects(() => u.asyncLoop(1, Number.NaN, () => {}));
+    await rejects(() => u.asyncLoop(1, 0, 0 as never));
   });
 });
 

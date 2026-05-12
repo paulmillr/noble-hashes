@@ -443,6 +443,7 @@ export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
  * - Each sha256 hash is executing 2^18 bit operations.
  * - Good 2024 ASICs can do 200Th/sec with 3500 watts of power, corresponding to 2^36 hashes/joule.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA2-256.
@@ -457,6 +458,7 @@ export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ createHasher(
 /**
  * SHA2-224 hash function from RFC 4634.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA2-224.
@@ -472,6 +474,7 @@ export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ createHasher(
 /**
  * SHA2-512 hash function from RFC 4634.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA2-512.
@@ -486,6 +489,7 @@ export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ createHasher(
 /**
  * SHA2-384 hash function from RFC 4634.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA2-384.
@@ -502,6 +506,7 @@ export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ createHasher(
  * SHA2-512/256 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on {@link https://eprint.iacr.org/2010/548.pdf | truncated SHA512}.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA2-512/256.
@@ -517,6 +522,7 @@ export const sha512_256: TRet<CHash<_SHA512_256>> = /* @__PURE__ */ createHasher
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
  * See the paper on {@link https://eprint.iacr.org/2010/548.pdf | truncated SHA512}.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA2-512/224.

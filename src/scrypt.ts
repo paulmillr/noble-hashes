@@ -121,7 +121,8 @@ export type ScryptOpts = {
   maxmem?: number;
   /**
    * Optional progress callback invoked during long-running derivations.
-   * param progress - completion fraction in the `0..1` range
+   * @param progress - completion fraction in the `0..1` range
+   * Must not throw; scrypt work buffers are only wiped on normal completion.
    */
   onProgress?: (progress: number) => void;
 };

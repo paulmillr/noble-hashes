@@ -270,7 +270,7 @@ export function aoutput(out: any, instance: any): void {
   abytes(out, undefined, 'digestInto() output');
   const min = instance.outputLen;
   if (out.length < min) {
-    throw new RangeError('"digestInto() output" expected to be of length >=' + min);
+    throw new RangeError('"digestInto() output" expected to be of length >= ' + min);
   }
 }
 
@@ -542,6 +542,8 @@ export const nextTick = async (): Promise<void> => {};
  * @param iters - number of loop iterations to run
  * @param tick - maximum time slice in milliseconds
  * @param cb - callback executed on each iteration
+ * @throws On wrong argument types. {@link TypeError}
+ * @throws On wrong argument ranges or values. {@link RangeError}
  * @example
  * Run a loop that periodically yields back to the event loop.
  * ```ts
@@ -553,6 +555,10 @@ export async function asyncLoop(
   tick: number,
   cb: (i: number) => void
 ): Promise<void> {
+  anumber(iters, 'iters');
+  anumber(tick, 'tick');
+  if (typeof cb !== 'function') throw new TypeError('callback must be a function');
+  // Callback is synchronous by contract; asyncLoop only yields between sync work windows.
   let ts = Date.now();
   for (let i = 0; i < iters; i++) {
     cb(i);
@@ -560,6 +566,7 @@ export async function asyncLoop(
     const diff = Date.now() - ts;
     if (diff >= 0 && diff < tick) continue;
     await nextTick();
+    // Track only synchronous work time; scheduler delay after yielding is outside our budget.
     ts += diff;
   }
 }

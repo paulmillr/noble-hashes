@@ -227,7 +227,7 @@ export type ArgonOpts = {
   maxmem?: number;
   /**
    * Optional progress callback invoked during long-running derivations.
-   * param progress - completion fraction in the `0..1` range
+   * @param progress - completion fraction in the `0..1` range
    */
   onProgress?: (progress: number) => void;
 };

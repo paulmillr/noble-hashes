@@ -94,6 +94,7 @@ export class _SHA1 extends HashMD<_SHA1> {
 /**
  * SHA1 (RFC 3174) legacy hash function. It was cryptographically broken.
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with SHA1.
@@ -193,6 +194,7 @@ export class _MD5 extends HashMD<_MD5> {
  * - Non-linear index selection: huge speed-up for unroll
  * - Per round constants: more memory accesses, additional speed-up for unroll
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with MD5.
@@ -329,6 +331,7 @@ export class _RIPEMD160 extends HashMD<_RIPEMD160> {
  * * {@link https://homes.esat.kuleuven.be/~bosselae/ripemd160.html}
  * * {@link https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf}
  * @param msg - message bytes to hash
+ * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
  * Hash a message with RIPEMD-160.
