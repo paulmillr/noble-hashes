@@ -136,6 +136,7 @@ export function isBytes(a: unknown): a is Uint8Array {
  * Asserts something is a non-negative integer.
  * @param n - number to validate
  * @param title - label included in thrown errors
+ * @returns The validated number.
  * @throws On wrong argument types. {@link TypeError}
  * @throws On wrong argument ranges or values. {@link RangeError}
  * @example
@@ -144,7 +145,7 @@ export function isBytes(a: unknown): a is Uint8Array {
  * anumber(32, 'length');
  * ```
  */
-export function anumber(n: number, title: string = ''): void {
+export function anumber(n: number, title: string = ''): number {
   if (typeof n !== 'number') {
     const prefix = title && `"${title}" `;
     throw new TypeError(`${prefix}expected number, got ${typeof n}`);
@@ -153,6 +154,7 @@ export function anumber(n: number, title: string = ''): void {
     const prefix = title && `"${title}" `;
     throw new RangeError(`${prefix}expected integer >= 0, got ${n}`);
   }
+  return n;
 }
 
 /**
@@ -197,6 +199,7 @@ export function abytes(
   const bytes = isBytes(value);
   const len = value?.length;
   const needsLen = length !== undefined;
+  if (bytes && (!needsLen || len === length)) return value as TRet<Uint8Array>;
   if (needsLen) anumber(length, 'length');
   if (!bytes || (needsLen && len !== length)) {
     const prefix = title && `"${title}" `;
@@ -252,6 +255,15 @@ export function ahash(h: TArg<CHash>): void {
   if (h.blockLen < 1) throw new Error('"blockLen" must be >= 1');
 }
 
+const aobject = (value: Record<string, any>, label: string) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    throw new TypeError(
+      label === 'object'
+        ? 'expected valid options object'
+        : `"${label}" expected object, got type=${typeof value}`
+    );
+};
+
 /**
  * Asserts a hash instance has not been destroyed or finished.
  * @param instance - hash instance to validate
@@ -267,10 +279,14 @@ export function ahash(h: TArg<CHash>): void {
  * ```
  */
 export function aexists(instance: any, checkFinished = true): void {
-  validateObject(instance, {}, { destroyed: 'boolean', finished: 'boolean' }, 'instance');
-  abool(checkFinished, 'checkFinished');
-  if (instance.destroyed) throw new Error('Hash instance has been destroyed');
-  if (checkFinished && instance.finished) throw new Error('Hash#digest() has already been called');
+  aobject(instance, 'instance');
+  const destroyed =
+    instance.destroyed === undefined ? false : abool(instance.destroyed, 'instance.destroyed');
+  const finished =
+    instance.finished === undefined ? false : abool(instance.finished, 'instance.finished');
+  checkFinished = abool(checkFinished, 'checkFinished');
+  if (destroyed) throw new Error('Hash instance has been destroyed');
+  if (checkFinished && finished) throw new Error('Hash#digest() has already been called');
 }
 
 /**
@@ -291,9 +307,8 @@ export function aexists(instance: any, checkFinished = true): void {
  */
 export function aoutput(out: any, instance: any): void {
   abytes(out, undefined, 'digestInto() output');
-  validateObject(instance, { outputLen: 'number' }, {}, 'instance');
-  anumber(instance.outputLen, 'instance.outputLen');
-  const min = instance.outputLen;
+  aobject(instance, 'instance');
+  const min = anumber(instance.outputLen, 'instance.outputLen');
   if (out.length < min) {
     throw new RangeError('"digestInto() output" expected to be of length >= ' + min);
   }
@@ -666,23 +681,20 @@ export function concatBytes(...arrays: TArg<Uint8Array[]>): TRet<Uint8Array> {
 }
 
 type EmptyObj = {};
+/**
+ * Validates declared required and optional field types on a plain object.
+ * This walks field schemas and formats detailed errors, so avoid it on hot paths; use direct
+ * one-line guards such as `abytes()`, `abool()`, or `anumber()` instead.
+ */
 export const validateObject = (
   object: Record<string, any>,
   fields: Record<string, string> = {},
   optFields: Record<string, string> = {},
   title = 'object'
 ): void => {
-  const checkObject = (value: Record<string, any>, label: string) => {
-    if (value === null || typeof value !== 'object' || Array.isArray(value))
-      throw new TypeError(
-        label === 'object'
-          ? 'expected valid options object'
-          : `"${label}" expected object, got type=${typeof value}`
-      );
-  };
-  checkObject(object, title);
-  checkObject(fields, 'fields');
-  checkObject(optFields, 'optFields');
+  aobject(object, title);
+  aobject(fields, 'fields');
+  aobject(optFields, 'optFields');
   type Item = keyof typeof object;
   function checkField(fieldName: Item, expectedType: string, isOpt: boolean) {
     const label =
@@ -726,8 +738,8 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   opts?: T2,
   title = 'opts'
 ): T1 & T2 {
-  validateObject(defaults as Record<string, any>, {}, {}, 'defaults');
-  if (opts !== undefined) validateObject(opts as Record<string, any>, {}, {}, title);
+  aobject(defaults as Record<string, any>, 'defaults');
+  if (opts !== undefined) aobject(opts as Record<string, any>, title);
   const merged = Object.assign(defaults, opts);
   return merged as T1 & T2;
 }

@@ -28,8 +28,7 @@
     "libsodium-wrappers": "0.7.13",
     "scrypt-async": "2.0.1",
     "scrypt-js": "3.0.1",
-    "sha3": "2.1.4",
-    "unrolled-nbl-hashes-sha3": "0.1.1"
+    "sha3": "2.1.4"
   },
   "version": "0.1.0"
 }

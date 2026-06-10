@@ -270,7 +270,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     aoutput(out, this);
     if (this.finished) throw new Error('digest() was already called');
     // `aoutput(...)` allows oversized buffers; digestInto() must fill only the advertised digest.
-    this.writeInto(out.subarray(0, this.outputLen));
+    this.writeInto(out.length === this.outputLen ? out : out.subarray(0, this.outputLen));
     this.destroy();
   }
   digest(): TRet<Uint8Array> {

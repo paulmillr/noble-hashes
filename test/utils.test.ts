@@ -198,7 +198,7 @@ describe('utils etc', () => {
 
 describe('assert', () => {
   should('anumber', () => {
-    eql(u.anumber(10), undefined);
+    eql(u.anumber(10), 10);
     throws(() => u.anumber(1.2));
     throws(() => u.anumber('1'));
     throws(() => u.anumber(true));

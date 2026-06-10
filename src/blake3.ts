@@ -286,7 +286,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     if (this.finished) throw new Error('digest() was already called');
     this.enableXOF = false;
     // `aoutput(...)` allows oversized buffers; digestInto() must fill only the configured digest.
-    this.writeInto(out.subarray(0, this.outputLen));
+    this.writeInto(out.length === this.outputLen ? out : out.subarray(0, this.outputLen));
     this.destroy();
   }
   digest(): TRet<Uint8Array> {
