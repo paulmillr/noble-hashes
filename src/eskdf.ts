@@ -92,6 +92,8 @@ function strHasLength(str: string, min: number, max: number): boolean {
  * ```
  */
 export function deriveMainSeed(username: string, password: string): TRet<Uint8Array> {
+  if (typeof username !== 'string') kdfInputToBytes(username, 'username');
+  if (typeof password !== 'string') kdfInputToBytes(password, 'password');
   if (!strHasLength(username, 8, 255)) throw new Error('invalid username');
   if (!strHasLength(password, 8, 255)) throw new Error('invalid password');
   // Keep the protocol separators as the literal bytes 0x01 / 0x02 even after minification.

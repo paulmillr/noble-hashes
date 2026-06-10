@@ -156,6 +156,26 @@ export function anumber(n: number, title: string = ''): void {
 }
 
 /**
+ * Asserts something is a boolean.
+ * @param value - value to validate
+ * @param title - label included in thrown errors
+ * @returns The validated boolean.
+ * @throws On wrong argument types. {@link TypeError}
+ * @example
+ * Validate a boolean option.
+ * ```ts
+ * abool(true, 'enableXOF');
+ * ```
+ */
+export function abool(value: boolean, title: string = ''): boolean {
+  if (typeof value !== 'boolean') {
+    const prefix = title && `"${title}" `;
+    throw new TypeError(prefix + 'expected boolean, got type=' + typeof value);
+  }
+  return value;
+}
+
+/**
  * Asserts something is Uint8Array.
  * @param value - value to validate
  * @param length - optional exact length constraint
@@ -177,6 +197,7 @@ export function abytes(
   const bytes = isBytes(value);
   const len = value?.length;
   const needsLen = length !== undefined;
+  if (needsLen) anumber(length, 'length');
   if (!bytes || (needsLen && len !== length)) {
     const prefix = title && `"${title}" `;
     const ofLen = needsLen ? ` of length ${length}` : '';
@@ -246,6 +267,8 @@ export function ahash(h: TArg<CHash>): void {
  * ```
  */
 export function aexists(instance: any, checkFinished = true): void {
+  validateObject(instance, {}, { destroyed: 'boolean', finished: 'boolean' }, 'instance');
+  abool(checkFinished, 'checkFinished');
   if (instance.destroyed) throw new Error('Hash instance has been destroyed');
   if (checkFinished && instance.finished) throw new Error('Hash#digest() has already been called');
 }
@@ -268,6 +291,8 @@ export function aexists(instance: any, checkFinished = true): void {
  */
 export function aoutput(out: any, instance: any): void {
   abytes(out, undefined, 'digestInto() output');
+  validateObject(instance, { outputLen: 'number' }, {}, 'instance');
+  anumber(instance.outputLen, 'instance.outputLen');
   const min = instance.outputLen;
   if (out.length < min) {
     throw new RangeError('"digestInto() output" expected to be of length >= ' + min);
@@ -641,10 +666,53 @@ export function concatBytes(...arrays: TArg<Uint8Array[]>): TRet<Uint8Array> {
 }
 
 type EmptyObj = {};
+export const validateObject = (
+  object: Record<string, any>,
+  fields: Record<string, string> = {},
+  optFields: Record<string, string> = {},
+  title = 'object'
+): void => {
+  const checkObject = (value: Record<string, any>, label: string) => {
+    if (value === null || typeof value !== 'object' || Array.isArray(value))
+      throw new TypeError(
+        label === 'object'
+          ? 'expected valid options object'
+          : `"${label}" expected object, got type=${typeof value}`
+      );
+  };
+  checkObject(object, title);
+  checkObject(fields, 'fields');
+  checkObject(optFields, 'optFields');
+  type Item = keyof typeof object;
+  function checkField(fieldName: Item, expectedType: string, isOpt: boolean) {
+    const label =
+      title === 'object' ? `param "${String(fieldName)}"` : `"${title}.${String(fieldName)}"`;
+    // Config fields must be explicit own properties. Optional inherited values are rejected too
+    // because callers keep reading the same options object after validation.
+    const val = object[fieldName];
+    // Runtime objects such as Field instances intentionally satisfy required method slots
+    // via their shared prototype.
+    if (
+      !Object.hasOwn(object, fieldName) &&
+      (isOpt ? val !== undefined : expectedType !== 'function')
+    ) {
+      throw new TypeError(`${label} is invalid: expected own property`);
+    }
+    if (isOpt && val === undefined) return;
+    const current = typeof val;
+    if (current !== expectedType || val === null)
+      throw new TypeError(`${label} is invalid: expected ${expectedType}, got ${current}`);
+  }
+  const iter = (f: typeof fields, isOpt: boolean) =>
+    Object.entries(f).forEach(([k, v]) => checkField(k, v, isOpt));
+  iter(fields, false);
+  iter(optFields, true);
+};
 /**
  * Merges default options and passed options.
  * @param defaults - base option object
  * @param opts - user overrides
+ * @param title - label included in thrown override errors
  * @returns Merged option object. The merge mutates `defaults` in place.
  * @throws On wrong argument types. {@link TypeError}
  * @example
@@ -655,10 +723,11 @@ type EmptyObj = {};
  */
 export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   defaults: T1,
-  opts?: T2
+  opts?: T2,
+  title = 'opts'
 ): T1 & T2 {
-  if (opts !== undefined && {}.toString.call(opts) !== '[object Object]')
-    throw new TypeError('options must be object or undefined');
+  validateObject(defaults as Record<string, any>, {}, {}, 'defaults');
+  if (opts !== undefined) validateObject(opts as Record<string, any>, {}, {}, title);
   const merged = Object.assign(defaults, opts);
   return merged as T1 & T2;
 }
@@ -791,6 +860,9 @@ export function createHasher<T extends Hash<T>, Opts = undefined>(
   hashCons: HasherCons<T, Opts>,
   info: TArg<HashInfo> = {}
 ): TRet<CHash<T, Opts>> {
+  if (typeof hashCons !== 'function')
+    throw new TypeError('"hashCons" expected function, got type=' + typeof hashCons);
+  info = checkOpts({}, info, 'info') as HashInfo;
   const hashC: any = (msg: TArg<Uint8Array>, opts?: TArg<Opts>) =>
     hashCons(opts as Opts)
       .update(msg)

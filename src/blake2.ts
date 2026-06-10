@@ -9,6 +9,7 @@ import * as u64 from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
+  checkOpts,
   clean, createHasher,
   swap32IfBE, swap8IfBE,
   u32,
@@ -249,6 +250,7 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
   private v7h = B2B_IV[15] | 0;
 
   constructor(opts: Blake2Opts = {}) {
+    opts = checkOpts({}, opts);
     const olen = opts.dkLen === undefined ? 64 : opts.dkLen;
     super(128, olen);
     checkBlake2Opts(olen, opts, 64, 16, 16);
@@ -387,6 +389,16 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
  * ```ts
  * blake2b(new Uint8Array([97, 98, 99]));
  * ```
+ * @example
+ * Hash a message with Blake2b while selecting output, MAC, salt, and personalization settings.
+ * ```ts
+ * blake2b(new Uint8Array([97, 98, 99]), {
+ *   dkLen: 32,
+ *   key: new Uint8Array(32),
+ *   salt: new Uint8Array(16),
+ *   personalization: new Uint8Array(16),
+ * });
+ * ```
  */
 export const blake2b: TRet<CHash<_BLAKE2b, Blake2Opts>> = /* @__PURE__ */ createHasher(
   (opts) => new _BLAKE2b(opts)
@@ -433,8 +445,8 @@ export type _Num16 = {
  * @example
  * Run the BLAKE2 compression core on zeroed state and message words.
  * ```ts
- * import { compress } from '@noble/hashes/blake2.js';
- * const state = compress(
+ * import { _compress } from '@noble/hashes/blake2.js';
+ * const state = _compress(
  *   new Uint8Array(16),
  *   0,
  *   new Uint32Array(16),
@@ -446,7 +458,8 @@ export type _Num16 = {
  * ```
  */
 // prettier-ignore
-export function compress(s: TArg<Uint8Array>, offset: number, msg: TArg<Uint32Array>, rounds: number,
+export function _compress(
+  s: TArg<Uint8Array>, offset: number, msg: TArg<Uint32Array>, rounds: number,
   v0: number, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number,
   v8: number, v9: number, v10: number, v11: number, v12: number, v13: number, v14: number, v15: number,
 ): _Num16 {
@@ -489,6 +502,7 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
   private v7 = B2S_IV[7] | 0;
 
   constructor(opts: Blake2Opts = {}) {
+    opts = checkOpts({}, opts);
     const olen = opts.dkLen === undefined ? 32 : opts.dkLen;
     super(64, olen);
     checkBlake2Opts(olen, opts, 32, 8, 8);
@@ -543,7 +557,7 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
     // v12/v13, and invert v14 on the final block.
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
-      compress(
+      _compress(
         BSIGMA, offset, msg, 10,
         this.v0, this.v1, this.v2, this.v3, this.v4, this.v5, this.v6, this.v7,
         B2S_IV[0], B2S_IV[1], B2S_IV[2], B2S_IV[3], l ^ B2S_IV[4], h ^ B2S_IV[5], isLast ? ~B2S_IV[6] : B2S_IV[6], B2S_IV[7]
@@ -575,6 +589,16 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
  * Hash a message with Blake2s.
  * ```ts
  * blake2s(new Uint8Array([97, 98, 99]));
+ * ```
+ * @example
+ * Hash a message with Blake2s while selecting output, MAC, salt, and personalization settings.
+ * ```ts
+ * blake2s(new Uint8Array([97, 98, 99]), {
+ *   dkLen: 16,
+ *   key: new Uint8Array(32),
+ *   salt: new Uint8Array(8),
+ *   personalization: new Uint8Array(8),
+ * });
  * ```
  */
 export const blake2s: TRet<CHash<_BLAKE2s, Blake2Opts>> = /* @__PURE__ */ createHasher(

@@ -142,6 +142,17 @@ export function pbkdf2(
  * import { sha256 } from '@noble/hashes/sha2.js';
  * const key = await pbkdf2Async(sha256, 'password', 'salt', { dkLen: 32, c: 500_000 });
  * ```
+ * @example
+ * Tune the async PBKDF2 scheduler for short UI tasks.
+ * ```ts
+ * import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
+ * const key = await pbkdf2Async(sha256, 'password', 'salt', {
+ *   dkLen: 32,
+ *   c: 32,
+ *   asyncTick: 1,
+ * });
+ * ```
  */
 export async function pbkdf2Async(
   hash: TArg<CHash>,

@@ -6,21 +6,21 @@ on:
 jobs:
   slow:
     name: Slow large input tests
-    uses: paulmillr/jsbt/.github/workflows/test-custom.yml@d156c5951d47d615d673d039aa03de6b9669449f
+    uses: paulmillr/jsbt/.github/workflows/test-custom.yml@9a270529fbbc31451aee938da7dad227ba87f828
     with:
       npm-task: test:slow
   dos:
     name: DoS tests
-    uses: paulmillr/jsbt/.github/workflows/test-custom.yml@d156c5951d47d615d673d039aa03de6b9669449f
+    uses: paulmillr/jsbt/.github/workflows/test-custom.yml@9a270529fbbc31451aee938da7dad227ba87f828
     with:
       npm-task: test:dos
   acvp:
     name: ACVP tests
-    uses: paulmillr/jsbt/.github/workflows/test-custom.yml@d156c5951d47d615d673d039aa03de6b9669449f
+    uses: paulmillr/jsbt/.github/workflows/test-custom.yml@9a270529fbbc31451aee938da7dad227ba87f828
     with:
       npm-task: test:acvp
   kdf:
     name: KDF tests
-    uses: paulmillr/jsbt/.github/workflows/test-custom.yml@d156c5951d47d615d673d039aa03de6b9669449f
+    uses: paulmillr/jsbt/.github/workflows/test-custom.yml@9a270529fbbc31451aee938da7dad227ba87f828
     with:
       npm-task: test:kdf

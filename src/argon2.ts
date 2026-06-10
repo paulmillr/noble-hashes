@@ -12,6 +12,7 @@ import { add3H, add3L, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from '
 import { blake2b } from './blake2.ts';
 import {
   anumber,
+  checkOpts,
   clean,
   kdfInputToBytes,
   nextTick,
@@ -240,6 +241,7 @@ function isU32(num: number) {
 }
 
 function argon2Opts(opts: TArg<ArgonOpts>) {
+  opts = checkOpts({}, opts);
   const merged: any = {
     version: 0x13,
     dkLen: 32,
@@ -495,6 +497,25 @@ function argon2(
  * ```ts
  * argon2d('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
+ * @example
+ * Derive a key with optional secret and scheduler controls.
+ * ```ts
+ * const progressLog: number[] = [];
+ * argon2d('password', 'salt1234', {
+ *   t: 1,
+ *   m: 8,
+ *   p: 1,
+ *   dkLen: 32,
+ *   version: 0x13,
+ *   key: 'secret',
+ *   personalization: 'application',
+ *   maxmem: 1024 * 1024,
+ *   asyncTick: 1,
+ *   onProgress(progress) {
+ *     progressLog.push(progress);
+ *   },
+ * });
+ * ```
  */
 export const argon2d = (
   password: TArg<KDFInput>,
@@ -622,6 +643,24 @@ async function argon2Async(
  * Derive a key with Argon2d asynchronously.
  * ```ts
  * await argon2dAsync('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
+ * ```
+ * @example
+ * Derive a key asynchronously with optional secret and scheduler controls.
+ * ```ts
+ * await argon2dAsync('password', 'salt1234', {
+ *   t: 1,
+ *   m: 8,
+ *   p: 1,
+ *   dkLen: 32,
+ *   version: 0x13,
+ *   key: 'secret',
+ *   personalization: 'application',
+ *   maxmem: 1024 * 1024,
+ *   asyncTick: 1,
+ *   onProgress(progress) {
+ *     if (progress > 1) throw new Error('invalid progress');
+ *   },
+ * });
  * ```
  */
 export const argon2dAsync = (

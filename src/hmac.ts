@@ -104,11 +104,15 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
  * @param message - message bytes to authenticate
  * @returns Authentication tag bytes.
  * @example
- * Compute an RFC 2104 HMAC.
+ * Compute an RFC 2104 HMAC directly and with an incremental state.
  * ```ts
  * import { hmac } from '@noble/hashes/hmac.js';
  * import { sha256 } from '@noble/hashes/sha2.js';
- * const mac = hmac(sha256, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
+ * const key = new Uint8Array([1, 2, 3]);
+ * const message = new Uint8Array([4, 5, 6]);
+ * const mac = hmac(sha256, key, message);
+ * const out = new Uint8Array(sha256.outputLen);
+ * hmac.create(sha256, key).update(message).digestInto(out);
  * ```
  */
 type HmacFn = {

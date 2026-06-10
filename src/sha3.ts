@@ -14,7 +14,8 @@
 import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
 // prettier-ignore
 import {
-  abytes, aexists, anumber, aoutput,
+  abool, abytes, aexists, anumber, aoutput,
+  checkOpts,
   clean, createHasher,
   oidNist,
   swap32IfBE,
@@ -79,6 +80,10 @@ const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : r
  * ```
  */
 export function keccakP(s: TArg<Uint32Array>, rounds: number = 24): void {
+  if (!(s instanceof Uint32Array))
+    throw new TypeError('"s" expected Uint32Array of length 50, got type=' + typeof s);
+  if (s.length !== 50)
+    throw new RangeError('"s" expected Uint32Array of length 50, got length=' + s.length);
   anumber(rounds, 'rounds');
   // This implementation precomputes only the standard Keccak-f[1600] 24-round Iota table.
   if (rounds < 1 || rounds > 24) throw new Error('"rounds" expected integer 1..24');
@@ -179,6 +184,10 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     enableXOF = false,
     rounds: number = 24
   ) {
+    anumber(blockLen, 'blockLen');
+    anumber(suffix, 'suffix');
+    anumber(rounds, 'rounds');
+    abool(enableXOF, 'enableXOF');
     this.blockLen = blockLen;
     this.suffix = suffix;
     this.outputLen = outputLen;
@@ -428,11 +437,10 @@ export type ShakeOpts = {
 };
 
 const genShake = (suffix: number, blockLen: number, outputLen: number, info: TArg<HashInfo> = {}) =>
-  createHasher<Keccak, ShakeOpts>(
-    (opts: ShakeOpts = {}) =>
-      new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true),
-    info
-  );
+  createHasher<Keccak, ShakeOpts>((opts: ShakeOpts = {}) => {
+    opts = checkOpts({}, opts);
+    return new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true);
+  }, info);
 
 /**
  * SHAKE128 XOF with 128-bit security and a 16-byte default output.

@@ -28,6 +28,7 @@ import * as u64 from './_u64.ts';
 // prettier-ignore
 import {
   abytes, aexists, aoutput,
+  checkOpts,
   clean, createHasher,
   createView,
   type CHash,
@@ -76,6 +77,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     constants: Uint32Array,
     opts: BlakeOpts = {}
   ) {
+    opts = checkOpts({}, opts);
     const { salt } = opts;
     this.blockLen = blockLen;
     this.outputLen = outputLen;
@@ -577,6 +579,11 @@ export const blake224: TRet<CHash<_BLAKE224, BlakeOpts>> = /* @__PURE__ */ creat
  * Hash a message with Blake1-256.
  * ```ts
  * blake256(new Uint8Array([97, 98, 99]));
+ * ```
+ * @example
+ * Hash a message with Blake1-256 and a 16-byte salt.
+ * ```ts
+ * blake256(new Uint8Array([97, 98, 99]), { salt: new Uint8Array(16) });
  * ```
  */
 export const blake256: TRet<CHash<_BLAKE256, BlakeOpts>> = /* @__PURE__ */ createHasher(

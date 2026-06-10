@@ -13,10 +13,11 @@
  */
 import { SHA256_IV } from './_md.ts';
 import { fromBig } from './_u64.ts';
-import { _BLAKE2, compress } from './blake2.ts';
+import { _BLAKE2, _compress } from './blake2.ts';
 // prettier-ignore
 import {
   abytes, aexists, anumber, aoutput,
+  checkOpts,
   clean,
   copyBytes,
   createHasher, swap32IfBE,
@@ -92,6 +93,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   private enableXOF = true;
 
   constructor(opts: Blake3Opts = {}, flags = 0) {
+    opts = checkOpts({}, opts);
     super(64, opts.dkLen === undefined ? 32 : opts.dkLen);
     const { key, context } = opts;
     const hasContext = context !== undefined;
@@ -131,7 +133,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     const { h, l } = fromBig(BigInt(counter), true);
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
-      compress(
+      _compress(
         B3_SIGMA, bufPos, buf, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
         B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], h, l, pos, flags
@@ -210,7 +212,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     swap32IfBE(buffer32);
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
-      compress(
+      _compress(
         B3_SIGMA, 0, buffer32, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
         B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], l, h, pos, flags
@@ -310,6 +312,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
  * const hash = blake3(data);
  * const mac = blake3(data, { key: new Uint8Array(32) });
  * const kdf = blake3(data, { context: utf8ToBytes('application name') });
+ * const xof = blake3(data, { dkLen: 64 });
  * ```
  */
 export const blake3: TRet<CHashXOF<_BLAKE3, Blake3Opts>> = /* @__PURE__ */ createHasher(

@@ -1,10 +1,10 @@
 import { should } from '@paulmillr/jsbt/test.js';
 // import './blake.test.js';
 // Generic hash tests
+import { test as async } from './async.test.ts';
+import { executeKDFTests } from './generator.ts';
 import { init } from './hashes.test.ts';
 import { PLATFORMS } from './platform.ts';
-import { executeKDFTests } from './generator.ts';
-import { test as async } from './async.test.ts';
 // Specific vectors for hash functions if available
 import { test as blake } from './blake.test.ts';
 import { test as keccak } from './keccak.test.ts';
@@ -19,7 +19,7 @@ import { test as info } from './info.test.ts';
 import './noble-hashes-only.test.ts';
 import './u64.test.ts';
 import './utils.test.ts';
-// import './errors.test.ts';
+
 const variant = 'noble';
 const platform = PLATFORMS[variant] || Object.values(PLATFORMS)[0];
 init(variant, platform);

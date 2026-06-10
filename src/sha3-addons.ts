@@ -16,6 +16,7 @@ import {
   anumber,
   type CHash,
   type CHashXOF,
+  checkOpts,
   clean,
   copyBytes,
   createHasher,
@@ -56,8 +57,9 @@ function rightEncode(n: number | bigint): TRet<Uint8Array> {
   return new Uint8Array(res) as TRet<Uint8Array>;
 }
 
-// `dkLen` validation is deferred to the downstream Keccak constructor.
-function chooseLen(opts: ShakeOpts, outputLen: number): number {
+// `dkLen` range validation is deferred to the downstream Keccak constructor.
+function chooseLen(opts: TArg<ShakeOpts>, outputLen: number): number {
+  opts = checkOpts({}, opts) as ShakeOpts;
   return opts.dkLen === undefined ? outputLen : opts.dkLen;
 }
 
@@ -85,9 +87,9 @@ export type cShakeOpts = ShakeOpts & {
 
 // Personalization
 function cshakePers(hash: TArg<Keccak>, opts: TArg<cShakeOpts> = {}): TRet<Keccak> {
+  opts = checkOpts({}, opts) as cShakeOpts;
   const h = hash as unknown as Keccak;
-  if (!opts || (opts.personalization === undefined && opts.NISTfn === undefined))
-    return h as TRet<Keccak>;
+  if (opts.personalization === undefined && opts.NISTfn === undefined) return h as TRet<Keccak>;
   // Encode and pad inplace to avoid unneccesary memory copies/slices so we
   // don't need to zero them later.
   // bytepad(encode_string(N) || encode_string(S), rate), where `rate` is the
@@ -148,6 +150,15 @@ export type ITupleHash = {
  * Hash a message with cSHAKE128.
  * ```ts
  * cshake128(new Uint8Array([1, 2, 3]), { dkLen: 32 });
+ * ```
+ * @example
+ * Hash a message with SP 800-185 domain separation.
+ * ```ts
+ * cshake128(new Uint8Array([1, 2, 3]), {
+ *   dkLen: 32,
+ *   NISTfn: 'Email Signature',
+ *   personalization: new Uint8Array([1, 2, 3]),
+ * });
  * ```
  */
 export const cshake128: TRet<CHashXOF<Keccak, cShakeOpts>> = /* @__PURE__ */ gencShake(
@@ -268,7 +279,19 @@ export type IKMAC = {
  * @example
  * Authenticate a message with KMAC128.
  * ```ts
- * kmac128(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
+ * const key = new Uint8Array([1, 2, 3]);
+ * const message = new Uint8Array([4, 5, 6]);
+ * kmac128(key, message);
+ * ```
+ * @example
+ * Authenticate a message with output options and an incremental state.
+ * ```ts
+ * const key = new Uint8Array([1, 2, 3]);
+ * const message = new Uint8Array([4, 5, 6]);
+ * const opts = { dkLen: 32, personalization: new Uint8Array([7, 8, 9]) };
+ * const tag = kmac128(key, message, opts);
+ * const out = new Uint8Array(32);
+ * kmac128.create(key, { dkLen: 32 }).update(message).digestInto(out);
  * ```
  */
 export const kmac128: TRet<IKMAC> = /* @__PURE__ */ genKmac(168, 16);
@@ -555,6 +578,15 @@ function genPrl(
  * ```ts
  * parallelhash128(new Uint8Array([1, 2, 3]));
  * ```
+ * @example
+ * Hash a message with chunking and personalization settings.
+ * ```ts
+ * parallelhash128(new Uint8Array([1, 2, 3]), {
+ *   blockLen: 8,
+ *   dkLen: 32,
+ *   personalization: new Uint8Array([4, 5, 6]),
+ * });
+ * ```
  */
 export const parallelhash128: TRet<CHash<Keccak, ParallelOpts>> = /* @__PURE__ */ genPrl(
   168,
@@ -630,6 +662,7 @@ export type TurboshakeOpts = ShakeOpts & {
 
 const genTurbo = (blockLen: number, outputLen: number) =>
   createHasher<Keccak, TurboshakeOpts>((opts: TArg<TurboshakeOpts> = {}) => {
+    opts = checkOpts({}, opts) as TurboshakeOpts;
     const D = opts.D === undefined ? 0x1f : opts.D;
     // RFC 9861 §2.1 fixes the default `D = 0x1f`; §2.2 defines the 12-round
     // TurboSHAKE family selected here.
@@ -654,6 +687,11 @@ const genTurbo = (blockLen: number, outputLen: number) =>
  * Hash a message with TurboSHAKE128.
  * ```ts
  * turboshake128(new Uint8Array([1, 2, 3]), { dkLen: 32 });
+ * ```
+ * @example
+ * Hash a message with an explicit domain-separation byte.
+ * ```ts
+ * turboshake128(new Uint8Array([1, 2, 3]), { dkLen: 32, D: 0x1f });
  * ```
  */
 export const turboshake128: TRet<CHashXOF<Keccak, TurboshakeOpts>> = /* @__PURE__ */ genTurbo(
@@ -720,6 +758,7 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
     opts: TArg<KangarooOpts>
   ) {
     super(blockLen, 0x07, outputLen, true, rounds);
+    opts = checkOpts({}, opts) as KangarooOpts;
     // RFC 9861 §3 defines output length L as a positive integer.
     if (outputLen < 1) throw new Error('"dkLen" must be >= 1');
     this.leafLen = leafLen;
@@ -817,6 +856,14 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
  * Hash a message with KangarooTwelve-128.
  * ```ts
  * kt128(new Uint8Array([1, 2, 3]));
+ * ```
+ * @example
+ * Hash a message with KangarooTwelve-128 personalization.
+ * ```ts
+ * kt128(new Uint8Array([1, 2, 3]), {
+ *   dkLen: 64,
+ *   personalization: new Uint8Array([4, 5, 6]),
+ * });
  * ```
  */
 export const kt128: TRet<CHash<_KangarooTwelve, KangarooOpts>> = /* @__PURE__ */ createHasher(

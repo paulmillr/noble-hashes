@@ -118,6 +118,23 @@ type WebHmacFn = {
   ): Promise<TRet<Uint8Array>>;
   create(hash: TArg<WebHash>, key: TArg<Uint8Array>): any;
 };
+/**
+ * WebCrypto HMAC: RFC2104 message authentication code.
+ * @param hash - function that would be used e.g. sha256. Webcrypto version.
+ * @param key - authentication key bytes
+ * @param message - message bytes to authenticate
+ * @returns Promise resolving to authentication tag bytes.
+ * `.create()` exists only to mirror the synchronous API surface
+ * and always throws `not implemented`.
+ * @example
+ * Compute an RFC 2104 HMAC with WebCrypto.
+ * ```ts
+ * import { hmac, sha256 } from '@noble/hashes/webcrypto.js';
+ * const key = new Uint8Array([1, 2, 3]);
+ * const message = new Uint8Array([4, 5, 6]);
+ * const mac = await hmac(sha256, key, message);
+ * ```
+ */
 export const hmac: TRet<WebHmacFn> = /* @__PURE__ */ (() => {
   const hmac_ = async (
     hash: TArg<WebHash>,

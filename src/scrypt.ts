@@ -220,6 +220,22 @@ function scryptOutput(
  * ```ts
  * scrypt('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  * ```
+ * @example
+ * Derive a key with small demo costs and progress/memory controls.
+ * ```ts
+ * const progressLog: number[] = [];
+ * scrypt('password', 'salt', {
+ *   N: 16,
+ *   r: 8,
+ *   p: 1,
+ *   dkLen: 32,
+ *   maxmem: 1024 * 1024,
+ *   asyncTick: 10,
+ *   onProgress(progress) {
+ *     progressLog.push(progress);
+ *   },
+ * });
+ * ```
  */
 export function scrypt(
   password: TArg<KDFInput>,
@@ -274,6 +290,21 @@ export function scrypt(
  * Derive a key with scrypt asynchronously.
  * ```ts
  * await scryptAsync('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
+ * ```
+ * @example
+ * Derive a key asynchronously with small demo costs and progress/memory controls.
+ * ```ts
+ * await scryptAsync('password', 'salt', {
+ *   N: 16,
+ *   r: 8,
+ *   p: 1,
+ *   dkLen: 32,
+ *   maxmem: 1024 * 1024,
+ *   asyncTick: 1,
+ *   onProgress(progress) {
+ *     if (progress > 1) throw new Error('invalid progress');
+ *   },
+ * });
  * ```
  */
 export async function scryptAsync(
