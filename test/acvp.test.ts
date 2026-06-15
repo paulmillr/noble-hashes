@@ -16,18 +16,14 @@ const loadACVP = (name, gzip = true) => {
   eql(prompt.testGroups.length, internalProjection.testGroups.length);
   const groups = [];
   for (let gid = 0; gid < prompt.testGroups.length; gid++) {
-    const { tests: pTests, ...pInfo } = prompt.testGroups[gid];
-    const { tests: erTests, ...erInfo } = expectedResult.testGroups[gid];
+    const { tests: pTests } = prompt.testGroups[gid];
+    const { tests: erTests } = expectedResult.testGroups[gid];
     const { tests: ipTests, ...ipInfo } = internalProjection.testGroups[gid];
-    const group = { info: { p: pInfo, er: erInfo, ip: ipInfo }, tests: [] };
+    const group = { info: { ip: ipInfo }, tests: [] };
     eql(pTests.length, erTests.length);
     eql(pTests.length, ipTests.length);
     for (let tid = 0; tid < pTests.length; tid++) {
-      group.tests.push({
-        p: pTests[tid],
-        er: erTests[tid],
-        ip: ipTests[tid],
-      });
+      group.tests.push({ ip: ipTests[tid] });
     }
     groups.push(group);
   }
@@ -175,72 +171,74 @@ function run(variant: string, platform: any, isSlow = false, { describe, should 
     shake256,
   } = platform;
   const HASHES = {
-    'SHA2-224': { lib: sha224, groups: loadACVP('SHA2-224-1.0'), MC: MC.sha2 },
-    'SHA2-256': { lib: sha256, groups: loadACVP('SHA2-256-1.0'), MC: MC.sha2 },
-    'SHA2-384': { lib: sha384, groups: loadACVP('SHA2-384-1.0'), MC: MC.sha2 },
-    'SHA2-512': { lib: sha512, groups: loadACVP('SHA2-512-1.0'), MC: MC.sha2 },
-    'SHA2-512-224': { lib: sha512_224, groups: loadACVP('SHA2-512-224-1.0'), MC: MC.sha2 },
-    'SHA2-512-256': { lib: sha512_256, groups: loadACVP('SHA2-512-256-1.0'), MC: MC.sha2 },
+    'SHA2-224': { lib: sha224, vector: 'SHA2-224-1.0', MC: MC.sha2 },
+    'SHA2-256': { lib: sha256, vector: 'SHA2-256-1.0', MC: MC.sha2 },
+    'SHA2-384': { lib: sha384, vector: 'SHA2-384-1.0', MC: MC.sha2 },
+    'SHA2-512': { lib: sha512, vector: 'SHA2-512-1.0', MC: MC.sha2 },
+    'SHA2-512-224': { lib: sha512_224, vector: 'SHA2-512-224-1.0', MC: MC.sha2 },
+    'SHA2-512-256': { lib: sha512_256, vector: 'SHA2-512-256-1.0', MC: MC.sha2 },
     // sha3
-    'SHA3-224': { lib: sha3_224, groups: loadACVP('SHA3-224-2.0'), MC: MC.sha3 },
-    'SHA3-256': { lib: sha3_256, groups: loadACVP('SHA3-256-2.0'), MC: MC.sha3 },
-    'SHAKE-128': { lib: shake128, groups: loadACVP('SHAKE-128-1.0'), MC: MC.shake },
-    'SHAKE-256': { lib: shake256, groups: loadACVP('SHAKE-256-1.0'), MC: MC.shake },
-    'cSHAKE-128': { lib: cshake128, groups: loadACVP('cSHAKE-128-1.0') },
-    'cSHAKE-256': { lib: cshake256, groups: loadACVP('cSHAKE-256-1.0') },
+    'SHA3-224': { lib: sha3_224, vector: 'SHA3-224-2.0', MC: MC.sha3 },
+    'SHA3-256': { lib: sha3_256, vector: 'SHA3-256-2.0', MC: MC.sha3 },
+    'SHAKE-128': { lib: shake128, vector: 'SHAKE-128-1.0', MC: MC.shake },
+    'SHAKE-256': { lib: shake256, vector: 'SHAKE-256-1.0', MC: MC.shake },
+    'cSHAKE-128': { lib: cshake128, vector: 'cSHAKE-128-1.0' },
+    'cSHAKE-256': { lib: cshake256, vector: 'cSHAKE-256-1.0' },
 
     'ParallelHash-128': {
       lib: parallelhash128,
       xof: parallelhash128xof,
-      groups: loadACVP('ParallelHash-128-1.0'),
+      vector: 'ParallelHash-128-1.0',
     },
     'ParallelHash-256': {
       lib: parallelhash256,
       xof: parallelhash256xof,
-      groups: loadACVP('ParallelHash-256-1.0'),
+      vector: 'ParallelHash-256-1.0',
     },
     'TupleHash-128': {
       lib: tuplehash128,
       xof: tuplehash128xof,
-      groups: loadACVP('TupleHash-128-1.0'),
+      vector: 'TupleHash-128-1.0',
     },
     'TupleHash-256': {
       lib: tuplehash256,
       xof: tuplehash256xof,
-      groups: loadACVP('TupleHash-256-1.0'),
+      vector: 'TupleHash-256-1.0',
     },
   };
 
   const MAC = {
-    hmacSha1: { lib: hmac, hash: sha1, groups: loadACVP('HMAC-SHA-1-2.0') },
-    hmacSha224: { lib: hmac, hash: sha224, groups: loadACVP('HMAC-SHA2-224-2.0') },
-    hmacSha256: { lib: hmac, hash: sha256, groups: loadACVP('HMAC-SHA2-256-2.0') },
-    hmacSha384: { lib: hmac, hash: sha384, groups: loadACVP('HMAC-SHA2-384-2.0') },
-    hmacSha512: { lib: hmac, hash: sha512, groups: loadACVP('HMAC-SHA2-512-2.0') },
-    hmacSha512_224: { lib: hmac, hash: sha512_224, groups: loadACVP('HMAC-SHA2-512-224-2.0') },
-    hmacSha512_256: { lib: hmac, hash: sha512_256, groups: loadACVP('HMAC-SHA2-512-256-2.0') },
-    hmacSha3_224: { lib: hmac, hash: sha3_224, groups: loadACVP('HMAC-SHA3-224-2.0') },
-    hmacSha3_256: { lib: hmac, hash: sha3_256, groups: loadACVP('HMAC-SHA3-256-2.0') },
-    hmacSha3_384: { lib: hmac, hash: sha3_384, groups: loadACVP('HMAC-SHA3-384-2.0') },
-    hmacSha3_512: { lib: hmac, hash: sha3_512, groups: loadACVP('HMAC-SHA3-512-2.0') },
+    hmacSha1: { lib: hmac, hash: sha1, vector: 'HMAC-SHA-1-2.0' },
+    hmacSha224: { lib: hmac, hash: sha224, vector: 'HMAC-SHA2-224-2.0' },
+    hmacSha256: { lib: hmac, hash: sha256, vector: 'HMAC-SHA2-256-2.0' },
+    hmacSha384: { lib: hmac, hash: sha384, vector: 'HMAC-SHA2-384-2.0' },
+    hmacSha512: { lib: hmac, hash: sha512, vector: 'HMAC-SHA2-512-2.0' },
+    hmacSha512_224: { lib: hmac, hash: sha512_224, vector: 'HMAC-SHA2-512-224-2.0' },
+    hmacSha512_256: { lib: hmac, hash: sha512_256, vector: 'HMAC-SHA2-512-256-2.0' },
+    hmacSha3_224: { lib: hmac, hash: sha3_224, vector: 'HMAC-SHA3-224-2.0' },
+    hmacSha3_256: { lib: hmac, hash: sha3_256, vector: 'HMAC-SHA3-256-2.0' },
+    hmacSha3_384: { lib: hmac, hash: sha3_384, vector: 'HMAC-SHA3-384-2.0' },
+    hmacSha3_512: { lib: hmac, hash: sha3_512, vector: 'HMAC-SHA3-512-2.0' },
     kmac128: {
       lib: kmac128,
       xof: kmac128xof,
-      groups: loadACVP('KMAC-128-1.0'),
+      vector: 'KMAC-128-1.0',
     },
     kmac256: {
       lib: kmac256,
       xof: kmac256xof,
-      groups: loadACVP('KMAC-256-1.0'),
+      vector: 'KMAC-256-1.0',
     },
   };
 
   describe(`AVCP${isSlow ? ' slow' : ''} (${variant})`, () => {
     for (const name in HASHES) {
-      const { lib, xof, groups, MC } = HASHES[name];
+      const { lib, xof, vector, MC } = HASHES[name];
       // Optional SHA3 addon entrypoints are not available on every platform.
-      if (!lib || groups.some(({ info }) => info.ip.xof && !xof)) continue;
+      if (!lib) continue;
       should(name, () => {
+        const groups = loadACVP(vector);
+        if (groups.some(({ info }) => info.ip.xof && !xof)) return;
         for (const { info, tests } of groups) {
           if (info.ip.outLenIncrement && info.ip.outLenIncrement % 8) continue;
           if (!isSlow && info.ip.testType === 'LDT') continue;
@@ -290,9 +288,11 @@ function run(variant: string, platform: any, isSlow = false, { describe, should 
       });
     }
     for (const name in MAC) {
-      const { lib, xof, hash, groups } = MAC[name];
-      if (!lib || groups.some(({ info }) => info.ip.xof && !xof)) continue;
+      const { lib, xof, hash, vector } = MAC[name];
+      if (!lib) continue;
       should(name, () => {
+        const groups = loadACVP(vector);
+        if (groups.some(({ info }) => info.ip.xof && !xof)) return;
         for (const { info, tests } of groups) {
           for (const t of tests) {
             // skip bit level stuff
