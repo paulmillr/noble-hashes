@@ -10,20 +10,19 @@
     "src"
   ],
   "devDependencies": {
-    "@paulmillr/jsbt": "0.5.2",
+    "@paulmillr/jsbt": "0.6.0",
     "@types/node": "25.3.0",
     "fast-check": "4.2.0",
     "prettier": "3.6.2",
     "typescript": "6.0.2"
   },
   "scripts": {
-    "bench": "node test/benchmark/noble.ts",
-    "bench:compare": "MBENCH_DIMS='algorithm,buffer,library' node test/benchmark/hashes.ts",
-    "bench:compare-scrypt": "MBENCH_DIMS='iters,library' MBENCH_FILTER='async' node test/benchmark/scrypt.ts",
-    "bench:install": "cd test/benchmark; npm install",
+    "benchmark": "node benchmark/hashes.ts",
+    "benchmark:thirdparty": "cd benchmark/thirdparty; npm ci; JSBT_BENCHMARK_DIMENSIONS='algorithm,buffer,library' node hashes.ts",
+    "benchmark:thirdparty-scrypt": "cd benchmark/thirdparty; npm ci; JSBT_BENCHMARK_DIMENSIONS='iters,library' JSBT_BENCHMARK_FILTER='async' node scrypt.ts",
     "build": "tsc",
-    "build:release": "npx --no @paulmillr/jsbt bundle test/build",
-    "check": "npx --no @paulmillr/jsbt check package.json",
+    "build:release": "npx --no @paulmillr/jsbt bundle",
+    "check": "npx --no @paulmillr/jsbt check",
     "build:clean": "rm *.{js,js.map,d.ts,d.ts.map} 2> /dev/null",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "test": "node test/index.ts",

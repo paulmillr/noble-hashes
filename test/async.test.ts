@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it as should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import * as utils from '../src/utils.ts';
@@ -103,7 +103,7 @@ export function test(
   };
 
   describe(`async (${variant})`, () => {
-    should('Scrypt timing, parallel, progress', async () => {
+    should.serial('Scrypt timing, parallel, progress', async () => {
       for (let ms of [10, 25, 50, 100]) await checkTiming(KDFS.Scrypt, ms);
       await checkParallel('Scrypt');
       await checkScryptProgress(PROGRESS.scrypt);
@@ -111,11 +111,11 @@ export function test(
     });
 
     for (let ms of [10, 25, 50, 100]) {
-      should(`PBKDF2 (${ms}ms)`, async () => {
+      should.serial(`PBKDF2 (${ms}ms)`, async () => {
         await checkTiming(KDFS.PBKDF2, ms);
       });
     }
-    should('PBKDF2 parallel', async () => {
+    should.serial('PBKDF2 parallel', async () => {
       await checkParallel('PBKDF2');
     });
   });

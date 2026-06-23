@@ -216,14 +216,14 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
   });
 
   describe(`scrypt (${variant})`, () => {
-    for (let i = 0; i < SCRYPT_VECTORS.length; i++) {
-      const t = SCRYPT_VECTORS[i];
-      should(`Scrypt vector (${i})`, async () => {
+    should(`Scrypt vectors`, async () => {
+      for (let i = 0; i < SCRYPT_VECTORS.length; i++) {
+        const t = SCRYPT_VECTORS[i];
         const exp = hexToBytes(t.exp.replace(/ /g, ''));
-        eql(scrypt(t.P, t.S, t), exp);
-        eql(await scryptAsync(t.P, t.S, t), exp);
-      });
-    }
+        eql(scrypt(t.P, t.S, t), exp, i);
+        eql(await scryptAsync(t.P, t.S, t), exp, i);
+      }
+    });
 
     should('Scrypt types', async () => {
       const opt = { N: 1024, r: 8, p: 16, dkLen: 64 };
