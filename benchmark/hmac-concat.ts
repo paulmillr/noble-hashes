@@ -1,9 +1,9 @@
 import mark from '@paulmillr/jsbt/bench.js';
 import crypto from 'node:crypto';
 
-import { hmac } from '../../src/hmac.ts';
-import { sha256 } from '../../src/sha2.ts';
-import { concatBytes } from '../../src/utils.ts';
+import { hmac } from '../src/hmac.ts';
+import { sha256 } from '../src/sha2.ts';
+import { concatBytes } from '../src/utils.ts';
 
 const hmac256node = (key, ...msgs) => {
   const h = crypto.createHmac('sha256', key);

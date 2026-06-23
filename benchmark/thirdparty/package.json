@@ -2,10 +2,6 @@
   "name": "benchmark",
   "private": true,
   "type": "module",
-  "scripts": {
-    "bench": "node noble.ts",
-    "bench:install": "npm install"
-  },
   "devDependencies": {
     "@node-rs/argon2": "1.8.3",
     "@stablelib/blake2b": "1.0.1",

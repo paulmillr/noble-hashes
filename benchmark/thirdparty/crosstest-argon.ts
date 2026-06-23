@@ -1,7 +1,7 @@
 // Generate cross-test vectors for argon
 // import { argon2i, argon2d, argon2id } from 'hash-wasm'; // Doesn't support version param (only 0x13)
 import * as argon from '@node-rs/argon2';
-import { pattern } from '../utils.ts';
+import { pattern } from '../../utils';
 
 async function main() {
   // - only raw support salt (node-rs/argon2)

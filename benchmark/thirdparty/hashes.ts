@@ -1,5 +1,4 @@
 import compare from '@paulmillr/jsbt/bench-compare.js';
-// Noble
 import { blake256, blake512 } from '../../src/blake1.ts';
 import { blake2b, blake2s } from '../../src/blake2.ts';
 import { blake3 } from '../../src/blake3.ts';
@@ -29,7 +28,6 @@ import {
   hkdfSync,
 } from 'node:crypto';
 import { SHA3 as _SHA3 } from 'sha3';
-import nobleUnrolled from 'unrolled-nbl-hashes-sha3';
 import { hkdf } from '../../src/hkdf.ts';
 
 const wasm = {};
@@ -64,7 +62,6 @@ const HASHES = {
   },
   sha3_256: {
     noble: (buf) => sha3_256(buf),
-    'noble (unrolled)': (buf) => nobleUnrolled.sha3_256(buf),
     node: (buf) => crypto_createHash('sha3-256').update(buf).digest(),
     'hash-wasm': (buf) => wasm.sha3.init().update(buf).digest(),
     stablelib: (buf) => new stable3.SHA3256().update(buf).digest(),
@@ -131,10 +128,9 @@ async function main() {
     wasm.blake3 = await wasm_.createBLAKE3();
   }
   // Usage:
-  // - noble+32B only: node hashes.js
-  // - noble+diff buffers: MBENCH_DIMS='buffer' node hashes.js
-  // - others + buffers: MBENCH_DIMS='buffer,algorithm,library' node hashes.js
-  // - others, but algo first (like old one): MBENCH_DIMS='algorithm,buffer,library' node hashes.js
+  //   node hashes.ts
+  //   JSBT_BENCHMARK_DIMENSIONS='buffer' node hashes.ts
+  //   JSBT_BENCHMARK_DIMENSIONS='buffer,algorithm,library' node hashes.ts
   await compare(
     'Hashes',
     {
@@ -148,30 +144,9 @@ async function main() {
     }, //
     HASHES,
     {
-      libDims: ['algorithm', 'library'],
+      libraryDimensions: ['algorithm', 'library'],
       defaults: { library: 'noble', buffer: '32B' },
-      samples: (buf) => {
-        if (buf.length === 32) return 500_000;
-        if (buf.length === 64) return 200_000;
-        if (buf.length === 1024) return 50_000;
-        if (buf.length === 8 * 1024) return 6_250;
-        return 250;
-      },
-      metrics: {
-        'MiB/s': {
-          rev: true, // Bigger = better (green +%, red -%)
-          width: 7,
-          diff: true,
-          compute: (_obj, stats, perSec, buffer) => {
-            const MiB = 1024 * 1024;
-            const ns = 1e9;
-            const bytesPerOp = 1 * buffer.length;
-            if (stats.mean === 0n) return 0; // Edge: infinite speed
-            const speed = (bytesPerOp * ns) / (Number(stats.mean) * MiB);
-            return +`${speed.toFixed(0)}`;
-          },
-        },
-      },
+      bytes: ({ args }) => args[0].length,
     }
   );
 
@@ -179,10 +154,9 @@ async function main() {
 }
 
 async function main_hkdf() {
-  // Usage:
-  // - basic: node hkdf.js
-  // - sha256 only: MBENCH_FILTER=SHA256 node hkdf.js
-  // - full: MBENCH_DIMS='length,algorithm,library' MBENCH_FILTER=SHA256 node hkdf.js
+  // HKDF examples:
+  //   JSBT_BENCHMARK_FILTER=SHA256 node hashes.ts
+  //   JSBT_BENCHMARK_DIMENSIONS='length,algorithm,library' JSBT_BENCHMARK_FILTER=SHA256 node hashes.ts
   const [hkpassword, hksalt] = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
   const HKDF = {
     'HKDF-SHA256': {
@@ -197,12 +171,8 @@ async function main_hkdf() {
     },
   };
   await compare('HKDFs', { length: { 32: 32, 64: 64, 256: 256 } }, HKDF, {
-    libDims: ['algorithm', 'library'],
+    libraryDimensions: ['algorithm', 'library'],
     defaults: { library: 'noble', length: '32' },
-    samples: (length) => {
-      if (length <= 64) return 100_000;
-      return 25_000;
-    },
   });
 }
 

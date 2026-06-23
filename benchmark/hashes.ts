@@ -1,16 +1,16 @@
 import bench from '@paulmillr/jsbt/bench.js';
-import { argon2id } from '../../src/argon2.ts';
-import { blake256 } from '../../src/blake1.ts';
-import { blake2b, blake2s } from '../../src/blake2.ts';
-import { blake3 } from '../../src/blake3.ts';
-import { hkdf } from '../../src/hkdf.ts';
-import { hmac } from '../../src/hmac.ts';
-import { md5, ripemd160, sha1 } from '../../src/legacy.ts';
-import { pbkdf2 } from '../../src/pbkdf2.ts';
-import { scrypt } from '../../src/scrypt.ts';
-import { sha256, sha512 } from '../../src/sha2.ts';
-import { kmac256, kt128, kt256, turboshake128 } from '../../src/sha3-addons.ts';
-import { sha3_256, sha3_512 } from '../../src/sha3.ts';
+import { argon2id } from '../src/argon2.ts';
+import { blake256 } from '../src/blake1.ts';
+import { blake2b, blake2s } from '../src/blake2.ts';
+import { blake3 } from '../src/blake3.ts';
+import { hkdf } from '../src/hkdf.ts';
+import { hmac } from '../src/hmac.ts';
+import { md5, ripemd160, sha1 } from '../src/legacy.ts';
+import { pbkdf2 } from '../src/pbkdf2.ts';
+import { scrypt } from '../src/scrypt.ts';
+import { sha256, sha512 } from '../src/sha2.ts';
+import { kmac256, kt128, kt256, turboshake128 } from '../src/sha3-addons.ts';
+import { sha3_256, sha3_512 } from '../src/sha3.ts';
 
 function buf(size) {
   return new Uint8Array(size).fill(size % 251);
@@ -35,14 +35,15 @@ async function main() {
   };
   for (const { size, data } of buffers) {
     console.log('# ' + size);
+    console.log('## Hash')
     for (const title in hashes) {
       const hash = hashes[title];
-      await bench(title, () => hash(data));
+      await bench(title, () => hash(data), { bytes: data.byteLength });
     }
     console.log();
   }
 
-  console.log('# MAC');
+  console.log('## MAC');
   const etc = buf(32);
   await bench('hmac(sha256)', () => hmac(sha256, etc, etc));
   await bench('hmac(sha512)', () => hmac(sha512, etc, etc));
@@ -50,7 +51,7 @@ async function main() {
   await bench('blake3(key)', () => blake3(etc, { key: etc }));
 
   console.log();
-  console.log('# KDF');
+  console.log('## KDF');
   const pass = buf(12);
   const salt = buf(14);
   await bench('hkdf(sha256)', () => hkdf(sha256, salt, pass, etc, 32));

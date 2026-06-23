@@ -61,8 +61,9 @@ const SCRYPT = {
 };
 
 async function main_scrypt() {
-  // basic: node scrypt.js
-  // full: MBENCH_DIMS='p,r,iters,sync,library' node scrypt.js
+  // Usage:
+  //   node scrypt.ts
+  //   JSBT_BENCHMARK_DIMENSIONS='p,r,iters,sync,library' node scrypt.ts
   await compare(
     'Scrypt',
     {
@@ -78,9 +79,10 @@ async function main_scrypt() {
     },
     SCRYPT,
     {
-      libDims: ['sync', 'library'],
+      libraryDimensions: ['sync', 'library'],
       defaults: { library: 'noble', r: 8, p: 1 },
-      samples: (iters) => {
+      iterations: ({ args }) => {
+        const iters = args[0];
         if (iters <= 2) return 10_000;
         if (iters <= 2 ** 10) return 1_000;
         if (iters <= 2 ** 14) return 10;

@@ -22,8 +22,9 @@ const KDF = {
 };
 
 async function main() {
-  // basic: node argon.js
-  // full: MBENCH_DIMS='algorithm,iters,memory,library' node argon.js
+  // Usage:
+  //   node argon.ts
+  //   JSBT_BENCHMARK_DIMENSIONS='algorithm,iters,memory,library' node argon.ts
   await compare(
     'Argon',
     {
@@ -32,7 +33,7 @@ async function main() {
     },
     KDF,
     {
-      libDims: ['algorithm', 'library'],
+      libraryDimensions: ['algorithm', 'library'],
       defaults: { library: 'noble', memory: '256KB' },
     }
   );
@@ -40,6 +41,5 @@ async function main() {
 
 import url from 'node:url';
 if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {
-  console.log(1);
   main();
 }
