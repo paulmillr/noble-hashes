@@ -21,7 +21,7 @@
     "benchmark:thirdparty": "cd benchmark/thirdparty; npm ci; JSBT_BENCHMARK_DIMENSIONS='algorithm,buffer,library' node hashes.ts",
     "benchmark:thirdparty-scrypt": "cd benchmark/thirdparty; npm ci; JSBT_BENCHMARK_DIMENSIONS='iters,library' JSBT_BENCHMARK_FILTER='async' node scrypt.ts",
     "build": "tsc",
-    "build:release": "npx --no @paulmillr/jsbt bundle",
+    "bundle": "npx --no @paulmillr/jsbt bundle",
     "check": "npx --no @paulmillr/jsbt check",
     "build:clean": "rm *.{js,js.map,d.ts,d.ts.map} 2> /dev/null",
     "format": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",

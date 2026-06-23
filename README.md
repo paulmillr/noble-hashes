@@ -483,7 +483,7 @@ v2.0 changelog:
 - `npm install && npm run build && npm test` will build the code and run tests.
 - `npm run lint` / `npm run format` will run linter / fix linter issues.
 - `npm run bench` will run benchmarks
-- `npm run build:release` will build single file
+- `npm run bundle` will build single file
 - There is **additional** 20-min DoS test `npm run test:dos` and 2-hour multicore test `npm run test:slow`.
   See [our approach to testing](./test/README.md)
 
