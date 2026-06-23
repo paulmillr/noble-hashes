@@ -62,6 +62,8 @@ const IOTAS = split(_SHA3_IOTA, true);
 // second-word lane slots rather than `_u64.ts`'s usual high/low naming.
 const SHA3_IOTA_H = IOTAS[0];
 const SHA3_IOTA_L = IOTAS[1];
+// Reused theta scratch for synchronous Keccak-f permutations.
+const SHA3_B = /* @__PURE__ */ new Uint32Array(5 * 2);
 
 // Left rotation (without 0, 32, 64)
 const rotlH = (h: number, l: number, s: number) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
@@ -87,7 +89,7 @@ export function keccakP(s: TArg<Uint32Array>, rounds: number = 24): void {
   anumber(rounds, 'rounds');
   // This implementation precomputes only the standard Keccak-f[1600] 24-round Iota table.
   if (rounds < 1 || rounds > 24) throw new Error('"rounds" expected integer 1..24');
-  const B = new Uint32Array(5 * 2);
+  const B = SHA3_B;
   // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
   for (let round = 24 - rounds; round < 24; round++) {
     // Theta θ
@@ -310,7 +312,13 @@ const genKeccak = (
   blockLen: number,
   outputLen: number,
   info: TArg<HashInfo> = {}
-) => createHasher(() => new Keccak(blockLen, suffix, outputLen), info);
+) =>
+  createHasher(() => new Keccak(blockLen, suffix, outputLen), {
+    ...info,
+    blockLen,
+    outputLen,
+    canXOF: false,
+  });
 
 /**
  * SHA3-224 hash function.
@@ -437,10 +445,18 @@ export type ShakeOpts = {
 };
 
 const genShake = (suffix: number, blockLen: number, outputLen: number, info: TArg<HashInfo> = {}) =>
-  createHasher<Keccak, ShakeOpts>((opts: ShakeOpts = {}) => {
-    opts = checkOpts({}, opts);
-    return new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true);
-  }, info);
+  createHasher<Keccak, ShakeOpts>(
+    (opts: ShakeOpts = {}) => {
+      opts = checkOpts({}, opts);
+      return new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true);
+    },
+    {
+      ...info,
+      blockLen,
+      outputLen,
+      canXOF: true,
+    }
+  );
 
 /**
  * SHAKE128 XOF with 128-bit security and a 16-byte default output.

@@ -20,15 +20,17 @@ import {
  * `HashLen` bytes long.
  */
 export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
-  oHash: T;
+  oHash?: T;
   iHash: T;
   blockLen: number;
   outputLen: number;
   canXOF = false;
+  private hash?: CHash;
+  private oPad?: Uint8Array;
   private finished = false;
   private destroyed = false;
 
-  constructor(hash: TArg<CHash>, key: TArg<Uint8Array>) {
+  constructor(hash: TArg<CHash>, key: TArg<Uint8Array>, fast = false) {
     ahash(hash);
     abytes(key, undefined, 'key');
     this.iHash = hash.create() as T;
@@ -42,13 +44,18 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
     pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
     for (let i = 0; i < pad.length; i++) pad[i] ^= 0x36;
     this.iHash.update(pad);
-    // By doing update (processing of the first block) of the outer hash here,
-    // we can re-use it between multiple calls via clone.
-    this.oHash = hash.create() as T;
-    // Undo internal XOR && apply outer XOR
+    // Undo internal XOR && apply outer XOR.
     for (let i = 0; i < pad.length; i++) pad[i] ^= 0x36 ^ 0x5c;
-    this.oHash.update(pad);
-    clean(pad);
+    if (fast) {
+      // Precompute the outer pad block for one-shot HMAC/KDF hot paths.
+      this.oHash = hash.create() as T;
+      this.oHash.update(pad);
+      clean(pad);
+    } else {
+      // Retain only opad for long-lived states: lower RAM, one extra block update at digest.
+      this.hash = hash as CHash;
+      this.oPad = pad;
+    }
   }
   update(buf: TArg<Uint8Array>): this {
     aexists(this);
@@ -63,12 +70,17 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
     // Reuse the first outputLen bytes for the inner digest; the outer hash consumes them before
     // overwriting that same prefix with the final tag, leaving any oversized tail untouched.
     this.iHash.digestInto(buf);
-    this.oHash.update(buf);
-    this.oHash.digestInto(buf);
+    if (this.oHash) {
+      this.oHash.update(buf).digestInto(buf);
+    } else {
+      const oHash = this.hash!.create() as T;
+      oHash.update(this.oPad!).update(buf).digestInto(buf);
+      oHash.destroy();
+    }
     this.destroy();
   }
   digest(): TRet<Uint8Array> {
-    const out = new Uint8Array(this.oHash.outputLen);
+    const out = new Uint8Array(this.outputLen);
     this.digestInto(out);
     return out as TRet<Uint8Array>;
   }
@@ -76,14 +88,27 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
     // Create new instance without calling constructor since the key
     // is already in state and we don't know it.
     to ||= Object.create(Object.getPrototypeOf(this), {});
-    const { oHash, iHash, finished, destroyed, blockLen, outputLen, canXOF } = this;
+    const { hash, oHash, iHash, oPad, finished, destroyed, blockLen, outputLen, canXOF } = this;
     to = to as this;
+    to.hash = hash;
     to.finished = finished;
     to.destroyed = destroyed;
     to.blockLen = blockLen;
     to.outputLen = outputLen;
     to.canXOF = canXOF;
-    to.oHash = oHash._cloneInto(to.oHash);
+    if (oHash) {
+      if (to.oPad) clean(to.oPad);
+      to.oPad = undefined;
+      to.oHash = oHash._cloneInto(to.oHash);
+    } else {
+      if (to.oHash) to.oHash.destroy();
+      to.oHash = undefined;
+      if (!to.oPad || to.oPad.length !== oPad!.length) {
+        if (to.oPad) clean(to.oPad);
+        to.oPad = new Uint8Array(oPad!.length);
+      }
+      to.oPad.set(oPad!);
+    }
     to.iHash = iHash._cloneInto(to.iHash);
     return to;
   }
@@ -92,10 +117,17 @@ export class _HMAC<T extends Hash<T>> implements Hash<_HMAC<T>> {
   }
   destroy(): void {
     this.destroyed = true;
-    this.oHash.destroy();
+    if (this.oHash) this.oHash.destroy();
     this.iHash.destroy();
+    if (this.oPad) clean(this.oPad);
   }
 }
+
+export const _createHMAC = <T extends Hash<T>>(
+  hash: TArg<CHash>,
+  key: TArg<Uint8Array>,
+  fast = false
+): TRet<_HMAC<T>> => new _HMAC<T>(hash, key, fast) as TRet<_HMAC<T>>;
 
 /**
  * HMAC: RFC2104 message authentication code.
@@ -124,8 +156,9 @@ export const hmac: TRet<HmacFn> = /* @__PURE__ */ (() => {
     hash: TArg<CHash>,
     key: TArg<Uint8Array>,
     message: TArg<Uint8Array>
-  ): TRet<Uint8Array> => new _HMAC<any>(hash, key).update(message).digest()) as TRet<HmacFn>;
+  ): TRet<Uint8Array> =>
+    _createHMAC<any>(hash, key, true).update(message).digest()) as TRet<HmacFn>;
   hmac_.create = (hash: TArg<CHash>, key: TArg<Uint8Array>): TRet<_HMAC<any>> =>
-    new _HMAC<any>(hash, key) as TRet<_HMAC<any>>;
+    _createHMAC<any>(hash, key);
   return hmac_;
 })();

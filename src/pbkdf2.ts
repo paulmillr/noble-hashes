@@ -2,7 +2,7 @@
  * PBKDF (RFC 2898). Can be used to create a key from password and salt.
  * @module
  */
-import { hmac } from './hmac.ts';
+import { _createHMAC } from './hmac.ts';
 // prettier-ignore
 import {
   ahash, anumber,
@@ -52,7 +52,7 @@ function pbkdf2Init(
   // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
   const DK = new Uint8Array(dkLen);
   // U1 = PRF(Password, Salt + INT_32_BE(i))
-  const PRF = hmac.create(hash, password);
+  const PRF = _createHMAC(hash, password, true);
   // Cache PRF(P, S || ...) prefix state so each block only appends INT_32_BE(i).
   const PRFSalt = PRF._cloneInto().update(salt);
   return { c, dkLen, asyncTick, DK, PRF, PRFSalt };

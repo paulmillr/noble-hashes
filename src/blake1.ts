@@ -56,7 +56,6 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
   protected destroyed = false;
   // For partial updates less than block size
   protected buffer: Uint8Array;
-  protected view: DataView;
   protected salt: Uint32Array;
   abstract compress(view: DataView, offset: number, withLength?: boolean): void;
   protected abstract get(): number[];
@@ -84,7 +83,6 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     this.lengthFlag = lengthFlag;
     this.counterLen = counterLen;
     this.buffer = new Uint8Array(blockLen);
-    this.view = createView(this.buffer);
     if (salt !== undefined) {
       let slt = salt;
       abytes(slt, 4 * saltLen, 'salt');
@@ -105,7 +103,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     aexists(this);
     abytes(data);
     // From _md, but update length before each compress
-    const { view, buffer, blockLen } = this;
+    const { buffer, blockLen } = this;
     const len = data.length;
     let dataView;
     for (let pos = 0; pos < len; ) {
@@ -125,7 +123,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
       pos += take;
       if (this.pos === blockLen) {
         this.length += blockLen;
-        this.compress(view, 0, true);
+        this.compress(createView(buffer), 0, true);
         this.pos = 0;
       }
     }
@@ -159,7 +157,8 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     aoutput(out, this);
     this.finished = true;
     // Padding
-    const { buffer, blockLen, counterLen, lengthFlag, view } = this;
+    const { buffer, blockLen, counterLen, lengthFlag } = this;
+    const view = createView(buffer);
     clean(buffer.subarray(this.pos)); // clean buf
     const counter = BigInt((this.length + this.pos) * 8);
     const counterPos = blockLen - counterLen - 1;
@@ -567,7 +566,8 @@ export class _BLAKE512 extends BLAKE1_64B {
  * ```
  */
 export const blake224: TRet<CHash<_BLAKE224, BlakeOpts>> = /* @__PURE__ */ createHasher(
-  (opts) => new _BLAKE224(opts)
+  (opts) => new _BLAKE224(opts),
+  { blockLen: 64, outputLen: 28, canXOF: false }
 );
 /**
  * Blake1-256 hash function.
@@ -587,7 +587,8 @@ export const blake224: TRet<CHash<_BLAKE224, BlakeOpts>> = /* @__PURE__ */ creat
  * ```
  */
 export const blake256: TRet<CHash<_BLAKE256, BlakeOpts>> = /* @__PURE__ */ createHasher(
-  (opts) => new _BLAKE256(opts)
+  (opts) => new _BLAKE256(opts),
+  { blockLen: 64, outputLen: 32, canXOF: false }
 );
 /**
  * Blake1-384 hash function.
@@ -602,7 +603,8 @@ export const blake256: TRet<CHash<_BLAKE256, BlakeOpts>> = /* @__PURE__ */ creat
  * ```
  */
 export const blake384: TRet<CHash<_BLAKE384, BlakeOpts>> = /* @__PURE__ */ createHasher(
-  (opts) => new _BLAKE384(opts)
+  (opts) => new _BLAKE384(opts),
+  { blockLen: 128, outputLen: 48, canXOF: false }
 );
 /**
  * Blake1-512 hash function.
@@ -617,5 +619,6 @@ export const blake384: TRet<CHash<_BLAKE384, BlakeOpts>> = /* @__PURE__ */ creat
  * ```
  */
 export const blake512: TRet<CHash<_BLAKE512, BlakeOpts>> = /* @__PURE__ */ createHasher(
-  (opts) => new _BLAKE512(opts)
+  (opts) => new _BLAKE512(opts),
+  { blockLen: 128, outputLen: 64, canXOF: false }
 );

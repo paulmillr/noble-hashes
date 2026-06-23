@@ -451,10 +451,12 @@ export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
  * sha256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ createHasher(
-  () => new _SHA256(),
-  /* @__PURE__ */ oidNist(0x01)
-);
+export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ createHasher(() => new _SHA256(), {
+  .../* @__PURE__ */ oidNist(0x01),
+  blockLen: 64,
+  outputLen: 32,
+  canXOF: false,
+});
 /**
  * SHA2-224 hash function from RFC 4634.
  * @param msg - message bytes to hash
@@ -466,10 +468,12 @@ export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ createHasher(
  * sha224(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ createHasher(
-  () => new _SHA224(),
-  /* @__PURE__ */ oidNist(0x04)
-);
+export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ createHasher(() => new _SHA224(), {
+  .../* @__PURE__ */ oidNist(0x04),
+  blockLen: 64,
+  outputLen: 28,
+  canXOF: false,
+});
 
 /**
  * SHA2-512 hash function from RFC 4634.
@@ -482,10 +486,12 @@ export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ createHasher(
  * sha512(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ createHasher(
-  () => new _SHA512(),
-  /* @__PURE__ */ oidNist(0x03)
-);
+export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ createHasher(() => new _SHA512(), {
+  .../* @__PURE__ */ oidNist(0x03),
+  blockLen: 128,
+  outputLen: 64,
+  canXOF: false,
+});
 /**
  * SHA2-384 hash function from RFC 4634.
  * @param msg - message bytes to hash
@@ -497,10 +503,12 @@ export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ createHasher(
  * sha384(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ createHasher(
-  () => new _SHA384(),
-  /* @__PURE__ */ oidNist(0x02)
-);
+export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ createHasher(() => new _SHA384(), {
+  .../* @__PURE__ */ oidNist(0x02),
+  blockLen: 128,
+  outputLen: 48,
+  canXOF: false,
+});
 
 /**
  * SHA2-512/256 "truncated" hash function, with improved resistance to length extension attacks.
@@ -516,7 +524,7 @@ export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ createHasher(
  */
 export const sha512_256: TRet<CHash<_SHA512_256>> = /* @__PURE__ */ createHasher(
   () => new _SHA512_256(),
-  /* @__PURE__ */ oidNist(0x06)
+  { .../* @__PURE__ */ oidNist(0x06), blockLen: 128, outputLen: 32, canXOF: false }
 );
 /**
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
@@ -532,5 +540,5 @@ export const sha512_256: TRet<CHash<_SHA512_256>> = /* @__PURE__ */ createHasher
  */
 export const sha512_224: TRet<CHash<_SHA512_224>> = /* @__PURE__ */ createHasher(
   () => new _SHA512_224(),
-  /* @__PURE__ */ oidNist(0x05)
+  { .../* @__PURE__ */ oidNist(0x05), blockLen: 128, outputLen: 28, canXOF: false }
 );
