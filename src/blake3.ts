@@ -53,6 +53,10 @@ const B3_SIGMA: TRet<Uint8Array> = /* @__PURE__ */ (() => {
   for (let i = 0, v = Id; i < 7; i++, v = permute(v)) res.push(...v);
   return Uint8Array.from(res);
 })();
+// Shared digest scratch. XOF streams still allocate per-instance buffers because their output
+// cursor can span multiple xofInto() calls.
+const B3_OUT32 = /* @__PURE__ */ new Uint32Array(16);
+const B3_OUT = /* @__PURE__ */ u8(B3_OUT32);
 
 /**
  * Ensure to use EITHER `key` OR `context`, not both.
@@ -85,8 +89,8 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   private stack: Uint32Array[] = [];
   // Output
   private posOut = 0;
-  private bufferOut32 = new Uint32Array(16);
-  private bufferOut: Uint8Array;
+  private bufferOut32?: Uint32Array;
+  private bufferOut?: Uint8Array;
   // Index of output chunk; exact while this stays within JS's
   // safe-integer range.
   private chunkOut = 0;
@@ -118,7 +122,6 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
       this.flags = flags;
     }
     this.state = this.IV.slice();
-    this.bufferOut = u8(this.bufferOut32);
   }
   // _BLAKE2's scalar-state hooks are unused here: BLAKE3 keeps its tree/XOF state in arrays and
   // copies it directly in _cloneInto().
@@ -126,6 +129,14 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     return [];
   }
   protected set(): void {}
+  private getXOFBufferOut32(): Uint32Array {
+    if (this.bufferOut32 === undefined) this.bufferOut32 = new Uint32Array(16);
+    return this.bufferOut32;
+  }
+  private getXOFBufferOut(): Uint8Array {
+    if (this.bufferOut === undefined) this.bufferOut = u8(this.getXOFBufferOut32());
+    return this.bufferOut;
+  }
   // Truncated chunk/parent compression: seed v8..v15 as IV[0..3], t0, t1,
   // block length, and flags, then keep only the first 8 output words.
   private b2Compress(counter: number, flags: number, buf: Uint32Array, bufPos: number = 0) {
@@ -195,19 +206,24 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     to.posOut = posOut;
     to.chunkOut = chunkOut;
     to.enableXOF = this.enableXOF;
-    to.bufferOut32.set(this.bufferOut32);
+    if (this.bufferOut32) to.getXOFBufferOut32().set(this.bufferOut32);
+    else {
+      to.bufferOut32 = undefined;
+      to.bufferOut = undefined;
+    }
     return to;
   }
   destroy(): void {
     this.destroyed = true;
-    clean(this.state, this.buffer32, this.IV, this.bufferOut32);
+    clean(this.state, this.buffer32, this.IV);
+    if (this.bufferOut32) clean(this.bufferOut32);
     clean(...this.stack);
   }
   // Root/XOF compression: rerun the same ROOT inputs with incrementing output
   // counter `t` and materialize all 16 output words.
   // Same as b2Compress, but doesn't modify state and returns 16 u32 array (instead of 8)
-  private b2CompressOut() {
-    const { state: s, pos, flags, buffer32, bufferOut32: out32 } = this;
+  private b2CompressOut(out32: Uint32Array) {
+    const { state: s, pos, flags, buffer32 } = this;
     const { h, l } = fromBig(BigInt(this.chunkOut++));
     swap32IfBE(buffer32);
     // prettier-ignore
@@ -237,7 +253,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     swap32IfBE(out32);
     this.posOut = 0;
   }
-  protected finish(): void {
+  protected finish(out32: Uint32Array): void {
     if (this.finished) return;
     this.finished = true;
     // Padding
@@ -257,15 +273,19 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
       flags |= (!this.chunkPos ? B3_Flags.CHUNK_START : 0) | B3_Flags.CHUNK_END;
     }
     this.flags = flags;
-    this.b2CompressOut();
+    this.b2CompressOut(out32);
   }
-  private writeInto(out: TArg<Uint8Array>): TRet<Uint8Array> {
+  private writeInto(
+    out: TArg<Uint8Array>,
+    bufferOut32: Uint32Array,
+    bufferOut: Uint8Array
+  ): TRet<Uint8Array> {
     aexists(this, false);
     abytes(out);
-    this.finish();
-    const { blockLen, bufferOut } = this;
+    this.finish(bufferOut32);
+    const { blockLen } = this;
     for (let pos = 0, len = out.length; pos < len; ) {
-      if (this.posOut >= blockLen) this.b2CompressOut();
+      if (this.posOut >= blockLen) this.b2CompressOut(bufferOut32);
       const take = Math.min(blockLen - this.posOut, len - pos);
       out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);
       this.posOut += take;
@@ -275,7 +295,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   }
   xofInto(out: TArg<Uint8Array>): TRet<Uint8Array> {
     if (!this.enableXOF) throw new Error('XOF is not possible after digest call');
-    return this.writeInto(out);
+    return this.writeInto(out, this.getXOFBufferOut32(), this.getXOFBufferOut());
   }
   xof(bytes: number): TRet<Uint8Array> {
     anumber(bytes);
@@ -286,7 +306,12 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     if (this.finished) throw new Error('digest() was already called');
     this.enableXOF = false;
     // `aoutput(...)` allows oversized buffers; digestInto() must fill only the configured digest.
-    this.writeInto(out.length === this.outputLen ? out : out.subarray(0, this.outputLen));
+    this.writeInto(
+      out.length === this.outputLen ? out : out.subarray(0, this.outputLen),
+      B3_OUT32,
+      B3_OUT
+    );
+    clean(B3_OUT32);
     this.destroy();
   }
   digest(): TRet<Uint8Array> {
@@ -316,5 +341,6 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
  * ```
  */
 export const blake3: TRet<CHashXOF<_BLAKE3, Blake3Opts>> = /* @__PURE__ */ createHasher(
-  (opts = {}) => new _BLAKE3(opts)
+  (opts = {}) => new _BLAKE3(opts),
+  { blockLen: 64, outputLen: 32, canXOF: true }
 );

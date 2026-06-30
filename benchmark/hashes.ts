@@ -16,6 +16,18 @@ function buf(size) {
   return new Uint8Array(size).fill(size % 251);
 }
 
+function chunks(buf, size) {
+  const out = [];
+  for (let pos = 0; pos < buf.length; pos += size) out.push(buf.subarray(pos, pos + size));
+  return out;
+}
+
+function update(create, chunks) {
+  const h = create();
+  for (const chunk of chunks) h.update(chunk);
+  return h.digest();
+}
+
 const buffers = [
   // { size: '16B', data: buf(16) }, // common block size
   { size: '32B', data: buf(32) },
@@ -35,7 +47,7 @@ async function main() {
   };
   for (const { size, data } of buffers) {
     console.log('# ' + size);
-    console.log('## Hash')
+    console.log('## Hash');
     for (const title in hashes) {
       const hash = hashes[title];
       await bench(title, () => hash(data), { bytes: data.byteLength });
@@ -43,12 +55,39 @@ async function main() {
     console.log();
   }
 
+  const updateChunks = chunks(buf(1024 * 1024), 256);
+  console.log('# 1MB / 4096 updates');
+  console.log('## Hash');
+  for (const title in hashes) {
+    const hash = hashes[title];
+    await bench(title + ' update', () => update(() => hash.create(), updateChunks), {
+      bytes: 1024 * 1024,
+    });
+  }
+  console.log();
+
   console.log('## MAC');
   const etc = buf(32);
   await bench('hmac(sha256)', () => hmac(sha256, etc, etc));
   await bench('hmac(sha512)', () => hmac(sha512, etc, etc));
   await bench('kmac256', () => kmac256(etc, etc));
   await bench('blake3(key)', () => blake3(etc, { key: etc }));
+
+  console.log();
+  console.log('# 1MB / 4096 updates');
+  console.log('## MAC');
+  await bench('hmac(sha256) update', () => update(() => hmac.create(sha256, etc), updateChunks), {
+    bytes: 1024 * 1024,
+  });
+  await bench('hmac(sha512) update', () => update(() => hmac.create(sha512, etc), updateChunks), {
+    bytes: 1024 * 1024,
+  });
+  await bench('kmac256 update', () => update(() => kmac256.create(etc), updateChunks), {
+    bytes: 1024 * 1024,
+  });
+  await bench('blake3(key) update', () => update(() => blake3.create({ key: etc }), updateChunks), {
+    bytes: 1024 * 1024,
+  });
 
   console.log();
   console.log('## KDF');

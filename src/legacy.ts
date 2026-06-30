@@ -102,7 +102,11 @@ export class _SHA1 extends HashMD<_SHA1> {
  * sha1(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha1: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _SHA1());
+export const sha1: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _SHA1(), {
+  blockLen: 64,
+  outputLen: 20,
+  canXOF: false,
+});
 
 /** RFC 1321 `T[i]` uses `floor(2^32 * abs(sin(i)))`; this is the shared `2^32` scale factor. */
 const p32 = /* @__PURE__ */ Math.pow(2, 32);
@@ -202,7 +206,11 @@ export class _MD5 extends HashMD<_MD5> {
  * md5(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const md5: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _MD5());
+export const md5: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _MD5(), {
+  blockLen: 64,
+  outputLen: 16,
+  canXOF: false,
+});
 
 // RIPEMD-160
 
@@ -339,4 +347,8 @@ export class _RIPEMD160 extends HashMD<_RIPEMD160> {
  * ripemd160(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const ripemd160: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _RIPEMD160());
+export const ripemd160: TRet<CHash> = /* @__PURE__ */ createHasher(() => new _RIPEMD160(), {
+  blockLen: 64,
+  outputLen: 20,
+  canXOF: false,
+});

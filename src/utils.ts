@@ -829,6 +829,12 @@ export type HasherCons<T, Opts = undefined> = Opts extends undefined ? () => T :
 export type HashInfo = {
   /** DER-encoded object identifier bytes for the hash algorithm. */
   oid?: TRet<Uint8Array>;
+  /** Digest size in bytes. Supplying this avoids a temporary instance in `createHasher()`. */
+  outputLen?: number;
+  /** Input block size in bytes. Supplying this avoids a temporary instance in `createHasher()`. */
+  blockLen?: number;
+  /** Whether `.create()` returns an XOF-capable state. */
+  canXOF?: boolean;
 };
 /** Callable hash function type. */
 export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
@@ -856,9 +862,8 @@ export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CH
  * @param hashCons - hash constructor or factory
  * @param info - optional metadata such as DER OID
  * @returns Frozen callable hash wrapper with `.create()`.
- *   Wrapper construction eagerly calls `hashCons(undefined)` once to read
- *   `outputLen` / `blockLen`, so constructor side effects happen at module
- *   init time.
+ *   When `info` does not include full `outputLen` / `blockLen` / `canXOF` metadata, wrapper
+ *   construction calls `hashCons(undefined)` once to read the missing values.
  * @example
  * Wrap a stateful hash constructor into a callable helper.
  * ```ts
@@ -879,12 +884,19 @@ export function createHasher<T extends Hash<T>, Opts = undefined>(
     hashCons(opts as Opts)
       .update(msg)
       .digest();
-  const tmp = hashCons(undefined);
-  hashC.outputLen = tmp.outputLen;
-  hashC.blockLen = tmp.blockLen;
-  hashC.canXOF = tmp.canXOF;
-  hashC.create = (opts?: Opts) => hashCons(opts);
+  let { outputLen, blockLen, canXOF } = info;
+  if (outputLen === undefined || blockLen === undefined || canXOF === undefined) {
+    const tmp = hashCons(undefined);
+    outputLen ??= tmp.outputLen;
+    blockLen ??= tmp.blockLen;
+    canXOF ??= tmp.canXOF;
+    tmp.destroy();
+  }
   Object.assign(hashC, info);
+  hashC.outputLen = anumber(outputLen, 'info.outputLen');
+  hashC.blockLen = anumber(blockLen, 'info.blockLen');
+  hashC.canXOF = abool(canXOF, 'info.canXOF');
+  hashC.create = (opts?: Opts) => hashCons(opts);
   return Object.freeze(hashC) as TRet<CHash<T, Opts>>;
 }
 
@@ -932,7 +944,7 @@ export function randomBytes(bytesLength = 32): TRet<Uint8Array> {
  * oidNist(0x01);
  * ```
  */
-export const oidNist = (suffix: number): TRet<Required<HashInfo>> => ({
+export const oidNist = (suffix: number): TRet<{ oid: TRet<Uint8Array> }> => ({
   // Current NIST hashAlgs suffixes used here fit in one DER subidentifier octet.
   // Larger suffix values would need base-128 OID encoding and a different length byte.
   oid: Uint8Array.from([0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, suffix]),

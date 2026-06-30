@@ -7,7 +7,7 @@
  */
 import { Chi, HashMD, Maj, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from './_md.ts';
 import * as u64 from './_u64.ts';
-import { type CHash, clean, createHasher, oidNist, rotr, type TRet } from './utils.ts';
+import { type CHash, clean, createHasher, type Hash, oidNist, rotr, type TRet } from './utils.ts';
 
 /**
  * SHA-224 / SHA-256 round constants from RFC 6234 §5.1: the first 32 bits
@@ -435,6 +435,19 @@ export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
   }
 }
 
+const genSHA2 = <T extends Hash<T>>(
+  hashCons: () => T,
+  suffix: number,
+  blockLen: number,
+  outputLen: number
+) =>
+  createHasher(hashCons, {
+    .../* @__PURE__ */ oidNist(suffix),
+    blockLen,
+    outputLen,
+    canXOF: false,
+  });
+
 /**
  * SHA2-256 hash function from RFC 4634. In JS it's the fastest: even faster than Blake3. Some info:
  *
@@ -451,9 +464,11 @@ export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
  * sha256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ createHasher(
+export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ genSHA2(
   () => new _SHA256(),
-  /* @__PURE__ */ oidNist(0x01)
+  0x01,
+  64,
+  32
 );
 /**
  * SHA2-224 hash function from RFC 4634.
@@ -466,9 +481,11 @@ export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ createHasher(
  * sha224(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ createHasher(
+export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ genSHA2(
   () => new _SHA224(),
-  /* @__PURE__ */ oidNist(0x04)
+  0x04,
+  64,
+  28
 );
 
 /**
@@ -482,9 +499,11 @@ export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ createHasher(
  * sha512(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ createHasher(
+export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ genSHA2(
   () => new _SHA512(),
-  /* @__PURE__ */ oidNist(0x03)
+  0x03,
+  128,
+  64
 );
 /**
  * SHA2-384 hash function from RFC 4634.
@@ -497,9 +516,11 @@ export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ createHasher(
  * sha384(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ createHasher(
+export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ genSHA2(
   () => new _SHA384(),
-  /* @__PURE__ */ oidNist(0x02)
+  0x02,
+  128,
+  48
 );
 
 /**
@@ -514,9 +535,11 @@ export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ createHasher(
  * sha512_256(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha512_256: TRet<CHash<_SHA512_256>> = /* @__PURE__ */ createHasher(
+export const sha512_256: TRet<CHash<_SHA512_256>> = /* @__PURE__ */ genSHA2(
   () => new _SHA512_256(),
-  /* @__PURE__ */ oidNist(0x06)
+  0x06,
+  128,
+  32
 );
 /**
  * SHA2-512/224 "truncated" hash function, with improved resistance to length extension attacks.
@@ -530,7 +553,9 @@ export const sha512_256: TRet<CHash<_SHA512_256>> = /* @__PURE__ */ createHasher
  * sha512_224(new Uint8Array([97, 98, 99]));
  * ```
  */
-export const sha512_224: TRet<CHash<_SHA512_224>> = /* @__PURE__ */ createHasher(
+export const sha512_224: TRet<CHash<_SHA512_224>> = /* @__PURE__ */ genSHA2(
   () => new _SHA512_224(),
-  /* @__PURE__ */ oidNist(0x05)
+  0x05,
+  128,
+  28
 );

@@ -280,10 +280,11 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
       this.v7h ^= swap8IfBE(pers[3]);
     }
     if (key !== undefined) {
-      // Pad to blockLen and update
-      const tmp = new Uint8Array(this.blockLen);
-      tmp.set(key);
-      this.update(tmp);
+      // Pad to blockLen in the retained final-block buffer. This is equivalent to update(tmp)
+      // because BLAKE2 delays compression until another block or finalization arrives.
+      this.buffer.set(key);
+      this.pos = this.blockLen;
+      this.length = this.blockLen;
     }
   }
   // prettier-ignore
@@ -401,7 +402,8 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
  * ```
  */
 export const blake2b: TRet<CHash<_BLAKE2b, Blake2Opts>> = /* @__PURE__ */ createHasher(
-  (opts) => new _BLAKE2b(opts)
+  (opts) => new _BLAKE2b(opts),
+  { blockLen: 128, outputLen: 64, canXOF: false }
 );
 
 // =================
@@ -528,10 +530,11 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
       this.v7 ^= swap8IfBE(pers[1]);
     }
     if (key !== undefined) {
-      // Pad to blockLen and update
-      const tmp = new Uint8Array(this.blockLen);
-      tmp.set(key);
-      this.update(tmp);
+      // Pad to blockLen in the retained final-block buffer. This is equivalent to update(tmp)
+      // because BLAKE2 delays compression until another block or finalization arrives.
+      this.buffer.set(key);
+      this.pos = this.blockLen;
+      this.length = this.blockLen;
     }
   }
   protected get(): [number, number, number, number, number, number, number, number] {
@@ -602,5 +605,6 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
  * ```
  */
 export const blake2s: TRet<CHash<_BLAKE2s, Blake2Opts>> = /* @__PURE__ */ createHasher(
-  (opts) => new _BLAKE2s(opts)
+  (opts) => new _BLAKE2s(opts),
+  { blockLen: 64, outputLen: 32, canXOF: false }
 );

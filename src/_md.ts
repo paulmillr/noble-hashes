@@ -84,7 +84,6 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
 
   // For partial updates less than block size
   protected buffer: Uint8Array;
-  protected view: DataView;
   protected finished = false;
   protected length = 0;
   protected pos = 0;
@@ -96,12 +95,11 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     this.padOffset = padOffset;
     this.isLE = isLE;
     this.buffer = new Uint8Array(blockLen);
-    this.view = createView(this.buffer);
   }
   update(data: TArg<Uint8Array>): this {
     aexists(this);
     abytes(data);
-    const { view, buffer, blockLen } = this;
+    const { buffer, blockLen } = this;
     const len = data.length;
     for (let pos = 0; pos < len; ) {
       const take = Math.min(blockLen - this.pos, len - pos);
@@ -116,7 +114,7 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
       this.pos += take;
       pos += take;
       if (this.pos === blockLen) {
-        this.process(view, 0);
+        this.process(createView(buffer), 0);
         this.pos = 0;
       }
     }
@@ -131,7 +129,8 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     // Padding
     // We can avoid allocation of buffer for padding completely if it
     // was previously not allocated here. But it won't change performance.
-    const { buffer, view, blockLen, isLE } = this;
+    const { buffer, blockLen, isLE } = this;
+    const view = createView(buffer);
     let { pos } = this;
     // append the bit '1' to the message
     buffer[pos++] = 0b10000000;

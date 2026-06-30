@@ -3,7 +3,7 @@
  * See {@link https://soatok.blog/2021/11/17/understanding-hkdf/}.
  * @module
  */
-import { hmac } from './hmac.ts';
+import { _HMAC, hmac } from './hmac.ts';
 import { abytes, ahash, anumber, type CHash, clean, type TArg, type TRet } from './utils.ts';
 
 /**
@@ -80,7 +80,7 @@ export function expand(
   // first L(ength) octets of T
   const okm = new Uint8Array(blocks * olen);
   // Re-use HMAC instance between blocks
-  const HMAC = hmac.create(hash, prk);
+  const HMAC = new _HMAC(hash, prk, true);
   const HMACTmp = HMAC._cloneInto();
   const T = new Uint8Array(HMAC.outputLen);
   for (let counter = 0; counter < blocks; counter++) {
