@@ -59,8 +59,13 @@ export function test(
 ) {
   const KDFS = {
     Scrypt: (ms) => scryptAsync(PWD, SALT, { N: 2 ** 18, r: 8, p: 1, asyncTick: ms }),
+    // The iteration count must make the whole run take longer than `asyncTick`
+    // (checkTiming asserts `total > ms`), so it scales with the tick size.
     PBKDF2: (ms) =>
-      pbkdf2Async(sha256, PWD, SALT, { c: ms >= 100 ? 2 ** 17 : 2 ** 16, asyncTick: ms }),
+      pbkdf2Async(sha256, PWD, SALT, {
+        c: ms >= 100 ? 2 ** 18 : ms >= 50 ? 2 ** 17 : 2 ** 16,
+        asyncTick: ms,
+      }),
   };
   const PARALLEL_KDFS = {
     Scrypt: (ms) => scryptAsync(PWD, SALT, { N: 2 ** 15, r: 8, p: 1, asyncTick: ms }),

@@ -1597,6 +1597,56 @@ const K12_VECTORS = [
         B9 2D 1F C7 55 84 41 F1 83 2C 32 79 A4 24 1B 8B`
     ),
   },
+  // RFC 9861 single/tree boundary with empty C: |S| = |M| + 1 (length_encode),
+  // so M = 8191 stays a single node and M = 8192 switches to tree mode.
+  // KT128(M=ptn(8191 bytes), C=`00`^0, 32):
+  {
+    hash: kt128,
+    msg: pattern(0xfa, 8191),
+    C: new Uint8Array(0),
+    dkLen: 32,
+    exp: fromHex(
+      `1B 57 76 36 F7 23 64 3E 99 0C C7 D6 A6 59 83 74
+        36 FD 6A 10 36 26 60 0E B8 30 1C D1 DB E5 53 D6`
+    ),
+  },
+  // KT128(M=ptn(8192 bytes), C=`00`^0, 32):
+  {
+    hash: kt128,
+    msg: pattern(0xfa, 8192),
+    C: new Uint8Array(0),
+    dkLen: 32,
+    exp: fromHex(
+      `48 F2 56 F6 77 2F 9E DF B6 A8 B6 61 EC 92 DC 93
+        B9 5E BD 05 A0 8A 17 B3 9A E3 49 08 70 C9 26 C3`
+    ),
+  },
+  // KT256(M=ptn(8191 bytes), C=`00`^0, 64):
+  {
+    hash: kt256,
+    msg: pattern(0xfa, 8191),
+    C: new Uint8Array(0),
+    dkLen: 64,
+    exp: fromHex(
+      `30 81 43 4D 93 A4 10 8D 8D 8A 33 05 B8 96 82 CE
+        BE DC 7C A4 EA 8A 3C E8 69 FB B7 3C BE 4A 58 EE
+        F6 F2 4D E3 8F FC 17 05 14 C7 0E 7A B2 D0 1F 03
+        81 26 16 E8 63 D7 69 AF B3 75 31 93 BA 04 5B 20`
+    ),
+  },
+  // KT256(M=ptn(8192 bytes), C=`00`^0, 64):
+  {
+    hash: kt256,
+    msg: pattern(0xfa, 8192),
+    C: new Uint8Array(0),
+    dkLen: 64,
+    exp: fromHex(
+      `C6 EE 8E 2A D3 20 0C 01 8A C8 7A AA 03 1C DA C2
+        21 21 B4 12 D0 7D C6 E0 DC CB B5 34 23 74 7E 9A
+        1C 18 83 4D 99 DF 59 6C F0 CF 4B 8D FA FB 7B F0
+        2D 13 9D 0C 90 35 72 5A DC 1A 01 B7 23 0A 41 FA`
+    ),
+  },
 ];
 
 export {

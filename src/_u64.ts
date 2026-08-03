@@ -7,7 +7,7 @@
  */
 import type { TRet } from './utils.ts';
 
-const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
+const U32_MASK64 = /* @__PURE__ */ (() => BigInt(2 ** 32 - 1))();
 const _32n = /* @__PURE__ */ BigInt(32);
 
 // Split bigint into two 32-bit halves. With `le=true`, returned fields become `{ h: low, l: high
@@ -39,6 +39,19 @@ function split(lst: bigint[], le = false): TRet<Uint32Array[]> {
 // Combine explicit `(high, low)` 32-bit halves into a bigint; `>>> 0` normalizes signed JS
 // bitwise results back to uint32 first, and little-endian callers must swap.
 const toBig = (h: number, l: number): bigint => (BigInt(h >>> 0) << _32n) | BigInt(l >>> 0);
+// Split a JS number into u32 halves without a BigInt allocation. Exact only for integers
+// `0 <= n < 2**53`; callers use it on byte / bit counters, which JS length math caps far below
+// that (an ArrayBuffer cannot exceed 2**53 - 1 bytes).
+const fromNumH = (n: number): number => (n / 2 ** 32) | 0;
+const fromNumL = (n: number): number => n >>> 0;
+// Drop-in replacement for `view.setBigUint64(byteOffset, BigInt(n), isLE)` without the per-call
+// BigInt allocation. Same `n < 2**53` precondition as `fromNumH`/`fromNumL`.
+function setU64FromNum(view: DataView, byteOffset: number, n: number, isLE: boolean): void {
+  const h = fromNumH(n);
+  const l = fromNumL(n);
+  view.setUint32(byteOffset, isLE ? l : h, isLE);
+  view.setUint32(byteOffset + 4, isLE ? h : l, isLE);
+}
 // High 32-bit half of a 64-bit logical right shift for `s` in `0..31`.
 const shrSH = (h: number, _l: number, s: number): number => h >>> s;
 // Low 32-bit half of a 64-bit logical right shift, valid for `s` in `1..31`.
@@ -55,14 +68,8 @@ const rotrBL = (h: number, l: number, s: number): number => (h >>> (s - 32)) | (
 const rotr32H = (_h: number, l: number): number => l;
 // Low 32-bit half of a 64-bit right rotate for `s === 32`; this is just the swapped high half.
 const rotr32L = (h: number, _l: number): number => h;
-// High 32-bit half of a 64-bit left rotate, valid for `s` in `1..31`.
-const rotlSH = (h: number, l: number, s: number): number => (h << s) | (l >>> (32 - s));
-// Low 32-bit half of a 64-bit left rotate, valid for `s` in `1..31`.
-const rotlSL = (h: number, l: number, s: number): number => (l << s) | (h >>> (32 - s));
-// High 32-bit half of a 64-bit left rotate, valid for `s` in `33..63`; `32` uses `rotr32*`.
-const rotlBH = (h: number, l: number, s: number): number => (l << (s - 32)) | (h >>> (64 - s));
-// Low 32-bit half of a 64-bit left rotate, valid for `s` in `33..63`; `32` uses `rotr32*`.
-const rotlBL = (h: number, l: number, s: number): number => (h << (s - 32)) | (l >>> (64 - s));
+// 64-bit left rotates (rotl*) are not defined here: sha3.ts, their only consumer, keeps
+// local copies so V8 inlines them into keccakP.
 
 // Add two split 64-bit words and return the split `{ h, l }` sum.
 // JS uses 32-bit signed integers for bitwise operations, so we cannot simply shift the carry out
@@ -100,18 +107,5 @@ const add5H = (low: number, Ah: number, Bh: number, Ch: number, Dh: number, Eh: 
 
 // prettier-ignore
 export {
-  add, add3H, add3L, add4H, add4L, add5H, add5L, fromBig, rotlBH, rotlBL, rotlSH, rotlSL, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL, shrSH, shrSL, split, toBig
+  add, add3H, add3L, add4H, add4L, add5H, add5L, fromBig, fromNumH, fromNumL, rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL, setU64FromNum, shrSH, shrSL, split, toBig
 };
-// Canonical grouped namespace for callers that prefer one object.
-// Named exports stay for direct imports.
-// prettier-ignore
-const u64: { fromBig: typeof fromBig; split: typeof split; toBig: (h: number, l: number) => bigint; shrSH: (h: number, _l: number, s: number) => number; shrSL: (h: number, l: number, s: number) => number; rotrSH: (h: number, l: number, s: number) => number; rotrSL: (h: number, l: number, s: number) => number; rotrBH: (h: number, l: number, s: number) => number; rotrBL: (h: number, l: number, s: number) => number; rotr32H: (_h: number, l: number) => number; rotr32L: (h: number, _l: number) => number; rotlSH: (h: number, l: number, s: number) => number; rotlSL: (h: number, l: number, s: number) => number; rotlBH: (h: number, l: number, s: number) => number; rotlBL: (h: number, l: number, s: number) => number; add: typeof add; add3L: (Al: number, Bl: number, Cl: number) => number; add3H: (low: number, Ah: number, Bh: number, Ch: number) => number; add4L: (Al: number, Bl: number, Cl: number, Dl: number) => number; add4H: (low: number, Ah: number, Bh: number, Ch: number, Dh: number) => number; add5H: (low: number, Ah: number, Bh: number, Ch: number, Dh: number, Eh: number) => number; add5L: (Al: number, Bl: number, Cl: number, Dl: number, El: number) => number; } = {
-  fromBig, split, toBig,
-  shrSH, shrSL,
-  rotrSH, rotrSL, rotrBH, rotrBL,
-  rotr32H, rotr32L,
-  rotlSH, rotlSL, rotlBH, rotlBL,
-  add, add3L, add3H, add4L, add4H, add5H, add5L,
-};
-// Default export mirrors named `u64` for compatibility with object-style imports.
-export default u64;

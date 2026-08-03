@@ -37,6 +37,11 @@ import {
   type TRet
 } from './utils.ts';
 
+// Unrealized speed-up: G1b/G2b call the tiny u64.* helpers (rotations, split adds) across
+// the module boundary, which V8 does not inline — u64.add's {h,l} return even allocates
+// per call. File-local copies of the helpers measured ~15% faster blake512 on Node 24.
+// Kept deduplicated in _u64 for auditability. Also doesn't matter for bundles which don't do `import`.
+
 /** Blake1 options. Basically just `salt`. */
 export type BlakeOpts = {
   /** Optional salt mixed into initialization. */
@@ -60,7 +65,11 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
   protected salt: Uint32Array;
   abstract compress(view: DataView, offset: number, withLength?: boolean): void;
   protected abstract get(): number[];
-  protected abstract set(...args: number[]): void;
+  // Each state layout must own this call site. At a monomorphic site TurboFan inlines get()/set()
+  // and scalar-replaces the tuple, so no secret-bearing array is allocated. Sharing this site
+  // across the 32/64-bit layouts materializes the tuple, which cannot be explicitly wiped, and
+  // regresses clone-heavy KDFs.
+  abstract _cloneInto(to?: T): T;
 
   readonly blockLen: number;
   readonly outputLen: number;
@@ -120,7 +129,9 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
         }
         continue;
       }
-      buffer.set(data.subarray(pos, pos + take), this.pos);
+      // When the whole input is buffered in one go (common for short messages), passing `data`
+      // directly avoids allocating a subarray view.
+      buffer.set(pos === 0 && take === len ? data : data.subarray(pos, pos + take), this.pos);
       this.pos += take;
       pos += take;
       if (this.pos === blockLen) {
@@ -137,18 +148,27 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
       clean(this.salt, this.constants);
     }
   }
-  _cloneInto(to?: T): T {
-    to ||= new (this.constructor as any)() as T;
-    to.set(...this.get());
+  protected _cloneIntoMeta(to: T): T {
     const { buffer, length, finished, destroyed, constants, salt, pos } = this;
-    to.buffer.set(buffer);
+    if (pos) to.buffer.set(buffer);
+    // At pos=0 the source buffer is dead. Discard an unfinished destination's old message bytes;
+    // finished digestInto() workers are already clean, so hot KDF resets skip this fill.
+    else if (to.destroyed || (!to.finished && (to.length || to.pos))) clean(to.buffer);
     // Clone salt-derived arrays by value so destroying the clone cannot wipe the source instance.
-    to.constants = constants.slice();
+    if (salt === EMPTY_SALT) {
+      to.constants = constants; // Immutable; sentinel keeps destroy() from wiping it.
+      to.salt = EMPTY_SALT;
+    } else if (to.salt === EMPTY_SALT) {
+      to.constants = constants.slice();
+      to.salt = salt.slice();
+    } else {
+      to.constants.set(constants); // Reuse independently owned salted arrays.
+      to.salt.set(salt);
+    }
     to.destroyed = destroyed;
     to.finished = finished;
     to.length = length;
     to.pos = pos;
-    to.salt = salt.slice();
     return to;
   }
   clone(): T {
@@ -160,8 +180,8 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     this.finished = true;
     // Padding
     const { buffer, blockLen, counterLen, lengthFlag, view } = this;
-    clean(buffer.subarray(this.pos)); // clean buf
-    const counter = BigInt((this.length + this.pos) * 8);
+    buffer.fill(0, this.pos); // clean buf
+    const counterBits = (this.length + this.pos) * 8;
     const counterPos = blockLen - counterLen - 1;
     buffer[this.pos] |= 0b1000_0000; // End block flag
     this.length += this.pos; // add unwritten length
@@ -174,13 +194,14 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     // Difference with md: here we have lengthFlag!
     buffer[counterPos] |= lengthFlag; // Length flag
     // We always set 8 byte length flag. Because length will overflow significantly sooner.
-    view.setBigUint64(blockLen - 8, counter, false);
+    u64.setU64FromNum(view, blockLen - 8, counterBits, false);
     // Blake1 omits the counter from the extra all-padding block; only the block that still carries
     // message bytes mixes in the final bit length.
     this.compress(view, 0, this.pos !== 0);
     // Write output
     clean(buffer);
-    const v = createView(out);
+    // digest() passes our own `buffer` as `out`; reuse its cached view instead of allocating one.
+    const v = out === buffer ? view : createView(out);
     const state = this.get();
     for (let i = 0; i < this.outputLen / 4; ++i) v.setUint32(i * 4, state[i]);
   }
@@ -271,6 +292,10 @@ class BLAKE1_32B extends BLAKE1<BLAKE1_32B> {
     this.v6 = v6 | 0;
     this.v7 = v7 | 0;
   }
+  _cloneInto(to?: BLAKE1_32B): BLAKE1_32B {
+    (to ||= new (this.constructor as any)() as BLAKE1_32B).set(...this.get());
+    return this._cloneIntoMeta(to);
+  }
   destroy(): void {
     super.destroy();
     this.set(0, 0, 0, 0, 0, 0, 0, 0);
@@ -293,7 +318,9 @@ class BLAKE1_32B extends BLAKE1<BLAKE1_32B> {
     let v11 = this.constants[3] | 0;
     // Blake1-32 injects the 64-bit bit counter as `[t0, t0, t1, t1]` across `v12..v15`; the
     // final all-padding block passes `withLength = false`, leaving these lanes as raw constants.
-    const { h, l } = u64.fromBig(BigInt(withLength ? this.length * 8 : 0));
+    const bits = withLength ? this.length * 8 : 0;
+    const h = u64.fromNumH(bits);
+    const l = u64.fromNumL(bits);
     let v12 = (this.constants[4] ^ l) >>> 0;
     let v13 = (this.constants[5] ^ l) >>> 0;
     let v14 = (this.constants[6] ^ h) >>> 0;
@@ -352,7 +379,7 @@ function generateTBL512() {
 const TBL512 = /* @__PURE__ */ generateTBL512();
 
 // Blake1-64 first half-round with rotations `32` and `25`; `k` is the half-call schedule index.
-function G1b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, k: number) {
+function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
   const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
   let Al = BBUF[2 * a + 1], Ah = BBUF[2 * a]; // prettier-ignore
@@ -360,25 +387,32 @@ function G1b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>,
   let Cl = BBUF[2 * c + 1], Ch = BBUF[2 * c]; // prettier-ignore
   let Dl = BBUF[2 * d + 1], Dh = BBUF[2 * d]; // prettier-ignore
   // v[a] = (v[a] + v[b] + x) | 0;
-  let ll = u64.add3L(Al, Bl, Xl);
+  const ll = u64.add3L(Al, Bl, Xl);
   Ah = u64.add3H(ll, Ah, Bh, Xh) >>> 0;
   Al = (ll | 0) >>> 0;
   // v[d] = rotr(v[d] ^ v[a], 32)
-  ({ Dh, Dl } = { Dh: Dh ^ Ah, Dl: Dl ^ Al });
-  ({ Dh, Dl } = { Dh: u64.rotr32H(Dh, Dl), Dl: u64.rotr32L(Dh, Dl) });
+  let xh = Dh ^ Ah, xl = Dl ^ Al; // prettier-ignore
+  Dh = u64.rotr32H(xh, xl);
+  Dl = u64.rotr32L(xh, xl);
   // v[c] = (v[c] + v[d]) | 0;
   ({ h: Ch, l: Cl } = u64.add(Ch, Cl, Dh, Dl));
   // v[b] = rotr(v[b] ^ v[c], 25)
-  ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
-  ({ Bh, Bl } = { Bh: u64.rotrSH(Bh, Bl, 25), Bl: u64.rotrSL(Bh, Bl, 25) });
-  ((BBUF[2 * a + 1] = Al), (BBUF[2 * a] = Ah));
-  ((BBUF[2 * b + 1] = Bl), (BBUF[2 * b] = Bh));
-  ((BBUF[2 * c + 1] = Cl), (BBUF[2 * c] = Ch));
-  ((BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh));
+  xh = Bh ^ Ch;
+  xl = Bl ^ Cl;
+  Bh = u64.rotrSH(xh, xl, 25);
+  Bl = u64.rotrSL(xh, xl, 25);
+  BBUF[2 * a + 1] = Al;
+  BBUF[2 * a] = Ah;
+  BBUF[2 * b + 1] = Bl;
+  BBUF[2 * b] = Bh;
+  BBUF[2 * c + 1] = Cl;
+  BBUF[2 * c] = Ch;
+  BBUF[2 * d + 1] = Dl;
+  BBUF[2 * d] = Dh;
 }
 
 // Blake1-64 second half-round with rotations `16` and `11`; `k` is the half-call schedule index.
-function G2b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, k: number) {
+function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
   const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
   let Al = BBUF[2 * a + 1], Ah = BBUF[2 * a]; // prettier-ignore
@@ -386,21 +420,28 @@ function G2b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>,
   let Cl = BBUF[2 * c + 1], Ch = BBUF[2 * c]; // prettier-ignore
   let Dl = BBUF[2 * d + 1], Dh = BBUF[2 * d]; // prettier-ignore
   // v[a] = (v[a] + v[b] + x) | 0;
-  let ll = u64.add3L(Al, Bl, Xl);
+  const ll = u64.add3L(Al, Bl, Xl);
   Ah = u64.add3H(ll, Ah, Bh, Xh);
   Al = ll | 0;
   // v[d] = rotr(v[d] ^ v[a], 16)
-  ({ Dh, Dl } = { Dh: Dh ^ Ah, Dl: Dl ^ Al });
-  ({ Dh, Dl } = { Dh: u64.rotrSH(Dh, Dl, 16), Dl: u64.rotrSL(Dh, Dl, 16) });
+  let xh = Dh ^ Ah, xl = Dl ^ Al; // prettier-ignore
+  Dh = u64.rotrSH(xh, xl, 16);
+  Dl = u64.rotrSL(xh, xl, 16);
   // v[c] = (v[c] + v[d]) | 0;
   ({ h: Ch, l: Cl } = u64.add(Ch, Cl, Dh, Dl));
   // v[b] = rotr(v[b] ^ v[c], 11)
-  ({ Bh, Bl } = { Bh: Bh ^ Ch, Bl: Bl ^ Cl });
-  ({ Bh, Bl } = { Bh: u64.rotrSH(Bh, Bl, 11), Bl: u64.rotrSL(Bh, Bl, 11) });
-  ((BBUF[2 * a + 1] = Al), (BBUF[2 * a] = Ah));
-  ((BBUF[2 * b + 1] = Bl), (BBUF[2 * b] = Bh));
-  ((BBUF[2 * c + 1] = Cl), (BBUF[2 * c] = Ch));
-  ((BBUF[2 * d + 1] = Dl), (BBUF[2 * d] = Dh));
+  xh = Bh ^ Ch;
+  xl = Bl ^ Cl;
+  Bh = u64.rotrSH(xh, xl, 11);
+  Bl = u64.rotrSL(xh, xl, 11);
+  BBUF[2 * a + 1] = Al;
+  BBUF[2 * a] = Ah;
+  BBUF[2 * b + 1] = Bl;
+  BBUF[2 * b] = Bh;
+  BBUF[2 * c + 1] = Cl;
+  BBUF[2 * c] = Ch;
+  BBUF[2 * d + 1] = Dl;
+  BBUF[2 * d] = Dh;
 }
 
 // Legacy field names keep the local `l/h` spelling, but array/state order stays `[high, low]` to
@@ -473,19 +514,32 @@ class BLAKE1_64B extends BLAKE1<BLAKE1_64B> {
     this.v7l = v7l | 0;
     this.v7h = v7h | 0;
   }
+  _cloneInto(to?: BLAKE1_64B): BLAKE1_64B {
+    (to ||= new (this.constructor as any)() as BLAKE1_64B).set(...this.get());
+    return this._cloneIntoMeta(to);
+  }
   destroy(): void {
     super.destroy();
     this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   }
   compress(view: DataView, offset: number, withLength = true): void {
     for (let i = 0; i < 32; i++, offset += 4) BLAKE512_W[i] = view.getUint32(offset, false);
-
-    this.get().forEach((v, i) => (BBUF[i] = v)); // First half from state.
+    // First half from state. Direct writes: get() would allocate an array +
+    // closure per block (same reasoning as blake2b's compress).
+    // prettier-ignore
+    const { v0l, v0h, v1l, v1h, v2l, v2h, v3l, v3h, v4l, v4h, v5l, v5h, v6l, v6h, v7l, v7h } = this;
+    // prettier-ignore
+    { BBUF[0] = v0l; BBUF[1] = v0h; BBUF[2] = v1l; BBUF[3] = v1h;
+      BBUF[4] = v2l; BBUF[5] = v2h; BBUF[6] = v3l; BBUF[7] = v3h;
+      BBUF[8] = v4l; BBUF[9] = v4h; BBUF[10] = v5l; BBUF[11] = v5h;
+      BBUF[12] = v6l; BBUF[13] = v6h; BBUF[14] = v7l; BBUF[15] = v7h; }
     BBUF.set(this.constants.subarray(0, 16), 16);
     if (withLength) {
       // Blake1-64 injects the 64-bit bit counter into `v12` and `v13`; the final all-padding
       // block passes `withLength = false`, leaving the trailing constant lanes untouched.
-      const { h, l } = u64.fromBig(BigInt(this.length * 8));
+      const bits = this.length * 8;
+      const h = u64.fromNumH(bits);
+      const l = u64.fromNumL(bits);
       BBUF[24] = (BBUF[24] ^ h) >>> 0;
       BBUF[25] = (BBUF[25] ^ l) >>> 0;
       BBUF[26] = (BBUF[26] ^ h) >>> 0;

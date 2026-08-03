@@ -132,6 +132,10 @@ export function isBytes(a: unknown): a is Uint8Array {
   );
 }
 
+// Shared error-message prefix builder. Only called on throw paths, so assert
+// success paths never pay for the string concatenation.
+const atitle = (title: string): string => (title ? `"${title}" ` : '');
+
 /**
  * Asserts something is a non-negative integer.
  * @param n - number to validate
@@ -146,14 +150,10 @@ export function isBytes(a: unknown): a is Uint8Array {
  * ```
  */
 export function anumber(n: number, title: string = ''): number {
-  if (typeof n !== 'number') {
-    const prefix = title && `"${title}" `;
-    throw new TypeError(`${prefix}expected number, got ${typeof n}`);
-  }
-  if (!Number.isSafeInteger(n) || n < 0) {
-    const prefix = title && `"${title}" `;
-    throw new RangeError(`${prefix}expected integer >= 0, got ${n}`);
-  }
+  if (typeof n !== 'number')
+    throw new TypeError(atitle(title) + 'expected number, got ' + typeof n);
+  if (!Number.isSafeInteger(n) || n < 0)
+    throw new RangeError(atitle(title) + 'expected integer >= 0, got ' + n);
   return n;
 }
 
@@ -170,10 +170,8 @@ export function anumber(n: number, title: string = ''): number {
  * ```
  */
 export function abool(value: boolean, title: string = ''): boolean {
-  if (typeof value !== 'boolean') {
-    const prefix = title && `"${title}" `;
-    throw new TypeError(prefix + 'expected boolean, got type=' + typeof value);
-  }
+  if (typeof value !== 'boolean')
+    throw new TypeError(atitle(title) + 'expected boolean, got type=' + typeof value);
   return value;
 }
 
@@ -196,20 +194,18 @@ export function abytes(
   length?: number,
   title: string = ''
 ): TRet<Uint8Array> {
+  // Success path first: this runs at the start of every update() / digestInto(), and the
+  // common `abytes(data)` form must not pay for length handling it does not use.
+  if (isBytes(value) && (length === undefined || value.length === length))
+    return value as TRet<Uint8Array>;
+  // Error path: recompute freely to build the exact message.
+  if (length !== undefined) anumber(length, 'length');
   const bytes = isBytes(value);
-  const len = value?.length;
-  const needsLen = length !== undefined;
-  if (bytes && (!needsLen || len === length)) return value as TRet<Uint8Array>;
-  if (needsLen) anumber(length, 'length');
-  if (!bytes || (needsLen && len !== length)) {
-    const prefix = title && `"${title}" `;
-    const ofLen = needsLen ? ` of length ${length}` : '';
-    const got = bytes ? `length=${len}` : `type=${typeof value}`;
-    const message = prefix + 'expected Uint8Array' + ofLen + ', got ' + got;
-    if (!bytes) throw new TypeError(message);
-    throw new RangeError(message);
-  }
-  return value as TRet<Uint8Array>;
+  const ofLen = length !== undefined ? ` of length ${length}` : '';
+  const got = bytes ? `length=${value.length}` : `type=${typeof value}`;
+  const message = atitle(title) + 'expected Uint8Array' + ofLen + ', got ' + got;
+  if (!bytes) throw new TypeError(message);
+  throw new RangeError(message);
 }
 
 /**
@@ -246,21 +242,18 @@ export function copyBytes(bytes: TArg<Uint8Array>): TRet<Uint8Array> {
  */
 export function ahash(h: TArg<CHash>): void {
   if (typeof h !== 'function' || typeof h.create !== 'function')
-    throw new TypeError('Hash must wrapped by utils.createHasher');
+    throw new TypeError('expected hash wrapped by utils.createHasher');
   anumber(h.outputLen);
   anumber(h.blockLen);
   // HMAC and KDF callers treat these as real byte lengths; allowing zero lets fake wrappers pass
   // validation and can produce empty outputs instead of failing fast.
-  if (h.outputLen < 1) throw new Error('"outputLen" must be >= 1');
-  if (h.blockLen < 1) throw new Error('"blockLen" must be >= 1');
+  if (h.outputLen < 1 || h.blockLen < 1) throw new Error('hash blockLen / outputLen must be >= 1');
 }
 
 const aobject = (value: Record<string, any>, label: string) => {
   if (value === null || typeof value !== 'object' || Array.isArray(value))
     throw new TypeError(
-      label === 'object'
-        ? 'expected valid options object'
-        : `"${label}" expected object, got type=${typeof value}`
+      (label === 'object' ? '' : `"${label}" `) + 'expected object, got type=' + typeof value
     );
 };
 
@@ -279,14 +272,10 @@ const aobject = (value: Record<string, any>, label: string) => {
  * ```
  */
 export function aexists(instance: any, checkFinished = true): void {
-  aobject(instance, 'instance');
-  const destroyed =
-    instance.destroyed === undefined ? false : abool(instance.destroyed, 'instance.destroyed');
-  const finished =
-    instance.finished === undefined ? false : abool(instance.finished, 'instance.finished');
-  checkFinished = abool(checkFinished, 'checkFinished');
-  if (destroyed) throw new Error('Hash instance has been destroyed');
-  if (checkFinished && finished) throw new Error('Hash#digest() has already been called');
+  // Runs on every update()/digestInto(); the flags are library-owned booleans, so only their
+  // truthiness is checked - re-validating their type per call was pure hot-path overhead.
+  if (instance.destroyed) throw new Error('hash was destroyed');
+  if (checkFinished && instance.finished) throw new Error('digest() was already called');
 }
 
 /**
@@ -306,11 +295,12 @@ export function aexists(instance: any, checkFinished = true): void {
  * ```
  */
 export function aoutput(out: any, instance: any): void {
-  abytes(out, undefined, 'digestInto() output');
-  aobject(instance, 'instance');
-  const min = anumber(instance.outputLen, 'instance.outputLen');
-  if (out.length < min) {
-    throw new RangeError('"digestInto() output" expected to be of length >= ' + min);
+  abytes(out, undefined, 'output');
+  // `outputLen` is a library-owned readonly number; the negated comparison keeps failing fast
+  // when it is missing/NaN (comparisons with undefined/NaN are false) without an anumber() call.
+  const min = instance.outputLen;
+  if (!(out.length >= min)) {
+    throw new RangeError('"output" expected length >= ' + min);
   }
 }
 
@@ -515,13 +505,14 @@ export function bytesToHex(bytes: TArg<Uint8Array>): string {
   return hex;
 }
 
-// We use optimized technique to convert hex string to byte array
-const asciis = { _0: 48, _9: 57, A: 65, F: 70, a: 97, f: 102 } as const;
+// Strict ASCII nibble parser: non-ASCII hex lookalikes are rejected as undefined.
+// ASCII codes: '0'..'9' = 48..57, 'A'..'F' = 65..70, 'a'..'f' = 97..102.
+// prettier-ignore
 function asciiToBase16(ch: number): number | undefined {
-  if (ch >= asciis._0 && ch <= asciis._9) return ch - asciis._0; // '2' => 50-48
-  if (ch >= asciis.A && ch <= asciis.F) return ch - (asciis.A - 10); // 'B' => 66-(65-10)
-  if (ch >= asciis.a && ch <= asciis.f) return ch - (asciis.a - 10); // 'b' => 98-(97-10)
-  return;
+  return ch >= 48 && ch <= 57 ? ch - 48 // '2' => 50-48
+  : ch >= 65 && ch <= 70 ? ch - (65 - 10) // 'B' => 66-(65-10)
+  : ch >= 97 && ch <= 102 ? ch - (97 - 10) // 'b' => 98-(97-10)
+  : undefined;
 }
 
 /**
@@ -551,15 +542,15 @@ export function hexToBytes(hex: string): TRet<Uint8Array> {
   if (hl % 2) throw new RangeError('hex string expected, got unpadded hex of length ' + hl);
   const array = new Uint8Array(al);
   for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
-    const n1 = asciiToBase16(hex.charCodeAt(hi));
-    const n2 = asciiToBase16(hex.charCodeAt(hi + 1));
+    const n1 = asciiToBase16(hex.charCodeAt(hi)); // parse first char, multiply it by 16
+    const n2 = asciiToBase16(hex.charCodeAt(hi + 1)); // parse second char
     if (n1 === undefined || n2 === undefined) {
       const char = hex[hi] + hex[hi + 1];
       throw new RangeError(
         'hex string expected, got non-hex character "' + char + '" at index ' + hi
       );
     }
-    array[ai] = n1 * 16 + n2; // multiply first octet, e.g. 'a3' => 10*16+3 => 160 + 3 => 163
+    array[ai] = n1 * 16 + n2; // example: 'A9' => 10*16 + 9
   }
   return array;
 }

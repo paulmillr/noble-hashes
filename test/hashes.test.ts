@@ -2,7 +2,8 @@ import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { _SHA512, sha512_224, sha512_256 } from '../src/sha2.ts';
+import { concatBytes, createView, hexToBytes, utf8ToBytes } from '../src/utils.ts';
 import { PLATFORMS } from './platform.ts';
 import { fmt, repeat, TYPE_TEST } from './utils.ts';
 
@@ -627,6 +628,41 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
     });
   }
 }
+
+describe('sha512/t IV derivation (FIPS 180-4 5.3.6)', () => {
+  // Pins the hardcoded T224_IV / T256_IV tables in sha2.ts to their spec derivation:
+  // SHA-512 with IV xored by 0xa5a5..a5 hashes the name string, producing the variant IV.
+  should('T224_IV / T256_IV match derivation from SHA512_IV', () => {
+    // prettier-ignore
+    const FIELDS = [
+      'Ah', 'Al', 'Bh', 'Bl', 'Ch', 'Cl', 'Dh', 'Dl',
+      'Eh', 'El', 'Fh', 'Fl', 'Gh', 'Gl', 'Hh', 'Hl',
+    ];
+    const deriveIV = (name: string): Uint8Array => {
+      const h = new _SHA512() as any;
+      for (const f of FIELDS) h[f] = (h[f] ^ 0xa5a5a5a5) | 0;
+      return h.update(utf8ToBytes(name)).digest(); // 64 bytes: derived IV, big-endian
+    };
+    const withIV = (iv: Uint8Array) => {
+      const h = new _SHA512() as any;
+      const view = createView(iv);
+      FIELDS.forEach((f, i) => (h[f] = view.getUint32(4 * i) | 0));
+      return h;
+    };
+    const cases: [string, (msg: Uint8Array) => Uint8Array, number][] = [
+      ['SHA-512/224', sha512_224, 28],
+      ['SHA-512/256', sha512_256, 32],
+    ];
+    for (const [name, fn, outLen] of cases) {
+      const iv = deriveIV(name);
+      for (const msgLen of [0, 3, 64, 111, 112, 127, 128, 200]) {
+        const msg = Uint8Array.from({ length: msgLen }, (_, i) => (i * 31 + 1) & 0xff);
+        const full = withIV(iv).update(msg).digest();
+        eql(full.slice(0, outLen), fn(msg), `${name} len=${msgLen}`);
+      }
+    }
+  });
+});
 
 export { HASHES, getHashes, init, NIST_VECTORS };
 

@@ -318,6 +318,10 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       throws(() => argon2id('password', 'diffsalt', { ...opt, maxmem: 1 }));
       throws(() => argon2id('password', 'diffsalt', { ...opt, maxmem: true }));
       throws(() => argon2id('password', 'diffsalt', { ...opt, dkLen: 0 }));
+      // RFC 9106 3.1: tag length must be >= 4 bytes
+      throws(() => argon2id('password', 'diffsalt', { ...opt, dkLen: 3 }));
+      eql(argon2id('password', 'diffsalt', { ...opt, dkLen: 4 }).length, 4);
+      throws(() => argon2id('password', 'diffsalt', { ...opt, version: 0x12 }));
       throws(() => argon2id('password', 'diffsalt', { ...opt, m: true }));
       throws(() => argon2id('password', 'diffsalt', { ...opt, m: 1 }));
       for (const k of ['dkLen', 'm', 't', 'p', 'version', 'onProgress'])

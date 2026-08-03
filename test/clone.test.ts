@@ -9,6 +9,8 @@ import { PLATFORMS } from './platform.ts';
 const BT = { describe, should };
 export function test(variant: string, platform: any, { describe, should } = BT) {
   const {
+    blake256,
+    blake512,
     blake2b,
     blake2s,
     blake3,
@@ -33,6 +35,14 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
     hmac: {
       small: () => hmac.create(sha256, new Uint8Array([5, 4, 3, 2, 1])),
       big: () => hmac.create(sha256, new Uint8Array([1, 2, 3, 4, 5])),
+    },
+    blake256: {
+      small: () => blake256.create(),
+      big: () => blake256.create({ salt: Uint8Array.from({ length: 16 }, (_, i) => i + 1) }),
+    },
+    blake512: {
+      small: () => blake512.create(),
+      big: () => blake512.create({ salt: Uint8Array.from({ length: 32 }, (_, i) => i + 1) }),
     },
     blake2s: {
       small: () => blake2s.create(),

@@ -3,13 +3,12 @@
 Audited & minimal JS implementation of hash functions, MACs and KDFs.
 
 - 🔒 [**Audited**](#security) by an independent security firm
-- 🔻 Tree-shakeable: unused code is excluded from your builds
+- 🪶 Minimal: 2.7KB (gzipped) sha256, unused code is excluded from your builds
 - 🏎 Fast: hand-optimized for caveats of JS engines
-- 🔍 Reliable: chained / sliding window / DoS / ACVP tests and fuzzing
+- 🔍 Reliable: chained / ACVP tests ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2
-- 🥈 Optional, friendly wrapper over native WebCrypto
-- 🪶 22KB (gzipped) for everything, 2.4KB for single-hash build
+- 🥈 Wrapper with identical API over native WebCrypto
 
 The library's initial development was funded by [Ethereum Foundation](https://ethereum.org/).
 
@@ -66,6 +65,7 @@ import { hkdf } from '@noble/hashes/hkdf.js';
 import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { scrypt, scryptAsync } from '@noble/hashes/scrypt.js';
 import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js';
+import { eskdf } from '@noble/hashes/eskdf.js';
 import * as webcrypto from '@noble/hashes/webcrypto.js';
 // const { sha256, sha384, sha512, hmac, hkdf, pbkdf2 } = webcrypto;
 import * as utils from '@noble/hashes/utils.js';
@@ -78,7 +78,7 @@ const { bytesToHex, concatBytes, equalBytes, hexToBytes } = utils;
 - [blake1, blake2, blake3](#blake1-blake2-blake3)
 - [legacy: sha1, md5, ripemd160](#legacy-sha1-md5-ripemd160)
 - MACs: [hmac](#hmac) | [kmac](#sha3-addons-cshake-kmac-kt128-turboshake) | [blake3 key mode](#blake1-blake2-blake3)
-- KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2)
+- KDFs: [hkdf](#hkdf) | [pbkdf2](#pbkdf2) | [scrypt](#scrypt) | [argon2](#argon2) | [eskdf](#eskdf)
 - [webcrypto: friendly wrapper](#webcrypto-friendly-wrapper)
 - [utils](#utils)
 - [Security](#security) | [Speed](#speed) | [Contributing & testing](#contributing--testing) | [License](#license)
@@ -105,7 +105,7 @@ for (let hash of [sha256, sha384, sha512, sha224, sha512_224, sha512_256]) {
 }
 ```
 
-Check out [RFC 4634](https://datatracker.ietf.org/doc/html/rfc4634) and
+Check out [RFC 6234](https://datatracker.ietf.org/doc/html/rfc6234) and
 [the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
 #### sha3: FIPS, SHAKE, Keccak
@@ -133,7 +133,7 @@ Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
 
 Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
-#### sha3-addons: cSHAKE, KMAC, K12, TurboSHAKE
+#### sha3-addons: cSHAKE, KMAC, KT128, TurboSHAKE
 
 ```typescript
 import {
@@ -158,7 +158,6 @@ const ek11 = kmac256(kk, data);
 const ek12 = kt128(data); // kangarootwelve 128-bit
 const ek13 = kt256(data); // kangarootwelve 256-bit
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
-// * with a capacity of 254 bits.
 const p = keccakprg(254);
 p.addEntropy(Uint8Array.from([1, 2, 3]));
 const rand1b = p.randomBytes(32);
@@ -208,10 +207,10 @@ blake3(ab, { context: txt.encode('application-name') });
 
 #### legacy: sha1, md5, ripemd160
 
-SHA1 (RFC 3174), MD5 (RFC 1321) and RIPEMD160 (RFC 2286) legacy, weak hash functions.
+SHA1 (RFC 3174), MD5 (RFC 1321) and RIPEMD160 (ISO/IEC 10118-3) legacy, weak hash functions.
 Don't use them in a new protocol. What "weak" means:
 
-- Collisions can be made with 2^18 effort in MD5, 2^60 in SHA1, 2^80 in RIPEMD160.
+- Collisions can be made with 2^24 effort in MD5 (seconds on commodity hardware), 2^61 in SHA1 (demonstrated in practice), 2^80 in RIPEMD160.
 - No practical pre-image attacks (only theoretical, 2^123.4)
 - HMAC seems kinda ok: https://datatracker.ietf.org/doc/html/rfc6151
 
@@ -269,7 +268,7 @@ const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.
 });
 ```
 
-Conforms to [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898).
+Conforms to [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018).
 
 #### scrypt
 
@@ -285,7 +284,7 @@ const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5
   onProgress(percentage) {
     console.log('progress', percentage);
   },
-  maxmem: 2 ** 32 + 128 * 8 * 1, // N * r * p * 128 + (128*r*p)
+  maxmem: 2 ** 17 * 8 * 1 * 128 + 128 * 8 * 1, // N * r * p * 128 + (128 * r * p)
 });
 ```
 
@@ -332,6 +331,20 @@ Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 > Argon2 can't be fast in JS, because there is no fast Uint64Array.
 > It is suggested to use [Scrypt](#scrypt) instead.
 > Being 5x slower than native code means brute-forcing attackers have bigger advantage.
+
+#### eskdf
+
+```ts
+import { eskdf } from '@noble/hashes/eskdf.js';
+const kdf = await eskdf('example-university', 'beginning-new-example');
+console.log(kdf.fingerprint);
+const key = kdf.deriveChildKey('aes', 0);
+kdf.expire();
+```
+
+Experimental KDF for deriving application-specific child keys from a username + password pair,
+built on scrypt, pbkdf2 and hkdf with fixed work factors.
+Non-standard: prefer [scrypt](#scrypt) or [argon2](#argon2) for new designs.
 
 #### webcrypto: friendly wrapper
 
@@ -383,7 +396,8 @@ The library has been audited:
   - Scope: everything, besides `blake3`, `sha3-addons`, `sha1` and `argon2`, which have not been audited
   - The audit has been funded by [Ethereum Foundation](https://ethereum.org/en/) with help of [Nomic Labs](https://nomiclabs.io)
 
-It is tested against property-based, cross-library and Wycheproof vectors,
+It is tested against official (ACVP / KAT) vectors, cross-library chained hashing,
+sliding-window length sweeps and property-based tests (fast-check),
 and is being fuzzed in [the separate repo](https://github.com/paulmillr/fuzzing).
 
 If you see anything unusual: investigate and report.
@@ -478,13 +492,15 @@ v2.0 changelog:
 
 ## Contributing & testing
 
-`test/misc` directory contains implementations of loop unrolling and md5.
+`test/misc` directory contains unrolled implementations (sha3, argon2) and misc helper scripts.
 
 - `npm install && npm run build && npm test` will build the code and run tests.
-- `npm run lint` / `npm run format` will run linter / fix linter issues.
-- `npm run bench` will run benchmarks
+- `npm run check` / `npm run format` will run linter / fix linter issues.
+- `npm run benchmark` will run benchmarks
 - `npm run bundle` will build single file
-- There is **additional** 20-min DoS test `npm run test:dos` and 2-hour multicore test `npm run test:slow`.
+- There are **additional** slow suites: 20-min DoS test `npm run test:dos`,
+  multi-hour 4GB-input test `npm run test:slow`, ACVP vectors `npm run test:acvp`
+  and KDF vectors `npm run test:kdf`.
   See [our approach to testing](./test/README.md)
 
 Some hashes are outside of scope of the library:
@@ -497,7 +513,7 @@ See [paulmillr.com/noble](https://paulmillr.com/noble/) for useful resources, ar
 ## Speed
 
 ```sh
-npm run bench
+npm run benchmark
 ```
 
 Benchmarks measured on Apple M4.
@@ -515,7 +531,7 @@ sha256 x 2,016,129 ops/sec @ 496ns/op
 sha512 x 740,740 ops/sec @ 1μs/op
 sha3_256 x 287,686 ops/sec @ 3μs/op
 sha3_512 x 288,267 ops/sec @ 3μs/op
-k12 x 476,190 ops/sec @ 2μs/op
+kt128 x 476,190 ops/sec @ 2μs/op
 blake2b x 410,340 ops/sec @ 2μs/op
 blake2s x 942,507 ops/sec @ 1μs/op
 blake3 x 1,006,036 ops/sec @ 994ns/op

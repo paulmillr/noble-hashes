@@ -23,11 +23,11 @@ import {
 // The local `y*` snapshot keeps the xor input stable even when `out` aliases `prev` or `input`.
 // prettier-ignore
 function XorAndSalsa(
-  prev: TArg<Uint32Array>,
+  prev: Uint32Array,
   pi: number,
-  input: TArg<Uint32Array>,
+  input: Uint32Array,
   ii: number,
-  out: TArg<Uint32Array>,
+  out: Uint32Array,
   oi: number
 ) {
   // Based on https://cr.yp.to/salsa20.html and RFC 7914's Salsa20/8 core.
@@ -75,13 +75,7 @@ function XorAndSalsa(
   out[oi++] = (y14 + x14) | 0; out[oi++] = (y15 + x15) | 0;
 }
 
-function BlockMix(
-  input: TArg<Uint32Array>,
-  ii: number,
-  out: TArg<Uint32Array>,
-  oi: number,
-  r: number
-) {
+function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, r: number) {
   // The block B is `r` 128-byte chunks, i.e. `2r` 16-word (64-byte) Salsa blocks.
   let head = oi + 0;
   let tail = oi + 16 * r;
@@ -122,13 +116,14 @@ export type ScryptOpts = {
   /**
    * Optional progress callback invoked during long-running derivations.
    * @param progress - completion fraction in the `0..1` range
-   * Must not throw; scrypt work buffers are only wiped on normal completion.
+   * Should not throw; if it does, derivation is aborted and scrypt work
+   * buffers are wiped before the error propagates.
    */
   onProgress?: (progress: number) => void;
 };
 
 // Common prologue and epilogue for sync/async functions
-function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: TArg<ScryptOpts>) {
+function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: ScryptOpts) {
   // Maxmem - 1GB+1KB by default
   const opts = checkOpts(
     {
@@ -146,7 +141,10 @@ function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: TArg
   anumber(asyncTick, 'asyncTick');
   anumber(maxmem, 'maxmem');
   if (onProgress !== undefined && typeof onProgress !== 'function')
-    throw new Error('progressCb must be a function');
+    throw new Error('"onProgress" must be a function');
+  // Without this, r=0 slips through: blockSize=0 turns the `p` upper bound into
+  // Infinity and the failure surfaces later as a confusing pbkdf2 dkLen error.
+  if (r < 1) throw new Error('"r" expected integer >= 1');
   const blockSize = 128 * r;
   const blockSize32 = blockSize / 4;
 
@@ -186,8 +184,17 @@ function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: TArg
     let blockMixCnt = 0;
     blockMixCb = () => {
       blockMixCnt++;
-      if (onProgress && (!(blockMixCnt % callbackPer) || blockMixCnt === totalBlockMix))
-        onProgress(blockMixCnt / totalBlockMix);
+      if (onProgress && (!(blockMixCnt % callbackPer) || blockMixCnt === totalBlockMix)) {
+        // Wiping here instead of a try/catch around the main loops keeps them
+        // try-free: measured ~1% slower at N=2^21 with the loops inside a try.
+        // onProgress is the only user code that can throw mid-derivation.
+        try {
+          onProgress(blockMixCnt / totalBlockMix);
+        } catch (e) {
+          clean(B, V, tmp);
+          throw e;
+        }
+      }
     };
   }
   return { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick };
@@ -196,9 +203,9 @@ function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: TArg
 function scryptOutput(
   password: TArg<KDFInput>,
   dkLen: number,
-  B: TArg<Uint8Array>,
-  V: TArg<Uint32Array>,
-  tmp: TArg<Uint32Array>
+  B: Uint8Array,
+  V: Uint32Array,
+  tmp: Uint32Array
 ): TRet<Uint8Array> {
   // Shared final PBKDF2-and-cleanup step: keep the derived key, wipe the scrypt workspace.
   const res = pbkdf2(sha256, password, B, { c: 1, dkLen });
@@ -240,7 +247,7 @@ function scryptOutput(
 export function scrypt(
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<ScryptOpts>
+  opts: ScryptOpts
 ): TRet<Uint8Array> {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(
     password,
@@ -310,7 +317,7 @@ export function scrypt(
 export async function scryptAsync(
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<ScryptOpts>
+  opts: ScryptOpts
 ): Promise<TRet<Uint8Array>> {
   const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(
     password,

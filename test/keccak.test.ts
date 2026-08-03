@@ -5,9 +5,9 @@ import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { _KangarooTwelve, _KeccakPRG, _ParallelHash } from '../src/sha3-addons.ts';
-import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import { bytesToHex, concatBytes, hexToBytes, swap32IfBE, u32, utf8ToBytes } from '../src/utils.ts';
 import { PLATFORMS } from './platform.ts';
-import { TYPE_TEST, jsonGZ } from './utils.ts';
+import { pattern, TYPE_TEST, jsonGZ } from './utils.ts';
 import {
   CSHAKE_VESTORS,
   K12_VECTORS,
@@ -266,8 +266,8 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       eql(
         { clean, randomBytes },
         {
-          clean: 'Hash instance has been destroyed',
-          randomBytes: 'Hash instance has been destroyed',
+          clean: 'hash was destroyed',
+          randomBytes: 'hash was destroyed',
         }
       );
     });
@@ -290,6 +290,115 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
     should('keccakP: rounds', () => {
       throws(() => keccakP(new Uint32Array(50), 0));
       throws(() => keccakP(new Uint32Array(50), 25));
+    });
+
+    should('Keccak padding matches byte-level pad10*1 reference', () => {
+      // Independent reference: build the padded message as explicit bytes per
+      // FIPS 202 B.2 (suffix bits + first pad '1' in one byte, zeros, closing
+      // '1' as 0x80 in the last rate byte) and absorb it with raw keccakP.
+      // Unlike Keccak.finish(), this derives the "extra block" case from the
+      // padded length itself, so it independently checks the suffix&0x80 branch.
+      const spongeReference = (
+        blockLen: number,
+        suffix: number,
+        msg: Uint8Array,
+        outLen: number
+      ) => {
+        const state = new Uint8Array(200);
+        const state32 = u32(state);
+        const perm = () => {
+          swap32IfBE(state32);
+          keccakP(state32);
+          swap32IfBE(state32);
+        };
+        const q = blockLen - (msg.length % blockLen);
+        // If the suffix byte occupies all 8 bits of the last rate byte
+        // (bit 7 set), the closing '1' of pad10*1 needs a whole extra block.
+        const pad = new Uint8Array(q === 1 && (suffix & 0x80) !== 0 ? blockLen + 1 : q);
+        pad[0] ^= suffix;
+        pad[pad.length - 1] ^= 0x80;
+        const padded = concatBytes(msg, pad);
+        for (let i = 0; i < padded.length; i += blockLen) {
+          for (let j = 0; j < blockLen; j++) state[j] ^= padded[i + j];
+          perm();
+        }
+        const out = new Uint8Array(outLen);
+        for (let pos = 0; pos < outLen; ) {
+          const take = Math.min(blockLen, outLen - pos);
+          out.set(state.subarray(0, take), pos);
+          pos += take;
+          if (pos < outLen) perm();
+        }
+        return out;
+      };
+      // 137 is not divisible by 4: exercises the byte-wise absorb path
+      for (const blockLen of [72, 136, 137, 168]) {
+        for (const suffix of [0x01, 0x06, 0x1f, 0x86, 0xff]) {
+          for (let len = 0; len <= 2 * blockLen + 2; len++) {
+            const msg = Uint8Array.from({ length: len }, (_, i) => (i * 0x9e + 7) & 0xff);
+            const actual = new Keccak(blockLen, suffix, 32, true).update(msg).digest();
+            eql(
+              actual,
+              spongeReference(blockLen, suffix, msg, 32),
+              `blockLen=${blockLen} suffix=${suffix} len=${len}`
+            );
+          }
+        }
+      }
+    });
+
+    should('K12/ParallelHash: streaming matches one-shot across chunk boundaries', () => {
+      // Official RFC 9861 / SP 800-185 vectors are single-shot; this pins the
+      // internal 8192-byte (K12) and B-byte (ParallelHash) chunking under
+      // partial updates, including the SingleNode -> FinalNode suffix switch.
+      for (const len of [8191, 8192, 8193, 16384, 16385]) {
+        const msg = pattern(0xfa, len);
+        const cases = [
+          [kt128, { dkLen: 32 }],
+          [kt256, { dkLen: 64 }],
+          [kt128, { dkLen: 32, personalization: pattern(0xfa, 41) }],
+        ];
+        for (const [fn, opts] of cases) {
+          const exp = fn(msg, opts);
+          for (const chunk of [1000, 4096, 8192]) {
+            const h = fn.create(opts);
+            for (let p = 0; p < len; p += chunk) h.update(msg.subarray(p, p + chunk));
+            eql(h.digest(), exp, `len=${len} chunk=${chunk}`);
+          }
+        }
+      }
+      const msg = pattern(0xfa, 1000);
+      for (const B of [8, 13]) {
+        const opts = { blockLen: B, dkLen: 32 };
+        const exp = parallelhash128(msg, opts);
+        for (const chunk of [1, 7, 64, 333]) {
+          const h = parallelhash128.create(opts);
+          for (let p = 0; p < 1000; p += chunk) h.update(msg.subarray(p, p + chunk));
+          eql(h.digest(), exp, `parallelhash B=${B} chunk=${chunk}`);
+        }
+      }
+      // update() after digest() must throw, even with empty input
+      for (const create of [() => kt128.create(), () => parallelhash128.create()]) {
+        const h = create();
+        h.update(msg).digest();
+        throws(() => h.update(EMPTY), 'update(empty) after digest');
+      }
+    });
+
+    should('sha3 update: chunked/unaligned inputs match single-shot', () => {
+      const len = 3 * 136 + 29;
+      const msg = Uint8Array.from({ length: len }, (_, i) => (i * 7 + 1) & 0xff);
+      const exp = sha3_256(msg);
+      for (let split = 0; split <= len; split += 13) {
+        const h = sha3_256.create().update(msg.subarray(0, split)).update(msg.subarray(split));
+        eql(h.digest(), exp, `split=${split}`);
+      }
+      // subarrays with unaligned byteOffset must not change results
+      for (let off = 1; off < 8; off++) {
+        const buf = new Uint8Array(len + off);
+        buf.set(msg, off);
+        eql(sha3_256(buf.subarray(off)), exp, `byteOffset=${off}`);
+      }
     });
 
     should('sha3 digestInto only fills outputLen bytes', () => {
@@ -410,21 +519,75 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         new _ParallelHash(168, 16, leaf, false, { blockLen: 12 }).update(msg).digest()
       );
     });
-    should('_KangarooTwelve._cloneInto clears stale destination leaf state', () => {
+    should('_KangarooTwelve._cloneInto copies and clears reusable leaf state', () => {
       const mk = (len: number) => Uint8Array.from({ length: len }, (_, i) => (i * 11 + 7) & 0xff);
+      const suffix = mk(9000);
+      const sourceLengths = [10, 9000, 17000] as const;
+      // Expected outputs were independently verified with XKCP and PyCryptodome primitives.
+      const variants = [
+        {
+          source: [168, 32, 32],
+          destination: [136, 64, 64],
+          expected: [
+            '2769d022a0cf258ba4f2e619443fa5dc9a95696a3e044777bb2860394a241e31',
+            'bc413769f9c288492592e90aac29ce29cf6247f424700f57ffec46b0226bce6e',
+            'fee3c1a6c66fa61ce48e8b33dd7a29a6ec338d4a40088ae776772e0f231277b9',
+          ],
+        },
+        {
+          source: [136, 64, 64],
+          destination: [168, 32, 32],
+          expected: [
+            'c1dd86706773c0c8b274903e427d7669c5818d5d6c5a5dc79ef3077e362191d6' +
+              'ecc0b482fad50c7aaa1bb806b1ac0132686b889d9e1c1ccf7881fca46cce629e',
+            '2aa0331db0c37c42983d2c9b78873c1954691a4a6d22840d05e8f9e9290e796' +
+              '24706719b329b56ca9897fa42b867207c9b0fe277f36e3ed290a911a420f01163',
+            'cf6a5c1b991454a17f2ddb31c6b293aa1a8745879ea6ef57b4cb2515776bf08d' +
+              '2763fefbd80e48869e3d6a6a0b3ef823ff68b1c8a7b9018a4b34f4caf1f68aaa',
+          ],
+        },
+      ] as const;
+      for (const { source, destination, expected } of variants) {
+        for (let i = 0; i < sourceLengths.length; i++) {
+          const src = new _KangarooTwelve(...source, 12, {}).update(mk(sourceLengths[i]));
+          const dst = new _KangarooTwelve(...destination, 12, {}).update(mk(17000));
+          eql(src._cloneInto(dst).update(suffix).digest(), hexToBytes(expected[i]));
+        }
+      }
+    });
+    should('_KangarooTwelve._cloneInto wipes replaced personalization', () => {
       for (const [blockLen, leafLen, outLen] of [
         [168, 32, 32],
         [136, 64, 64],
       ] as const) {
-        const src = new _KangarooTwelve(blockLen, leafLen, outLen, 12, {
-          personalization: Uint8Array.from([1, 2, 3]),
-        }).update(mk(10));
-        const dst = new _KangarooTwelve(blockLen, leafLen, outLen, 12, {
-          personalization: Uint8Array.from([9, 8, 7]),
-        }).update(mk(9000));
-        const cloned = src._cloneInto(dst);
-        const suffix = mk(32);
-        eql(cloned.update(suffix).digest(), src.clone().update(suffix).digest());
+        const sourceInput = Uint8Array.from([1, 2, 3]);
+        const source = new _KangarooTwelve(blockLen, leafLen, outLen, 12, {
+          personalization: sourceInput,
+        });
+        const replacedInput = Uint8Array.from([9, 8, 7, 6]);
+        const replaced = new _KangarooTwelve(blockLen, leafLen, outLen, 12, {
+          personalization: replacedInput,
+        });
+        const old = (replaced as any).personalization as Uint8Array;
+        source._cloneInto(replaced);
+        // Replaced private storage must not retain caller bytes after becoming unreachable.
+        eql(old, new Uint8Array(old.length));
+        eql(sourceInput, Uint8Array.from([1, 2, 3]));
+        eql(replacedInput, Uint8Array.from([9, 8, 7, 6]));
+
+        const reusable = new _KangarooTwelve(blockLen, leafLen, outLen, 12, {
+          personalization: Uint8Array.from([6, 7, 8]),
+        });
+        const storage = (reusable as any).personalization as Uint8Array;
+        source._cloneInto(reusable);
+        eql((reusable as any).personalization === storage, true);
+        eql(storage, sourceInput);
+
+        const empty = new _KangarooTwelve(blockLen, leafLen, outLen, 12, {});
+        const cleared = (reusable as any).personalization as Uint8Array;
+        empty._cloneInto(reusable);
+        eql(cleared, new Uint8Array(cleared.length));
+        eql(reusable.digest(), empty.clone().digest());
       }
     });
 

@@ -11,7 +11,7 @@
  * Check out `sha3-addons` module for cSHAKE, k12, and others.
  * @module
  */
-import { rotlBH, rotlBL, rotlSH, rotlSL, split } from './_u64.ts';
+import { split } from './_u64.ts';
 // prettier-ignore
 import {
   abool, abytes, aexists, anumber, aoutput,
@@ -63,9 +63,20 @@ const IOTAS = split(_SHA3_IOTA, true);
 const SHA3_IOTA_H = IOTAS[0];
 const SHA3_IOTA_L = IOTAS[1];
 
-// Left rotation (without 0, 32, 64)
+// 64-bit left rotates as u32 pairs. Inlined here (not imported from _u64) so V8 can
+// inline them into keccakP — the import path costs ~24% on sha3_256. SHA3 is the only
+// consumer of left-rotates; other hashes use right-rotates from _u64.
+// Valid for s in 1..31 (SH/SL) and 33..63 (BH/BL); keccak never rotates by 0/32/64.
+const rotlSH = (h: number, l: number, s: number): number => (h << s) | (l >>> (32 - s));
+const rotlSL = (h: number, l: number, s: number): number => (l << s) | (h >>> (32 - s));
+const rotlBH = (h: number, l: number, s: number): number => (l << (s - 32)) | (h >>> (64 - s));
+const rotlBL = (h: number, l: number, s: number): number => (h << (s - 32)) | (l >>> (64 - s));
 const rotlH = (h: number, l: number, s: number) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
 const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
+
+// Reused Theta scratch buffer (column parities), same pattern as SHA256_W in sha2.
+// keccakP never calls user code, so the shared buffer cannot be observed mid-permutation.
+const B = new Uint32Array(5 * 2);
 
 /**
  * `keccakf1600` internal permutation, additionally allows adjusting the round count.
@@ -81,13 +92,11 @@ const rotlL = (h: number, l: number, s: number) => (s > 32 ? rotlBL(h, l, s) : r
  */
 export function keccakP(s: TArg<Uint32Array>, rounds: number = 24): void {
   if (!(s instanceof Uint32Array))
-    throw new TypeError('"s" expected Uint32Array of length 50, got type=' + typeof s);
-  if (s.length !== 50)
-    throw new RangeError('"s" expected Uint32Array of length 50, got length=' + s.length);
+    throw new TypeError('"s" expected Uint32Array(50), got type=' + typeof s);
+  if (s.length !== 50) throw new RangeError('"s" expected Uint32Array(50), got length=' + s.length);
   anumber(rounds, 'rounds');
   // This implementation precomputes only the standard Keccak-f[1600] 24-round Iota table.
   if (rounds < 1 || rounds > 24) throw new Error('"rounds" expected integer 1..24');
-  const B = new Uint32Array(5 * 2);
   // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
   for (let round = 24 - rounds; round < 24; round++) {
     // Theta θ
@@ -196,10 +205,8 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     this.rounds = rounds;
     // Can be passed from user as dkLen
     anumber(outputLen, 'outputLen');
-    // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
-    // 0 < blockLen < 200
-    if (!(0 < blockLen && blockLen < 200))
-      throw new Error('only keccak-f1600 function is supported');
+    // Only keccak-f1600 is supported: 1600 bits (5x5 matrix of 64bit) === 200 bytes of state.
+    if (!(0 < blockLen && blockLen < 200)) throw new Error('"blockLen" must be 1..199');
     this.state = new Uint8Array(200);
     this.state32 = u32(this.state);
   }
@@ -216,9 +223,23 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   update(data: TArg<Uint8Array>): this {
     aexists(this);
     abytes(data);
-    const { blockLen, state } = this;
+    const { blockLen, state, state32 } = this;
     const len = data.length;
+    // Absorb full blocks with u32 XORs when both sides are 4-byte aligned.
+    // XOR of same-position words equals XOR of same-position bytes, so this is endianness-safe.
+    const canUseU32 = blockLen % 4 === 0 && data.byteOffset % 4 === 0;
+    const blockLen32 = blockLen / 4;
+    const data32 = canUseU32 && len >= blockLen ? u32(data) : undefined;
     for (let pos = 0; pos < len; ) {
+      if (data32 !== undefined && this.pos === 0 && pos % 4 === 0 && len - pos >= blockLen) {
+        for (let i = 0, o = pos / 4; i < blockLen32; i++) state32[i] ^= data32[o + i];
+        pos += blockLen;
+        // Subclasses (_KeccakPRG) read `this.pos` inside their `keccak()` override,
+        // so it must reflect the fully-absorbed block before the permutation fires.
+        this.pos = blockLen;
+        this.keccak();
+        continue;
+      }
       const take = Math.min(blockLen - this.pos, len - pos);
       for (let i = 0; i < take; i++) state[this.pos++] ^= data[pos++];
       if (this.pos === blockLen) this.keccak();
@@ -259,7 +280,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     // Plain SHA3/Keccak usage with XOF is probably a mistake, but this base
     // class is also reused by SHAKE/cSHAKE/KMAC/TupleHash/ParallelHash/
     // TurboSHAKE/KangarooTwelve wrappers that intentionally enable XOF.
-    if (!this.enableXOF) throw new Error('XOF is not possible for this instance');
+    if (!this.enableXOF) throw new Error('XOF is not enabled');
     return this.writeInto(out);
   }
   xof(bytes: number): TRet<Uint8Array> {
@@ -289,6 +310,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     // the sponge geometry as well as the state words.
     to.blockLen = blockLen;
     to.state32.set(this.state32);
+    // Sponge padding and XOF output are positional, so both offsets are part of the clone state.
     to.pos = this.pos;
     to.posOut = this.posOut;
     to.finished = this.finished;

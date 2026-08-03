@@ -4,6 +4,10 @@
  */
 import { rotr, type TRet } from './utils.ts';
 
+// Unrealized speed-up: a file-local copy of rotr measured ~1-2% faster blake2s/blake256/blake3
+// on Node 24 (V8 does not inline it into G1s/G2s across the module boundary). Reused from
+// utils for deduplication.
+
 /**
  * Internal blake permutation table.
  * Rows `0..9` serve BLAKE2s, rows `0..11` serve BLAKE2b with `10..11 = 0..1`, and Blake1 also
@@ -33,6 +37,12 @@ export const BSIGMA: TRet<Uint8Array> = /* @__PURE__ */ Uint8Array.from([
 
 // prettier-ignore
 export type Num4 = { a: number; b: number; c: number; d: number; };
+
+// Unrealized speed-up: G1s/G2s return a fresh {a,b,c,d} per call (160×/blake2s block), which
+// V8's escape analysis does not eliminate when G stays a real call. Writing into one reused
+// module-level slot instead measured +4-6% blake2s/blake256 1MB throughput on Node 24 — but
+// ~2% slower blake3 (whose profile inlines G and scalar-replaces the fresh object) and no
+// difference on 32-byte inputs. Kept simple.
 
 // 32-bit / BLAKE2s first half of G, with the fixed `(16, 12)` rotation pair.
 // Parameter `x` is the RFC 7693 first-half message word, or Blake1's pre-mixed

@@ -1,5 +1,6 @@
 import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
+import * as nodeCrypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { hexToBytes, utf8ToBytes } from '../src/utils.ts';
 import { executeKDFTests } from './generator.ts';
@@ -9,8 +10,19 @@ import { EMPTY, fmt, SPACE, TYPE_TEST } from './utils.ts';
 const BT = { describe, should };
 export function test(variant: string, platform: any, { describe, should } = BT) {
   const { expand, hkdf, extract: hkdf_extract } = platform;
-  const { argon2id, argon2idAsync, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256, sha512 } =
-    platform;
+  const {
+    argon2id,
+    argon2idAsync,
+    blake2s,
+    kt128,
+    kt256,
+    pbkdf2,
+    pbkdf2Async,
+    scrypt,
+    scryptAsync,
+    sha256,
+    sha512,
+  } = platform;
   const scryptMaxmem = platform.scryptMaxmem || ((opts) => 128 * opts.r * (opts.N + opts.p + 1));
   const progress1 = async (
     run: (onProgress: (progress: number) => void) => unknown | Promise<unknown>
@@ -213,6 +225,33 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
     should('HKDF expand: PRK length', () => {
       throws(() => expand(sha256, new Uint8Array(31), undefined, 32));
     });
+    should('HKDF salt: undefined == empty == zeros(HashLen)', () => {
+      // HMAC zero-pads its key to blockLen, so these three salts must yield
+      // identical PRKs. Pins the design decision from
+      // https://github.com/RustCrypto/KDFs/issues/15 (undefined is not special-
+      // cased away from empty; they simply coincide for HMAC-based extract).
+      const ikm = Uint8Array.from({ length: 22 }, () => 0x0b);
+      const a = hkdf_extract(sha256, ikm);
+      eql(hkdf_extract(sha256, ikm, Uint8Array.of()), a);
+      eql(hkdf_extract(sha256, ikm, new Uint8Array(32)), a);
+      eql(hkdf_extract(sha256, ikm, new Uint8Array(64)), a); // blockLen zeros too
+    });
+    should('HKDF cross-test with node:crypto', () => {
+      if (typeof nodeCrypto.hkdfSync !== 'function') return;
+      const ikm = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+      const salt = Uint8Array.from({ length: 16 }, (_, i) => 0xa0 + i);
+      const info = Uint8Array.from([1, 2, 3, 4]);
+      for (const [hash, name] of [
+        [sha256, 'sha256'],
+        [sha512, 'sha512'],
+      ]) {
+        // odd lengths cross T-block boundaries; 8160 is sha256's max
+        for (const len of [1, 31, 32, 33, 64, 255, 1000, 8160]) {
+          const node = new Uint8Array(nodeCrypto.hkdfSync(name, ikm, salt, info, len));
+          eql(hkdf(hash, ikm, salt, info, len), node, `hkdf ${name} len=${len}`);
+        }
+      }
+    });
   });
 
   describe(`scrypt (${variant})`, () => {
@@ -291,6 +330,40 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         message: `"maxmem" limit was hit: memUsed(128*r*(N+p+1))=${maxmem2}, maxmem=${opts.maxmem}`,
       });
     });
+
+    should('Scrypt cross-test with node:crypto (odd r/p combos)', async () => {
+      // Runtimes without node:crypto scryptSync skip silently.
+      if (typeof nodeCrypto.scryptSync !== 'function') return;
+      // RFC 7914 vectors only exercise r=1 and r=8; odd r stresses BlockMix's
+      // even/odd output interleave, p>1 the lane loop, odd dkLen truncation,
+      // and N=2 is the smallest accepted cost.
+      const combos = [
+        [2, 1, 1, 32],
+        [4, 2, 1, 64],
+        [16, 3, 1, 17],
+        [16, 5, 2, 31],
+        [64, 3, 3, 40],
+        [1024, 2, 2, 33],
+      ];
+      for (const [N, r, p, dkLen] of combos) {
+        const opts = { N, r, p, dkLen };
+        const node = Uint8Array.from(
+          nodeCrypto.scryptSync('pwd', 'salt', dkLen, { N, r, p, maxmem: 16 * 1024 * 1024 })
+        );
+        eql(scrypt('pwd', 'salt', opts), node, `scrypt N=${N} r=${r} p=${p} dkLen=${dkLen}`);
+        eql(await scryptAsync('pwd', 'salt', opts), node);
+      }
+    });
+
+    should('Scrypt rejects r=0 with clear error', async () => {
+      // Previously r=0 slipped through validation (blockSize=0 made the p bound
+      // Infinity) and failed later inside pbkdf2 with a confusing dkLen error.
+      throws(() => scrypt('pwd', 'salt', { N: 16, r: 0, p: 1, dkLen: 32 }), /"r" expected/);
+      await rejects(
+        () => scryptAsync('pwd', 'salt', { N: 16, r: 0, p: 1, dkLen: 32 }),
+        /"r" expected/
+      );
+    });
   });
 
   describe(`KDF (${variant})`, () => {
@@ -349,6 +422,88 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       });
     }
 
+    should('PBKDF2Async absorbs byte salt before yielding', async () => {
+      const cases = [
+        {
+          hash: sha256,
+          salt: Uint8Array.of(1, 2, 3, 4),
+          expected:
+            '2fac29057c64f73cc15578ec5f482792f9869bd7fe1571eac74331aa35715a5e' +
+            'a40c93daa5dd802eddc5b23bc4abc1342460cd84aa2e8813cfeda823e0d32095',
+        },
+        {
+          hash: sha256,
+          salt: Uint8Array.from({ length: 64 }, (_, i) => i + 1),
+          expected:
+            '73564b8d63bb62cc5b60265f87f4455eb783f5a881d436397c2270ea3db5e507' +
+            '4b9176ee42c038d777d283314ec329a35d60b03839830d274c8d806bc499a6a1',
+        },
+        {
+          hash: sha256,
+          salt: Uint8Array.from({ length: 65 }, (_, i) => i + 1),
+          expected:
+            '387f239b2263251d6f081aca9957f98bbf0c44d5851730aa1952288d5f8ca794' +
+            '841e3d5514fcfc86ca71b56871e47660eca3c0799a6d74e72efd34871af8eea8',
+        },
+        {
+          hash: blake2s,
+          salt: Uint8Array.from({ length: 64 }, (_, i) => i + 1),
+          expected:
+            '8b015dfa76a01c3d9b77632e3fdc62578dbf11c9479f88d762a4bb36096edb62' +
+            '37e80ce94466de17606b156f0acfd9640ec601ee89a47494118e88306b670b99',
+        },
+        {
+          hash: blake2s,
+          salt: Uint8Array.from({ length: 65 }, (_, i) => i + 1),
+          expected:
+            'b79c6f6bdfda90af80aa3a8f4b6b37f9fc3c97a7d0fd128ae229281fbe29b0e8' +
+            '5bbfadd5131212e2df9389659ee2abc5f519670dd2bf8052fd9feabbaae4ce3e',
+        },
+      ];
+      for (const { hash, salt, expected } of cases) {
+        const pending = pbkdf2Async(hash, 'password', salt, {
+          c: 1,
+          dkLen: 64,
+          asyncTick: 0,
+        });
+        // Two output blocks force an await between U1 computations. The boundary cases also
+        // exercise the private salted clone and BLAKE2's lazy pending full block.
+        salt.fill(9);
+        eql(await pending, hexToBytes(expected));
+      }
+    });
+    should('PBKDF2-KT128/KT256 reuse workers across a tree-boundary salt', () => {
+      const password = Uint8Array.from({ length: 3 }, (_, i) => (i * 29 + 17) & 255);
+      // The HMAC inner block plus this salt lands on K12's 8192-byte tree boundary, so deriving
+      // a second output block exercises the cached leaf state after the PBKDF2 worker is reset.
+      // Expected outputs were independently verified with XKCP and PyCryptodome primitives.
+      for (const [name, hash, expected] of [
+        [
+          'KT128',
+          kt128,
+          '81d2d71d547c3869bd484d42437c3e44ae0b76c94ea3c60f6de598b7903882ae' +
+            '2080b51b559f30502ee6bd4bfd6ce9c1a813b2ea6cb975258d7cbf94c83e0bdf',
+        ],
+        [
+          'KT256',
+          kt256,
+          'd4a9e74d87eb40feb3accf839885c6f78d2ddd522230528ab2001165480a1c9a' +
+            '7c80f6255588961b5be102ed8dce3e0645768916f43fa3eae05453498c28a488' +
+            '43ef60effd5d550abbc210c7e09b19ef76b74828a93bb9c9d0066f560fac7df2' +
+            '73e15893e10eaf8e06a9f581bc042a3fca1634e27b71dc3834d05893acd538f7',
+        ],
+      ] as const) {
+        const salt = Uint8Array.from(
+          { length: 8192 - hash.blockLen },
+          (_, i) => (i * 29 + 17) & 255
+        );
+        eql(
+          pbkdf2(hash, password, salt, { c: 1, dkLen: hash.outputLen * 2 }),
+          hexToBytes(expected),
+          name
+        );
+      }
+    });
     should('PBKDF2 types', async () => {
       const opts = { c: 10, dkLen: 32 };
       pbkdf2(sha256, 'pwd', 'salt', opts);

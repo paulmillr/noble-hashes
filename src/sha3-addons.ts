@@ -38,28 +38,32 @@ const _ffn = /* @__PURE__ */ BigInt(0xff);
 // We use bigints in sha256 for lengths too.
 // Callers are still expected to supply SP 800-185-valid lengths
 // (`0 <= x < 2^2040`); this helper does not enforce that bound.
-function leftEncode(n: number | bigint): TRet<Uint8Array> {
+// Minimal big-endian bytes of `n`, at least one byte long (SP 800-185 §2.3.1).
+function encodeBytes(n: number | bigint): number[] {
   n = BigInt(n);
   const res = [Number(n & _ffn)];
   n >>= _8n;
   for (; n > 0; n >>= _8n) res.unshift(Number(n & _ffn));
-  res.unshift(res.length);
-  return new Uint8Array(res) as TRet<Uint8Array>;
+  return res;
 }
 
-// Same caller contract as `leftEncode(...)`: lengths must already satisfy SP 800-185 §2.3.1.
-function rightEncode(n: number | bigint): TRet<Uint8Array> {
-  n = BigInt(n);
-  const res = [Number(n & _ffn)];
-  n >>= _8n;
-  for (; n > 0; n >>= _8n) res.unshift(Number(n & _ffn));
+// left_encode(n): byte count is prepended.
+function leftEncode(n: number | bigint): Uint8Array {
+  const res = encodeBytes(n);
+  res.unshift(res.length);
+  return new Uint8Array(res);
+}
+
+// right_encode(n): byte count is appended.
+function rightEncode(n: number | bigint): Uint8Array {
+  const res = encodeBytes(n);
   res.push(res.length);
-  return new Uint8Array(res) as TRet<Uint8Array>;
+  return new Uint8Array(res);
 }
 
 // `dkLen` range validation is deferred to the downstream Keccak constructor.
-function chooseLen(opts: TArg<ShakeOpts>, outputLen: number): number {
-  opts = checkOpts({}, opts) as ShakeOpts;
+function chooseLen(opts: ShakeOpts, outputLen: number): number {
+  opts = checkOpts({}, opts);
   return opts.dkLen === undefined ? outputLen : opts.dkLen;
 }
 
@@ -85,28 +89,36 @@ export type cShakeOpts = ShakeOpts & {
   NISTfn?: KDFInput;
 };
 
-// Personalization
-function cshakePers(hash: TArg<Keccak>, opts: TArg<cShakeOpts> = {}): TRet<Keccak> {
-  opts = checkOpts({}, opts) as cShakeOpts;
-  const h = hash as unknown as Keccak;
-  if (opts.personalization === undefined && opts.NISTfn === undefined) return h as TRet<Keccak>;
-  // Encode and pad inplace to avoid unneccesary memory copies/slices so we
-  // don't need to zero them later.
-  // bytepad(encode_string(N) || encode_string(S), rate), where `rate` is the
-  // current cSHAKE/KMAC/TupleHash/ParallelHash block length.
+// bytepad(X1 || X2 || ..., rate): absorbs left_encode(rate), then each chunk, then zero-pads
+// to a rate boundary. Encode and pad inplace to avoid unneccesary memory copies/slices so we
+// don't need to zero them later. `rate` is the current cSHAKE/KMAC/TupleHash/ParallelHash
+// block length.
+function bytepadUpdate(h: Keccak, ...chunks: Uint8Array[]): Keccak {
   const blockLenBytes = leftEncode(h.blockLen);
+  h.update(blockLenBytes);
+  let totalLen = blockLenBytes.length;
+  for (const chunk of chunks) {
+    h.update(chunk);
+    totalLen += chunk.length;
+  }
+  h.update(getPadding(totalLen, h.blockLen));
+  return h;
+}
+
+// Personalization
+function cshakePers(h: Keccak, opts: cShakeOpts = {}): Keccak {
+  opts = checkOpts({}, opts);
+  if (opts.personalization === undefined && opts.NISTfn === undefined) return h;
+  // bytepad(encode_string(N) || encode_string(S), rate)
   const fn = opts.NISTfn === undefined ? EMPTY_BUFFER : kdfInputToBytes(opts.NISTfn);
   const fnLen = leftEncode(_8n * BigInt(fn.length)); // length in bits
   const pers = abytesOrZero(opts.personalization, 'personalization');
   const persLen = leftEncode(_8n * BigInt(pers.length)); // length in bits
-  if (!fn.length && !pers.length) return h as TRet<Keccak>;
+  if (!fn.length && !pers.length) return h;
   // SP 800-185 cSHAKE appends `00` instead of SHAKE's `1111`; in this Keccak implementation
   // that changes the delimited suffix byte from `0x1f` to `0x04` once N or S is non-empty.
   h.suffix = 0x04;
-  h.update(blockLenBytes).update(fnLen).update(fn).update(persLen).update(pers);
-  let totalLen = blockLenBytes.length + fnLen.length + fn.length + persLen.length + pers.length;
-  h.update(getPadding(totalLen, h.blockLen));
-  return h as TRet<Keccak>;
+  return bytepadUpdate(h, fnLen, fn, persLen, pers);
 }
 
 const gencShake = (
@@ -114,12 +126,8 @@ const gencShake = (
   blockLen: number,
   outputLen: number
 ): TRet<CHashXOF<Keccak, cShakeOpts>> =>
-  createHasher<Keccak, cShakeOpts>(
-    (opts: TArg<cShakeOpts> = {}) =>
-      cshakePers(
-        new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true) as unknown as TArg<Keccak>,
-        opts
-      ) as Keccak
+  createHasher<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
+    cshakePers(new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true), opts)
   );
 
 /** TupleHash callable interface. */
@@ -130,13 +138,19 @@ export type ITupleHash = {
    * @param opts - TupleHash output and personalization options. See {@link cShakeOpts}.
    * @returns Digest bytes.
    */
-  (messages: TArg<Uint8Array[]>, opts?: TArg<cShakeOpts>): TRet<Uint8Array>;
+  (messages: TArg<Uint8Array[]>, opts?: cShakeOpts): TRet<Uint8Array>;
   /**
    * Creates an incremental TupleHash state.
    * @param opts - TupleHash output and personalization options. See {@link cShakeOpts}.
    * @returns Stateful TupleHash instance.
    */
   create(opts?: cShakeOpts): _TupleHash;
+  /** Default digest size in bytes. */
+  outputLen: number;
+  /** Input block size in bytes. */
+  blockLen: number;
+  /** Whether `.create()` returns an XOF-capable instance. */
+  canXOF: boolean;
 };
 /**
  * 128-bit NIST cSHAKE XOF.
@@ -197,23 +211,16 @@ export class _KMAC extends Keccak implements HashXOF<_KMAC> {
     outputLen: number,
     enableXOF: boolean,
     key: TArg<Uint8Array>,
-    opts: TArg<cShakeOpts> = {}
+    opts: cShakeOpts = {}
   ) {
     super(blockLen, 0x1f, outputLen, enableXOF);
     // Preload T = bytepad(encode_string("KMAC") || encode_string(S), rate); later updates append
     // newX = bytepad(encode_string(K), rate) || X and `finish()` appends right_encode(L or 0).
-    cshakePers(this as unknown as TArg<Keccak>, {
-      NISTfn: 'KMAC',
-      personalization: opts.personalization,
-    });
+    cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
     abytes(key, undefined, 'key');
     // 1. newX = bytepad(encode_string(K), rate) || X || right_encode(L),
     // with `rate = this.blockLen`.
-    const blockLenBytes = leftEncode(this.blockLen);
-    const keyLen = leftEncode(_8n * BigInt(key.length));
-    this.update(blockLenBytes).update(keyLen).update(key);
-    const totalLen = blockLenBytes.length + keyLen.length + key.length;
-    this.update(getPadding(totalLen, this.blockLen));
+    bytepadUpdate(this, leftEncode(_8n * BigInt(key.length)), key);
   }
   protected finish(): void {
     // SP 800-185 uses right_encode(L) for fixed-length KMAC and right_encode(0) for KMACXOF.
@@ -244,11 +251,16 @@ function genKmac(blockLen: number, outputLen: number, xof = false): TRet<IKMAC> 
   const kmac = (
     key: TArg<Uint8Array>,
     message: TArg<Uint8Array>,
-    opts?: TArg<cShakeOpts>
+    opts?: cShakeOpts
   ): TRet<Uint8Array> => kmac.create(key, opts).update(message).digest();
-  kmac.create = (key: TArg<Uint8Array>, opts: TArg<cShakeOpts> = {}) =>
+  kmac.create = (key: TArg<Uint8Array>, opts: cShakeOpts = {}) =>
     new _KMAC(blockLen, chooseLen(opts, outputLen), xof, key, opts);
-  return kmac as TRet<IKMAC>;
+  // Same metadata + freeze as `createHasher()` wrappers, so duck-typed
+  // consumers (e.g. `ahash()`) treat all wrappers alike.
+  kmac.outputLen = outputLen;
+  kmac.blockLen = blockLen;
+  kmac.canXOF = xof;
+  return Object.freeze(kmac) as TRet<IKMAC>;
 }
 
 /** KMAC callable interface. */
@@ -257,17 +269,23 @@ export type IKMAC = {
    * Computes a keyed KMAC digest for one message.
    * @param key - Secret key bytes.
    * @param message - Message bytes to authenticate.
-   * @param opts - KMAC output and personalization options. See {@link KangarooOpts}.
+   * @param opts - KMAC output and personalization options. See {@link cShakeOpts}.
    * @returns Authentication tag bytes.
    */
-  (key: TArg<Uint8Array>, message: TArg<Uint8Array>, opts?: TArg<KangarooOpts>): TRet<Uint8Array>;
+  (key: TArg<Uint8Array>, message: TArg<Uint8Array>, opts?: cShakeOpts): TRet<Uint8Array>;
   /**
    * Creates an incremental KMAC state.
    * @param key - Secret key bytes.
    * @param opts - KMAC output and personalization options. See {@link cShakeOpts}.
    * @returns Stateful KMAC instance.
    */
-  create(key: TArg<Uint8Array>, opts?: TArg<cShakeOpts>): _KMAC;
+  create(key: TArg<Uint8Array>, opts?: cShakeOpts): _KMAC;
+  /** Default tag size in bytes. */
+  outputLen: number;
+  /** Input block size in bytes. */
+  blockLen: number;
+  /** Whether `.create()` returns an XOF-capable instance. */
+  canXOF: boolean;
 };
 /**
  * 128-bit Keccak MAC.
@@ -344,26 +362,22 @@ export const kmac256xof: TRet<IKMAC> = /* @__PURE__ */ genKmac(136, 32, true);
  * rather than arbitrary bit strings.
  */
 export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
-  constructor(
-    blockLen: number,
-    outputLen: number,
-    enableXOF: boolean,
-    opts: TArg<cShakeOpts> = {}
-  ) {
+  // Cheaper than a per-instance `this.update = ...` closure: switches the class-method
+  // update from plain absorption (during the cSHAKE preload) to tuple-element encoding.
+  private tupleMode = false;
+  constructor(blockLen: number, outputLen: number, enableXOF: boolean, opts: cShakeOpts = {}) {
     super(blockLen, 0x1f, outputLen, enableXOF);
-    cshakePers(this as unknown as TArg<Keccak>, {
-      NISTfn: 'TupleHash',
-      personalization: opts.personalization,
-    });
-    // Change update after cshake processed
-    this.update = (data: TArg<Uint8Array>) => {
-      abytes(data);
-      // SP 800-185 encodes each tuple element as
-      // encode_string(X[i]) = left_encode(len(X[i])) || X[i].
-      super.update(leftEncode(_8n * BigInt(data.length)));
-      super.update(data);
-      return this;
-    };
+    cshakePers(this, { NISTfn: 'TupleHash', personalization: opts.personalization });
+    this.tupleMode = true;
+  }
+  update(data: TArg<Uint8Array>): this {
+    if (!this.tupleMode) return super.update(data) as this;
+    abytes(data);
+    // SP 800-185 encodes each tuple element as
+    // encode_string(X[i]) = left_encode(len(X[i])) || X[i].
+    super.update(leftEncode(_8n * BigInt(data.length)));
+    super.update(data);
+    return this;
   }
   protected finish(): void {
     // SP 800-185 uses right_encode(L) for fixed-length TupleHash
@@ -375,6 +389,7 @@ export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
   }
   _cloneInto(to?: _TupleHash): _TupleHash {
     to ||= new _TupleHash(this.blockLen, this.outputLen, this.enableXOF);
+    to.tupleMode = this.tupleMode;
     return super._cloneInto(to) as _TupleHash;
   }
   clone(): _TupleHash {
@@ -385,15 +400,20 @@ export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
 function genTuple(blockLen: number, outputLen: number, xof = false): TRet<ITupleHash> {
   // One-shot XOF wrappers still use `.digest()` because `_TupleHash` stores
   // the requested output length in the state itself.
-  const tuple = (messages: TArg<Uint8Array[]>, opts?: TArg<cShakeOpts>): TRet<Uint8Array> => {
+  const tuple = (messages: TArg<Uint8Array[]>, opts?: cShakeOpts): TRet<Uint8Array> => {
     const h = tuple.create(opts);
     if (!Array.isArray(messages)) throw new Error('expected array of messages');
     for (const msg of messages) h.update(msg);
     return h.digest();
   };
-  tuple.create = (opts: TArg<cShakeOpts> = {}) =>
+  tuple.create = (opts: cShakeOpts = {}) =>
     new _TupleHash(blockLen, chooseLen(opts, outputLen), xof, opts);
-  return tuple as TRet<ITupleHash>;
+  // Same metadata + freeze as `createHasher()` wrappers, so duck-typed
+  // consumers (e.g. `ahash()`) treat all wrappers alike.
+  tuple.outputLen = outputLen;
+  tuple.blockLen = blockLen;
+  tuple.canXOF = xof;
+  return Object.freeze(tuple) as TRet<ITupleHash>;
 }
 
 /**
@@ -457,21 +477,26 @@ type ParallelOpts = KangarooOpts & { blockLen?: number };
 export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
   private leafHash?: Hash<Keccak>;
   protected leafCons: () => Hash<Keccak>;
+  // Pristine leaf instance cloned into `leafHash` per chunk: with the default
+  // 8-byte chunks, constructing a fresh leaf per chunk costs ~15% (measured).
+  private leafTemplate?: Hash<Keccak>;
+  // Reused chaining-value buffer for leaf digests.
+  private leafCV?: Uint8Array;
   private chunkPos = 0; // Position of current block in chunk
   private chunksDone = 0; // How many chunks we already have
   private chunkLen: number;
+  // Cheaper than a per-instance `this.update = ...` closure: switches the class-method
+  // update from plain absorption (during the cSHAKE preload) to leaf chunking.
+  private leafMode = false;
   constructor(
     blockLen: number,
     outputLen: number,
     leafCons: () => Hash<Keccak>,
     enableXOF: boolean,
-    opts: TArg<ParallelOpts> = {}
+    opts: ParallelOpts = {}
   ) {
     super(blockLen, 0x1f, outputLen, enableXOF);
-    cshakePers(this as unknown as TArg<Keccak>, {
-      NISTfn: 'ParallelHash',
-      personalization: opts.personalization,
-    });
+    cshakePers(this, { NISTfn: 'ParallelHash', personalization: opts.personalization });
     this.leafCons = leafCons;
     let { blockLen: B = 8 } = opts;
     anumber(B);
@@ -482,33 +507,40 @@ export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
     // one fixed-size cSHAKE leaf digest before finish() adds right_encode(n)
     // and right_encode(L or 0).
     super.update(leftEncode(B));
-    // Change update after cshake processed
-    this.update = (data: TArg<Uint8Array>) => {
-      abytes(data);
-      const { chunkLen, leafCons } = this;
-      for (let pos = 0, len = data.length; pos < len; ) {
-        if (this.chunkPos == chunkLen || !this.leafHash) {
-          if (this.leafHash) {
-            super.update(this.leafHash.digest());
-            this.chunksDone++;
-          }
-          this.leafHash = leafCons();
-          this.chunkPos = 0;
-        }
-        const take = Math.min(chunkLen - this.chunkPos, len - pos);
-        this.leafHash.update(data.subarray(pos, pos + take));
-        this.chunkPos += take;
-        pos += take;
+    this.leafMode = true;
+  }
+  private flushLeaf(): void {
+    const cv = (this.leafCV ||= new Uint8Array((this.leafHash as Keccak).outputLen));
+    (this.leafHash as Keccak).digestInto(cv);
+    super.update(cv);
+    this.chunksDone++;
+  }
+  update(data: TArg<Uint8Array>): this {
+    if (!this.leafMode) return super.update(data) as this;
+    aexists(this);
+    abytes(data);
+    const { chunkLen, leafCons } = this;
+    for (let pos = 0, len = data.length; pos < len; ) {
+      if (this.chunkPos == chunkLen || !this.leafHash) {
+        if (this.leafHash) this.flushLeaf();
+        // Clone a pristine template instead of re-running the constructor;
+        // resurrects the just-digested leaf allocation in place.
+        this.leafTemplate ||= leafCons();
+        this.leafHash = (this.leafTemplate as Keccak)._cloneInto(
+          this.leafHash as Keccak | undefined
+        );
+        this.chunkPos = 0;
       }
-      return this;
-    };
+      const take = Math.min(chunkLen - this.chunkPos, len - pos);
+      this.leafHash.update(data.subarray(pos, pos + take));
+      this.chunkPos += take;
+      pos += take;
+    }
+    return this;
   }
   protected finish(): void {
     if (this.finished) return;
-    if (this.leafHash) {
-      super.update(this.leafHash.digest());
-      this.chunksDone++;
-    }
+    if (this.leafHash) this.flushLeaf();
     // SP 800-185 finishes ParallelHash as
     // z || right_encode(n) || right_encode(L); XOF mode replaces
     // right_encode(L) with right_encode(0).
@@ -517,9 +549,25 @@ export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
     super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen)));
     super.finish();
   }
+  // Overriding hides Keccak's flat implementation, which would otherwise be inherited
+  // and silently miss the tree state (leaf hash, chunk counters).
   _cloneInto(to?: _ParallelHash): _ParallelHash {
     to ||= new _ParallelHash(this.blockLen, this.outputLen, this.leafCons, this.enableXOF);
     to.leafCons = this.leafCons;
+    // Clone the cached template/CV as regular state: this also overwrites
+    // stale wrong-variant values on reused destinations.
+    if (this.leafTemplate)
+      to.leafTemplate = (this.leafTemplate as Keccak)._cloneInto(
+        to.leafTemplate as Keccak | undefined
+      );
+    else if (to.leafTemplate) {
+      to.leafTemplate.destroy();
+      to.leafTemplate = undefined;
+    }
+    if (this.leafCV) {
+      if (to.leafCV && to.leafCV.length === this.leafCV.length) to.leafCV.set(this.leafCV);
+      else to.leafCV = this.leafCV.slice();
+    } else to.leafCV = undefined;
     // Reused destinations can carry a stale partial leaf
     // when the source is still on the root sponge.
     if (this.leafHash) to.leafHash = this.leafHash._cloneInto(to.leafHash as Keccak);
@@ -530,11 +578,14 @@ export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
     to.chunkPos = this.chunkPos;
     to.chunkLen = this.chunkLen;
     to.chunksDone = this.chunksDone;
+    to.leafMode = this.leafMode;
     return super._cloneInto(to) as _ParallelHash;
   }
   destroy(): void {
     super.destroy.call(this);
     if (this.leafHash) this.leafHash.destroy();
+    if (this.leafTemplate) this.leafTemplate.destroy();
+    if (this.leafCV) clean(this.leafCV);
   }
   clone(): _ParallelHash {
     return this._cloneInto();
@@ -547,9 +598,9 @@ function genPrl(
   leaf: ReturnType<typeof gencShake>,
   xof = false
 ): TRet<CHashXOF<Keccak, ParallelOpts>> {
-  const parallel = (message: TArg<Uint8Array>, opts?: TArg<ParallelOpts>): TRet<Uint8Array> =>
+  const parallel = (message: TArg<Uint8Array>, opts?: ParallelOpts): TRet<Uint8Array> =>
     parallel.create(opts).update(message).digest();
-  parallel.create = (opts: TArg<ParallelOpts> = {}) =>
+  parallel.create = (opts: ParallelOpts = {}) =>
     new _ParallelHash(
       blockLen,
       chooseLen(opts, outputLen),
@@ -560,10 +611,11 @@ function genPrl(
       xof,
       opts
     );
+  // Same metadata + freeze as `createHasher()` wrappers.
   parallel.outputLen = outputLen;
   parallel.blockLen = blockLen;
   parallel.canXOF = xof;
-  return parallel as TRet<CHashXOF<Keccak, ParallelOpts>>;
+  return Object.freeze(parallel) as TRet<CHashXOF<Keccak, ParallelOpts>>;
 }
 
 /**
@@ -661,14 +713,14 @@ export type TurboshakeOpts = ShakeOpts & {
 };
 
 const genTurbo = (blockLen: number, outputLen: number) =>
-  createHasher<Keccak, TurboshakeOpts>((opts: TArg<TurboshakeOpts> = {}) => {
-    opts = checkOpts({}, opts) as TurboshakeOpts;
+  createHasher<Keccak, TurboshakeOpts>((opts: TurboshakeOpts = {}) => {
+    opts = checkOpts({}, opts);
     const D = opts.D === undefined ? 0x1f : opts.D;
     // RFC 9861 §2.1 fixes the default `D = 0x1f`; §2.2 defines the 12-round
     // TurboSHAKE family selected here.
     if (!Number.isSafeInteger(D) || D < 0x01 || D > 0x7f)
       throw new Error('"D" (domain separation byte) must be 0x01..0x7f, got: ' + D);
-    const dkLen = opts.dkLen === undefined ? outputLen : opts.dkLen;
+    const dkLen = chooseLen(opts, outputLen);
     // RFC 9861 §§2.1-2.2 define output length L as a positive integer.
     if (dkLen < 1) throw new Error('"dkLen" must be >= 1');
     return new Keccak(blockLen, D, dkLen, true, 12);
@@ -741,11 +793,19 @@ export type KangarooOpts = {
   personalization?: Uint8Array;
 };
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
+// RFC 9861 §3.2 FinalNode prefix for S_0 and the CV-list terminator.
+const K12_TREE = /* @__PURE__ */ Uint8Array.from([3, 0, 0, 0, 0, 0, 0, 0]);
+const K12_FINAL = /* @__PURE__ */ Uint8Array.from([0xff, 0xff]);
 
 /** Internal K12 hash class. */
 export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> {
   readonly chunkLen = 8192;
   private leafHash?: Keccak;
+  // Pristine leaf instance cloned into `leafHash` per chunk, same pattern as _ParallelHash:
+  // streaming reuses two leaf allocations total instead of one per 8KB chunk.
+  private leafTemplate?: Keccak;
+  // Reused chaining-value buffer for leaf digests.
+  private leafCV?: Uint8Array;
   protected leafLen: number;
   private personalization: Uint8Array;
   private chunkPos = 0; // Position of current block in chunk
@@ -755,10 +815,10 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
     leafLen: number,
     outputLen: number,
     rounds: number,
-    opts: TArg<KangarooOpts>
+    opts: KangarooOpts
   ) {
     super(blockLen, 0x07, outputLen, true, rounds);
-    opts = checkOpts({}, opts) as KangarooOpts;
+    opts = checkOpts({}, opts);
     // RFC 9861 §3 defines output length L as a positive integer.
     if (outputLen < 1) throw new Error('"dkLen" must be >= 1');
     this.leafLen = leafLen;
@@ -768,21 +828,25 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
         : copyBytes(abytes(opts.personalization, undefined, 'personalization'));
   }
   update(data: TArg<Uint8Array>): this {
+    aexists(this);
     abytes(data);
     const { chunkLen, blockLen, leafLen, rounds } = this;
     for (let pos = 0, len = data.length; pos < len; ) {
       if (this.chunkPos == chunkLen) {
-        if (this.leafHash) super.update(this.leafHash.digest());
+        if (this.leafHash) this.flushLeaf();
         else {
           // RFC 9861 §3.2 switches from SingleNode (`07`) to FinalNode (`06`)
           // once S exceeds 8192 bytes and prefixes S_0 with
           // `03 00 00 00 00 00 00 00`.
           this.suffix = 0x06; // Its safe to change suffix here since its used only in digest()
-          super.update(Uint8Array.from([3, 0, 0, 0, 0, 0, 0, 0]));
+          super.update(K12_TREE);
         }
         // Secondary chunks S_1..S_(n-1) become fixed-length
         // CV_i = TurboSHAKE*(S_i, `0B`, 32|64) chaining values.
-        this.leafHash = new Keccak(blockLen, 0x0b, leafLen, false, rounds);
+        // Clone a pristine template instead of re-running the constructor;
+        // resurrects the just-digested leaf allocation in place.
+        this.leafTemplate ??= new Keccak(blockLen, 0x0b, leafLen, false, rounds);
+        this.leafHash = this.leafTemplate._cloneInto(this.leafHash);
         this.chunksDone++;
         this.chunkPos = 0;
       }
@@ -795,6 +859,12 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
     }
     return this;
   }
+  private flushLeaf(): void {
+    const leafHash = this.leafHash as Keccak;
+    const cv = (this.leafCV ||= new Uint8Array(leafHash.outputLen));
+    leafHash.digestInto(cv);
+    super.update(cv);
+  }
   protected finish(): void {
     if (this.finished) return;
     const { personalization } = this;
@@ -805,27 +875,30 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
       // Multi-chunk K12 appends
       // CV_1..CV_(n-1) || length_encode(n-1) || `FF FF`
       // before the final TurboSHAKE call.
-      super.update(this.leafHash.digest());
+      this.flushLeaf();
       super.update(rightEncodeK12(this.chunksDone));
-      super.update(Uint8Array.from([0xff, 0xff]));
+      super.update(K12_FINAL);
     }
     super.finish.call(this);
   }
   destroy(): void {
     super.destroy.call(this);
     if (this.leafHash) this.leafHash.destroy();
+    if (this.leafTemplate) this.leafTemplate.destroy();
+    if (this.leafCV) clean(this.leafCV);
     // Personalization is copied on create/clone, so destroy can wipe it
     // without touching caller input.
     if (this.personalization !== EMPTY_BUFFER) clean(this.personalization);
     this.personalization = EMPTY_BUFFER;
   }
+  // Overriding hides Keccak's flat implementation, which would otherwise be inherited
+  // and silently miss the tree state (leaf hash, chunk counters).
   _cloneInto(to?: _KangarooTwelve): _KangarooTwelve {
-    const { blockLen, leafLen, leafHash, outputLen, rounds } = this;
-    const personalization =
-      this.personalization === EMPTY_BUFFER ? EMPTY_BUFFER : copyBytes(this.personalization);
+    const { blockLen, leafLen, leafHash, outputLen, personalization, rounds } = this;
+    const fresh = to === undefined;
     // Personalization is absorbed only during finish(), so clones need the same pending value.
     to ||= new _KangarooTwelve(blockLen, leafLen, outputLen, rounds, {
-      personalization,
+      personalization: personalization === EMPTY_BUFFER ? undefined : personalization,
     });
     super._cloneInto(to);
     // Reused destinations can carry a stale leaf from an older multi-chunk state.
@@ -834,8 +907,33 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
       to.leafHash.destroy();
       to.leafHash = undefined;
     }
-    // Snapshot the pending personalization so clone state does not alias caller-owned input.
-    to.personalization = personalization;
+    // Cached leaf state is part of a reusable clone: stale destroyed or wrong-variant values
+    // otherwise fail or change the digest only after the replacement crosses a tree boundary.
+    if (this.leafTemplate) to.leafTemplate = this.leafTemplate._cloneInto(to.leafTemplate);
+    else if (to.leafTemplate) {
+      to.leafTemplate.destroy();
+      to.leafTemplate = undefined;
+    }
+    if (this.leafCV) {
+      if (to.leafCV && to.leafCV.length === this.leafCV.length) to.leafCV.set(this.leafCV);
+      else to.leafCV = this.leafCV.slice();
+    } else to.leafCV = undefined;
+    // Snapshot the pending personalization without aliasing source or caller-owned input.
+    if (!fresh) {
+      const old = to.personalization;
+      if (personalization === EMPTY_BUFFER) {
+        if (old !== EMPTY_BUFFER) clean(old);
+        to.personalization = EMPTY_BUFFER;
+      } else if (old === EMPTY_BUFFER || old.length !== personalization.length) {
+        const copy = copyBytes(personalization);
+        if (old !== EMPTY_BUFFER) clean(old);
+        to.personalization = copy;
+      } else {
+        // Reuse compatible private storage so live-destination clones neither allocate
+        // nor abandon user data.
+        old.set(personalization);
+      }
+    }
     to.leafLen = this.leafLen;
     to.chunkPos = this.chunkPos;
     to.chunksDone = this.chunksDone;
@@ -867,7 +965,7 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
  * ```
  */
 export const kt128: TRet<CHash<_KangarooTwelve, KangarooOpts>> = /* @__PURE__ */ createHasher(
-  (opts: TArg<KangarooOpts> = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
+  (opts: KangarooOpts = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
 );
 /**
  * 256-bit KangarooTwelve (k12): reduced 12-round keccak.
@@ -882,7 +980,7 @@ export const kt128: TRet<CHash<_KangarooTwelve, KangarooOpts>> = /* @__PURE__ */
  * ```
  */
 export const kt256: TRet<CHash<_KangarooTwelve, KangarooOpts>> = /* @__PURE__ */ createHasher(
-  (opts: TArg<KangarooOpts> = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
+  (opts: KangarooOpts = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
 );
 
 // MarsupilamiFourteen (14-rounds) can be defined as:
@@ -896,16 +994,14 @@ export type HopMAC = (
   dkLen?: number
 ) => TRet<Uint8Array>;
 const genHopMAC =
-  (hash: TArg<CHash<_KangarooTwelve, KangarooOpts>>): TRet<HopMAC> =>
+  (hash: CHash<_KangarooTwelve, KangarooOpts>): TRet<HopMAC> =>
   (
     key: TArg<Uint8Array>,
     message: TArg<Uint8Array>,
     personalization: TArg<Uint8Array>,
     dkLen?: number
-  ) => {
-    const h = hash as unknown as CHash<_KangarooTwelve, KangarooOpts>;
-    return h(key, { personalization: h(message, { personalization }), dkLen }) as TRet<Uint8Array>;
-  };
+  ) =>
+    hash(key, { personalization: hash(message, { personalization }), dkLen });
 
 /**
  * 128-bit KangarooTwelve-based MAC.
@@ -999,6 +1095,7 @@ export class _KeccakPRG extends Keccak implements PRG {
     this.keccak();
     this.posOut = this.blockLen;
   }
+  // Keccak cloning includes `posOut`, which preserves the PRG's current output phase.
   _cloneInto(to?: _KeccakPRG): _KeccakPRG {
     const { rate } = this;
     to ||= new _KeccakPRG(1600 - rate);

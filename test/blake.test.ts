@@ -211,6 +211,33 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
+    should('BLAKE2: unaligned salt/personalization/input views', () => {
+      // salt/personalization as subarrays with byteOffset % 4 != 0 used to
+      // throw a cryptic RangeError from the Uint32Array constructor.
+      const mk = (len, off) => {
+        const buf = new Uint8Array(len + off);
+        for (let i = 0; i < len; i++) buf[off + i] = i + 1;
+        return buf.subarray(off);
+      };
+      for (const [fn, sLen] of [
+        [blake2b, 16],
+        [blake2s, 8],
+      ]) {
+        const aligned = fn(data, { salt: mk(sLen, 0), personalization: mk(sLen, 0) });
+        for (let off = 1; off < 4; off++) {
+          eql(
+            fn(data, { salt: mk(sLen, off), personalization: mk(sLen, off) }),
+            aligned,
+            `salt/pers byteOffset=${off}`
+          );
+        }
+        // unaligned message views must match aligned ones (zero-copy path skips them)
+        const msg = mk(3 * 128 + 13, 0);
+        const exp = fn(msg);
+        for (let off = 1; off < 4; off++) eql(fn(mk(3 * 128 + 13, off)), exp, `msg off=${off}`);
+      }
+    });
+
     describe('input immutability', () => {
       should('BLAKE2b', () => {
         const msg = new Uint8Array([1, 2, 3, 4]);

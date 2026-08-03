@@ -6,7 +6,6 @@ const U64_MASK = 2n ** 64n - 1n;
 const U32_MASK = (2 ** 32 - 1) | 0;
 // Convert [u32, u32] to BigInt(u64)
 const rotate_right = (word, shift) => ((word >> shift) | (word << (64n - shift))) & U64_MASK;
-const rotate_left = (word, shift) => ((word >> (64n - shift)) + (word << shift)) % (1n << 64n);
 
 // Convert BigInt(u64) -> [u32, u32]
 const big = (n) => {
@@ -62,25 +61,8 @@ describe('u64', () => {
     }
   });
 
-  should('rotl small', () => {
-    const val = [0x01234567, 0x89abcdef];
-    const big = u64.toBig(...val);
-    for (let i = 1; i < 32; i++) {
-      const h = u64.rotlSH(val[0], val[1], i);
-      const l = u64.rotlSL(val[0], val[1], i);
-      eql(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
-    }
-  });
-
-  should('rotl big', () => {
-    const val = [0x01234567, 0x89abcdef];
-    const big = u64.toBig(...val);
-    for (let i = 33; i < 64; i++) {
-      const h = u64.rotlBH(val[0], val[1], i);
-      const l = u64.rotlBL(val[0], val[1], i);
-      eql(rotate_left(big, BigInt(i)), u64.toBig(h, l), `rotl_big(${i})`);
-    }
-  });
+  // rotl* live as local copies in sha3.ts (their only consumer, for inlining) and are
+  // covered there by keccak vectors; no importable definitions remain to unit-test.
 });
 
 should.runWhen(import.meta.url);

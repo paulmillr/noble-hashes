@@ -12,7 +12,7 @@
  * @module
  */
 import { SHA256_IV } from './_md.ts';
-import { fromBig } from './_u64.ts';
+import { fromNumH, fromNumL } from './_u64.ts';
 import { _BLAKE2, _compress } from './blake2.ts';
 // prettier-ignore
 import {
@@ -98,7 +98,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     const { key, context } = opts;
     const hasContext = context !== undefined;
     if (key !== undefined) {
-      if (hasContext) throw new Error('Only "key" or "context" can be specified at same time');
+      if (hasContext) throw new Error('cannot use both "key" and "context"');
       abytes(key, 32, 'key');
       const k = copyBytes(key);
       this.IV = u32(k);
@@ -114,7 +114,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
       swap32IfBE(this.IV);
       this.flags = flags | B3_Flags.DERIVE_KEY_MATERIAL;
     } else {
-      this.IV = B3_IV.slice();
+      this.IV = B3_IV; // Share the module-private immutable default IV.
       this.flags = flags;
     }
     this.state = this.IV.slice();
@@ -130,13 +130,14 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   // block length, and flags, then keep only the first 8 output words.
   private b2Compress(counter: number, flags: number, buf: Uint32Array, bufPos: number = 0) {
     const { state: s, pos } = this;
-    const { h, l } = fromBig(BigInt(counter), true);
+    const t0 = fromNumL(counter);
+    const t1 = fromNumH(counter);
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       _compress(
         B3_SIGMA, bufPos, buf, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
-        B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], h, l, pos, flags
+        B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], t0, t1, pos, flags
       );
     s[0] = v0 ^ v8;
     s[1] = v1 ^ v9;
@@ -181,26 +182,41 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     }
     this.pos = 0;
   }
+  // Overriding hides _BLAKE2's flat implementation, which would otherwise be inherited
+  // and silently miss the tree state (CV stack, chunk counters; get()/set() are stubs here).
   _cloneInto(to?: _BLAKE3): _BLAKE3 {
+    const staleOutput = !!to && to.finished && !to.destroyed; // Save before super copies lifecycle.
     to = super._cloneInto(to) as _BLAKE3;
     const { IV, flags, state, chunkPos, posOut, chunkOut, stack, chunksDone } = this;
-    to.state.set(state.slice());
+    to.state.set(state);
     // Clone each CV stack entry by value so extending or destroying the clone
     // cannot alias the source tree state.
     to.stack = stack.map((i) => Uint32Array.from(i));
-    to.IV.set(IV);
+    if (IV === B3_IV) {
+      if (to.IV !== B3_IV) clean(to.IV);
+      to.IV = B3_IV; // Share immutable default; configured IVs stay private.
+    } else if (to.IV === B3_IV) {
+      to.IV = IV.slice();
+    } else {
+      to.IV.set(IV);
+    }
     to.flags = flags;
     to.chunkPos = chunkPos;
     to.chunksDone = chunksDone;
     to.posOut = posOut;
     to.chunkOut = chunkOut;
     to.enableXOF = this.enableXOF;
-    to.bufferOut32.set(this.bufferOut32);
+    if (this.finished) {
+      to.bufferOut32.set(this.bufferOut32);
+    } else if (staleOutput) {
+      clean(to.bufferOut32); // Wipe stale output; finish() overwrites scratch.
+    }
     return to;
   }
   destroy(): void {
     this.destroyed = true;
-    clean(this.state, this.buffer32, this.IV, this.bufferOut32);
+    clean(this.state, this.buffer32, this.bufferOut32);
+    if (this.IV !== B3_IV) clean(this.IV);
     clean(...this.stack);
   }
   // Root/XOF compression: rerun the same ROOT inputs with incrementing output
@@ -208,14 +224,16 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   // Same as b2Compress, but doesn't modify state and returns 16 u32 array (instead of 8)
   private b2CompressOut() {
     const { state: s, pos, flags, buffer32, bufferOut32: out32 } = this;
-    const { h, l } = fromBig(BigInt(this.chunkOut++));
+    const outCounter = this.chunkOut++;
+    const t0 = fromNumL(outCounter);
+    const t1 = fromNumH(outCounter);
     swap32IfBE(buffer32);
     // prettier-ignore
     const { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 } =
       _compress(
         B3_SIGMA, 0, buffer32, 7,
         s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
-        B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], l, h, pos, flags
+        B3_IV[0], B3_IV[1], B3_IV[2], B3_IV[3], t0, t1, pos, flags
       );
     out32[0] = v0 ^ v8;
     out32[1] = v1 ^ v9;
@@ -241,7 +259,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     if (this.finished) return;
     this.finished = true;
     // Padding
-    clean(this.buffer.subarray(this.pos));
+    this.buffer.fill(0, this.pos);
     // Process last chunk
     let flags = this.flags | B3_Flags.ROOT;
     if (this.stack.length) {
@@ -274,7 +292,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     return out as TRet<Uint8Array>;
   }
   xofInto(out: TArg<Uint8Array>): TRet<Uint8Array> {
-    if (!this.enableXOF) throw new Error('XOF is not possible after digest call');
+    if (!this.enableXOF) throw new Error('no XOF after digest()');
     return this.writeInto(out);
   }
   xof(bytes: number): TRet<Uint8Array> {

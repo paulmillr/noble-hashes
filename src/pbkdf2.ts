@@ -28,12 +28,12 @@ export type Pbkdf2Opt = {
   /** Max scheduler block time in milliseconds for the async variant. */
   asyncTick?: number;
 };
-// Common start and end for sync/async functions
+// Common validation and per-call state setup for sync/async functions.
 function pbkdf2Init(
   hash: TArg<CHash>,
   _password: TArg<KDFInput>,
   _salt: TArg<KDFInput>,
-  _opts: TArg<Pbkdf2Opt>
+  _opts: Pbkdf2Opt
 ) {
   ahash(hash);
   const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);
@@ -41,37 +41,62 @@ function pbkdf2Init(
   anumber(c, 'c');
   anumber(dkLen, 'dkLen');
   anumber(asyncTick, 'asyncTick');
-  if (c < 1) throw new Error('iterations (c) must be >= 1');
+  if (c < 1) throw new Error('"c" (iterations) must be >= 1');
   // RFC 8018 §5.2 defines `dkLen` as "a positive integer".
   if (dkLen < 1) throw new Error('"dkLen" must be >= 1');
   // RFC 8018 §5.2 step 1 requires rejecting oversize `dkLen`
   // before allocating the destination buffer.
   if (dkLen > (2 ** 32 - 1) * hash.outputLen) throw new Error('derived key too long');
-  const password = kdfInputToBytes(_password, 'password');
-  const salt = kdfInputToBytes(_salt, 'salt');
+  const p = kdfInputToBytes(_password, 'password');
+  const s = kdfInputToBytes(_salt, 'salt');
   // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
   const DK = new Uint8Array(dkLen);
-  // U1 = PRF(Password, Salt + INT_32_BE(i))
-  const PRF = hmac.create(hash, password);
-  // Cache PRF(P, S || ...) prefix state so each block only appends INT_32_BE(i).
-  const PRFSalt = PRF._cloneInto().update(salt);
-  return { c, dkLen, asyncTick, DK, PRF, PRFSalt };
+  const { iHash, oHash, outputLen } = hmac.create(hash, p);
+  // Drive keyed hashes directly; the wrapper is only needed to initialize their HMAC midstates.
+  const u = new Uint8Array(outputLen);
+  const eng = pbkdf2Engine(iHash, oHash, s, u);
+  return { c, dkLen, asyncTick, DK, outputLen, eng };
 }
 
-function pbkdf2Output<T extends Hash<T>>(
-  PRF: TArg<Hash<T>>,
-  PRFSalt: TArg<Hash<T>>,
-  DK: TArg<Uint8Array>,
-  prfW: TArg<Hash<T> | undefined>,
-  u: TArg<Uint8Array>
-): TRet<Uint8Array> {
-  // Shared sync/async cleanup point: wipe transient PRF state
-  // while preserving the derived key buffer.
-  PRF.destroy();
-  PRFSalt.destroy();
-  if (prfW) prfW.destroy();
-  clean(u);
-  return DK as TRet<Uint8Array>;
+// Per-call PRF driver writes U1 into both `u` and `Ti`, then later digests into `u`;
+// shared by the sync and async variants.
+function pbkdf2Engine(iHash: Hash<any>, oHash: Hash<any>, salt: Uint8Array, u: Uint8Array) {
+  const counter = new Uint8Array(4);
+  const view = createView(counter);
+  // Full clones retain tree/config state; absorb salt before async yields without cloning input.
+  const salted = iHash._cloneInto().update(salt);
+  // u1() overwrites the worker before reading it. Seed from the outer midstate so a long salt
+  // cannot pre-populate a tree stack that the first reset would abandon without wiping.
+  const work = oHash._cloneInto();
+  const iClone = iHash._cloneInto; // Capture before mixed feedback can materialize state tuples.
+  const oClone = oHash._cloneInto;
+  return {
+    u1: (ti: number, Ti: Uint8Array) => {
+      view.setInt32(0, ti, false);
+      salted._cloneInto(work).update(counter).digestInto(u);
+      oHash._cloneInto(work).update(u).digestInto(u);
+      Ti.set(u.subarray(0, Ti.length));
+    },
+    // Whole `F` inner loop for the sync variant: one optimized function owns the hot loop.
+    rounds: (c: number, Ti: Uint8Array) => {
+      for (let ui = 1; ui < c; ui++) {
+        iClone.call(iHash, work).update(u).digestInto(u);
+        oClone.call(oHash, work).update(u).digestInto(u);
+        for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
+      }
+    },
+    output: (DK: Uint8Array): TRet<Uint8Array> => {
+      // Keyed templates and derived worker states are secret material.
+      iHash.destroy();
+      oHash.destroy();
+      salted.destroy();
+      work.destroy();
+      // Shared sync/async cleanup point: wipe transient PRF state
+      // while preserving the derived key buffer.
+      clean(u);
+      return DK as TRet<Uint8Array>;
+    },
+  };
 }
 
 /**
@@ -96,31 +121,22 @@ export function pbkdf2(
   hash: TArg<CHash>,
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<Pbkdf2Opt>
+  opts: Pbkdf2Opt
 ): TRet<Uint8Array> {
-  const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
-  let prfW: any; // Working copy
-  const arr = new Uint8Array(4);
-  const view = createView(arr);
-  const u = new Uint8Array(PRF.outputLen);
+  const { c, dkLen, DK, outputLen, eng } = pbkdf2Init(hash, password, salt, opts);
   // DK = T1 + T2 + ⋯ + Tdklen/hlen
-  for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += PRF.outputLen) {
+  for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
     // Ti = F(Password, Salt, c, i)
     // The last Ti view can be shorter than hLen, which applies
     // RFC 8018 §5.2 step 4's T_l<0..r-1> truncation without extra copies.
-    const Ti = DK.subarray(pos, pos + PRF.outputLen);
-    view.setInt32(0, ti, false);
+    const Ti = DK.subarray(pos, pos + outputLen);
     // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc
     // U1 = PRF(Password, Salt + INT_32_BE(i))
-    (prfW = PRFSalt._cloneInto(prfW)).update(arr).digestInto(u);
-    Ti.set(u.subarray(0, Ti.length));
-    for (let ui = 1; ui < c; ui++) {
-      // Uc = PRF(Password, Uc−1)
-      PRF._cloneInto(prfW).update(u).digestInto(u);
-      for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
-    }
+    eng.u1(ti, Ti);
+    // Uc = PRF(Password, Uc−1); Ti ^= Uc
+    eng.rounds(c, Ti);
   }
-  return pbkdf2Output(PRF, PRFSalt, DK, prfW, u);
+  return eng.output(DK);
 }
 
 /**
@@ -158,29 +174,22 @@ export async function pbkdf2Async(
   hash: TArg<CHash>,
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<Pbkdf2Opt>
+  opts: Pbkdf2Opt
 ): Promise<TRet<Uint8Array>> {
-  const { c, dkLen, asyncTick, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
-  let prfW: any; // Working copy
-  const arr = new Uint8Array(4);
-  const view = createView(arr);
-  const u = new Uint8Array(PRF.outputLen);
+  const { c, dkLen, asyncTick, DK, outputLen, eng } = pbkdf2Init(hash, password, salt, opts);
   // DK = T1 + T2 + ⋯ + Tdklen/hlen
-  for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += PRF.outputLen) {
+  for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
     // Ti = F(Password, Salt, c, i)
     // The last Ti view can be shorter than hLen, which applies
     // RFC 8018 §5.2 step 4's T_l<0..r-1> truncation without extra copies.
-    const Ti = DK.subarray(pos, pos + PRF.outputLen);
-    view.setInt32(0, ti, false);
+    const Ti = DK.subarray(pos, pos + outputLen);
     // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc
     // U1 = PRF(Password, Salt + INT_32_BE(i))
-    (prfW = PRFSalt._cloneInto(prfW)).update(arr).digestInto(u);
-    Ti.set(u.subarray(0, Ti.length));
+    eng.u1(ti, Ti);
     await asyncLoop(c - 1, asyncTick, () => {
       // Uc = PRF(Password, Uc−1)
-      PRF._cloneInto(prfW).update(u).digestInto(u);
-      for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
+      eng.rounds(2, Ti); // c=2 runs exactly one PRF iteration per callback.
     });
   }
-  return pbkdf2Output(PRF, PRFSalt, DK, prfW, u);
+  return eng.output(DK);
 }

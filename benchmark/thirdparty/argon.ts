@@ -34,7 +34,6 @@ async function main() {
     KDF,
     {
       libraryDimensions: ['algorithm', 'library'],
-      defaults: { library: 'noble', memory: '256KB' },
     }
   );
 }

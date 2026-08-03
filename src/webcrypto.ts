@@ -95,21 +95,7 @@ export const sha384: TRet<WebHash> = /* @__PURE__ */ createWebHash('SHA-384', 12
  */
 export const sha512: TRet<WebHash> = /* @__PURE__ */ createWebHash('SHA-512', 128, 64);
 
-/**
- * WebCrypto HMAC: RFC2104 message authentication code.
- * @param hash - function that would be used e.g. sha256. Webcrypto version.
- * @param key - authentication key bytes
- * @param message - message bytes to authenticate
- * @returns Promise resolving to authentication tag bytes.
- * `.create()` exists only to mirror the synchronous API surface
- * and always throws `not implemented`.
- * @example
- * Compute an RFC 2104 HMAC with WebCrypto.
- * ```ts
- * import { hmac, sha256 } from '@noble/hashes/webcrypto.js';
- * await hmac(sha256, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
- * ```
- */
+/** WebCrypto HMAC function type. See {@link hmac} for usage. */
 type WebHmacFn = {
   (
     hash: TArg<WebHash>,

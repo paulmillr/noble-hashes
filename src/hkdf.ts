@@ -3,7 +3,7 @@
  * See {@link https://soatok.blog/2021/11/17/understanding-hkdf/}.
  * @module
  */
-import { hmac } from './hmac.ts';
+import { hmac, type _HMAC } from './hmac.ts';
 import { abytes, ahash, anumber, type CHash, clean, type TArg, type TRet } from './utils.ts';
 
 /**
@@ -49,6 +49,7 @@ const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
  * @param info - optional context and application specific information (can be a zero-length string)
  * @param length - length of output keying material in bytes.
  *   RFC 5869 §2.3 allows `0..255*HashLen`, so `0` returns an empty OKM.
+ * @param _recycled - Internal destroyed extract hashes owned by the combined `hkdf()` call.
  * @returns Output keying material with the requested length.
  * @throws If the requested output length exceeds the HKDF limit
  *   for the selected hash. {@link Error}
@@ -64,7 +65,8 @@ export function expand(
   hash: TArg<CHash>,
   prk: TArg<Uint8Array>,
   info?: TArg<Uint8Array>,
-  length: number = 32
+  length: number = 32,
+  _recycled?: _HMAC<any>
 ): TRet<Uint8Array> {
   ahash(hash);
   anumber(length, 'length');
@@ -77,27 +79,46 @@ export function expand(
   const blocks = Math.ceil(length / olen);
   if (info === undefined) info = EMPTY_BUFFER;
   else abytes(info, undefined, 'info');
+  if (!blocks) {
+    if (_recycled) clean(prk); // Full hkdf() owns this intermediate PRK.
+    return new Uint8Array() as TRet<Uint8Array>;
+  }
   // first L(ength) octets of T
-  const okm = new Uint8Array(blocks * olen);
-  // Re-use HMAC instance between blocks
-  const HMAC = hmac.create(hash, prk);
-  const HMACTmp = HMAC._cloneInto();
-  const T = new Uint8Array(HMAC.outputLen);
-  for (let counter = 0; counter < blocks; counter++) {
+  // The private PRK can become both T and a one-block result after HMAC consumes the key.
+  const okm = _recycled && blocks === 1 ? prk : new Uint8Array(blocks * olen);
+  const { iHash, oHash } = hmac.create(hash, prk);
+  // Driving them directly also skips `_HMAC.digestInto`'s per-digest destroy.
+  const T = _recycled ? prk : new Uint8Array(olen);
+  // Full hkdf() donates one destroyed extract hash; standalone creates one alternating worker.
+  const worker = blocks > 1 ? _recycled?.iHash || hash.create() : undefined;
+  for (let counter = 0; counter < blocks - 1; counter++) {
     HKDF_COUNTER[0] = counter + 1;
+    const iWork = iHash._cloneInto(worker);
     // T(0) = empty string (zero length)
     // T(N) = HMAC-Hash(PRK, T(N-1) | info | N)
-    HMACTmp.update(counter === 0 ? EMPTY_BUFFER : T)
-      .update(info)
-      .update(HKDF_COUNTER)
-      .digestInto(T);
+    if (counter) iWork.update(T);
+    iWork.update(info).update(HKDF_COUNTER).digestInto(T);
+    oHash._cloneInto(worker).update(T).digestInto(T);
     okm.set(T, olen * counter);
-    HMAC._cloneInto(HMACTmp);
   }
-  HMAC.destroy();
-  HMACTmp.destroy();
-  clean(T, HKDF_COUNTER);
-  return okm.slice(0, length) as TRet<Uint8Array>;
+  // Midstates are key-equivalent: they allow computing HMAC(prk, ...) for any message.
+  HKDF_COUNTER[0] = blocks; // Final block consumes them; retain worker for cleanup.
+  if (blocks > 1) iHash.update(T);
+  iHash.update(info).update(HKDF_COUNTER).digestInto(T);
+  oHash.update(T).digestInto(T);
+  okm.set(T, olen * (blocks - 1));
+  iHash.destroy(); // Raw digests may leave key-derived base/worker state; wipe all explicitly.
+  oHash.destroy();
+  worker?.destroy();
+  if (T !== okm) clean(T); // Wipe private T/PRK; standalone preserves caller-owned PRK.
+  clean(HKDF_COUNTER);
+  // Exact fit: return without the extra copy.
+  if (length === okm.length) return okm as TRet<Uint8Array>;
+  // Copy the requested prefix, then wipe the full buffer: its tail holds
+  // up to HashLen-1 bytes of derived key material past `length`.
+  const res = okm.slice(0, length);
+  clean(okm);
+  return res as TRet<Uint8Array>;
 }
 
 /**
@@ -130,4 +151,11 @@ export const hkdf = (
   salt: TArg<Uint8Array | undefined>,
   info: TArg<Uint8Array | undefined>,
   length: number
-): TRet<Uint8Array> => expand(hash, extract(hash, ikm, salt), info, length);
+): TRet<Uint8Array> => {
+  ahash(hash);
+  if (salt === undefined) salt = new Uint8Array(hash.outputLen);
+  const HMAC = hmac.create(hash, salt).update(ikm);
+  // The intermediate PRK is secret key material; wipe it instead of
+  // leaving it for GC.
+  return expand(hash, HMAC.digest(), info, length, HMAC); // expand() owns and consumes it.
+};
