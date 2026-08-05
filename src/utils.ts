@@ -304,7 +304,7 @@ export function aoutput(out: any, instance: any): void {
   }
 }
 
-/** Generic type encompassing 8/16/32-byte array views, but not 64-bit variants. */
+/** Generic type encompassing 8/16/32-bit typed arrays, but not 64-bit. */
 // prettier-ignore
 export type TypedArray = Int8Array | Uint8ClampedArray | Uint8Array |
   Uint16Array | Int16Array | Uint32Array | Int32Array;
@@ -775,21 +775,25 @@ export interface Hash<T> {
   clone(): T;
 }
 
-/** Pseudorandom generator interface. */
+/**
+ * The pseudorandom number generator doesn't wipe current state:
+ * instead, it generates new one based on previous state + entropy.
+ * Not reseed/rekey, since AES CTR DRBG does rekey on each randomBytes,
+ * which is in fact `reseed`, since it changes counter too.
+ */
 export interface PRG {
   /**
-   * Mixes more entropy into the generator state.
-   * @param seed - fresh entropy bytes
-   * @returns Nothing. Implementations update internal state in place.
+   * Mixes fresh entropy into the current generator state.
+   * @param seed - Entropy bytes to absorb.
    */
   addEntropy(seed: TArg<Uint8Array>): void;
   /**
-   * Generates pseudorandom output bytes.
-   * @param length - number of bytes to generate
-   * @returns Generated pseudorandom bytes.
+   * Produces a requested number of pseudorandom bytes.
+   * @param bytesLength - Number of bytes to generate.
+   * @returns Random byte array.
    */
-  randomBytes(length: number): TRet<Uint8Array>;
-  /** Wipes generator state and makes the instance unusable. */
+  randomBytes(bytesLength: number): TRet<Uint8Array>;
+  /** Destroys the generator state. */
   clean(): void;
 }
 
