@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, equal, rejects, throws } from 'node:assert';
 import { eskdf } from '../src/eskdf.ts';
 import { bytesToHex as toHex } from '../src/utils.ts';
@@ -6,7 +6,7 @@ import { json } from './utils.ts';
 const vectors = json('./vectors/eskdf.json');
 
 describe('eskdf', () => {
-  should('vectors, types, protocol names', async () => {
+  it('vectors, types, protocol names', async () => {
     for (const v of vectors.derive_main_seed.valid) {
       const { fingerprint, username, password } = v;
       const keyc = await eskdf(username, password);
@@ -102,4 +102,4 @@ describe('eskdf', () => {
   });
 });
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

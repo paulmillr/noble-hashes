@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import * as u64 from '../src/_u64.ts';
 
@@ -13,7 +13,7 @@ const big = (n) => {
 };
 
 describe('u64', () => {
-  should('shr_small', () => {
+  it('shr_small', () => {
     const val = [0x01234567, 0x89abcdef];
     const big = u64.toBig(...val);
     for (let i = 0; i < 32; i++) {
@@ -23,7 +23,7 @@ describe('u64', () => {
     }
   });
 
-  // should('shr_big', () => {
+  // it('shr_big', () => {
   //   const val = [0x01234567, 0x89abcdef];
   //   const big = u64.toBig(...val);
   //   for (let i = 32; i < 64; i++) {
@@ -33,7 +33,7 @@ describe('u64', () => {
   //   }
   // });
 
-  should('rotr_small', () => {
+  it('rotr_small', () => {
     const val = [0x01234567, 0x89abcdef];
     const big = u64.toBig(...val);
     for (let i = 1; i < 32; i++) {
@@ -43,7 +43,7 @@ describe('u64', () => {
     }
   });
 
-  should('rotr32', () => {
+  it('rotr32', () => {
     const val = [0x01234567, 0x89abcdef];
     const big = u64.toBig(...val);
     const h = u64.rotr32H(val[0], val[1], 32);
@@ -51,7 +51,7 @@ describe('u64', () => {
     eql(rotate_right(big, BigInt(32)), u64.toBig(h, l));
   });
 
-  should('rotr_big', () => {
+  it('rotr_big', () => {
     const val = [0x01234567, 0x89abcdef];
     const big = u64.toBig(...val);
     for (let i = 33; i < 64; i++) {
@@ -65,4 +65,4 @@ describe('u64', () => {
   // covered there by keccak vectors; no importable definitions remain to unit-test.
 });
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

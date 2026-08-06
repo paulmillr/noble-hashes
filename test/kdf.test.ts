@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import * as nodeCrypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -7,8 +7,8 @@ import { executeKDFTests } from './generator.ts';
 import { PLATFORMS } from './platform.ts';
 import { EMPTY, fmt, SPACE, TYPE_TEST } from './utils.ts';
 
-const BT = { describe, should };
-export function test(variant: string, platform: any, { describe, should } = BT) {
+const BT = { describe, it };
+export function test(variant: string, platform: any, { describe, it } = BT) {
   const { expand, hkdf, extract: hkdf_extract } = platform;
   const {
     argon2id,
@@ -194,7 +194,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
   describe(`hkdf (${variant})`, () => {
     for (let i = 0; i < HKDF_VECTORS.length; i++) {
       const t = HKDF_VECTORS[i];
-      should(`HKDF vector (${i})`, () => {
+      it(`HKDF vector (${i})`, () => {
         const PRK = hkdf_extract(t.hash, t.IKM, t.salt);
         eql(PRK, t.PRK);
         const OKM = hkdf(t.hash, t.IKM, t.salt, t.info, t.L);
@@ -202,7 +202,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       });
     }
 
-    should('HKDF types', () => {
+    it('HKDF types', () => {
       const e = EMPTY.bytes;
       hkdf(sha256, e, e, e, 32);
       hkdf(sha256, e, e, e, 8160);
@@ -222,10 +222,10 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
       for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), fmt`hkdf(hash=${t})`);
     });
-    should('HKDF expand: PRK length', () => {
+    it('HKDF expand: PRK length', () => {
       throws(() => expand(sha256, new Uint8Array(31), undefined, 32));
     });
-    should('HKDF salt: undefined == empty == zeros(HashLen)', () => {
+    it('HKDF salt: undefined == empty == zeros(HashLen)', () => {
       // HMAC zero-pads its key to blockLen, so these three salts must yield
       // identical PRKs. Pins the design decision from
       // https://github.com/RustCrypto/KDFs/issues/15 (undefined is not special-
@@ -236,7 +236,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       eql(hkdf_extract(sha256, ikm, new Uint8Array(32)), a);
       eql(hkdf_extract(sha256, ikm, new Uint8Array(64)), a); // blockLen zeros too
     });
-    should('HKDF cross-test with node:crypto', () => {
+    it('HKDF cross-test with node:crypto', () => {
       if (typeof nodeCrypto.hkdfSync !== 'function') return;
       const ikm = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
       const salt = Uint8Array.from({ length: 16 }, (_, i) => 0xa0 + i);
@@ -255,7 +255,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
   });
 
   describe(`scrypt (${variant})`, () => {
-    should(`Scrypt vectors`, async () => {
+    it(`Scrypt vectors`, async () => {
       for (let i = 0; i < SCRYPT_VECTORS.length; i++) {
         const t = SCRYPT_VECTORS[i];
         const exp = hexToBytes(t.exp.replace(/ /g, ''));
@@ -264,7 +264,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('Scrypt types', async () => {
+    it('Scrypt types', async () => {
       const opt = { N: 1024, r: 8, p: 16, dkLen: 64 };
       scrypt('pwd', 'salt', opt);
       // N < 0 -> throws
@@ -313,7 +313,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       eql(scrypt(EMPTY.str, EMPTY.str, opt), scrypt(EMPTY.bytes, EMPTY.bytes, opt), 'scrypt.EMPTY');
     });
 
-    should('Scrypt maxmem', async () => {
+    it('Scrypt maxmem', async () => {
       const opts = {
         N: 2 ** 10,
         r: 8,
@@ -331,7 +331,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       });
     });
 
-    should('Scrypt cross-test with node:crypto (odd r/p combos)', async () => {
+    it('Scrypt cross-test with node:crypto (odd r/p combos)', async () => {
       // Runtimes without node:crypto scryptSync skip silently.
       if (typeof nodeCrypto.scryptSync !== 'function') return;
       // RFC 7914 vectors only exercise r=1 and r=8; odd r stresses BlockMix's
@@ -355,7 +355,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('Scrypt rejects r=0 with clear error', async () => {
+    it('Scrypt rejects r=0 with clear error', async () => {
       // Previously r=0 slipped through validation (blockSize=0 made the p bound
       // Infinity) and failed later inside pbkdf2 with a confusing dkLen error.
       throws(() => scrypt('pwd', 'salt', { N: 16, r: 0, p: 1, dkLen: 32 }), /"r" expected/);
@@ -367,7 +367,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
   });
 
   describe(`KDF (${variant})`, () => {
-    should('progress 100%', async () => {
+    it('progress 100%', async () => {
       const scryptOpts = { N: 16, r: 1, p: 1, dkLen: 32 };
       await progress1((onProgress) => scrypt('pwd', 'salt', { ...scryptOpts, onProgress }));
       await progress1((onProgress) => scryptAsync('pwd', 'salt', { ...scryptOpts, onProgress }));
@@ -380,7 +380,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       );
     });
 
-    should('output length', async () => {
+    it('output length', async () => {
       const outlen = async (
         sync: (len: number) => Uint8Array,
         async: undefined | ((len: number) => Promise<Uint8Array>) = undefined,
@@ -415,14 +415,14 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
   describe(`PBKDF2 (${variant})`, () => {
     for (let i = 0; i < PBKDF2_VECTORS.length; i++) {
       const t = PBKDF2_VECTORS[i];
-      should(`PBKDF2 vector (${i})`, async () => {
+      it(`PBKDF2 vector (${i})`, async () => {
         const exp = hexToBytes(t.exp.replace(/ /g, ''));
         eql(pbkdf2(t.hash, t.P, t.S, t), exp);
         eql(await pbkdf2Async(t.hash, t.P, t.S, t), exp);
       });
     }
 
-    should('PBKDF2Async absorbs byte salt before yielding', async () => {
+    it('PBKDF2Async absorbs byte salt before yielding', async () => {
       const cases = [
         {
           hash: sha256,
@@ -472,7 +472,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         eql(await pending, hexToBytes(expected));
       }
     });
-    should('PBKDF2-KT128/KT256 reuse workers across a tree-boundary salt', () => {
+    it('PBKDF2-KT128/KT256 reuse workers across a tree-boundary salt', () => {
       const password = Uint8Array.from({ length: 3 }, (_, i) => (i * 29 + 17) & 255);
       // The HMAC inner block plus this salt lands on K12's 8192-byte tree boundary, so deriving
       // a second output block exercises the cached leaf state after the PBKDF2 worker is reset.
@@ -504,7 +504,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         );
       }
     });
-    should('PBKDF2 types', async () => {
+    it('PBKDF2 types', async () => {
       const opts = { c: 10, dkLen: 32 };
       pbkdf2(sha256, 'pwd', 'salt', opts);
       throws(() => pbkdf2(sha256, 'pwd', 'salt', { c: 0, dkLen: 32 }), `pbkdf2(c=0)`);
@@ -569,4 +569,4 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   for (const k in PLATFORMS) executeKDFTests(k, PLATFORMS[k], true);
 }
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

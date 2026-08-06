@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { createView } from '../src/utils.ts';
@@ -68,7 +68,7 @@ const MARGIN = (() => {
 
 console.log(`Time margin: ${MARGIN}`);
 const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
-const BT = { describe, should };
+const BT = { describe, it };
 
 const SMALL_BUF = new Uint8Array(1024);
 // Check that there is linear relation between input size and running time of callback
@@ -96,13 +96,13 @@ export function test(
   variant = 'noble',
   platform = DEFAULT_PLATFORM,
   hashes = HASHES,
-  { describe, should } = BT
+  { describe, it } = BT
 ) {
   const { hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256 } = platform;
   const HASHES = hashes;
   const run = () => {
     // Verify that it correctly detects functions with quadratic complexity
-    should(
+    it(
       'detect quadratic functions',
       retry(async () => {
         // 16 iters since quadratic is very slow
@@ -146,7 +146,7 @@ export function test(
       return DK;
     }
 
-    should('DoS: pbkdfDOS returns correct result', () => {
+    it('DoS: pbkdfDOS returns correct result', () => {
       const password = new Uint8Array([1, 2, 3]);
       const salt = new Uint8Array([4, 5, 6]);
       eql(
@@ -157,7 +157,7 @@ export function test(
 
     for (const h in HASHES) {
       const hash = HASHES[h];
-      should(
+      it(
         `DoS: ${h}`,
         retry(async () => {
           await isLinear((buf) => hash.fn(buf));
@@ -165,28 +165,28 @@ export function test(
       );
     }
 
-    should(
+    it(
       `DoS: pbkdf2`,
       retry(async () => {
         await isLinear((buf) => pbkdf2(sha256, buf, buf, { c: buf.length, dkLen: 32 }));
       })
     );
 
-    should(
+    it(
       `DoS: pbkdf2Async`,
       retry(async () => {
         await isLinear((buf) => pbkdf2Async(sha256, buf, buf, { c: buf.length, dkLen: 32 }));
       })
     );
 
-    should(
+    it(
       `DoS: hkdf`,
       retry(async () => {
         await isLinear((buf) => hkdf(sha256, buf, buf, buf, 32));
       })
     );
 
-    should(
+    it(
       `DoS: scrypt`,
       retry(async () => {
         await isLinear((buf) =>
@@ -195,7 +195,7 @@ export function test(
       })
     );
 
-    should(
+    it(
       `DoS: scryptAsync`,
       retry(async () => {
         await isLinear((buf) =>
@@ -209,4 +209,4 @@ export function test(
 
 // takes ~20min
 if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
@@ -137,8 +137,8 @@ const MC = {
 };
 
 const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
-const BT = { describe, should };
-function run(variant: string, platform: any, isSlow = false, { describe, should } = BT) {
+const BT = { describe, it };
+function run(variant: string, platform: any, isSlow = false, { describe, it } = BT) {
   const {
     hmac,
     sha1,
@@ -236,7 +236,7 @@ function run(variant: string, platform: any, isSlow = false, { describe, should 
       const { lib, xof, vector, MC } = HASHES[name];
       // Optional SHA3 addon entrypoints are not available on every platform.
       if (!lib) continue;
-      should(name, () => {
+      it(name, () => {
         const groups = loadACVP(vector);
         if (groups.some(({ info }) => info.ip.xof && !xof)) return;
         for (const { info, tests } of groups) {
@@ -290,7 +290,7 @@ function run(variant: string, platform: any, isSlow = false, { describe, should 
     for (const name in MAC) {
       const { lib, xof, hash, vector } = MAC[name];
       if (!lib) continue;
-      should(name, () => {
+      it(name, () => {
         const groups = loadACVP(vector);
         if (groups.some(({ info }) => info.ip.xof && !xof)) return;
         for (const { info, tests } of groups) {
@@ -323,7 +323,7 @@ function run(variant: string, platform: any, isSlow = false, { describe, should 
         }
       });
     }
-    should('pbkdf2', () => {
+    it('pbkdf2', () => {
       const groups = loadACVP('PBKDF-1.0');
       for (const { info, tests } of groups) {
         const { lib: hash } = HASHES[info.ip.hmacAlg];
@@ -345,4 +345,4 @@ export function avcpTests(isSlow = false, variant = 'noble', platform = DEFAULT_
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) avcpTests();
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

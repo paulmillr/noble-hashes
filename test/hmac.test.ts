@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
@@ -109,27 +109,27 @@ const HMAC_VECTORS = [
   },
 ];
 
-const BT = { describe, should };
-export function test(variant: string, platform: any, { describe, should } = BT) {
+const BT = { describe, it };
+export function test(variant: string, platform: any, { describe, it } = BT) {
   const { hmac, sha256, sha384, sha512 } = platform;
   describe(`hmac (${variant})`, () => {
     for (let i = 0; i < HMAC_VECTORS.length; i++) {
       const t = HMAC_VECTORS[i];
       describe('vector ' + i, () => {
-        should('sha256 full', () => {
+        it('sha256 full', () => {
           const h256 = hmac.create(sha256, t.key).update(concatBytes(...t.data));
           eql(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
         });
-        should('sha256 partial', () => {
+        it('sha256 partial', () => {
           const h256 = hmac.create(sha256, t.key);
           for (let d of t.data) h256.update(d);
           eql(truncate(h256.digest(), t.truncate), hexToBytes(t.sha256));
         });
-        should('sha512 full', () => {
+        it('sha512 full', () => {
           const h512 = hmac.create(sha512, t.key).update(concatBytes(...t.data));
           eql(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
         });
-        should('sha512 partial', () => {
+        it('sha512 partial', () => {
           const h512 = hmac.create(sha512, t.key);
           for (let d of t.data) h512.update(d);
           eql(truncate(h512.digest(), t.truncate), hexToBytes(t.sha512));
@@ -137,7 +137,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       });
     }
 
-    should('HMAC types', () => {
+    it('HMAC types', () => {
       const key = utf8ToBytes('key');
       const msg = utf8ToBytes('msg');
       hmac(sha256, key, msg);
@@ -166,7 +166,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         'hmac.SPACE (full form stingr)'
       );
     });
-    should('digestInto keeps oversized output tails untouched', () => {
+    it('digestInto keeps oversized output tails untouched', () => {
       const key = utf8ToBytes('key');
       const msg = utf8ToBytes('msg');
       for (const hash of [sha256, sha512]) {
@@ -194,7 +194,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('Sha512/384 issue', () => {
+    it('Sha512/384 issue', () => {
       const h = hmac.create(
         sha384,
         hexToBytes(
@@ -218,7 +218,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       );
     });
 
-    should('not be created with invalid hash fn', () => {
+    it('not be created with invalid hash fn', () => {
       function fakeHash() {}
       fakeHash.create = () => {
         return {};
@@ -235,4 +235,4 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
 if (import.meta.url === pathToFileURL(process.argv[1]).href)
   for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

@@ -1,4 +1,4 @@
-import { describe, it as should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import * as utils from '../src/utils.ts';
@@ -38,7 +38,7 @@ class LoopWatcher {
 
 const PWD = new Uint8Array([1, 2, 3]);
 const SALT = new Uint8Array([4, 5, 6]);
-const BT = { describe, should };
+const BT = { describe, it };
 const DEFAULT = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 const DEFAULT_PROGRESS = {
   scrypt: DEFAULT.scrypt,
@@ -54,7 +54,7 @@ const DEFAULT_PROGRESS = {
 export function test(
   variant = 'noble',
   { sha256, scrypt, scryptAsync, pbkdf2Async } = DEFAULT,
-  { describe, should } = BT,
+  { describe, it } = BT,
   PROGRESS = DEFAULT_PROGRESS
 ) {
   const KDFS = {
@@ -108,7 +108,7 @@ export function test(
   };
 
   describe(`async (${variant})`, () => {
-    should.serial('Scrypt timing, parallel, progress', async () => {
+    it.serial('Scrypt timing, parallel, progress', async () => {
       for (let ms of [10, 25, 50, 100]) await checkTiming(KDFS.Scrypt, ms);
       await checkParallel('Scrypt');
       await checkScryptProgress(PROGRESS.scrypt);
@@ -116,15 +116,15 @@ export function test(
     });
 
     for (let ms of [10, 25, 50, 100]) {
-      should.serial(`PBKDF2 (${ms}ms)`, async () => {
+      it.serial(`PBKDF2 (${ms}ms)`, async () => {
         await checkTiming(KDFS.PBKDF2, ms);
       });
     }
-    should.serial('PBKDF2 parallel', async () => {
+    it.serial('PBKDF2 parallel', async () => {
       await checkParallel('PBKDF2');
     });
   });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { utf8ToBytes } from '../src/utils.ts';
@@ -6,8 +6,8 @@ import { PLATFORMS } from './platform.ts';
 
 // small -- minimal personalization options, big -- all personalization options
 // test that clone works correctly if "to" is same class instance but with completely different personalization
-const BT = { describe, should };
-export function test(variant: string, platform: any, { describe, should } = BT) {
+const BT = { describe, it };
+export function test(variant: string, platform: any, { describe, it } = BT) {
   const {
     blake256,
     blake512,
@@ -106,7 +106,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
           .update(new Uint8Array([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]))
           .digest();
 
-        should('small', () => {
+        it('small', () => {
           const s1 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
           const s2 = s1
             ._cloneInto()
@@ -122,7 +122,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
             's1 same'
           );
         });
-        should('big', () => {
+        it('big', () => {
           const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
           const b2 = b1
             ._cloneInto()
@@ -138,7 +138,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
             'b1 same'
           );
         });
-        should('small <=> big', () => {
+        it('small <=> big', () => {
           const s1 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
           const s2 = small().update(new Uint8Array([1, 2, 3, 4, 5]));
           const b1 = big().update(new Uint8Array([10, 9, 8, 7, 6]));
@@ -173,4 +173,4 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
 if (import.meta.url === pathToFileURL(process.argv[1]).href)
   for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

@@ -1,8 +1,7 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import * as cryp from 'node:crypto';
 import { concatBytes } from '../src/utils.ts';
-import { PLATFORMS } from './platform.ts';
 import { fmt } from './utils.ts';
 
 const { createHash, hkdfSync, pbkdf2Sync } = cryp;
@@ -43,8 +42,8 @@ const gen = (obj) => {
   return res;
 };
 
-const BT = { describe, should };
-function executeKDFTests(variant, platform, limit = true, { describe, should } = BT) {
+const BT = { describe, it };
+function executeKDFTests(variant, platform, limit = true, { describe, it } = BT) {
   const { hkdf } = platform;
   const { blake2b, blake2s, pbkdf2, pbkdf2Async, sha256, sha512, sha3_256, sha3_512 } = platform;
   function genl(params) {
@@ -53,7 +52,7 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
   }
 
   describe(`generator (${variant})`, () => {
-    should('hkdf(sha256) generator', async () => {
+    it('hkdf(sha256) generator', async () => {
       if (!hkdfSync) return;
       const cases = genl({
         // nodejs throws if dkLen=0 or ikmLen=0. However this is not enforced by spec.
@@ -75,7 +74,7 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
         eql(hkdf(sha256, c.ikm, c.salt, c.info, c.dkLen), exp, `hkdf(${c})`);
       }
     });
-    should('PBKDF2(sha256) generator', async () => {
+    it('PBKDF2(sha256) generator', async () => {
       const cases = genl({
         c: integer(1, 1024),
         dkLen: integer(1, 1024), // 0 disallowed in node v22
@@ -91,7 +90,7 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
       }
     });
 
-    should('PBKDF2(sha512) generator', async () => {
+    it('PBKDF2(sha512) generator', async () => {
       const cases = genl({
         c: integer(1, 1024),
         dkLen: integer(1, 1024),
@@ -106,7 +105,7 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
       }
     });
 
-    should('PBKDF2(sha3_256) generator', async () => {
+    it('PBKDF2(sha3_256) generator', async () => {
       if (isBunDeno) return; // skip
       const cases = genl({
         c: integer(1, 1024),
@@ -126,7 +125,7 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
       }
     });
 
-    should('PBKDF2(sha3_512) generator', async () => {
+    it('PBKDF2(sha3_512) generator', async () => {
       if (isBunDeno) return; // skip
       const cases = genl({
         c: integer(1, 1024),
@@ -147,7 +146,7 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
     });
 
     // Disable because openssl 3 deprecated ripemd
-    // should('PBKDF2(ripemd160) generator', async () => {
+    // it('PBKDF2(ripemd160) generator', async () => {
     //   const cases = genl({
     //     c: integer(1, 1024),
     //     dkLen: integer(0, 1024),
@@ -170,7 +169,7 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
     //   }
     // });
 
-    should('PBKDF2(blake2s) generator', async () => {
+    it('PBKDF2(blake2s) generator', async () => {
       if (isBunDeno) return; // skip
       const cases = genl({
         c: integer(1, 1024),
@@ -186,7 +185,7 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
       }
     });
 
-    should('PBKDF2(blake2b) generator', async () => {
+    it('PBKDF2(blake2b) generator', async () => {
       if (isBunDeno) return; // skip
       const cases = genl({
         c: integer(1, 1024),
@@ -206,4 +205,4 @@ function executeKDFTests(variant, platform, limit = true, { describe, should } =
 
 export { bytes, executeKDFTests, gen, integer, optional, RANDOM };
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

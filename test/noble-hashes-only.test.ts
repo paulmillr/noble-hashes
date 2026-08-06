@@ -1,7 +1,7 @@
 // noble-hashes only tests (non-shared). This file exists for implementation-specific
 // details that should not leak into shared test helpers reused by other projects
 // such as awasm-noble.
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { HashMD } from '../src/_md.ts';
 import { blake256, blake512 } from '../src/blake1.ts';
@@ -13,19 +13,19 @@ import { _SHA256, sha256 } from '../src/sha2.ts';
 import { copyBytes, createHasher, hexToBytes, utf8ToBytes } from '../src/utils.ts';
 
 describe('noble-hashes only', () => {
-  should('HashMD requires family-local clone implementations', () => {
+  it('HashMD requires family-local clone implementations', () => {
     // A shared clone feedback site becomes megamorphic across state layouts and materializes the
     // get() tuple, leaving chaining state in an allocation the library cannot explicitly wipe.
     eql(Object.hasOwn(HashMD.prototype, '_cloneInto'), false);
   });
-  should('HKDF supports cloneable tree hashes', () => {
+  it('HKDF supports cloneable tree hashes', () => {
     const input = Uint8Array.of(1, 2, 3);
     eql(
       hkdf(blake3, input, input, input, 32),
       hexToBytes('5dc160b282b3d9ba657831b7af270b6f15eebb2b8042bfd2258670799bfd9de7')
     );
   });
-  should('standalone HKDF expand repeatedly supports tree hashes', () => {
+  it('standalone HKDF expand repeatedly supports tree hashes', () => {
     const prk = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
     const info = Uint8Array.of(1, 2, 3);
     const expected = hexToBytes(
@@ -37,7 +37,7 @@ describe('noble-hashes only', () => {
     eql(expand(blake3, prk, info, 64), expected);
     eql(expand(blake3, prk, info, 64), expected);
   });
-  should('PBKDF2 supports cloneable tree hashes', async () => {
+  it('PBKDF2 supports cloneable tree hashes', async () => {
     const input = Uint8Array.of(1, 2, 3);
     eql(
       pbkdf2(blake3, input, input, { c: 2, dkLen: 32 }),
@@ -69,7 +69,7 @@ describe('noble-hashes only', () => {
       [wideExpected, wideExpected]
     );
   });
-  should('PBKDF2-BLAKE3 does not abandon live keyed CV stacks', () => {
+  it('PBKDF2-BLAKE3 does not abandon live keyed CV stacks', () => {
     const abandoned: Uint32Array[] = [];
     class TrackedBLAKE3 extends _BLAKE3 {
       _cloneInto(to?: _BLAKE3): _BLAKE3 {
@@ -89,7 +89,7 @@ describe('noble-hashes only', () => {
       abandoned.map((item) => new Uint32Array(item.length))
     );
   });
-  should('PBKDF2 async c=1 yields between output blocks', async () => {
+  it('PBKDF2 async c=1 yields between output blocks', async () => {
     let digests = 0;
     class CountingSHA256 extends _SHA256 {
       digestInto(out: Uint8Array): void {
@@ -124,7 +124,7 @@ describe('noble-hashes only', () => {
       }
     );
   });
-  should('concurrent configured/tree KDF calls do not interfere', async () => {
+  it('concurrent configured/tree KDF calls do not interfere', async () => {
     const key = Uint8Array.from({ length: 32 }, (_, i) => 255 - i);
     const configured = createHasher(() => blake3.create({ key }));
     const input = Uint8Array.from({ length: 65 }, (_, i) => (17 * i + 3) & 255);
@@ -176,7 +176,7 @@ describe('noble-hashes only', () => {
       ])
     );
   });
-  should('BLAKE1 unsalted clone replacements clear dead buffers and reuse immutable state', () => {
+  it('BLAKE1 unsalted clone replacements clear dead buffers and reuse immutable state', () => {
     const suffix = Uint8Array.of(1, 2, 3);
     const hashes = [blake256, blake512];
     const expected = hashes.map((hash) => {
@@ -216,7 +216,7 @@ describe('noble-hashes only', () => {
     // safe to share across independently destroyable clones.
     eql(actual, expected);
   });
-  should('BLAKE1 salted clone destinations remain independent and reusable', () => {
+  it('BLAKE1 salted clone destinations remain independent and reusable', () => {
     const prefix = Uint8Array.of(4, 5, 6);
     const suffix = Uint8Array.of(7, 8, 9);
     const hashes = [
@@ -254,7 +254,7 @@ describe('noble-hashes only', () => {
     // destination must restore its private salt-derived arrays without allocating replacements.
     eql(actual, expected);
   });
-  should('BLAKE3 clones share only immutable default IV', () => {
+  it('BLAKE3 clones share only immutable default IV', () => {
     const key = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
     const context = utf8ToBytes('BLAKE3 clone context');
     const prefix = Uint8Array.of(1, 2, 3);
@@ -305,7 +305,7 @@ describe('noble-hashes only', () => {
       }
     );
   });
-  should('BLAKE3 unfinished clones skip dead output scratch and wipe stale XOF output', () => {
+  it('BLAKE3 unfinished clones skip dead output scratch and wipe stale XOF output', () => {
     const key = Uint8Array.from({ length: 32 }, (_, i) => 255 - i);
     const prefix = Uint8Array.of(1, 2, 3);
     const suffix = Uint8Array.of(4, 5, 6);
@@ -344,7 +344,7 @@ describe('noble-hashes only', () => {
       }
     );
   });
-  should('BLAKE2 digestInto rejects unaligned output views', () => {
+  it('BLAKE2 digestInto rejects unaligned output views', () => {
     const out = new Uint8Array(33).subarray(1);
     const msg = utf8ToBytes('abc');
     throws(

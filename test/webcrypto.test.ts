@@ -1,10 +1,10 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { PLATFORMS } from './platform.ts';
 
-const BT = { describe, should };
-export function test(variant: string, platform: any, { describe, should } = BT) {
+const BT = { describe, it };
+export function test(variant: string, platform: any, { describe, it } = BT) {
   const { hkdf, hmac, pbkdf2, sha256, sha384, sha512, web: webcrypto } = platform;
   const HASHES = {
     // sha1: { noble: sha1, web: webcrypto.sha1 },
@@ -19,12 +19,12 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
   describe(`webcrypto (${variant})`, () => {
     for (const [name, { noble, web }] of Object.entries(HASHES)) {
       describe(name, () => {
-        should('Basic', async () => {
+        it('Basic', async () => {
           eql(await web(BUF1), noble(BUF1));
           eql(web.blockLen, noble.blockLen);
           eql(web.outputLen, noble.outputLen);
         });
-        should('descriptor is immutable', async () => {
+        it('descriptor is immutable', async () => {
           const desc = Object.getOwnPropertyDescriptor(web, 'webCryptoName');
           throws(() => {
             web.webCryptoName = 'SHA-512';
@@ -32,14 +32,14 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
           eql(Object.getOwnPropertyDescriptor(web, 'webCryptoName'), desc);
           eql(await webcrypto.hmac(web, BUF1, BUF2), hmac(noble, BUF1, BUF2));
         });
-        should('Stream', async () => {
+        it('Stream', async () => {
           throws(() => web.create());
           throws(() => hmac.create(web, BUF1));
         });
-        should('HMAC', async () => {
+        it('HMAC', async () => {
           eql(await webcrypto.hmac(web, BUF1, BUF2), hmac(noble, BUF1, BUF2));
         });
-        should('hkdf', async () => {
+        it('hkdf', async () => {
           eql(await webcrypto.hkdf(web, BUF1, BUF2, BUF3, 10), hkdf(noble, BUF1, BUF2, BUF3, 10));
           // No info
           eql(
@@ -57,7 +57,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
             hkdf(noble, BUF1, undefined, undefined, 1000)
           );
         });
-        should('pbkdf2', async () => {
+        it('pbkdf2', async () => {
           eql(
             await webcrypto.pbkdf2(web, BUF1, BUF2, { c: 1 }),
             pbkdf2(noble, BUF1, BUF2, { c: 1 })
@@ -80,4 +80,4 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
 if (import.meta.url === pathToFileURL(process.argv[1]).href)
   for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

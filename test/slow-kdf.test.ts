@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -13,12 +13,12 @@ import {
 import { bytesToHex } from '../src/utils.ts';
 import { bytes, gen, integer } from './generator.ts';
 import { PLATFORMS } from './platform.ts';
-import { json, pattern, fmt } from './utils.ts';
+import { fmt, json, pattern } from './utils.ts';
 
 const argon2_vectors = json('./vectors/argon2.json');
 
 // Some vectors are very slow and are ran in slow-big.test.js.
-const BT = { describe, should };
+const BT = { describe, it };
 const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 
 // Takes 10h
@@ -31,12 +31,12 @@ const SCRYPT_CASES = gen({
   salt: bytes(0, 1024),
 });
 
-export function testScrypt(variant = 'noble', platform = DEFAULT_PLATFORM, { should } = BT) {
+export function testScrypt(variant = 'noble', platform = DEFAULT_PLATFORM, { it } = BT) {
   const { scrypt } = platform;
   const scryptAsync = platform.scryptAsync || scrypt.async;
   for (let i = 0; i < SCRYPT_CASES.length; i++) {
     const c = SCRYPT_CASES[i];
-    should(fmt`Scrypt generator (${i}, ${variant}): ${c}`, async () => {
+    it(fmt`Scrypt generator (${i}, ${variant}): ${c}`, async () => {
       const opt = { ...c, N: 2 ** c.N };
       const exp = Uint8Array.from(
         scryptSync(c.pwd, c.salt, c.dkLen, { maxmem: 1024 ** 4, ...opt })
@@ -97,11 +97,7 @@ const verySlowArgon = [
   },
 ];
 
-export function testArgon(
-  variant = 'noble',
-  platform = DEFAULT_PLATFORM,
-  { describe, should } = BT
-) {
+export function testArgon(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, it } = BT) {
   const {
     argon2d: platformArgon2d,
     argon2i: platformArgon2i,
@@ -126,7 +122,7 @@ export function testArgon(
     const ver = v.version || 0x13;
     const str = `m=${v.m}, t=${v.t}, p=${v.p}`;
     const title = `argon(${variant}) #${i} ${fn.name}/v${ver} ${str}`;
-    should(title, () => {
+    it(title, () => {
       const res = bytesToHex(
         fn(v.password, v.salt, {
           m: v.m,
@@ -139,7 +135,7 @@ export function testArgon(
       );
       eql(res, v.exp);
     });
-    should(`${title}: async`, async () => {
+    it(`${title}: async`, async () => {
       const asyncFn = asyncMap.get(v.fn) || fn.async;
       const res = bytesToHex(
         await asyncFn(v.password, v.salt, {
@@ -202,7 +198,7 @@ export function testArgon(
             };
             const jopts = JSON.stringify(opts);
             const vi = currIndex++;
-            should(`#${vi} ${algoName}(${pass.length}, ${salt.length}, opts=${jopts})`, () => {
+            it(`#${vi} ${algoName}(${pass.length}, ${salt.length}, opts=${jopts})`, () => {
               const res = fn(pass, salt, opts);
               const hex = bytesToHex(res);
               eql(hex, argon2_vectors[vi]);
@@ -219,4 +215,4 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   testScrypt();
   testArgon();
 }
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

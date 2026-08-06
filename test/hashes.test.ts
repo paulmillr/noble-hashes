@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash, createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -28,7 +28,7 @@ const testBuf = new Uint8Array(4096);
 for (let i = 0; i < testBuf.length; i++) testBuf[i] = i;
 
 const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
-const BT = { describe, should };
+const BT = { describe, it };
 function getHashes(platform: any) {
   const {
     sha224,
@@ -461,14 +461,14 @@ let BUF_768 = new Uint8Array(256 * 3);
 for (let i = 0; i < (256 * 3) / 32; i++)
   BUF_768.set(createHash('sha256').update(new Uint8Array(i)).digest(), i * 32);
 
-function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should } = BT) {
+function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, it } = BT) {
   const HASHES = getHashes(platform);
   for (const h in HASHES) {
     const hash = HASHES[h];
 
     describe(`${h} (${variant})`, () => {
       // All hashes has NIST vectors, some generated manually
-      should('NIST vectors', () => {
+      it('NIST vectors', () => {
         for (let i = 0; i < NIST_VECTORS.length; i++) {
           if (!NIST_VECTORS[i]) continue;
           const [r, rbuf, buf] = NIST_VECTORS[i];
@@ -482,26 +482,26 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
           eql(tmp.digest(), hexToBytes(hash.nist[i].replace(/ /g, '')), `partial vector ${i}`);
         }
       });
-      should('accept data in compact call form (Uint8Array)', () => {
+      it('accept data in compact call form (Uint8Array)', () => {
         eql(hash.fn(utf8ToBytes('abc')), hexToBytes(hash.nist[0].replace(/ /g, '')));
       });
-      should('throw on update after digest', () => {
+      it('throw on update after digest', () => {
         const tmp = hash.obj();
         tmp.update(utf8ToBytes('abc')).digest();
         throws(() => tmp.update(utf8ToBytes('abc')));
       });
-      should('throw on second digest call', () => {
+      it('throw on second digest call', () => {
         const tmp = hash.obj();
         tmp.update(utf8ToBytes('abc')).digest();
         throws(() => tmp.digest());
       });
-      should('throw after destroy', () => {
+      it('throw after destroy', () => {
         const tmp = hash.obj();
         tmp.destroy();
         throws(() => tmp.update(utf8ToBytes('abc')));
         throws(() => tmp.digest());
       });
-      should('digestInto matches fixed output contract', () => {
+      it('digestInto matches fixed output contract', () => {
         const msg = utf8ToBytes('abc');
         const exp = hash.fn(msg);
         throws(
@@ -529,7 +529,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
         eql(oversized.subarray(exp.length), new Uint8Array([0xaa]));
       });
       if (typeof hash.obj().xofInto === 'function')
-        should('xofInto matches stream output contract', () => {
+        it('xofInto matches stream output contract', () => {
           const msg = utf8ToBytes('abc');
           const tmp = hash.obj();
           if (tmp.canXOF) {
@@ -553,7 +553,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
               .xofInto(new Uint8Array(tmp.outputLen + 1))
           );
         });
-      should('throw on wrong argument type', () => {
+      it('throw on wrong argument type', () => {
         // Allowed only: undefined (for compact form only), string, Uint8Array
         for (const t of TYPE_TEST.bytes) {
           throws(() => hash.fn(t), fmt`compact(${t})`);
@@ -564,7 +564,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
         for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), fmt`opt(${t})`);
       });
 
-      should('clone', () => {
+      it('clone', () => {
         const exp = hash.fn(BUF_768);
         const t = hash.obj();
         t.update(BUF_768.subarray(0, 10));
@@ -575,7 +575,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
         eql(t.digest(), exp);
       });
 
-      should('partial', () => {
+      it('partial', () => {
         const fnH = hash.fn(BUF_768);
         for (let i = 0; i < 256; i++) {
           let b1 = BUF_768.subarray(0, i);
@@ -589,7 +589,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
       });
       // Same as before, but creates copy of each slice, which changes dataoffset of typed array
       // Catched bug in blake2
-      should('partial (copy): partial', () => {
+      it('partial (copy): partial', () => {
         const fnH = hash.fn(BUF_768);
         for (let i = 0; i < 256; i++) {
           let b1 = BUF_768.subarray(0, i).slice();
@@ -603,7 +603,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
       });
       if (hash.node) {
         if (!!process.versions.bun && ['BLAKE2s', 'BLAKE2b'].includes(h)) return;
-        should('node.js cross-test', () => {
+        it('node.js cross-test', () => {
           for (let i = 0; i < testBuf.length; i++) {
             eql(
               hash.obj().update(testBuf.subarray(0, i)).digest(),
@@ -611,7 +611,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
             );
           }
         });
-        should('node.js cross-test chained', () => {
+        it('node.js cross-test chained', () => {
           const b = new Uint8Array([1, 2, 3]);
           let nodeH = hash.node(b);
           let nobleH = hash.fn(b);
@@ -621,7 +621,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
             eql(nodeH, nobleH);
           }
         });
-        should('node.js cross-test partial', () => {
+        it('node.js cross-test partial', () => {
           eql(hash.fn(BUF_768), hash.node(BUF_768));
         });
       }
@@ -632,7 +632,7 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, should
 describe('sha512/t IV derivation (FIPS 180-4 5.3.6)', () => {
   // Pins the hardcoded T224_IV / T256_IV tables in sha2.ts to their spec derivation:
   // SHA-512 with IV xored by 0xa5a5..a5 hashes the name string, producing the variant IV.
-  should('T224_IV / T256_IV match derivation from SHA512_IV', () => {
+  it('T224_IV / T256_IV match derivation from SHA512_IV', () => {
     // prettier-ignore
     const FIELDS = [
       'Ah', 'Al', 'Bh', 'Bl', 'Ch', 'Cl', 'Dh', 'Dl',
@@ -664,7 +664,7 @@ describe('sha512/t IV derivation (FIPS 180-4 5.3.6)', () => {
   });
 });
 
-export { HASHES, getHashes, init, NIST_VECTORS };
+export { getHashes, HASHES, init, NIST_VECTORS };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) init();
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

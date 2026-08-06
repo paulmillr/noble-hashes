@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { _KangarooTwelve, _KeccakPRG, _ParallelHash } from '../src/sha3-addons.ts';
 import { bytesToHex, concatBytes, hexToBytes, swap32IfBE, u32, utf8ToBytes } from '../src/utils.ts';
 import { PLATFORMS } from './platform.ts';
-import { pattern, TYPE_TEST, jsonGZ } from './utils.ts';
+import { jsonGZ, pattern, TYPE_TEST } from './utils.ts';
 import {
   CSHAKE_VESTORS,
   K12_VECTORS,
@@ -36,8 +36,8 @@ function getVectors(name) {
 
 const fromHex = (hex) => (hex ? hexToBytes(hex.replace(/ |\n/gm, '')) : EMPTY);
 
-const BT = { describe, should };
-export function test(variant: string, platform: any, { describe, should } = BT) {
+const BT = { describe, it };
+export function test(variant: string, platform: any, { describe, it } = BT) {
   const {
     cshake128,
     cshake256,
@@ -70,7 +70,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
     turboshake256,
   } = platform;
   describe(`sha3 (${variant})`, () => {
-    should('SHA3-224', () => {
+    it('SHA3-224', () => {
       for (let v of getVectors('ShortMsgKAT_SHA3-224')) {
         if (+v.Len % 8) continue; // partial bytes is not supported
         const msg = +v.Len ? fromHex(v.Msg) : EMPTY;
@@ -78,7 +78,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('SHA3-256', () => {
+    it('SHA3-256', () => {
       for (let v of getVectors('ShortMsgKAT_SHA3-256')) {
         if (+v.Len % 8) continue; // partial bytes is not supported
         const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
@@ -86,7 +86,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('SHA3-384', () => {
+    it('SHA3-384', () => {
       for (let v of getVectors('ShortMsgKAT_SHA3-384')) {
         if (+v.Len % 8) continue; // partial bytes is not supported
         const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
@@ -94,7 +94,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('SHA3-512', () => {
+    it('SHA3-512', () => {
       for (let v of getVectors('ShortMsgKAT_SHA3-512')) {
         if (+v.Len % 8) continue; // partial bytes is not supported
         const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
@@ -102,7 +102,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('shake128', () => {
+    it('shake128', () => {
       for (let v of getVectors('ShortMsgKAT_SHAKE128')) {
         if (+v.Len % 8) continue; // partial bytes is not supported
         const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
@@ -110,7 +110,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('shake256', () => {
+    it('shake256', () => {
       for (let v of getVectors('ShortMsgKAT_SHAKE256')) {
         if (+v.Len % 8) continue; // partial bytes is not supported
         const msg = +v.Len ? fromHex(v.Msg) : Uint8Array.of();
@@ -118,12 +118,12 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('shake128: dkLen', () => {
+    it('shake128: dkLen', () => {
       const input = utf8ToBytes('test');
       for (const dkLen of TYPE_TEST.int) throws(() => shake128(input, { dkLen }));
     });
 
-    should('shake128 cross-test', () => {
+    it('shake128 cross-test', () => {
       if (isBun) return; // bun is buggy
       for (let i = 0; i < 4096; i++) {
         const node = Uint8Array.from(createHash('shake128', { outputLength: i }).digest());
@@ -131,7 +131,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('shake256 cross-test', () => {
+    it('shake256 cross-test', () => {
       if (isBun) return; // bun is buggy
       for (let i = 0; i < 4096; i++) {
         const node = Uint8Array.from(createHash('shake256', { outputLength: i }).digest());
@@ -161,7 +161,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       !turboshake256
     )
       return;
-    should('cSHAKE', () => {
+    it('cSHAKE', () => {
       for (let i = 0; i < CSHAKE_VESTORS.length; i++) {
         const v = CSHAKE_VESTORS[i];
         eql(
@@ -176,7 +176,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('KMAC', () => {
+    it('KMAC', () => {
       for (let i = 0; i < KMAC_VECTORS.length; i++) {
         const v = KMAC_VECTORS[i];
         eql(
@@ -187,7 +187,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('tuplehash', () => {
+    it('tuplehash', () => {
       for (let i = 0; i < TUPLE_VECTORS.length; i++) {
         const v = TUPLE_VECTORS[i];
         eql(
@@ -198,7 +198,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('parallelhash', () => {
+    it('parallelhash', () => {
       for (let i = 0; i < PARALLEL_VECTORS.length; i++) {
         const v = PARALLEL_VECTORS[i];
         eql(
@@ -213,7 +213,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('keccakprg', () => {
+    it('keccakprg', () => {
       // Generated from test cases of KeccakPRG in XKCP
       const PRG_VECTORS = jsonGZ('vectors/sha3-addon-keccak-prg.json.gz');
 
@@ -234,7 +234,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('keccakprg invalid usage', () => {
+    it('keccakprg invalid usage', () => {
       throws(() => keccakprg(5));
       throws(() => keccakprg(1605));
       throws(() => keccakprg(-5));
@@ -247,7 +247,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
       eql(err?.message, 'digest is not allowed, use .randomBytes() instead');
     });
-    should('keccakprg clean throws after destroy', () => {
+    it('keccakprg clean throws after destroy', () => {
       const prg = keccakprg();
       prg.addEntropy(new Uint8Array([1, 2, 3]));
       prg.destroy();
@@ -271,14 +271,14 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         }
       );
     });
-    should('Keccak._cloneInto overwrites destination blockLen', () => {
+    it('Keccak._cloneInto overwrites destination blockLen', () => {
       const src = new Keccak(136, 0x1f, 0, true);
       const dst = new Keccak(168, 0x06, 32, false);
       src.update(Uint8Array.from({ length: 91 }, (_, i) => (i * 7 + 5) & 255));
       const cloned = src._cloneInto(dst);
       eql(cloned.xof(160), src.clone().xof(160));
     });
-    should('_KeccakPRG._cloneInto overwrites destination capacity-dependent state', () => {
+    it('_KeccakPRG._cloneInto overwrites destination capacity-dependent state', () => {
       const src = new _KeccakPRG(254);
       src.addEntropy(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
       src.randomBytes(160);
@@ -287,12 +287,12 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       eql(reused.randomBytes(16), expected.randomBytes(16));
     });
 
-    should('keccakP: rounds', () => {
+    it('keccakP: rounds', () => {
       throws(() => keccakP(new Uint32Array(50), 0));
       throws(() => keccakP(new Uint32Array(50), 25));
     });
 
-    should('Keccak padding matches byte-level pad10*1 reference', () => {
+    it('Keccak padding matches byte-level pad10*1 reference', () => {
       // Independent reference: build the padded message as explicit bytes per
       // FIPS 202 B.2 (suffix bits + first pad '1' in one byte, zeros, closing
       // '1' as 0x80 in the last rate byte) and absorb it with raw keccakP.
@@ -347,7 +347,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('K12/ParallelHash: streaming matches one-shot across chunk boundaries', () => {
+    it('K12/ParallelHash: streaming matches one-shot across chunk boundaries', () => {
       // Official RFC 9861 / SP 800-185 vectors are single-shot; this pins the
       // internal 8192-byte (K12) and B-byte (ParallelHash) chunking under
       // partial updates, including the SingleNode -> FinalNode suffix switch.
@@ -385,7 +385,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('sha3 update: chunked/unaligned inputs match single-shot', () => {
+    it('sha3 update: chunked/unaligned inputs match single-shot', () => {
       const len = 3 * 136 + 29;
       const msg = Uint8Array.from({ length: len }, (_, i) => (i * 7 + 1) & 0xff);
       const exp = sha3_256(msg);
@@ -401,7 +401,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('sha3 digestInto only fills outputLen bytes', () => {
+    it('sha3 digestInto only fills outputLen bytes', () => {
       const msg = Uint8Array.from([1, 2, 3]);
       const hash = sha3_256.create().update(msg);
       const out = new Uint8Array(hash.outputLen + 8).fill(0xaa);
@@ -413,7 +413,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       eql(out.subarray(hash.outputLen), new Uint8Array(8).fill(0xaa));
     });
 
-    should('XOF', () => {
+    it('XOF', () => {
       const NOT_XOF = [
         sha3_224,
         sha3_256,
@@ -489,7 +489,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('Basic clone', () => {
+    it('Basic clone', () => {
       const a = utf8ToBytes('key');
       const b = utf8ToBytes('123');
       const prg = keccakprg();
@@ -507,7 +507,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         eql(clone, o);
       }
     });
-    should('_ParallelHash._cloneInto clears stale destination leaf state', () => {
+    it('_ParallelHash._cloneInto clears stale destination leaf state', () => {
       const leaf = () => cshake128.create({ dkLen: 32 });
       const src = new _ParallelHash(168, 16, leaf, false, { blockLen: 12 });
       const dst = new _ParallelHash(168, 16, leaf, false, { blockLen: 12 });
@@ -519,7 +519,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         new _ParallelHash(168, 16, leaf, false, { blockLen: 12 }).update(msg).digest()
       );
     });
-    should('_KangarooTwelve._cloneInto copies and clears reusable leaf state', () => {
+    it('_KangarooTwelve._cloneInto copies and clears reusable leaf state', () => {
       const mk = (len: number) => Uint8Array.from({ length: len }, (_, i) => (i * 11 + 7) & 0xff);
       const suffix = mk(9000);
       const sourceLengths = [10, 9000, 17000] as const;
@@ -555,7 +555,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         }
       }
     });
-    should('_KangarooTwelve._cloneInto wipes replaced personalization', () => {
+    it('_KangarooTwelve._cloneInto wipes replaced personalization', () => {
       for (const [blockLen, leafLen, outLen] of [
         [168, 32, 32],
         [136, 64, 64],
@@ -591,7 +591,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('various vectors for cshake, hmac, kt128, p, t', () => {
+    it('various vectors for cshake, hmac, kt128, p, t', () => {
       const GEN_VECTORS = jsonGZ('vectors/sha3-addons.json.gz').v;
 
       const tupleData = (hex) => {
@@ -628,7 +628,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('turboshake', () => {
+    it('turboshake', () => {
       eql(
         bytesToHex(
           turboshake128(
@@ -650,21 +650,21 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         'f344b591079f09bc0d6e3f6277b1aab5354cfab81caf4afd37b7e7de6497632a2c4108f23331ce11de41e6a2ace2d7dcd5d8a7aef1a1c0c1c389e7dc26e0ca65'
       );
     });
-    should('turboshake spec vectors', () => {
+    it('turboshake spec vectors', () => {
       for (const v of TURBO_VECTORS) {
         let res = v.hash(v.msg, { dkLen: v.dkLen, D: v.D });
         if (v.last) res = res.subarray(-v.last);
         eql(res, v.exp);
       }
     });
-    should('k128, k256', () => {
+    it('k128, k256', () => {
       for (const v of K12_VECTORS) {
         let res = v.hash(v.msg, { dkLen: v.dkLen, D: v.D, personalization: v.C });
         if (v.last) res = res.subarray(-v.last);
         eql(res, v.exp);
       }
     });
-    should('turboshake domain separation byte', () => {
+    it('turboshake domain separation byte', () => {
       for (const h of [turboshake128, turboshake256]) {
         throws(() => h(EMPTY, { D: 0 }));
         throws(() => h(EMPTY, { D: 0x80 }));
@@ -673,17 +673,17 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('turboshake and k12: dkLen', () => {
+    it('turboshake and k12: dkLen', () => {
       for (const h of [turboshake128, turboshake256, kt128, kt256])
         throws(() => h(EMPTY, { dkLen: 0 }));
     });
-    should('ParallelHash blockLen=0', () => {
+    it('ParallelHash blockLen=0', () => {
       throws(() => parallelhash128(new Uint8Array([1, 2, 3]), { blockLen: 0, dkLen: 32 }));
       throws(() => parallelhash256(new Uint8Array([1, 2, 3]), { blockLen: 0, dkLen: 64 }));
       throws(() => parallelhash128xof(new Uint8Array([1, 2, 3]), { blockLen: 0, dkLen: 32 }));
       throws(() => parallelhash256xof(new Uint8Array([1, 2, 3]), { blockLen: 0, dkLen: 64 }));
     });
-    should('KangarooTwelve direct states detach personalization', () => {
+    it('KangarooTwelve direct states detach personalization', () => {
       const msg = Uint8Array.from([1, 2, 3, 4, 5, 6]);
       for (const hash of [kt128, kt256]) {
         const pers = Uint8Array.from([9, 8, 7]);
@@ -699,7 +699,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         eql(out, exp);
       }
     });
-    should('KangarooTwelve clones keep personalization', () => {
+    it('KangarooTwelve clones keep personalization', () => {
       const msg = Uint8Array.from([1, 2, 3, 4, 5, 6]);
       for (const hash of [kt128, kt256]) {
         const pers = Uint8Array.from([9, 8, 7]);
@@ -726,7 +726,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('validate Keccak construction opts', () => {
+    it('validate Keccak construction opts', () => {
       new Keccak(144, 0x06, 224 / 8);
       throws(() => new Keccak(201, 0x06, 224 / 8));
       throws(() => new Keccak(0, 0x06, 224 / 8));
@@ -737,4 +737,4 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
 if (import.meta.url === pathToFileURL(process.argv[1]).href)
   for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

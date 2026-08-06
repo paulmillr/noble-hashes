@@ -1,5 +1,5 @@
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import fc from 'fast-check';
-import { describe, should } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { hmac } from '../src/hmac.ts';
 import { sha256 } from '../src/sha2.ts';
@@ -33,20 +33,20 @@ describe('utils', () => {
     { bytes: Uint8Array.from([0xca, 0xfe]), hex: 'cafe' },
     { bytes: Uint8Array.from(new Array(1024).fill(0x69)), hex: '69'.repeat(1024) },
   ];
-  should('hexToBytes', () => {
+  it('hexToBytes', () => {
     for (let v of staticHexVectors) eql(hexToBytes(v.hex), v.bytes);
     for (let v of staticHexVectors) eql(hexToBytes(v.hex.toUpperCase()), v.bytes);
     for (let v of TYPE_TEST.hex) {
       throws(() => hexToBytes(v));
     }
   });
-  should('bytesToHex', () => {
+  it('bytesToHex', () => {
     for (let v of staticHexVectors) eql(bytesToHex(v.bytes), v.hex);
     for (let v of TYPE_TEST.bytes) {
       throws(() => bytesToHex(v));
     }
   });
-  should('hexToBytes <=> bytesToHex roundtrip', () =>
+  it('hexToBytes <=> bytesToHex roundtrip', () =>
     fc.assert(
       fc.property(hexaString({ minLength: 2, maxLength: 64 }), (hex) => {
         if (hex.length % 2 !== 0) return;
@@ -55,9 +55,8 @@ describe('utils', () => {
         if (typeof Buffer !== 'undefined')
           eql(hexToBytes(hex), Uint8Array.from(Buffer.from(hex, 'hex')));
       })
-    )
-  );
-  should('concatBytes', () => {
+    ));
+  it('concatBytes', () => {
     const a = 1;
     const b = 2;
     const c = 0xff;
@@ -72,15 +71,14 @@ describe('utils', () => {
         concatBytes(v);
       });
   });
-  should('concatBytes random', () =>
+  it('concatBytes random', () =>
     fc.assert(
       fc.property(fc.uint8Array(), fc.uint8Array(), fc.uint8Array(), (a, b, c) => {
         const expected = Uint8Array.from([...a, ...b, ...c]);
         eql(concatBytes(a.slice(), b.slice(), c.slice()), expected);
       })
-    )
-  );
-  should('copyBytes detaches aliased inputs', () => {
+    ));
+  it('copyBytes detaches aliased inputs', () => {
     const src = Uint8Array.from([1, 2, 3]);
     const copy = u.copyBytes(src.subarray(0));
     src.fill(0);
@@ -94,7 +92,7 @@ describe('utils', () => {
 
 describe('utils etc', () => {
   // Here goes test for tests...
-  should('Test generator', () => {
+  it('Test generator', () => {
     eql(
       gen({
         N: integer(0, 5),
@@ -119,13 +117,13 @@ describe('utils etc', () => {
     { in: 0xccddeeff | 0, out: 0xffeeddcc | 0 },
   ];
 
-  should('byteSwap', () => {
+  it('byteSwap', () => {
     BYTESWAP_TEST_CASES.forEach((test) => {
       eql(test.out, byteSwap(test.in));
     });
   });
 
-  should('swap8IfBE', () => {
+  it('swap8IfBE', () => {
     BYTESWAP_TEST_CASES.forEach((test) => {
       if (isLE) {
         eql(test.in, swap8IfBE(test.in));
@@ -135,14 +133,14 @@ describe('utils etc', () => {
     });
   });
 
-  should('byteSwap32', () => {
+  it('byteSwap32', () => {
     const input = Uint32Array.from([0x11223344, 0xffeeddcc, 0xccddeeff]);
     const expected = Uint32Array.from([0x44332211, 0xccddeeff, 0xffeeddcc]);
     byteSwap32(input);
     eql(expected, input);
   });
 
-  should('pattern', () => {
+  it('pattern', () => {
     const fromHex = (hex) => hexToBytes(hex.replace(/ |\n/gm, ''));
 
     eql(pattern(0xfa, 17), fromHex(`00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10`));
@@ -169,7 +167,7 @@ describe('utils etc', () => {
             20 21 22 23 24 25`)
     );
   });
-  should('randomBytes', () => {
+  it('randomBytes', () => {
     if (typeof crypto === 'undefined') return;
     const t = randomBytes(32);
     eql(t instanceof Uint8Array, true);
@@ -188,7 +186,7 @@ describe('utils etc', () => {
     throws(() => randomBytes(1.9));
     throws(() => randomBytes(NaN));
   });
-  should('isBytes', () => {
+  it('isBytes', () => {
     eql(isBytes(new Uint8Array(0)), true);
     if (typeof Buffer !== 'undefined') eql(isBytes(Buffer.alloc(10)), true);
     eql(isBytes(''), false);
@@ -197,14 +195,14 @@ describe('utils etc', () => {
 });
 
 describe('assert', () => {
-  should('anumber', () => {
+  it('anumber', () => {
     eql(u.anumber(10), 10);
     throws(() => u.anumber(1.2));
     throws(() => u.anumber('1'));
     throws(() => u.anumber(true));
     throws(() => u.anumber(NaN));
   });
-  should('abytes', () => {
+  it('abytes', () => {
     eql(u.abytes(new Uint8Array(0)), new Uint8Array(0));
     if (typeof Buffer !== 'undefined') eql(u.abytes(Buffer.alloc(10)), Buffer.alloc(10));
     eql(u.abytes(new Uint8Array(10)), new Uint8Array(10));
@@ -214,7 +212,7 @@ describe('assert', () => {
     throws(() => u.abytes(new Uint8Array(10), 11, 12));
     throws(() => u.abytes(new Uint8Array(10), 11, 12));
   });
-  should('ahash', () => {
+  it('ahash', () => {
     eql(u.ahash(sha256), undefined);
     throws(() => u.ahash({}));
     throws(() => u.ahash({ blockLen: 1, outputLen: 1, create: () => {} }));
@@ -245,19 +243,19 @@ describe('assert', () => {
     throws(() => u.ahash(hash));
     throws(() => hmac(hash, new Uint8Array([1]), new Uint8Array([2])));
   });
-  should('aexists', () => {
+  it('aexists', () => {
     eql(u.aexists({}), undefined);
     throws(() => u.aexists({ destroyed: true }));
   });
-  should('aoutput', () => {
+  it('aoutput', () => {
     eql(u.aoutput(new Uint8Array(10), { outputLen: 5 }), undefined);
     throws(() => u.aoutput(new Uint8Array(1), { outputLen: 5 }), />= 5/);
   });
-  should('asyncLoop validates inputs', async () => {
+  it('asyncLoop validates inputs', async () => {
     await rejects(() => u.asyncLoop(Number.NaN, 0, () => {}));
     await rejects(() => u.asyncLoop(1, Number.NaN, () => {}));
     await rejects(() => u.asyncLoop(1, 0, 0 as never));
   });
 });
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

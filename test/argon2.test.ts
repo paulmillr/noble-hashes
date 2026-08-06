@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
@@ -6,8 +6,8 @@ import { PLATFORMS } from './platform.ts';
 
 // Some vectors are very slow and are ran in slow-big.test.js.
 
-const BT = { describe, should };
-export function test(variant: string, platform: any, { describe, should } = BT) {
+const BT = { describe, it };
+export function test(variant: string, platform: any, { describe, it } = BT) {
   const { argon2d, argon2dAsync, argon2i, argon2iAsync, argon2id, argon2idAsync } = platform;
   const asyncMap = new Map([
     [argon2i, argon2iAsync],
@@ -302,7 +302,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
   ];
 
   describe(`Argon2 (${variant})`, () => {
-    should('types', async () => {
+    it('types', async () => {
       const opt = {
         t: 2,
         m: 256,
@@ -337,7 +337,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       });
       eql(t.length !== 0, true);
     });
-    should('maxmem is enforced in bytes', () => {
+    it('maxmem is enforced in bytes', () => {
       throws(
         () => argon2id('password', 'saltsalt', { t: 1, m: 8, p: 1, dkLen: 32, maxmem: 3000 }),
         {
@@ -350,7 +350,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       const ver = v.version || 0x13;
       const str = `m=${v.m}, t=${v.t}, p=${v.p}`;
       const title = `${v.fn.name}/v${ver} ${str} (#${i})`;
-      should(title, () => {
+      it(title, () => {
         const res = bytesToHex(
           v.fn(v.password, v.salt, {
             m: v.m,
@@ -363,7 +363,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         );
         eql(res, v.exp);
       });
-      should(`${title}: async`, async () => {
+      it(`${title}: async`, async () => {
         const asyncFn = asyncMap.get(v.fn);
         const res = bytesToHex(
           await asyncFn(v.password, v.salt, {
@@ -384,4 +384,4 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
 if (import.meta.url === pathToFileURL(process.argv[1]).href)
   for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

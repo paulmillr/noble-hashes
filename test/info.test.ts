@@ -1,4 +1,4 @@
-import { should } from '@paulmillr/jsbt/test.js';
+import { it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { PLATFORMS } from './platform.ts';
@@ -81,10 +81,10 @@ function encodeOidDER(oidStr: string): Uint8Array {
   return new Uint8Array([...header, ...body]);
 }
 
-const BT = { should };
-export function test(variant = 'noble', platform = DEFAULT_PLATFORM, { should } = BT) {
+const BT = { it };
+export function test(variant = 'noble', platform = DEFAULT_PLATFORM, { it } = BT) {
   const OIDS = getOids(platform);
-  should(`info ${variant}`, () => {
+  it(`info ${variant}`, () => {
     for (const { hash, oid: hashOid, collision, preimage } of OIDS) {
       if (hash.oid) eql(hash.oid, encodeOidDER(hashOid));
       // Verify that our calculations are same as NIST ones
@@ -97,4 +97,4 @@ export function test(variant = 'noble', platform = DEFAULT_PLATFORM, { should } 
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);

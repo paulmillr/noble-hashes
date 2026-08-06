@@ -1,4 +1,4 @@
-import { describe, should } from '@paulmillr/jsbt/test.js';
+import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '../src/utils.ts';
@@ -89,11 +89,11 @@ const blake1_vectors = [
   },
 ];
 
-const BT = { describe, should };
-export function test(variant: string, platform: any, { describe, should } = BT) {
+const BT = { describe, it };
+export function test(variant: string, platform: any, { describe, it } = BT) {
   const { blake224, blake256, blake384, blake512, blake2b, blake2s, blake3 } = platform;
   describe(`blake (${variant})`, () => {
-    should('Blake1 vectors', () => {
+    it('Blake1 vectors', () => {
       for (const v of blake1_vectors) {
         const msg = typeof v.input === 'string' ? hexToBytes(v.input, 'hex') : v.input;
         if (v.blake224) eql(bytesToHex(blake224(msg)), v.blake224);
@@ -103,7 +103,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
     // https://github.com/dchest/blake256/blob/master/blake256_test.go
-    should('blake1-256 salt', () => {
+    it('blake1-256 salt', () => {
       const VECTORS = [
         {
           input: '',
@@ -124,7 +124,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       throws(() => blake256.create({ salt: new Uint8Array(100) }));
       throws(() => blake256.create({ salt: new Uint8Array(0) }));
     });
-    should('Blake2 vectors', () => {
+    it('Blake2 vectors', () => {
       const blake2_kat_vectors = json('./vectors/blake2-kat.json');
       for (const v of blake2_kat_vectors) {
         const hash = { blake2s: blake2s, blake2b: blake2b }[v.hash];
@@ -138,7 +138,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
 
     const data = utf8ToBytes('data');
 
-    should('Blake2 python', () => {
+    it('Blake2 python', () => {
       const blake2_python = json('./vectors/blake2-python.json');
       for (const v of blake2_python) {
         const hash = { blake2s: blake2s, blake2b: blake2b }[v.hash];
@@ -149,7 +149,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         eql(bytesToHex(hash(data, opt)), v.digest);
       }
     });
-    should('BLAKE2 digestInto accepts odd lengths', () => {
+    it('BLAKE2 digestInto accepts odd lengths', () => {
       const outB = new Uint8Array(17);
       blake2b.create({ dkLen: 17 }).update(data).digestInto(outB);
       eql(bytesToHex(outB), 'c1f8306b76569775355538d7eda848b540');
@@ -159,19 +159,19 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       eql(bytesToHex(outS), 'ff7ad4af516d3a39b8641c1cc14324');
     });
 
-    should('BLAKE2s: dkLen', () => {
+    it('BLAKE2s: dkLen', () => {
       for (const dkLen of TYPE_TEST.int) throws(() => blake2s(data, { dkLen }));
       throws(() => blake2s(data, { dkLen: 0 }));
       throws(() => blake2s(data, { dkLen: 33 }));
     });
 
-    should('BLAKE2b: dkLen', () => {
+    it('BLAKE2b: dkLen', () => {
       for (const dkLen of TYPE_TEST.int) throws(() => blake2b(data, { dkLen }));
       throws(() => blake2b(data, { dkLen: 0 }));
       throws(() => blake2b(data, { dkLen: 65 }));
     });
 
-    should('BLAKE2s: key', () => {
+    it('BLAKE2s: key', () => {
       for (const key of TYPE_TEST.bytes) {
         throws(() => blake2s(data, { key }));
       }
@@ -179,7 +179,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       throws(() => blake2s(data, { key: new Uint8Array(0) }));
     });
 
-    should('BLAKE2b: key', () => {
+    it('BLAKE2b: key', () => {
       for (const key of TYPE_TEST.bytes) {
         throws(() => blake2b(data, { key }));
       }
@@ -187,7 +187,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       throws(() => blake2b(data, { key: new Uint8Array(0) }));
     });
 
-    should('BLAKE2s: personalization/salt', () => {
+    it('BLAKE2s: personalization/salt', () => {
       for (const t of TYPE_TEST.bytes) {
         throws(() => blake2s(data, { personalization: t }));
         throws(() => blake2s(data, { salt: t }));
@@ -199,7 +199,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('BLAKE2b: personalization/salt', () => {
+    it('BLAKE2b: personalization/salt', () => {
       for (const t of TYPE_TEST.bytes) {
         throws(() => blake2b(data, { personalization: t }));
         throws(() => blake2b(data, { salt: t }));
@@ -211,7 +211,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
       }
     });
 
-    should('BLAKE2: unaligned salt/personalization/input views', () => {
+    it('BLAKE2: unaligned salt/personalization/input views', () => {
       // salt/personalization as subarrays with byteOffset % 4 != 0 used to
       // throw a cryptic RangeError from the Uint32Array constructor.
       const mk = (len, off) => {
@@ -239,7 +239,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
     });
 
     describe('input immutability', () => {
-      should('BLAKE2b', () => {
+      it('BLAKE2b', () => {
         const msg = new Uint8Array([1, 2, 3, 4]);
         const key = new Uint8Array([1, 2, 3, 4]);
         const pers = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
@@ -251,7 +251,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         eql(salt, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]));
       });
 
-      should('BLAKE2s', () => {
+      it('BLAKE2s', () => {
         const msg = new Uint8Array([1, 2, 3, 4]);
         const key = new Uint8Array([1, 2, 3, 4]);
         const pers = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
@@ -263,7 +263,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         eql(salt, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
       });
 
-      should('BLAKE3', () => {
+      it('BLAKE3', () => {
         const msg = new Uint8Array([1, 2, 3, 4]);
         const ctx = new Uint8Array([1, 2, 3, 4]);
         const key = new Uint8Array([
@@ -282,7 +282,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
           ])
         );
       });
-      should('BLAKE3 keyed state', () => {
+      it('BLAKE3 keyed state', () => {
         const key = Uint8Array.from(Array.from({ length: 32 }, (_, i) => i + 1));
         const msg = Uint8Array.from([1, 2, 3, 4, 5, 6]);
         const state = blake3.create({ key, dkLen: 32 }).update(msg.subarray(0, 3));
@@ -297,19 +297,19 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
     });
 
     describe('blake3', () => {
-      should('dkLen', () => {
+      it('dkLen', () => {
         for (const dkLen of TYPE_TEST.int) throws(() => blake3(data, { dkLen }));
         eql(blake3(data, { dkLen: 0 }), new Uint8Array(0));
       });
 
-      should('not allow using both key + context', () => {
+      it('not allow using both key + context', () => {
         // not allow specifying both key / context
         throws(() => {
           blake3(data, { context: new Uint8Array(32), key: new Uint8Array(32) });
         });
       });
 
-      should('vectors', () => {
+      it('vectors', () => {
         const blake3_vectors = json('./vectors/blake3.json');
         for (let i = 0; i < blake3_vectors.cases.length; i++) {
           const v = blake3_vectors.cases[i];
@@ -328,7 +328,7 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
         }
       });
 
-      should('XOF', () => {
+      it('XOF', () => {
         // XOF ok on xof instances
         blake3.create().xof(10);
         throws(() => {
@@ -354,4 +354,4 @@ export function test(variant: string, platform: any, { describe, should } = BT) 
 if (import.meta.url === pathToFileURL(process.argv[1]).href)
   for (const k in PLATFORMS) test(k, PLATFORMS[k]);
 
-should.runWhen(import.meta.url);
+it.runWhen(import.meta.url);
