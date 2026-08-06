@@ -1,4 +1,4 @@
-import compare from '@paulmillr/jsbt/bench-compare.js';
+import compare from '@paulmillr/jsbt/benchmark-compare.js';
 import * as wasm from 'hash-wasm';
 import { argon2id } from '../../src/argon2.ts';
 

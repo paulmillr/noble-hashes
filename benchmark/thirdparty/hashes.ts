@@ -1,4 +1,4 @@
-import compare from '@paulmillr/jsbt/bench-compare.js';
+import compare from '@paulmillr/jsbt/benchmark-compare.js';
 import { blake256, blake512 } from '../../src/blake1.ts';
 import { blake2b, blake2s } from '../../src/blake2.ts';
 import { blake3 } from '../../src/blake3.ts';

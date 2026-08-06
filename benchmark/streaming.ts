@@ -1,4 +1,4 @@
-import bench from '@paulmillr/jsbt/bench.js';
+import bench from '@paulmillr/jsbt/benchmark.js';
 import { blake256 } from '../src/blake1.ts';
 import { blake2b } from '../src/blake2.ts';
 import { blake3 } from '../src/blake3.ts';
