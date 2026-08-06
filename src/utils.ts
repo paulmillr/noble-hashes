@@ -676,6 +676,16 @@ type EmptyObj = {};
  * Validates declared required and optional field types on a plain object.
  * This walks field schemas and formats detailed errors, so avoid it on hot paths; use direct
  * one-line guards such as `abytes()`, `abool()`, or `anumber()` instead.
+ * @param object - object to validate
+ * @param fields - map of required field names to expected types
+ * @param optFields - map of optional field names to expected types
+ * @param title - label included in thrown errors
+ * @throws On wrong argument types. {@link TypeError}
+ * @example
+ * Validate required and optional option fields.
+ * ```ts
+ * validateObject({ N: 1024, dkLen: 32 }, { N: 'number' }, { dkLen: 'number' });
+ * ```
  */
 export const validateObject = (
   object: Record<string, any>,
@@ -854,6 +864,7 @@ export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CH
  *   Wrapper construction eagerly calls `hashCons(undefined)` once to read
  *   `outputLen` / `blockLen`, so constructor side effects happen at module
  *   init time.
+ * @throws On wrong argument types. {@link TypeError}
  * @example
  * Wrap a stateful hash constructor into a callable helper.
  * ```ts

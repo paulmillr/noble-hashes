@@ -83,6 +83,8 @@ const B = new Uint32Array(5 * 2);
  * @param s - 5x5 Keccak state encoded as 25 lanes split into 50 uint32 words
  *   in this file's local little-endian lane-word order
  * @param rounds - number of rounds to execute
+ * @throws On wrong argument types. {@link TypeError}
+ * @throws On wrong argument ranges or values. {@link RangeError}
  * @throws If `rounds` is outside the supported `1..24` range. {@link Error}
  * @example
  * Permute a Keccak state with the default 24 rounds.

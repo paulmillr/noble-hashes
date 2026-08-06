@@ -48,14 +48,14 @@ function encodeBytes(n: number | bigint): number[] {
 }
 
 // left_encode(n): byte count is prepended.
-function leftEncode(n: number | bigint): Uint8Array {
+function leftEncode(n: number | bigint): TRet<Uint8Array> {
   const res = encodeBytes(n);
   res.unshift(res.length);
   return new Uint8Array(res);
 }
 
 // right_encode(n): byte count is appended.
-function rightEncode(n: number | bigint): Uint8Array {
+function rightEncode(n: number | bigint): TRet<Uint8Array> {
   const res = encodeBytes(n);
   res.push(res.length);
   return new Uint8Array(res);
@@ -93,32 +93,34 @@ export type cShakeOpts = ShakeOpts & {
 // to a rate boundary. Encode and pad inplace to avoid unneccesary memory copies/slices so we
 // don't need to zero them later. `rate` is the current cSHAKE/KMAC/TupleHash/ParallelHash
 // block length.
-function bytepadUpdate(h: Keccak, ...chunks: Uint8Array[]): Keccak {
-  const blockLenBytes = leftEncode(h.blockLen);
-  h.update(blockLenBytes);
+function bytepadUpdate(h: TArg<Keccak>, ...chunks: TArg<Uint8Array[]>): TRet<Keccak> {
+  const hash = h as Keccak;
+  const blockLenBytes = leftEncode(hash.blockLen);
+  hash.update(blockLenBytes);
   let totalLen = blockLenBytes.length;
   for (const chunk of chunks) {
-    h.update(chunk);
+    hash.update(chunk);
     totalLen += chunk.length;
   }
-  h.update(getPadding(totalLen, h.blockLen));
-  return h;
+  hash.update(getPadding(totalLen, hash.blockLen));
+  return hash as TRet<Keccak>;
 }
 
 // Personalization
-function cshakePers(h: Keccak, opts: cShakeOpts = {}): Keccak {
+function cshakePers(h: TArg<Keccak>, opts: TArg<cShakeOpts> = {}): TRet<Keccak> {
+  const hash = h as TRet<Keccak>;
   opts = checkOpts({}, opts);
-  if (opts.personalization === undefined && opts.NISTfn === undefined) return h;
+  if (opts.personalization === undefined && opts.NISTfn === undefined) return hash;
   // bytepad(encode_string(N) || encode_string(S), rate)
   const fn = opts.NISTfn === undefined ? EMPTY_BUFFER : kdfInputToBytes(opts.NISTfn);
   const fnLen = leftEncode(_8n * BigInt(fn.length)); // length in bits
   const pers = abytesOrZero(opts.personalization, 'personalization');
   const persLen = leftEncode(_8n * BigInt(pers.length)); // length in bits
-  if (!fn.length && !pers.length) return h;
+  if (!fn.length && !pers.length) return hash;
   // SP 800-185 cSHAKE appends `00` instead of SHAKE's `1111`; in this Keccak implementation
   // that changes the delimited suffix byte from `0x1f` to `0x04` once N or S is non-empty.
-  h.suffix = 0x04;
-  return bytepadUpdate(h, fnLen, fn, persLen, pers);
+  hash.suffix = 0x04;
+  return bytepadUpdate(hash, fnLen, fn, persLen, pers);
 }
 
 const gencShake = (
@@ -126,7 +128,7 @@ const gencShake = (
   blockLen: number,
   outputLen: number
 ): TRet<CHashXOF<Keccak, cShakeOpts>> =>
-  createHasher<Keccak, cShakeOpts>((opts: cShakeOpts = {}) =>
+  createHasher<Keccak, cShakeOpts>((opts: TArg<cShakeOpts> = {}) =>
     cshakePers(new Keccak(blockLen, suffix, chooseLen(opts, outputLen), true), opts)
   );
 
@@ -251,9 +253,9 @@ function genKmac(blockLen: number, outputLen: number, xof = false): TRet<IKMAC> 
   const kmac = (
     key: TArg<Uint8Array>,
     message: TArg<Uint8Array>,
-    opts?: cShakeOpts
+    opts?: TArg<cShakeOpts>
   ): TRet<Uint8Array> => kmac.create(key, opts).update(message).digest();
-  kmac.create = (key: TArg<Uint8Array>, opts: cShakeOpts = {}) =>
+  kmac.create = (key: TArg<Uint8Array>, opts: TArg<cShakeOpts> = {}) =>
     new _KMAC(blockLen, chooseLen(opts, outputLen), xof, key, opts);
   // Same metadata + freeze as `createHasher()` wrappers, so duck-typed
   // consumers (e.g. `ahash()`) treat all wrappers alike.
@@ -292,7 +294,7 @@ export type IKMAC = {
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param opts - Optional output and personalization settings. Defaults to
- *   16 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
+ *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC128.
@@ -318,7 +320,7 @@ export const kmac128: TRet<IKMAC> = /* @__PURE__ */ genKmac(168, 16);
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param opts - Optional output and personalization settings. Defaults to
- *   32 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
+ *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC256.
@@ -332,7 +334,7 @@ export const kmac256: TRet<IKMAC> = /* @__PURE__ */ genKmac(136, 32);
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param opts - Optional output and personalization settings. Defaults to
- *   16 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
+ *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC128 XOF output.
@@ -346,7 +348,7 @@ export const kmac128xof: TRet<IKMAC> = /* @__PURE__ */ genKmac(168, 16, true);
  * @param key - MAC key bytes
  * @param message - message bytes to authenticate
  * @param opts - Optional output and personalization settings. Defaults to
- *   32 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
+ *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
  * Authenticate a message with KMAC256 XOF output.
@@ -400,13 +402,13 @@ export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
 function genTuple(blockLen: number, outputLen: number, xof = false): TRet<ITupleHash> {
   // One-shot XOF wrappers still use `.digest()` because `_TupleHash` stores
   // the requested output length in the state itself.
-  const tuple = (messages: TArg<Uint8Array[]>, opts?: cShakeOpts): TRet<Uint8Array> => {
+  const tuple = (messages: TArg<Uint8Array[]>, opts?: TArg<cShakeOpts>): TRet<Uint8Array> => {
     const h = tuple.create(opts);
     if (!Array.isArray(messages)) throw new Error('expected array of messages');
     for (const msg of messages) h.update(msg);
     return h.digest();
   };
-  tuple.create = (opts: cShakeOpts = {}) =>
+  tuple.create = (opts: TArg<cShakeOpts> = {}) =>
     new _TupleHash(blockLen, chooseLen(opts, outputLen), xof, opts);
   // Same metadata + freeze as `createHasher()` wrappers, so duck-typed
   // consumers (e.g. `ahash()`) treat all wrappers alike.
@@ -598,9 +600,9 @@ function genPrl(
   leaf: ReturnType<typeof gencShake>,
   xof = false
 ): TRet<CHashXOF<Keccak, ParallelOpts>> {
-  const parallel = (message: TArg<Uint8Array>, opts?: ParallelOpts): TRet<Uint8Array> =>
+  const parallel = (message: TArg<Uint8Array>, opts?: TArg<ParallelOpts>): TRet<Uint8Array> =>
     parallel.create(opts).update(message).digest();
-  parallel.create = (opts: ParallelOpts = {}) =>
+  parallel.create = (opts: TArg<ParallelOpts> = {}) =>
     new _ParallelHash(
       blockLen,
       chooseLen(opts, outputLen),
@@ -965,7 +967,7 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
  * ```
  */
 export const kt128: TRet<CHash<_KangarooTwelve, KangarooOpts>> = /* @__PURE__ */ createHasher(
-  (opts: KangarooOpts = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
+  (opts: TArg<KangarooOpts> = {}) => new _KangarooTwelve(168, 32, chooseLen(opts, 32), 12, opts)
 );
 /**
  * 256-bit KangarooTwelve (k12): reduced 12-round keccak.
@@ -980,7 +982,7 @@ export const kt128: TRet<CHash<_KangarooTwelve, KangarooOpts>> = /* @__PURE__ */
  * ```
  */
 export const kt256: TRet<CHash<_KangarooTwelve, KangarooOpts>> = /* @__PURE__ */ createHasher(
-  (opts: KangarooOpts = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
+  (opts: TArg<KangarooOpts> = {}) => new _KangarooTwelve(136, 64, chooseLen(opts, 64), 12, opts)
 );
 
 // MarsupilamiFourteen (14-rounds) can be defined as:
@@ -993,15 +995,15 @@ export type HopMAC = (
   personalization: TArg<Uint8Array>,
   dkLen?: number
 ) => TRet<Uint8Array>;
-const genHopMAC =
-  (hash: CHash<_KangarooTwelve, KangarooOpts>): TRet<HopMAC> =>
-  (
+const genHopMAC = (hash: TArg<CHash<_KangarooTwelve, KangarooOpts>>): TRet<HopMAC> => {
+  const kt = hash as CHash<_KangarooTwelve, KangarooOpts>;
+  return ((
     key: TArg<Uint8Array>,
     message: TArg<Uint8Array>,
     personalization: TArg<Uint8Array>,
     dkLen?: number
-  ) =>
-    hash(key, { personalization: hash(message, { personalization }), dkLen });
+  ) => kt(key, { personalization: kt(message, { personalization }), dkLen })) as TRet<HopMAC>;
+};
 
 /**
  * 128-bit KangarooTwelve-based MAC.

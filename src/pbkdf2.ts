@@ -60,7 +60,12 @@ function pbkdf2Init(
 
 // Per-call PRF driver writes U1 into both `u` and `Ti`, then later digests into `u`;
 // shared by the sync and async variants.
-function pbkdf2Engine(iHash: Hash<any>, oHash: Hash<any>, salt: Uint8Array, u: Uint8Array) {
+function pbkdf2Engine(
+  iHash: TArg<Hash<any>>,
+  oHash: TArg<Hash<any>>,
+  salt: TArg<Uint8Array>,
+  u: TArg<Uint8Array>
+) {
   const counter = new Uint8Array(4);
   const view = createView(counter);
   // Full clones retain tree/config state; absorb salt before async yields without cloning input.
@@ -71,21 +76,21 @@ function pbkdf2Engine(iHash: Hash<any>, oHash: Hash<any>, salt: Uint8Array, u: U
   const iClone = iHash._cloneInto; // Capture before mixed feedback can materialize state tuples.
   const oClone = oHash._cloneInto;
   return {
-    u1: (ti: number, Ti: Uint8Array) => {
+    u1: (ti: number, Ti: TArg<Uint8Array>) => {
       view.setInt32(0, ti, false);
       salted._cloneInto(work).update(counter).digestInto(u);
       oHash._cloneInto(work).update(u).digestInto(u);
       Ti.set(u.subarray(0, Ti.length));
     },
     // Whole `F` inner loop for the sync variant: one optimized function owns the hot loop.
-    rounds: (c: number, Ti: Uint8Array) => {
+    rounds: (c: number, Ti: TArg<Uint8Array>) => {
       for (let ui = 1; ui < c; ui++) {
         iClone.call(iHash, work).update(u).digestInto(u);
         oClone.call(oHash, work).update(u).digestInto(u);
         for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
       }
     },
-    output: (DK: Uint8Array): TRet<Uint8Array> => {
+    output: (DK: TArg<Uint8Array>): TRet<Uint8Array> => {
       // Keyed templates and derived worker states are secret material.
       iHash.destroy();
       oHash.destroy();

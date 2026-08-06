@@ -40,7 +40,8 @@ import {
 // Unrealized speed-up: G1b/G2b call the tiny u64.* helpers (rotations, split adds) across
 // the module boundary, which V8 does not inline — u64.add's {h,l} return even allocates
 // per call. File-local copies of the helpers measured ~15% faster blake512 on Node 24.
-// Kept deduplicated in _u64 for auditability. Also doesn't matter for bundles which don't do `import`.
+// Kept deduplicated in _u64 for auditability. Also doesn't matter for bundles
+// which don't do `import`.
 
 /** Blake1 options. Basically just `salt`. */
 export type BlakeOpts = {
@@ -379,7 +380,7 @@ function generateTBL512() {
 const TBL512 = /* @__PURE__ */ generateTBL512();
 
 // Blake1-64 first half-round with rotations `32` and `25`; `k` is the half-call schedule index.
-function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
+function G1b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, k: number) {
   const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
   let Al = BBUF[2 * a + 1], Ah = BBUF[2 * a]; // prettier-ignore
@@ -412,7 +413,7 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: nu
 }
 
 // Blake1-64 second half-round with rotations `16` and `11`; `k` is the half-call schedule index.
-function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, k: number) {
+function G2b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, k: number) {
   const Xpos = 2 * BSIGMA[k];
   const Xl = msg[Xpos + 1] ^ TBL512[k * 2 + 1], Xh = msg[Xpos] ^ TBL512[k * 2]; // prettier-ignore
   let Al = BBUF[2 * a + 1], Ah = BBUF[2 * a]; // prettier-ignore

@@ -22,7 +22,8 @@ import {
 // Unrealized speed-up: G1b/G2b call the tiny u64.* helpers (rotations, split adds) across
 // the module boundary, which V8 does not inline — u64.add's {h,l} return even allocates
 // per call. File-local copies of the helpers measured ~15-20% faster blake2b on Node 24.
-// Kept deduplicated in _u64 for auditability. Also doesn't matter for bundles which don't do `import`.
+// Kept deduplicated in _u64 for auditability. Also doesn't matter for bundles
+// which don't do `import`.
 
 /**
  * Blake hash options.
@@ -50,7 +51,7 @@ const B2B_IV = /* @__PURE__ */ Uint32Array.from([
 const BBUF = /* @__PURE__ */ new Uint32Array(32);
 
 // BLAKE2b G mix split into two half-rounds over LE u32 low/high limbs.
-function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
+function G1b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, x: number) {
   // NOTE: V is LE here
   const Xl = msg[x], Xh = msg[x + 1]; // prettier-ignore
   let Al = BBUF[2 * a], Ah = BBUF[2 * a + 1]; // prettier-ignore
@@ -83,7 +84,7 @@ function G1b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: nu
 }
 
 // Second half-round of the same LE-limb BLAKE2b G mix; `x` is the message word offset.
-function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: number) {
+function G2b(a: number, b: number, c: number, d: number, msg: TArg<Uint32Array>, x: number) {
   // NOTE: V is LE here
   const Xl = msg[x], Xh = msg[x + 1]; // prettier-ignore
   let Al = BBUF[2 * a], Ah = BBUF[2 * a + 1]; // prettier-ignore
@@ -117,7 +118,7 @@ function G2b(a: number, b: number, c: number, d: number, msg: Uint32Array, x: nu
 
 function checkBlake2Opts(
   outputLen: number,
-  opts: Blake2Opts | undefined = {},
+  opts: TArg<Blake2Opts | undefined> = {},
   keyLen: number,
   saltLen: number,
   persLen: number
@@ -495,7 +496,7 @@ export type _Num16 = {
  */
 // prettier-ignore
 export function _compress(
-  s: Uint8Array, offset: number, msg: Uint32Array, rounds: number,
+  s: TArg<Uint8Array>, offset: number, msg: TArg<Uint32Array>, rounds: number,
   v0: number, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number,
   v8: number, v9: number, v10: number, v11: number, v12: number, v13: number, v14: number, v15: number,
 ): _Num16 {

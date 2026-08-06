@@ -23,11 +23,11 @@ import {
 // The local `y*` snapshot keeps the xor input stable even when `out` aliases `prev` or `input`.
 // prettier-ignore
 function XorAndSalsa(
-  prev: Uint32Array,
+  prev: TArg<Uint32Array>,
   pi: number,
-  input: Uint32Array,
+  input: TArg<Uint32Array>,
   ii: number,
-  out: Uint32Array,
+  out: TArg<Uint32Array>,
   oi: number
 ) {
   // Based on https://cr.yp.to/salsa20.html and RFC 7914's Salsa20/8 core.
@@ -75,7 +75,13 @@ function XorAndSalsa(
   out[oi++] = (y14 + x14) | 0; out[oi++] = (y15 + x15) | 0;
 }
 
-function BlockMix(input: Uint32Array, ii: number, out: Uint32Array, oi: number, r: number) {
+function BlockMix(
+  input: TArg<Uint32Array>,
+  ii: number,
+  out: TArg<Uint32Array>,
+  oi: number,
+  r: number
+) {
   // The block B is `r` 128-byte chunks, i.e. `2r` 16-word (64-byte) Salsa blocks.
   let head = oi + 0;
   let tail = oi + 16 * r;
@@ -203,9 +209,9 @@ function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: Scry
 function scryptOutput(
   password: TArg<KDFInput>,
   dkLen: number,
-  B: Uint8Array,
-  V: Uint32Array,
-  tmp: Uint32Array
+  B: TArg<Uint8Array>,
+  V: TArg<Uint32Array>,
+  tmp: TArg<Uint32Array>
 ): TRet<Uint8Array> {
   // Shared final PBKDF2-and-cleanup step: keep the derived key, wipe the scrypt workspace.
   const res = pbkdf2(sha256, password, B, { c: 1, dkLen });
