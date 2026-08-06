@@ -284,7 +284,7 @@ const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5
   onProgress(percentage) {
     console.log('progress', percentage);
   },
-  maxmem: 2 ** 17 * 8 * 1 * 128 + 128 * 8 * 1, // N * r * p * 128 + (128 * r * p)
+  maxmem: 128 * 8 * (2 ** 17 + 1 + 1), // 128 * r * (N + p + 1)
 });
 ```
 
@@ -296,7 +296,7 @@ Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
   JS doesn't support parallelization, making increasing `p` meaningless.
 - `dkLen` is the length of output bytes e.g. `32` or `64`
 - `onProgress` can be used with async version of the function to report progress to a user.
-- `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `N * r * p * 128 + (128 * r * p)`
+- `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `128 * r * (N + p + 1)`
 
 Time it takes to derive Scrypt key under different values of N (2\*\*N) on Apple M4 (mobile phones can be 1x-4x slower):
 
