@@ -35,27 +35,25 @@ async function main() {
   };
   for (const { size, data } of buffers) {
     console.log('# ' + size);
-    console.log('## Hash')
+    const o = { bytes: data.byteLength };
     for (const title in hashes) {
       const hash = hashes[title];
-      await bench(title, () => hash(data), { bytes: data.byteLength });
+      await bench(title, () => hash(data), o);
     }
+    const b32 = buf(32);
+    await bench('hmac(sha256)', () => hmac(sha256, b32, data), o);
+    await bench('hmac(sha512)', () => hmac(sha512, b32, data), o);
+    await bench('kmac256', () => kmac256(b32, data), o);
+    await bench('blake3(key)', () => blake3(data, { key: b32 }), o);
     console.log();
   }
 
-  console.log('## MAC');
-  const etc = buf(32);
-  await bench('hmac(sha256)', () => hmac(sha256, etc, etc));
-  await bench('hmac(sha512)', () => hmac(sha512, etc, etc));
-  await bench('kmac256', () => kmac256(etc, etc));
-  await bench('blake3(key)', () => blake3(etc, { key: etc }));
-
-  console.log();
   console.log('## KDF');
   const pass = buf(12);
   const salt = buf(14);
-  await bench('hkdf(sha256)', () => hkdf(sha256, salt, pass, etc, 32));
-  await bench('blake3(context)', () => blake3(etc, { context: etc }));
+  const context = buf(32);
+  await bench('hkdf(sha256)', () => hkdf(sha256, salt, pass, context, 32));
+  await bench('blake3(context)', () => blake3(context, { context }));
   await bench('pbkdf2(sha256, c: 2 ** 18)', () =>
     pbkdf2(sha256, pass, salt, { c: 2 ** 18, dkLen: 32 })
   );
