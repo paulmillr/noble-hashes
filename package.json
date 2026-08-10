@@ -18,6 +18,7 @@
     "benchmark": "node benchmark/hashes.ts",
     "benchmark:thirdparty": "cd benchmark/thirdparty; npm ci; JSBT_BENCHMARK_DIMENSIONS='algorithm,buffer,library' node hashes.ts",
     "benchmark:thirdparty-scrypt": "cd benchmark/thirdparty; npm ci; JSBT_BENCHMARK_DIMENSIONS='iters,library' JSBT_BENCHMARK_FILTER='async' node scrypt.ts",
+    "benchmark:size": "npx bismar@0.1 -bs",
     "build": "tsc",
     "build:clean": "rm *.{js,d.ts} 2> /dev/null",
     "check": "jsbt-check",

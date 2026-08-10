@@ -35,7 +35,7 @@ async function main() {
   };
   for (const { size, data } of buffers) {
     console.log('# ' + size);
-    const o = { bytes: data.byteLength };
+    const o = size === '32B' ? {} : { bytes: data.byteLength };
     for (const title in hashes) {
       const hash = hashes[title];
       await bench(title, () => hash(data), o);
@@ -56,9 +56,6 @@ async function main() {
   await bench('blake3(context)', () => blake3(context, { context }));
   await bench('pbkdf2(sha256, c: 2 ** 18)', () =>
     pbkdf2(sha256, pass, salt, { c: 2 ** 18, dkLen: 32 })
-  );
-  await bench('pbkdf2(sha512, c: 2 ** 18)', () =>
-    pbkdf2(sha512, pass, salt, { c: 2 ** 18, dkLen: 32 })
   );
   await bench('scrypt(n: 2 ** 19, r: 8, p: 1)', () =>
     scrypt(pass, salt, { N: 2 ** 19, r: 8, p: 1, dkLen: 32 })

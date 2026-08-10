@@ -494,14 +494,10 @@ v2.0 changelog:
 
 `test/misc` directory contains unrolled implementations (sha3, argon2) and misc helper scripts.
 
-- `npm install && npm run build && npm test` will build the code and run tests.
-- `npm run check` / `npm run format` will run linter / fix linter issues.
-- `npm run benchmark` will run benchmarks
-- `npm run bundle` will build single file
-- There are **additional** slow suites: 20-min DoS test `npm run test:dos`,
-  multi-hour 4GB-input test `npm run test:slow`, ACVP vectors `npm run test:acvp`
-  and KDF vectors `npm run test:kdf`.
-  See [our approach to testing](./test/README.md)
+There are **additional** slow suites: 20-min DoS test `npm run test:dos`,
+multi-hour 4GB-input test `npm run test:slow`, ACVP vectors `npm run test:acvp`
+and KDF vectors `npm run test:kdf`.
+See [our approach to testing](./test/README.md)
 
 Some hashes are outside of scope of the library:
 - [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)
@@ -527,47 +523,51 @@ which does unrolling in an auditable way and allows to achieve 10GB/s BLAKE3.
 
 ```
 # 32B
-sha256 x 2,016,129 ops/sec @ 496ns/op
-sha512 x 740,740 ops/sec @ 1μs/op
-sha3_256 x 287,686 ops/sec @ 3μs/op
-sha3_512 x 288,267 ops/sec @ 3μs/op
-kt128 x 476,190 ops/sec @ 2μs/op
-blake2b x 410,340 ops/sec @ 2μs/op
-blake2s x 942,507 ops/sec @ 1μs/op
-blake3 x 1,006,036 ops/sec @ 994ns/op
-ripemd160 x 1,410,437 ops/sec @ 709ns/op
-md5 x 1,663,893 ops/sec @ 601ns/op
-sha1 x 1,589,825 ops/sec @ 629ns/op
+sha256 x 2,178,649 ops/sec @ 459ns/op
+sha512 x 783,699 ops/sec @ 1μs/op
+sha3_256 x 520,562 ops/sec @ 1μs/op
+sha3_512 x 526,870 ops/sec @ 1μs/op
+kt128 x 762,195 ops/sec @ 1μs/op
+kt256 x 769,230 ops/sec @ 1μs/op
+turboshake128 x 902,527 ops/sec @ 1μs/op
+blake256 x 796,812 ops/sec @ 1μs/op
+blake2b x 455,788 ops/sec @ 2μs/op
+blake2s x 1,015,228 ops/sec @ 985ns/op
+blake3 x 1,095,290 ops/sec @ 913ns/op
+ripemd160 x 1,594,896 ops/sec @ 627ns/op
+md5 x 2,123,142 ops/sec @ 471ns/op
+sha1 x 1,876,172 ops/sec @ 533ns/op
+hmac(sha256) x 500,000 ops/sec @ 2μs/op
+hmac(sha512) x 188,857 ops/sec @ 5μs/op
+kmac256 x 149,633 ops/sec @ 6μs/op
+blake3(key) x 957,854 ops/sec @ 1μs/op
 
 # 1MB
-sha256 x 331 ops/sec @ 3ms/op
-sha512 x 128 ops/sec @ 7ms/op
-sha3_256 x 39 ops/sec @ 25ms/op
-sha3_512 x 21 ops/sec @ 46ms/op
-kt128 x 91 ops/sec @ 10ms/op
-kt256 x 75 ops/sec @ 13ms/op
-turboshake128 x 93 ops/sec @ 10ms/op
-blake256 x 57 ops/sec @ 17ms/op
-blake2b x 61 ops/sec @ 16ms/op
-blake2s x 78 ops/sec @ 12ms/op
-blake3 x 95 ops/sec @ 10ms/op
-ripemd160 x 177 ops/sec @ 5ms/op
-md5 x 250 ops/sec @ 3ms/op
-sha1 x 416 ops/sec @ 2ms/op
+sha256 x 293 mib/sec
+sha512 x 128 mib/sec
+sha3_256 x 76.7 mib/sec
+sha3_512 x 40.2 mib/sec
+kt128 x 177 mib/sec
+kt256 x 147 mib/sec
+turboshake128 x 187 mib/sec
+blake256 x 57.3 mib/sec
+blake2b x 66.9 mib/sec
+blake2s x 79.6 mib/sec
+blake3 x 100 mib/sec
+ripemd160 x 179 mib/sec
+md5 x 273 mib/sec
+sha1 x 401 mib/sec
+hmac(sha256) x 290 mib/sec
+hmac(sha512) x 127 mib/sec
+kmac256 x 74.8 mib/sec
+blake3(key) x 97.2 mib/sec
 
-# MAC
-hmac(sha256) x 599,880 ops/sec @ 1μs/op
-hmac(sha512) x 197,122 ops/sec @ 5μs/op
-kmac256 x 87,981 ops/sec @ 11μs/op
-blake3(key) x 796,812 ops/sec @ 1μs/op
-
-# KDF
-hkdf(sha256) x 259,942 ops/sec @ 3μs/op
-blake3(context) x 424,808 ops/sec @ 2μs/op
-pbkdf2(sha256, c: 2 ** 18) x 5 ops/sec @ 197ms/op
-pbkdf2(sha512, c: 2 ** 18) x 1 ops/sec @ 630ms/op
-scrypt(n: 2 ** 18, r: 8, p: 1) x 2 ops/sec @ 400ms/op
-argon2id(t: 1, m: 256MB) 2881ms
+## KDF
+hkdf(sha256) x 242,541 ops/sec @ 4μs/op
+blake3(context) x 495,294 ops/sec @ 2μs/op
+pbkdf2(sha256, c: 2 ** 18) x 4 ops/sec @ 205ms/op ± 11.57% (203ms..206ms)
+scrypt(n: 2 ** 19, r: 8, p: 1) x 1 ops/sec @ 768ms/op
+argon2id(t: 1, m: 128MB) x 2 ops/sec @ 357ms/op ± 26.23% (349ms..364ms)
 ```
 
 ## License
