@@ -31,7 +31,9 @@
   },
   "exports": {
     ".": "./index.js",
+    "./_blake.js": "./_blake.js",
     "./_md.js": "./_md.js",
+    "./_u64.js": "./_u64.js",
     "./argon2.js": "./argon2.js",
     "./blake1.js": "./blake1.js",
     "./blake2.js": "./blake2.js",

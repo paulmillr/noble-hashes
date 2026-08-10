@@ -3,7 +3,9 @@
   "version": "2.3.0",
   "exports": {
     ".": "./src/index.ts",
+    "./_blake.js": "./src/_blake.ts",
     "./_md.js": "./src/_md.ts",
+    "./_u64.js": "./src/_u64.ts",
     "./argon2.js": "./src/argon2.ts",
     "./blake1.js": "./src/blake1.ts",
     "./blake2.js": "./src/blake2.ts",

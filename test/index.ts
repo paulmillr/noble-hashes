@@ -30,6 +30,7 @@ async function run() {
     import('./noble-hashes-only.test.ts'),
     import('./u64.test.ts'),
     import('./utils.test.ts'),
+    import('./exports.test.ts'),
   ]);
   init(variant, platform);
   avcpTests(false, variant, platform);
