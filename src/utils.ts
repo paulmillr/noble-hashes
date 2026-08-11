@@ -612,6 +612,7 @@ declare const TextEncoder: any;
  * @param str - string to encode
  * @returns UTF-8 encoded bytes.
  * @throws On wrong argument types. {@link TypeError}
+ * @throws On non-well-formed strings. {@link SyntaxError}
  * @example
  * Encode a string as UTF-8 bytes.
  * ```ts
@@ -620,6 +621,24 @@ declare const TextEncoder: any;
  */
 export function utf8ToBytes(str: string): TRet<Uint8Array> {
   if (typeof str !== 'string') throw new TypeError('string expected');
+  // TextEncoder converts every unpaired UTF-16 surrogate to U+FFFD, so distinct
+  // inputs like '\ud800' and '\udfff' collapse to the same bytes and would hash
+  // identically (https://github.com/paulmillr/noble-hashes/issues/133). Reject
+  // non-well-formed strings to keep hashes collision-free. On engines without
+  // String.prototype.isWellFormed, encodeURI throws a URIError for unpaired
+  // surrogates, providing an equivalent check without a polyfill.
+  let wellFormed = false;
+  if (typeof (str as any).isWellFormed === 'function')
+    wellFormed = (str as any).isWellFormed();
+  else {
+    try {
+      encodeURI(str);
+      wellFormed = true;
+    } catch {
+      wellFormed = false;
+    }
+  }
+  if (!wellFormed) throw new SyntaxError('Input is not a well-formed string');
   return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
 

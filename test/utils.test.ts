@@ -88,6 +88,26 @@ describe('utils', () => {
     throws(() => u.copyBytes(new Uint16Array([0x0102, 0x0304]) as any), TypeError);
     throws(() => u.copyBytes(new DataView(new ArrayBuffer(4)) as any), TypeError);
   });
+  it('utf8ToBytes rejects non-well-formed strings (noble-hashes#133)', () => {
+    // TextEncoder replaces every unpaired UTF-16 surrogate with U+FFFD, so
+    // distinct inputs like '\ud800' and '\udfff' previously produced identical
+    // bytes and collided in hashes/signatures. They must be rejected instead.
+    throws(() => u.utf8ToBytes('\ud800'), SyntaxError);
+    throws(() => u.utf8ToBytes('\udfff'), SyntaxError);
+    throws(() => u.utf8ToBytes('\udc00'), SyntaxError);
+    throws(() => u.utf8ToBytes('\udc00\ud800'), SyntaxError);
+    throws(() => u.utf8ToBytes('abc \ud800 def'), SyntaxError);
+  });
+  it('utf8ToBytes encodes well-formed strings', () => {
+    eql(u.utf8ToBytes('abc'), Uint8Array.from([97, 98, 99]));
+    // A valid surrogate pair (U+1F600) is well-formed and must be accepted.
+    eql(
+      u.utf8ToBytes('see 😀 <-'),
+      Uint8Array.from([0x73, 0x65, 0x65, 0x20, 0xf0, 0x9f, 0x98, 0x80, 0x20, 0x3c, 0x2d])
+    );
+    // A literal U+FFFD is well-formed and must be accepted.
+    eql(u.utf8ToBytes('�'), Uint8Array.from([0xef, 0xbf, 0xbd]));
+  });
 });
 
 describe('utils etc', () => {
