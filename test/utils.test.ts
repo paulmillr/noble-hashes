@@ -256,6 +256,45 @@ describe('assert', () => {
     await rejects(() => u.asyncLoop(1, Number.NaN, () => {}));
     await rejects(() => u.asyncLoop(1, 0, 0 as never));
   });
+  it('asyncLoop yields to the event loop (timers fire mid-loop)', async () => {
+    // Regression test for https://github.com/paulmillr/noble-hashes/issues/113
+    // asyncLoop used to only await an immediately-resolved promise (a microtask),
+    // which never releases the macrotask/event loop: the page still hangs while
+    // the loop runs and timers cannot fire until it finishes. Node exposes no
+    // `scheduler` global, so simulate the browser Cooperative Scheduling API to
+    // exercise the code path the fix relies on.
+    const prev = (globalThis as any).scheduler;
+    let fired = false;
+    let firedDuringLoop = false;
+    let loopDone = false;
+    Object.defineProperty(globalThis, 'scheduler', {
+      value: { yield: () => new Promise((resolve) => setTimeout(resolve, 0)) },
+      configurable: true,
+      writable: true,
+    });
+    try {
+      const t = setTimeout(() => {
+        fired = true;
+        firedDuringLoop = !loopDone;
+      }, 5);
+      // ~1-2ms of synchronous work per iteration with tick=1 => yields every iteration.
+      await u.asyncLoop(50, 1, () => {
+        for (let j = 0; j < 2e6; j++);
+      });
+      loopDone = true;
+      clearTimeout(t);
+      eql(fired, true, 'a timer must fire while asyncLoop is running');
+      eql(firedDuringLoop, true, 'the timer must fire BEFORE the loop completes');
+    } finally {
+      if (prev === undefined) delete (globalThis as any).scheduler;
+      else
+        Object.defineProperty(globalThis, 'scheduler', {
+          value: prev,
+          configurable: true,
+          writable: true,
+        });
+    }
+  });
 });
 
 it.runWhen(import.meta.url);

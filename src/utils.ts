@@ -556,16 +556,21 @@ export function hexToBytes(hex: string): TRet<Uint8Array> {
 }
 
 /**
- * There is no setImmediate in browser and setTimeout is slow.
- * This yields to the Promise/microtask scheduler queue, not to timers or the
- * full macrotask event loop.
+ * Yields control back to the event loop.
+ *
+ * Prefers the Cooperative Scheduling API (`scheduler.yield()`, Chrome 129+,
+ * Safari 18.4+, Firefox 138+), which actually lets the browser render frames,
+ * handle input events and run timers. Without it, falls back to an immediately
+ * resolved promise (microtask) — the previous fast path.
  * @example
  * Yield to the next scheduler tick.
  * ```ts
  * await nextTick();
  * ```
  */
-export const nextTick = async (): Promise<void> => {};
+export const nextTick = async (): Promise<void> => {
+  if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
+};
 
 /**
  * Returns control to the Promise/microtask scheduler every `tick`
