@@ -257,6 +257,13 @@ const aobject = (value: Record<string, any>, label: string) => {
     );
 };
 
+const aopts = (value: Record<string, any>, label: string) => {
+  aobject(value, label);
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null)
+    throw new TypeError(`"${label}" expected plain object`);
+};
+
 /**
  * Asserts a hash instance has not been destroyed or finished.
  * @param instance - hash instance to validate
@@ -739,8 +746,8 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   opts?: T2,
   title = 'opts'
 ): T1 & T2 {
-  aobject(defaults as Record<string, any>, 'defaults');
-  if (opts !== undefined) aobject(opts as Record<string, any>, title);
+  aopts(defaults as Record<string, any>, 'defaults');
+  if (opts !== undefined) aopts(opts as Record<string, any>, title);
   const merged = Object.assign(defaults, opts);
   return merged as T1 & T2;
 }
