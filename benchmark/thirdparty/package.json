@@ -1,5 +1,6 @@
 {
   "name": "benchmark",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "devDependencies": {
@@ -24,7 +25,8 @@
     "libsodium-wrappers": "0.7.13",
     "scrypt-async": "2.0.1",
     "scrypt-js": "3.0.1",
-    "sha3": "2.1.4"
-  },
-  "version": "0.1.0"
+    "sha3": "2.1.4",
+    "@awasm/noble": "^0.1.4",
+    "blake3-bao": "^1.3.4"
+  }
 }

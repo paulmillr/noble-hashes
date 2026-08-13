@@ -492,12 +492,14 @@ v2.0 changelog:
 
 ## Contributing & testing
 
-`test/misc` directory contains unrolled implementations (sha3, argon2) and misc helper scripts.
+`npm install && npm run build && npm test` will build the code and run tests.
 
-There are **additional** slow suites: 20-min DoS test `npm run test:dos`,
-multi-hour 4GB-input test `npm run test:slow`, ACVP vectors `npm run test:acvp`
-and KDF vectors `npm run test:kdf`.
-See [our approach to testing](./test/README.md)
+There are **additional** slow suites: timing-based DoS tests `npm run test:dos`,
+multi-hour large-input tests `npm run test:slow`, ACVP LDT vectors `npm run test:acvp`,
+and memory-intensive KDF tests `npm run test:ultra`. The 9–17GiB scrypt cases require an
+explicitly provisioned machine and run separately with `npm run test:ultra:scrypt`.
+
+`test/misc` directory contains unrolled implementations (sha3, argon2) and misc helper scripts.
 
 Some hashes are outside of scope of the library:
 - [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)

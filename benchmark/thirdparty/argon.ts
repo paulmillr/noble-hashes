@@ -28,8 +28,8 @@ async function main() {
   await compare(
     'Argon',
     {
-      iters: { 1: 1, 4: 4, 8: 8 },
-      memory: { '256KB': 256, '64MB': 64 * 1024, '256MB': 256 * 1024, '1GB': 1 * 1024 * 1024 },
+      iters: { 3: 3 },
+      memory: { '64MB': 64 * 1024, '128MB': 128 * 1024, '256MB': 256 * 1024, '1GB': 1 * 1024 * 1024 },
     },
     KDF,
     {
