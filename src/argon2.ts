@@ -8,7 +8,6 @@
  * * JS arrays do slow bound checks, so reading from `A2_BUF` slows it down
  * @module
  */
-import { rotr32H, rotr32L, rotrBH, rotrBL, rotrSH, rotrSL } from './_u64.ts';
 import { blake2b } from './blake2.ts';
 import {
   anumber,
@@ -39,42 +38,17 @@ const abytesOrZero = (buf?: TArg<KDFInput>, errorTitle = ''): TRet<Uint8Array> =
   return kdfInputToBytes(buf, errorTitle);
 };
 
-// Unsigned `u32 * u32 = { h, l }`, returned as split 64-bit halves.
-function mul(a: number, b: number) {
-  // Split into 16-bit limbs so each partial product stays exact under `Math.imul`.
-  const aL = a & 0xffff;
-  const aH = a >>> 16;
-  const bL = b & 0xffff;
-  const bH = b >>> 16;
-  const ll = Math.imul(aL, bL);
-  const hl = Math.imul(aH, bL);
-  const lh = Math.imul(aL, bH);
-  const hh = Math.imul(aH, bH);
-  const carry = (ll >>> 16) + (hl & 0xffff) + lh;
-  const high = (hh + (hl >>> 16) + (carry >>> 16)) | 0;
-  const low = (carry << 16) | (ll & 0xffff);
-  return { h: high, l: low };
-}
-
-// High 32 bits of unsigned u32 multiply, via the same 16-bit limb split as `mul` below.
-// Kept single-purpose and number-returning so V8 inlines it (object-returning
-// helpers here cost 2.2x of the whole derivation, measured; small helpers
-// returning one number are free — see rotr* usage everywhere).
-function mulHi(a: number, b: number): number {
-  const aL = a & 0xffff, aH = a >>> 16, bL = b & 0xffff, bH = b >>> 16; // prettier-ignore
-  const carry = (Math.imul(aL, bL) >>> 16) + (Math.imul(aH, bL) & 0xffff) + Math.imul(aL, bH);
-  return (Math.imul(aH, bH) + (Math.imul(aH, bL) >>> 16) + (carry >>> 16)) | 0;
-}
-
 // Temporary block buffer.
 // 1024-byte block: 256 u32 = 128 interleaved low/high halves = RFC's
 // 8x8 matrix of 16-byte registers.
 const A2_BUF = new Uint32Array(256);
 
 // Quarter-round over 64-bit word indices into `A2_BUF`; each index maps to adjacent low/high u32s.
-// Each BlaMka step `X = X + Y + 2 * trunc(X) * trunc(Y)` (trunc = low 32 bits) is three lines:
-// `Math.imul` is the low product half, `mulHi` the high half, then a split 64-bit add with the
-// doubling folded in. RFC 9106 Figure 19 GB rotates by 32, 24, 16, and 63 bits after each XOR.
+// Each BlaMka step `X = X + Y + 2 * trunc(X) * trunc(Y)` (trunc = low 32 bits) starts
+// with an exact low product from `Math.imul`. The rounded double product is within 1024 of the
+// exact u64 product; subtracting that exact low half and rounding to the nearest multiple of
+// 2^32 therefore recovers the exact high half. RFC 9106 Figure 19 GB then rotates by 32, 24,
+// 16, and 63 bits after each XOR.
 function G(a: number, b: number, c: number, d: number) {
   let Al = A2_BUF[2*a], Ah = A2_BUF[2*a + 1]; // prettier-ignore
   let Bl = A2_BUF[2*b], Bh = A2_BUF[2*b + 1]; // prettier-ignore
@@ -84,47 +58,47 @@ function G(a: number, b: number, c: number, d: number) {
 
   // A = blamka(A, B); D = rotr64(D ^ A, 32)
   ml = Math.imul(Al, Bl);
-  mh = mulHi(Al, Bl); // prettier-ignore
+  mh = (((Al >>> 0) * (Bl >>> 0) - (ml >>> 0)) / 0x100000000 + 0.5) | 0; // prettier-ignore
   rl = (Al >>> 0) + (Bl >>> 0) + ((ml << 1) >>> 0);
   Ah = (Ah + Bh + ((mh << 1) | (ml >>> 31)) + ((rl / 0x100000000) | 0)) | 0;
   Al = rl | 0; // prettier-ignore
   xh = Dh ^ Ah;
   xl = Dl ^ Al; // prettier-ignore
-  Dh = rotr32H(xh, xl);
-  Dl = rotr32L(xh, xl); // prettier-ignore
+  Dh = xl;
+  Dl = xh; // prettier-ignore
 
   // C = blamka(C, D); B = rotr64(B ^ C, 24)
   ml = Math.imul(Cl, Dl);
-  mh = mulHi(Cl, Dl); // prettier-ignore
+  mh = (((Cl >>> 0) * (Dl >>> 0) - (ml >>> 0)) / 0x100000000 + 0.5) | 0; // prettier-ignore
   rl = (Cl >>> 0) + (Dl >>> 0) + ((ml << 1) >>> 0);
   Ch = (Ch + Dh + ((mh << 1) | (ml >>> 31)) + ((rl / 0x100000000) | 0)) | 0;
   Cl = rl | 0; // prettier-ignore
   xh = Bh ^ Ch;
   xl = Bl ^ Cl; // prettier-ignore
-  Bh = rotrSH(xh, xl, 24);
-  Bl = rotrSL(xh, xl, 24); // prettier-ignore
+  Bh = (xh >>> 24) | (xl << 8);
+  Bl = (xh << 8) | (xl >>> 24); // prettier-ignore
 
   // A = blamka(A, B); D = rotr64(D ^ A, 16)
   ml = Math.imul(Al, Bl);
-  mh = mulHi(Al, Bl); // prettier-ignore
+  mh = (((Al >>> 0) * (Bl >>> 0) - (ml >>> 0)) / 0x100000000 + 0.5) | 0; // prettier-ignore
   rl = (Al >>> 0) + (Bl >>> 0) + ((ml << 1) >>> 0);
   Ah = (Ah + Bh + ((mh << 1) | (ml >>> 31)) + ((rl / 0x100000000) | 0)) | 0;
   Al = rl | 0; // prettier-ignore
   xh = Dh ^ Ah;
   xl = Dl ^ Al; // prettier-ignore
-  Dh = rotrSH(xh, xl, 16);
-  Dl = rotrSL(xh, xl, 16); // prettier-ignore
+  Dh = (xh >>> 16) | (xl << 16);
+  Dl = (xh << 16) | (xl >>> 16); // prettier-ignore
 
   // C = blamka(C, D); B = rotr64(B ^ C, 63)
   ml = Math.imul(Cl, Dl);
-  mh = mulHi(Cl, Dl); // prettier-ignore
+  mh = (((Cl >>> 0) * (Dl >>> 0) - (ml >>> 0)) / 0x100000000 + 0.5) | 0; // prettier-ignore
   rl = (Cl >>> 0) + (Dl >>> 0) + ((ml << 1) >>> 0);
   Ch = (Ch + Dh + ((mh << 1) | (ml >>> 31)) + ((rl / 0x100000000) | 0)) | 0;
   Cl = rl | 0; // prettier-ignore
   xh = Bh ^ Ch;
   xl = Bl ^ Cl; // prettier-ignore
-  Bh = rotrBH(xh, xl, 63);
-  Bl = rotrBL(xh, xl, 63); // prettier-ignore
+  Bh = (xh << 1) | (xl >>> 31);
+  Bl = (xh >>> 31) | (xl << 1); // prettier-ignore
 
   ((A2_BUF[2 * a] = Al), (A2_BUF[2 * a + 1] = Ah));
   ((A2_BUF[2 * b] = Bl), (A2_BUF[2 * b + 1] = Bh));
@@ -152,7 +126,21 @@ function P(
 }
 
 function block(x: TArg<Uint32Array>, xPos: number, yPos: number, outPos: number, needXor: boolean) {
-  for (let i = 0; i < 256; i++) A2_BUF[i] = x[xPos + i] ^ x[yPos + i];
+  // Stage R = X xor Y in the destination before permuting it. This avoids rereading both source
+  // blocks when folding R into the permuted scratch block below.
+  if (needXor) {
+    for (let i = 0; i < 256; i++) {
+      const r = x[xPos + i] ^ x[yPos + i];
+      A2_BUF[i] = r;
+      x[outPos + i] ^= r;
+    }
+  } else {
+    for (let i = 0; i < 256; i++) {
+      const r = x[xPos + i] ^ x[yPos + i];
+      A2_BUF[i] = r;
+      x[outPos + i] = r;
+    }
+  }
   // rows (8 consecutive 16-register groups)
   for (let i = 0; i < 128; i += 16) {
     // prettier-ignore
@@ -171,8 +159,7 @@ function block(x: TArg<Uint32Array>, xPos: number, yPos: number, outPos: number,
   }
 
   // RFC 9106 step 6: passes after the first XOR the old destination block into the new G(X, Y).
-  if (needXor) for (let i = 0; i < 256; i++) x[outPos + i] ^= A2_BUF[i] ^ x[xPos + i] ^ x[yPos + i];
-  else for (let i = 0; i < 256; i++) x[outPos + i] = A2_BUF[i] ^ x[xPos + i] ^ x[yPos + i];
+  for (let i = 0; i < 256; i++) x[outPos + i] ^= A2_BUF[i];
   clean(A2_BUF);
 }
 
@@ -226,9 +213,12 @@ function indexAlpha(
   } else if (sameLane) area = laneLen - segmentLen + index - 1;
   else area = laneLen - segmentLen + (index == 0 ? -1 : 0);
   const startPos = r !== 0 && s !== ARGON2_SYNC_POINTS - 1 ? (s + 1) * segmentLen : 0;
-  // RFC 9106 Figure 13: `mul(randL, randL).h` is `floor(J_1^2 / 2^32)`, and the outer high-half
-  // multiply computes `floor(|W| * x / 2^32)` without floating-point math.
-  const rel = area - 1 - mul(area, mul(randL, randL).h).h;
+  // Use the same exact-high recovery as G. `areaHigh` is floor(|W| * J1^2/2^32 / 2^32).
+  const randLow = Math.imul(randL, randL);
+  const randHigh = (((randL >>> 0) * (randL >>> 0) - (randLow >>> 0)) / 0x100000000 + 0.5) | 0;
+  const areaLow = Math.imul(area, randHigh);
+  const areaHigh = (((area >>> 0) * (randHigh >>> 0) - (areaLow >>> 0)) / 0x100000000 + 0.5) | 0;
+  const rel = area - 1 - areaHigh;
   return (startPos + rel) % laneLen;
 }
 
