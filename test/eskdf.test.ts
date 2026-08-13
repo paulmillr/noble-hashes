@@ -6,7 +6,7 @@ import { json } from './utils.ts';
 const vectors = json('./vectors/eskdf.json');
 
 describe('eskdf', () => {
-  it('vectors, types, protocol names', async () => {
+  it.serial('main seed vectors', async () => {
     for (const v of vectors.derive_main_seed.valid) {
       const { fingerprint, username, password } = v;
       const keyc = await eskdf(username, password);
@@ -22,7 +22,9 @@ describe('eskdf', () => {
       const { username, password } = v;
       await rejects(() => eskdf(username, password));
     }
+  });
 
+  it.serial('child key vectors', async () => {
     const { username, password } = vectors.derive_child_key.seed;
     let e = await eskdf(username, password);
     try {
@@ -45,12 +47,15 @@ describe('eskdf', () => {
       for (const v of vectors.derive_child_key.invalid) {
         const { protocol, account_id } = v;
         throws(() => e.deriveChildKey(protocol, account_id));
-        throws(() => e.deriveChildKey('aes', 0, { keyLength: 64, modulus: BigInt(65537) }));
       }
+      throws(() => e.deriveChildKey('aes', 0, { keyLength: 64, modulus: BigInt(65537) }));
     } finally {
       e.expire();
     }
-    let keyc = await eskdf('test@test.com', 'test2test');
+  });
+
+  it.serial('child key types and expiry', async () => {
+    const keyc = await eskdf('test@test.com', 'test2test');
     try {
       eql(
         toHex(keyc.deriveChildKey('ssh', 'test')),
@@ -86,7 +91,10 @@ describe('eskdf', () => {
     } finally {
       keyc.expire();
     }
-    keyc = await eskdf('test@test.com', 'test2test');
+  });
+
+  it.serial('protocol names', async () => {
+    const keyc = await eskdf('test@test.com', 'test2test');
     try {
       eql(keyc.deriveChildKey('ssh', 'acct').length, 32);
       eql(keyc.deriveChildKey('tor', 'acct').length, 32);

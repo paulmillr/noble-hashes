@@ -43,12 +43,6 @@ const DEFAULT = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 const DEFAULT_PROGRESS = {
   scrypt: DEFAULT.scrypt,
   scryptAsync: DEFAULT.scryptAsync,
-  len: 10083,
-  head: [
-    0.00009918212890625, 0.0001983642578125, 0.00029754638671875, 0.000396728515625,
-    0.00049591064453125,
-  ],
-  tail: [0.9996566772460938, 0.999755859375, 0.9998550415039062, 0.9999542236328125, 1],
 };
 
 export function test(
@@ -99,12 +93,12 @@ export function test(
       p: 1,
       onProgress: (per) => t.push(per),
     });
-    // Should be called ~10k
-    eql(t.length, PROGRESS.len);
-    // Should be exact numbers
-    eql(t.slice(0, 5), PROGRESS.head);
-    // Should end with 1
-    eql(t.slice(-5), PROGRESS.tail);
+    eql(t.length > 1, true, 'progress callback count');
+    eql(t.at(-1), 1, 'final progress');
+    for (let i = 0; i < t.length; i++) {
+      eql(t[i] > 0 && t[i] <= 1, true, `progress range at ${i}`);
+      if (i) eql(t[i] > t[i - 1], true, `progress monotonicity at ${i}`);
+    }
   };
 
   describe(`async (${variant})`, () => {

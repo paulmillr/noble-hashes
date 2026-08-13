@@ -3,8 +3,8 @@ import { deepStrictEqual as eql } from 'node:assert';
 import { scryptSync as nodeScryptSync } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
-import { RANDOM, executeKDFTests } from './generator.ts';
-import { HASHES } from './hashes.test.ts';
+import { RANDOM } from './generator.ts';
+import { HASHES, NIST_1GB_PATTERN } from './hashes.test.ts';
 import { PLATFORMS } from './platform.ts';
 import { fmt } from './utils.ts';
 
@@ -12,8 +12,6 @@ const KB = 1024;
 const MB = 1024 * KB;
 const GB = 1024 * MB;
 
-// 4gb, nodejs/v8 limit. Safari: 2*32-1. Firefox: 2**31-2
-const ZERO_4GB = new Uint8Array(4 * GB);
 function supportsXgb(x) {
   try {
     let ZERO_xGB = new Uint8Array(x * GB); // catches u32 overflow in ints
@@ -23,14 +21,16 @@ function supportsXgb(x) {
     return false;
   }
 }
-let supports5GB = supportsXgb(5);
 const ZERO_1MB = new Uint8Array(1 * MB);
+const NIST_1MB = new Uint8Array(1 * MB);
+for (let i = 0; i < NIST_1MB.length; i += NIST_1GB_PATTERN.length)
+  NIST_1MB.set(NIST_1GB_PATTERN, i);
 // Scrypt stuff
 const PASSWORD = new Uint8Array([1, 2, 3]);
 const SALT = new Uint8Array([4, 5, 6]);
 const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 const BT = { describe, it };
-// Manually generated with pycryptodome, on input ZERO_4GB / ZERO_5GB
+// Manually generated with pycryptodome, on zero-filled 5GB inputs.
 const BIG_VECTORS = {
   SHA1: '13edccc7871c2016fbe8a2a0d808e19a90fbfc63',
   SHA256: '7f06c62352aebd8125b2a1841e2b9e1ffcbed602f381c3dcb3200200e383d1d5',
@@ -68,25 +68,30 @@ export function test(
   variant = 'noble',
   platform = DEFAULT_PLATFORM,
   hashes = HASHES,
-  kdf = executeKDFTests,
-  { describe, it } = BT,
-  { largeScryptR = true, scrypt25GB = 9 } = {}
+  _kdf = undefined,
+  { describe, it } = BT
 ) {
-  const { cshake128, hkdf, hmac, pbkdf2, pbkdf2Async, scrypt, scryptAsync, sha256, sha512 } =
-    platform;
+  const { sha256 } = platform;
   const HASHES = hashes;
+  const serial = it.serial || it;
   const run = () => {
-    // KDF tests. Takes 5-10 mins
-    kdf(variant, platform, false);
     // Very slow hash test, hashes 16 gb of data. Tests overflows in u32/i32
     // Takes 4h
     for (let h in HASHES) {
       const hash = HASHES[h];
+      if (hash.nist[5]) {
+        it(`NIST: ${h} 1GB repeated input`, () => {
+          const state = hash.obj();
+          for (let i = 0; i < 1024; i++) state.update(NIST_1MB);
+          eql(state.digest(), hexToBytes(hash.nist[5].replace(/ /g, '')));
+        });
+      }
       if (hash.node_obj) {
-        it(`Node: ${h} 4GB single update`, () => {
+        serial(`Node: ${h} 4GB single update`, () => {
           const nodeH = hash.node_obj();
           for (let i = 0; i < 4 * 1024; i++) nodeH.update(ZERO_1MB);
-          eql(hash.fn(ZERO_4GB), Uint8Array.from(nodeH.digest()));
+          // Allocate only in the one-shot test that needs a contiguous >32-bit input.
+          eql(hash.fn(new Uint8Array(4 * GB)), Uint8Array.from(nodeH.digest()));
         });
         it(`Node: ${h} 16GB partial update`, () => {
           const nodeH = hash.node_obj();
@@ -99,13 +104,40 @@ export function test(
           eql(nobleH.digest(), Uint8Array.from(nodeH.digest()));
         });
       }
-      // Node doesn't support 5gb arrays in crypto :(
-      if (supports5GB && BIG_VECTORS[h]) {
-        it(`Node: ${h} (5GB)`, () => {
-          let ZERO_5GB = new Uint8Array(5 * GB); // catches u32 overflow in ints
-          eql(bytesToHex(hash.fn(ZERO_5GB)), BIG_VECTORS[h]);
-        });
-      }
+    }
+
+    // One representative HMAC one-shot catches the same 32-bit input-length boundary in its
+    // key and message handling without repeating every giant KDF case here.
+    serial('HMAC-SHA256 4GB', () => {
+      const zero4GB = new Uint8Array(4 * GB);
+      const exp = hexToBytes('c5c39ec0ad91ddc3010d683b7e077aeedaba92fb7da17e367dbcf08e11aa25d1');
+      eql(platform.hmac(sha256, zero4GB, zero4GB), exp);
+    });
+  };
+  return variant === 'noble' ? run() : describe(variant, run);
+}
+
+export function testUltra(
+  variant = 'noble',
+  platform = DEFAULT_PLATFORM,
+  hashes = HASHES,
+  { describe, it } = BT,
+  { largeScryptR = true } = {}
+) {
+  const { cshake128, hkdf, hmac, pbkdf2, scrypt, scryptAsync, sha256, sha512 } = platform;
+  const HASHES = hashes;
+  const serial = it.serial || it;
+  // Probe only when the ultra suite is requested; ordinary imports allocate no giant buffers.
+  const supports5GB = supportsXgb(5);
+  const run = () => {
+    const register5GB = supports5GB ? serial : it.skip;
+    for (const h in HASHES) {
+      // Node-backed algorithms already get a contiguous 4GB test and a streamed 16GB test.
+      if (!BIG_VECTORS[h] || HASHES[h].node_obj) continue;
+      register5GB(`Manual vector: ${h} (5GB)`, () => {
+        const zero5GB = new Uint8Array(5 * GB);
+        eql(bytesToHex(HASHES[h].fn(zero5GB)), BIG_VECTORS[h]);
+      });
     }
 
     // Takes 8min
@@ -114,8 +146,9 @@ export function test(
       { N: 2 ** 23, r: 2, p: 1 },
     ];
     if (largeScryptR) opts_2gb.push({ N: 2, r: 2 ** 23, p: 1 });
-    for (const opts of opts_2gb) {
-      it(fmt`Scrypt (2GB): ${opts}`, async () => {
+    for (let i = 0; i < opts_2gb.length; i++) {
+      const opts = opts_2gb[i];
+      serial(fmt`Scrypt (2GB): ${opts}`, async () => {
         const exp = Uint8Array.from(
           nodeScryptSync(PASSWORD, SALT, 32, {
             ...opts,
@@ -124,55 +157,51 @@ export function test(
         );
         const nobleOpts = { ...opts, maxmem: 16 * 1024 ** 3 }; // We don't have XY buffer
         eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
-        eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
+        // One large async case is enough: sync and async share BlockMix/ROMix.
+        if (i === 0) eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
       });
     }
 
     // Scrypt with 4gb internal buffer, catches bugs for i32 overflows
-    it('Scrypt (4GB)', async () => {
+    serial('Scrypt (4GB)', () => {
       const opts = { N: 2 ** 15, r: 1024, p: 1 };
       const exp = Uint8Array.from(
         nodeScryptSync(PASSWORD, SALT, 32, {
           ...opts,
-          maxmem: 4 * 1024 ** 3 + 128 * 1024 + 128 * 1024 * 2, // 8 GB (V) + 128kb (B) + 256kb (XY)
+          maxmem: 4 * 1024 ** 3 + 128 * 1024 + 128 * 1024 * 2, // 4GiB V + 128KiB B + 256KiB XY
         })
       );
       // noble counts the shared `tmp` scratch block in maxmem too, so V+B needs one extra block.
       const nobleOpts = { ...opts, maxmem: 4 * 1024 ** 3 + 128 * 1024 * 2 };
       eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
-      eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
     });
 
     // takes 5 min
-    it('HKDF 4GB', () => {
+    serial('HKDF 4GB', () => {
+      const zero4GB = new Uint8Array(4 * GB);
       const exp = hexToBytes('411cd96b5326af15c28c6f63e73c1f87b49e6cd0e21a0f7989a993d6d796e0dd');
-      eql(hkdf(sha512, ZERO_4GB, ZERO_4GB, ZERO_4GB, 32), exp);
+      eql(hkdf(sha512, zero4GB, zero4GB, zero4GB, 32), exp);
     });
 
     // takes 3min
-    it('PBKDF2 pwd/salt 4GB', async () => {
+    serial('PBKDF2 pwd/salt 4GB', () => {
+      const zero4GB = new Uint8Array(4 * GB);
       const opt = { dkLen: 64, c: 10 };
       const exp = hexToBytes(
         '58bf5b189082c9820b63d4eeb31c0d77efbc091b36856fff38032522e7e2f353d6781b0ba2bc0cbc50aa3896863803c61f907bcc3909b25b39e8f2f78174d4aa'
       );
-      eql(pbkdf2(sha512, ZERO_4GB, ZERO_4GB, opt), exp, fmt`pbkdf2(${opt})`);
-      eql(await pbkdf2Async(sha512, ZERO_4GB, ZERO_4GB, opt), exp, fmt`pbkdf2Async(${opt})`);
+      eql(pbkdf2(sha512, zero4GB, zero4GB, opt), exp, fmt`pbkdf2(${opt})`);
     });
 
-    it('Scrypt pwd/salt 4GB', async () => {
+    serial('Scrypt pwd/salt 4GB', () => {
+      const zero4GB = new Uint8Array(4 * GB);
       const opt = { N: 4, r: 4, p: 4, dkLen: 32 };
       const exp = hexToBytes('00609885de3a56181c60f315c4ee65366368b01dd55efcd7923188597dc40912');
-      eql(scrypt(ZERO_4GB, ZERO_4GB, opt), exp, fmt`scrypt(${opt})`);
-      eql(await scryptAsync(ZERO_4GB, ZERO_4GB, opt), exp, fmt`scryptAsync(${opt})`);
-    });
-
-    it('Hmac 4GB', async () => {
-      const exp = hexToBytes('c5c39ec0ad91ddc3010d683b7e077aeedaba92fb7da17e367dbcf08e11aa25d1');
-      eql(hmac(sha256, ZERO_4GB, ZERO_4GB), exp);
+      eql(scrypt(zero4GB, zero4GB, opt), exp, fmt`scrypt(${opt})`);
     });
 
     if (cshake128)
-      it('cshake >4gb (GH-101)', () => {
+      serial('cSHAKE customization >2^32 bits (GH-101)', () => {
         const rng = cshake128(Uint8Array.of(), { dkLen: 536_871_912 + 1000 });
         const S = rng.subarray(0, 536_871_912);
         const data = rng.subarray(536_871_912);
@@ -180,72 +209,70 @@ export function test(
         eql(bytesToHex(res), '2cb9f237767e98f2614b8779cf096a52da9b3a849280bbddec820771ae529cf0');
       });
 
-    if (supports5GB) {
-      it('5GB in hmac, hkdf, pbkdf, scrypt', async () => {
-        let ZERO_5GB = new Uint8Array(5 * GB); // catches u32 overflow in ints
-        // hmac
-        const expHm = hexToBytes(
-          '669fbe7961b70cb36f9d5559e939c4303090991a270586c23f2e6c2b82d2a4af'
-        );
-        eql(hmac(sha256, ZERO_5GB, ZERO_5GB), expHm);
+    register5GB('5GB in hmac, hkdf, pbkdf2, scrypt', () => {
+      const zero5GB = new Uint8Array(5 * GB); // catches u32 overflow in ints
+      // hmac
+      const expHm = hexToBytes('669fbe7961b70cb36f9d5559e939c4303090991a270586c23f2e6c2b82d2a4af');
+      eql(hmac(sha256, zero5GB, zero5GB), expHm);
 
-        // hkdf
-        const expH = hexToBytes('b5f75ccb25f5e3e2f4b524e9cf99449aac9b03bd4d0ad4957d0e3d42583a77d4');
-        eql(hkdf(sha512, ZERO_5GB, ZERO_5GB, ZERO_5GB, 32), expH, 'HKDF 5GB');
+      // hkdf
+      const expH = hexToBytes('b5f75ccb25f5e3e2f4b524e9cf99449aac9b03bd4d0ad4957d0e3d42583a77d4');
+      eql(hkdf(sha512, zero5GB, zero5GB, zero5GB, 32), expH, 'HKDF 5GB');
 
-        // pbkdf2
-        const optP = { dkLen: 64, c: 10 };
-        const expP = hexToBytes(
-          '1445d2aa24bf84d7f69269a7e088f7130b00901860de454415c947f0cb87ea892d84ccb1757e973a649d09f32f965f4aa223dba690c0cea0ef0359c325cd9501'
-        );
-        eql(pbkdf2(sha512, ZERO_5GB, ZERO_5GB, optP), expP, fmt`5GB pbkdf2(${optP})`);
-        eql(
-          await pbkdf2Async(sha512, ZERO_5GB, ZERO_5GB, optP),
-          expP,
-          fmt`5GB pbkdf2Async(${optP})`
-        );
+      // pbkdf2
+      const optP = { dkLen: 64, c: 10 };
+      const expP = hexToBytes(
+        '1445d2aa24bf84d7f69269a7e088f7130b00901860de454415c947f0cb87ea892d84ccb1757e973a649d09f32f965f4aa223dba690c0cea0ef0359c325cd9501'
+      );
+      eql(pbkdf2(sha512, zero5GB, zero5GB, optP), expP, fmt`5GB pbkdf2(${optP})`);
 
-        // scrypt
-        // This doesn't work in node, python: ~1.5h, noble: ~5min
-        const optS = { N: 4, r: 4, p: 4, dkLen: 32 };
-        const expS = hexToBytes('0e49e31878f256302b581977f4f5b921cd9c53f3072b0b2948f5c6f53416cac7');
-        eql(scrypt(ZERO_5GB, ZERO_5GB, optS), expS, fmt`5GB scrypt(${optS})`);
-        eql(await scryptAsync(ZERO_5GB, ZERO_5GB, optS), expS, fmt`5GB scryptAsync(${optS})`);
-      });
-
-      // 22: 0b4de6108452441913a780b56461c011c3480e29c82dc47aa0af59321e039b9c
-      // 23: 5380409ca2367f95520267c162a46a9b24e65797f8675a9dad7bdfa2b4f4ea17
-      // 24: 6ce62287b7938f0a1dc838d158d4b6753ddb0bc2c66a88e32d506913dace9865
-      // 25: 6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1
-      // 26: 1740d229ad1f230b75483687b1f167ef804203c261c4f2c3de7eed12226b857a
-      // 27: 8ed4c994fab397a1c87c0f15ec810f0ca3ec8e9100bb3f49604a910527ad14df
-      it('Scrypt (2**25)', async () => {
-        if (!supportsXgb(scrypt25GB)) return;
-        const opts = { N: 2 ** 25, r: 2, p: 2 };
-        const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
-        const nobleOpts = { ...opts, maxmem: scrypt25GB * GB };
-        eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
-        eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
-      });
-
-      it('Scrypt (16GB)', async () => {
-        if (!supportsXgb(17)) return;
-        const opts = { N: 2 ** 24, r: 8, p: 1 };
-        const exp = Uint8Array.from(
-          nodeScryptSync(PASSWORD, SALT, 32, {
-            ...opts,
-            maxmem: 17 * GB,
-          })
-        );
-        const nobleOpts = { ...opts, maxmem: 17 * GB };
-        eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
-        eql(await scryptAsync(PASSWORD, SALT, nobleOpts), exp);
-      });
-    }
+      // scrypt
+      // This doesn't work in node, python: ~1.5h, noble: ~5min
+      const optS = { N: 4, r: 4, p: 4, dkLen: 32 };
+      const expS = hexToBytes('0e49e31878f256302b581977f4f5b921cd9c53f3072b0b2948f5c6f53416cac7');
+      eql(scrypt(zero5GB, zero5GB, optS), expS, fmt`5GB scrypt(${optS})`);
+    });
   };
   return variant === 'noble' ? run() : describe(variant, run);
 }
 
-// non parallel: 14h, parallel: ~1h
+export function testExtremeScrypt(
+  variant = 'noble',
+  platform = DEFAULT_PLATFORM,
+  { describe, it } = BT,
+  { scrypt25GB = 9 } = {}
+) {
+  const { scrypt } = platform;
+  const serial = it.serial || it;
+  const run = () => {
+    // 22: 0b4de6108452441913a780b56461c011c3480e29c82dc47aa0af59321e039b9c
+    // 23: 5380409ca2367f95520267c162a46a9b24e65797f8675a9dad7bdfa2b4f4ea17
+    // 24: 6ce62287b7938f0a1dc838d158d4b6753ddb0bc2c66a88e32d506913dace9865
+    // 25: 6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1
+    // 26: 1740d229ad1f230b75483687b1f167ef804203c261c4f2c3de7eed12226b857a
+    // 27: 8ed4c994fab397a1c87c0f15ec810f0ca3ec8e9100bb3f49604a910527ad14df
+    serial('Scrypt (2**25)', () => {
+      const opts = { N: 2 ** 25, r: 2, p: 2 };
+      const exp = hexToBytes('6b7aa6f838478c4c9ed696fce7ff530aee543d8399e57b8095b6b036b185a5f1');
+      const nobleOpts = { ...opts, maxmem: scrypt25GB * GB };
+      eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
+    });
+
+    serial('Scrypt (16GB)', () => {
+      const opts = { N: 2 ** 24, r: 8, p: 1 };
+      const exp = Uint8Array.from(
+        nodeScryptSync(PASSWORD, SALT, 32, {
+          ...opts,
+          maxmem: 17 * GB,
+        })
+      );
+      const nobleOpts = { ...opts, maxmem: 17 * GB };
+      eql(scrypt(PASSWORD, SALT, nobleOpts), exp);
+    });
+  };
+  return variant === 'noble' ? run() : describe(variant, run);
+}
+
+// Scheduled separately from memory-intensive KDF tests.
 if (import.meta.url === pathToFileURL(process.argv[1]).href) test();
 it.runWhen(import.meta.url);

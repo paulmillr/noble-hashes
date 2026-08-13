@@ -85,9 +85,9 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
   }
   if (kt128) {
     HASHES.kt128 = {
-      small: () => kt128.create(Uint8Array.of()),
+      small: () => kt128.create(),
       big: () =>
-        kt128.create(new Uint8Array([11, 22, 33]), {
+        kt128.create({
           personalization: new Uint8Array([44, 55, 66]),
           dkLen: 256,
         }),

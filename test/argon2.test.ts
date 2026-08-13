@@ -2,19 +2,24 @@ import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { pathToFileURL } from 'node:url';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
+import { ARGON2_CASES, argon2Inputs } from './argon2-cases.ts';
 import { PLATFORMS } from './platform.ts';
+import { json } from './utils.ts';
 
-// Some vectors are very slow and are ran in slow-big.test.js.
+// The largest vectors are exercised by slow-ultra.test.ts.
 
+const argon2_vectors = json('./vectors/argon2.json');
 const BT = { describe, it };
-export function test(variant: string, platform: any, { describe, it } = BT) {
+const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
+function run(variant: string, platform: any, { describe, it } = BT, isSlow = false) {
   const { argon2d, argon2dAsync, argon2i, argon2iAsync, argon2id, argon2idAsync } = platform;
   const asyncMap = new Map([
     [argon2i, argon2iAsync],
     [argon2d, argon2dAsync],
     [argon2id, argon2idAsync],
   ]);
-  let VECTORS = [
+  const register = isSlow ? it.serial || it : it;
+  const VECTORS = [
     {
       fn: argon2i,
       password: 'password',
@@ -299,58 +304,109 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       salt: 'diffsalt',
       exp: 'bdf32b05ccc42eb15d58fd19b1f856b113da1e9a5874fdcc544308565aa8141c',
     },
+    {
+      fn: argon2i,
+      version: 0x10,
+      t: 2,
+      m: 262144,
+      p: 1,
+      password: 'password',
+      salt: 'somesalt',
+      exp: '3e689aaa3d28a77cf2bc72a51ac53166761751182f1ee292e3f677a7da4c2467',
+    },
+    {
+      fn: argon2i,
+      t: 2,
+      m: 262144,
+      p: 1,
+      password: 'password',
+      salt: 'somesalt',
+      exp: '296dbae80b807cdceaad44ae741b506f14db0959267b183b118f9b24229bc7cb',
+    },
+    {
+      fn: argon2i,
+      t: 2,
+      m: 1048576,
+      p: 1,
+      password: 'password',
+      salt: 'somesalt',
+      exp: 'd1587aca0922c3b5d6a83edab31bee3c4ebaef342ed6127a55d19b2351ad1f41',
+    },
+    {
+      fn: argon2i,
+      version: 0x10,
+      t: 2,
+      m: 1048576,
+      p: 1,
+      password: 'password',
+      salt: 'somesalt',
+      exp: '9690ec55d28d3ed32562f2e73ea62b02b018757643a2ae6e79528459de8106e9',
+    },
+    {
+      fn: argon2i,
+      t: 1,
+      m: 65536,
+      p: 1,
+      password: 'password',
+      salt: 'somesalt',
+      exp: 'd168075c4d985e13ebeae560cf8b94c3b5d8a16c51916b6f4ac2da3ac11bbecf',
+    },
   ];
 
-  describe(`Argon2 (${variant})`, () => {
-    it('types', async () => {
-      const opt = {
-        t: 2,
-        m: 256,
-        p: 1,
-      };
-      argon2id('password', 'diffsalt', opt);
-      throws(() => argon2id('password', 'diffsalt', { ...opt, p: 0 }));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, p: true }));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, t: 0 }));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, t: true }));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, onProgress: true }));
-      throws(() => argon2id('password', 'salt', opt));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, maxmem: 1 }));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, maxmem: true }));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, dkLen: 0 }));
-      // RFC 9106 3.1: tag length must be >= 4 bytes
-      throws(() => argon2id('password', 'diffsalt', { ...opt, dkLen: 3 }));
-      eql(argon2id('password', 'diffsalt', { ...opt, dkLen: 4 }).length, 4);
-      throws(() => argon2id('password', 'diffsalt', { ...opt, version: 0x12 }));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, m: true }));
-      throws(() => argon2id('password', 'diffsalt', { ...opt, m: 1 }));
-      for (const k of ['dkLen', 'm', 't', 'p', 'version', 'onProgress'])
-        throws(() => argon2id('password', 'diffsalt', { ...opt, [k]: null } as any));
-      throws(() => argon2id('password', true, opt));
-      throws(() => argon2id(true, 'diffsalt', opt));
-      const t = [];
-      await argon2idAsync('password', 'diffsalt', {
-        ...opt,
-        onProgress: (p) => {
-          t.push(p);
-        },
+  describe(`Argon2${isSlow ? ' slow' : ''} (${variant})`, () => {
+    if (!isSlow)
+      it('types', async () => {
+        const opt = {
+          t: 2,
+          m: 256,
+          p: 1,
+        };
+        argon2id('password', 'diffsalt', opt);
+        throws(() => argon2id('password', 'diffsalt', { ...opt, p: 0 }));
+        throws(() => argon2id('password', 'diffsalt', { ...opt, p: true }));
+        throws(() => argon2id('password', 'diffsalt', { ...opt, t: 0 }));
+        throws(() => argon2id('password', 'diffsalt', { ...opt, t: true }));
+        throws(() => argon2id('password', 'diffsalt', { ...opt, onProgress: true }));
+        throws(() => argon2id('password', 'salt', opt), /"salt" must be of length 8/);
+        throws(() => argon2id('password', 'diffsalt', { ...opt, maxmem: 1 }));
+        throws(() => argon2id('password', 'diffsalt', { ...opt, maxmem: true }));
+        throws(() => argon2id('password', 'diffsalt', { ...opt, dkLen: 0 }));
+        // RFC 9106 3.1: tag length must be >= 4 bytes
+        throws(() => argon2id('password', 'diffsalt', { ...opt, dkLen: 3 }));
+        eql(argon2id('password', 'diffsalt', { ...opt, dkLen: 4 }).length, 4);
+        throws(() => argon2id('password', 'diffsalt', { ...opt, version: 0x12 }));
+        throws(() => argon2id('password', 'diffsalt', { ...opt, m: true }));
+        throws(() => argon2id('password', 'diffsalt', { ...opt, m: 1 }));
+        for (const k of ['dkLen', 'm', 't', 'p', 'version', 'onProgress'])
+          throws(() => argon2id('password', 'diffsalt', { ...opt, [k]: null } as any));
+        throws(() => argon2id('password', true, opt));
+        throws(() => argon2id(true, 'diffsalt', opt));
+        const t = [];
+        await argon2idAsync('password', 'diffsalt', {
+          ...opt,
+          onProgress: (p) => {
+            t.push(p);
+          },
+        });
+        eql(t.length !== 0, true);
       });
-      eql(t.length !== 0, true);
-    });
-    it('maxmem is enforced in bytes', () => {
-      throws(
-        () => argon2id('password', 'saltsalt', { t: 1, m: 8, p: 1, dkLen: 32, maxmem: 3000 }),
-        {
-          message: '"maxmem" limit was hit: memUsed(mP*1024)=8192, maxmem=3000',
-        }
-      );
-    });
+    if (!isSlow)
+      it('maxmem is enforced in bytes', () => {
+        throws(
+          () => argon2id('password', 'saltsalt', { t: 1, m: 8, p: 1, dkLen: 32, maxmem: 3000 }),
+          {
+            message: '"maxmem" limit was hit: memUsed(mP*1024)=8192, maxmem=3000',
+          }
+        );
+      });
     for (let i = 0; i < VECTORS.length; i++) {
       const v = VECTORS[i];
+      const isLarge = v.m >= 65536;
+      if (isLarge !== isSlow) continue;
       const ver = v.version || 0x13;
       const str = `m=${v.m}, t=${v.t}, p=${v.p}`;
       const title = `${v.fn.name}/v${ver} ${str} (#${i})`;
-      it(title, () => {
+      register(title, () => {
         const res = bytesToHex(
           v.fn(v.password, v.salt, {
             m: v.m,
@@ -363,22 +419,59 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
         );
         eql(res, v.exp);
       });
-      it(`${title}: async`, async () => {
-        const asyncFn = asyncMap.get(v.fn);
-        const res = bytesToHex(
-          await asyncFn(v.password, v.salt, {
-            m: v.m,
-            p: v.p,
-            t: v.t,
-            key: v.secret,
-            personalization: v.data,
-            version: v.version,
-          })
-        );
-        eql(res, v.exp);
-      });
+      // Sync and async share the memory-filling core. Normal CI checks parity for every cheap
+      // vector; the ultra suite keeps one 64MiB async case without doubling every large vector.
+      if (!isSlow || (v.fn === argon2i && ver === 0x13 && v.m === 65536 && v.t === 1))
+        register(`${title}: async`, async () => {
+          const asyncFn = asyncMap.get(v.fn);
+          const res = bytesToHex(
+            await asyncFn(v.password, v.salt, {
+              m: v.m,
+              p: v.p,
+              t: v.t,
+              key: v.secret,
+              personalization: v.data,
+              version: v.version,
+            })
+          );
+          eql(res, v.exp);
+        });
     }
   });
+
+  if (!isSlow)
+    describe(`Argon2 cross-test (${variant})`, () => {
+      const algos = { argon2d, argon2i, argon2id };
+      const versions = { '0x10': 0x10, '0x13': 0x13 };
+      let currIndex = 0;
+      for (const algoName in algos) {
+        const fn = algos[algoName];
+        for (const verName in versions) {
+          const version = versions[verName];
+          for (const c of ARGON2_CASES) {
+            const { password, salt, secret } = argon2Inputs(c);
+            const opts = { version, p: c.p, m: c.m, t: c.t, dkLen: c.dkLen, key: secret };
+            const jopts = JSON.stringify(opts);
+            const vi = currIndex++;
+            it(`#${vi} ${algoName}(${password.length}, ${salt.length}, opts=${jopts})`, () => {
+              eql(bytesToHex(fn(password, salt, opts)), argon2_vectors[vi]);
+            });
+          }
+        }
+      }
+      if (currIndex !== argon2_vectors.length)
+        throw new Error(
+          `argon2 vector count mismatch: cases=${currIndex}, vectors=${argon2_vectors.length}`
+        );
+    });
+}
+
+export function test(variant: string, platform: any, bt = BT) {
+  run(variant, platform, bt, false);
+}
+
+export function testSlow(variant = 'noble', platform = DEFAULT_PLATFORM, bt = BT) {
+  run(variant, platform, bt, true);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href)

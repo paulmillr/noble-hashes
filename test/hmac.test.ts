@@ -150,20 +150,11 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       throws(() => hmac(sha256, undefined, msg), `hmac(key=undefined)`);
       throws(() => hmac(sha256, key), `hmac(msg=undefined)`);
       throws(() => hmac.create(sha256, undefined), `hmac.create(key=undefined)`);
-      // for (const t of TYPE_TEST.opts) {
-      //   throws(() => hmac(sha256, 'key', 'salt', t), fmt`hmac(opt=${t})`);
-      //   throws(() => hmac.create(sha256, 'key', t), fmt`hmac.create(opt=${t})`);
-      // }
       for (const t of TYPE_TEST.hash) throws(() => hmac(t, key, msg), fmt`hmac(hash=${t})`);
       eql(
         hmac(sha512, SPACE.bytes, SPACE.bytes),
         hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
         'hmac.SPACE (full form bytes)'
-      );
-      eql(
-        hmac(sha512, SPACE.bytes, SPACE.bytes),
-        hmac.create(sha512, SPACE.bytes).update(SPACE.bytes).digest(),
-        'hmac.SPACE (full form stingr)'
       );
     });
     it('digestInto keeps oversized output tails untouched', () => {
@@ -223,11 +214,9 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       fakeHash.create = () => {
         return {};
       };
-      fakeHash.update = () => {};
-      // no fakeHash.update()
       fakeHash.blockLen = 32;
       fakeHash.outputLen = 32;
-      throws(() => hmac(fakeHash, EMPTY.str, EMPTY.str));
+      throws(() => hmac(fakeHash, EMPTY.bytes, EMPTY.bytes), /expected Hash instance/);
     });
   });
 }

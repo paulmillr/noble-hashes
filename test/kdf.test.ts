@@ -3,11 +3,60 @@ import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import * as nodeCrypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { hexToBytes, utf8ToBytes } from '../src/utils.ts';
-import { executeKDFTests } from './generator.ts';
+import { executeKDFTests, RANDOM } from './generator.ts';
 import { PLATFORMS } from './platform.ts';
 import { EMPTY, fmt, SPACE, TYPE_TEST } from './utils.ts';
 
 const BT = { describe, it };
+
+// Count all bytes passed to a hash, including work through cloned states. This makes long-key
+// prehash regressions deterministic instead of relying on wall-clock timings.
+function trackedHash(hash) {
+  const counter = { bytes: 0 };
+  class TrackedHash {
+    constructor(inner = hash.create()) {
+      this.inner = inner;
+      this.blockLen = inner.blockLen;
+      this.outputLen = inner.outputLen;
+      this.canXOF = false;
+    }
+    update(buf) {
+      counter.bytes += buf.length;
+      this.inner.update(buf);
+      return this;
+    }
+    digestInto(out) {
+      this.inner.digestInto(out);
+    }
+    digest() {
+      return this.inner.digest();
+    }
+    destroy() {
+      this.inner.destroy();
+    }
+    _cloneInto(to) {
+      to ||= new TrackedHash();
+      this.inner._cloneInto(to.inner);
+      return to;
+    }
+    clone() {
+      return this._cloneInto();
+    }
+  }
+  const fn = (msg) => new TrackedHash().update(msg).digest();
+  fn.outputLen = hash.outputLen;
+  fn.blockLen = hash.blockLen;
+  fn.canXOF = false;
+  fn.create = () => new TrackedHash();
+  return { hash: fn, counter };
+}
+
+async function pbkdf2Work(fn, sha256, password, salt, c) {
+  const tracked = trackedHash(sha256);
+  const output = await fn(tracked.hash, password, salt, { c, dkLen: 32, asyncTick: 1 });
+  return { bytes: tracked.counter.bytes, output };
+}
+
 export function test(variant: string, platform: any, { describe, it } = BT) {
   const { expand, hkdf, extract: hkdf_extract } = platform;
   const {
@@ -217,8 +266,6 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
         throws(() => hkdf(sha256, e, t, e, 32), fmt`hkdf.salt(${t})`);
         throws(() => hkdf(sha256, e, e, t, 32), fmt`hkdf.info(${t})`);
       }
-      // for (const t of TYPE_TEST.opts)
-      //   throws(() => hkdf(sha256, '', '', '', 32, t), fmt`hkdf.opt(${t})`);
       throws(() => hkdf(sha256, undefined, e, e, 32), 'hkdf.ikm===undefined');
       for (const t of TYPE_TEST.hash) throws(() => hkdf(t, e, e, e, 32), fmt`hkdf(hash=${t})`);
     });
@@ -252,6 +299,20 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
         }
       }
     });
+    if (variant === 'noble')
+      it('HKDF input work is additive', () => {
+        const work = (len) => {
+          const tracked = trackedHash(sha256);
+          const input = RANDOM.subarray(0, len);
+          const output = hkdf(tracked.hash, input, input, input, 32);
+          return { bytes: tracked.counter.bytes, output };
+        };
+        const small = work(1024);
+        const large = work(64 * 1024);
+        const input = RANDOM.subarray(0, 64 * 1024);
+        eql(large.output, hkdf(sha256, input, input, input, 32));
+        eql(large.bytes - small.bytes, 3 * (64 * 1024 - 1024));
+      });
   });
 
   describe(`scrypt (${variant})`, () => {
@@ -304,10 +365,10 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
         await rejects(() => scryptAsync('pwd', t, opt), fmt`scrypt(salt=${t})`);
         throws(() => scrypt(t, 'salt', opt), fmt`scrypt(pwd=${t})`);
         await rejects(() => scryptAsync(t, 'salt', opt), fmt`scrypt(pwd=${t})`);
-        for (const t of TYPE_TEST.opts) {
-          throws(() => scrypt('pwd', 'salt', t), fmt`scrypt(opt=${t})`);
-          await rejects(() => scryptAsync('pwd', 'salt', t), fmt`scrypt(opt=${t})`);
-        }
+      }
+      for (const t of TYPE_TEST.opts) {
+        throws(() => scrypt('pwd', 'salt', t), fmt`scrypt(opt=${t})`);
+        await rejects(() => scryptAsync('pwd', 'salt', t), fmt`scrypt(opt=${t})`);
       }
       eql(scrypt(SPACE.str, SPACE.str, opt), scrypt(SPACE.bytes, SPACE.bytes, opt), 'scrypt.SPACE');
       eql(scrypt(EMPTY.str, EMPTY.str, opt), scrypt(EMPTY.bytes, EMPTY.bytes, opt), 'scrypt.EMPTY');
@@ -331,27 +392,35 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       });
     });
 
-    it('Scrypt cross-test with node:crypto (odd r/p combos)', async () => {
+    it('Scrypt boundary cross-test with node:crypto', async () => {
       // Runtimes without node:crypto scryptSync skip silently.
       if (typeof nodeCrypto.scryptSync !== 'function') return;
-      // RFC 7914 vectors only exercise r=1 and r=8; odd r stresses BlockMix's
-      // even/odd output interleave, p>1 the lane loop, odd dkLen truncation,
-      // and N=2 is the smallest accepted cost.
-      const combos = [
-        [2, 1, 1, 32],
-        [4, 2, 1, 64],
-        [16, 3, 1, 17],
-        [16, 5, 2, 31],
-        [64, 3, 3, 40],
-        [1024, 2, 2, 33],
+      // RFC vectors cover common parameters. These cases cheaply exercise smallest N, odd
+      // BlockMix interleaving, large r/p independently, output-block edges and input lengths.
+      const cases = [
+        { N: 2, r: 1, p: 1, dkLen: 1, pwdLen: 0, saltLen: 0 },
+        { N: 4, r: 2, p: 1, dkLen: 64, pwdLen: 3, saltLen: 4 },
+        { N: 16, r: 3, p: 1, dkLen: 17, pwdLen: 3, saltLen: 4 },
+        { N: 16, r: 5, p: 2, dkLen: 31, pwdLen: 3, saltLen: 4 },
+        { N: 64, r: 3, p: 3, dkLen: 40, pwdLen: 3, saltLen: 4 },
+        { N: 1024, r: 2, p: 2, dkLen: 33, pwdLen: 3, saltLen: 4 },
+        { N: 4, r: 2, p: 1, dkLen: 31, pwdLen: 1, saltLen: 8 },
+        { N: 16, r: 3, p: 2, dkLen: 32, pwdLen: 64, saltLen: 32 },
+        { N: 32, r: 8, p: 3, dkLen: 33, pwdLen: 1023, saltLen: 1 },
+        { N: 4, r: 127, p: 1, dkLen: 64, pwdLen: 32, saltLen: 1023 },
+        { N: 4, r: 1, p: 127, dkLen: 65, pwdLen: 1023, saltLen: 32 },
+        { N: 2, r: 1023, p: 1, dkLen: 127, pwdLen: 256, saltLen: 64 },
+        { N: 2, r: 1, p: 1023, dkLen: 128, pwdLen: 64, saltLen: 256 },
+        { N: 512, r: 8, p: 1, dkLen: 1023, pwdLen: 1023, saltLen: 1023 },
       ];
-      for (const [N, r, p, dkLen] of combos) {
-        const opts = { N, r, p, dkLen };
+      for (const { pwdLen, saltLen, ...opts } of cases) {
+        const pwd = RANDOM.subarray(0, pwdLen);
+        const salt = RANDOM.subarray(RANDOM.length - saltLen);
         const node = Uint8Array.from(
-          nodeCrypto.scryptSync('pwd', 'salt', dkLen, { N, r, p, maxmem: 16 * 1024 * 1024 })
+          nodeCrypto.scryptSync(pwd, salt, opts.dkLen, { ...opts, maxmem: 64 * 1024 * 1024 })
         );
-        eql(scrypt('pwd', 'salt', opts), node, `scrypt N=${N} r=${r} p=${p} dkLen=${dkLen}`);
-        eql(await scryptAsync('pwd', 'salt', opts), node);
+        eql(scrypt(pwd, salt, opts), node, fmt`scrypt(${opts})`);
+        eql(await scryptAsync(pwd, salt, opts), node, fmt`scryptAsync(${opts})`);
       }
     });
 
@@ -421,6 +490,29 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
         eql(await pbkdf2Async(t.hash, t.P, t.S, t), exp);
       });
     }
+
+    if (variant === 'noble')
+      for (const [name, fn] of [
+        ['pbkdf2', pbkdf2],
+        ['pbkdf2Async', pbkdf2Async],
+      ]) {
+        it(`${name} prehashes a long password once`, async () => {
+          const shortPassword = RANDOM.subarray(0, 32);
+          const longPassword = RANDOM.subarray(0, 64 * 1024);
+          const salt = RANDOM.subarray(128 * 1024, 129 * 1024);
+          const shortOne = await pbkdf2Work(fn, sha256, shortPassword, salt, 1);
+          const shortMany = await pbkdf2Work(fn, sha256, shortPassword, salt, 128);
+          const longOne = await pbkdf2Work(fn, sha256, longPassword, salt, 1);
+          const longMany = await pbkdf2Work(fn, sha256, longPassword, salt, 128);
+
+          eql(shortMany.output, pbkdf2(sha256, shortPassword, salt, { c: 128, dkLen: 32 }));
+          eql(longMany.output, pbkdf2(sha256, longPassword, salt, { c: 128, dkLen: 32 }));
+          // Iteration work must not depend on password length.
+          eql(longMany.bytes - longOne.bytes, shortMany.bytes - shortOne.bytes);
+          // A key larger than blockLen is hashed once during HMAC setup.
+          eql(longOne.bytes - shortOne.bytes, longPassword.length);
+        });
+      }
 
     it('PBKDF2Async absorbs byte salt before yielding', async () => {
       const cases = [

@@ -357,3 +357,5 @@ describe('noble-hashes only', () => {
     );
   });
 });
+
+it.runWhen(import.meta.url);

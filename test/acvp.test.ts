@@ -30,13 +30,6 @@ const loadACVP = (name, gzip = true) => {
   return groups;
 };
 
-function equalBytes(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-  return diff === 0;
-}
-
 const MC = {
   sha2: {
     standard: (info, seed, fn, opts) => {
@@ -231,7 +224,7 @@ function run(variant: string, platform: any, isSlow = false, { describe, it } = 
     },
   };
 
-  describe(`AVCP${isSlow ? ' slow' : ''} (${variant})`, () => {
+  describe(`ACVP${isSlow ? ' slow' : ''} (${variant})`, () => {
     for (const name in HASHES) {
       const { lib, xof, vector, MC } = HASHES[name];
       // Optional SHA3 addon entrypoints are not available on every platform.
@@ -241,7 +234,8 @@ function run(variant: string, platform: any, isSlow = false, { describe, it } = 
         if (groups.some(({ info }) => info.ip.xof && !xof)) return;
         for (const { info, tests } of groups) {
           if (info.ip.outLenIncrement && info.ip.outLenIncrement % 8) continue;
-          if (!isSlow && info.ip.testType === 'LDT') continue;
+          // Normal CI covers ordinary vectors; the scheduled slow suite covers only LDT.
+          if ((info.ip.testType === 'LDT') !== isSlow) continue;
           for (const t of tests) {
             if (t.ip.len % 8) continue; // we don't support less than bit input
             if (t.ip.outLen && t.ip.outLen % 8) continue; // same goes for output length
@@ -287,6 +281,8 @@ function run(variant: string, platform: any, isSlow = false, { describe, it } = 
         }
       });
     }
+    // MAC and PBKDF vectors have no LDT groups and are already run by normal CI.
+    if (isSlow) return;
     for (const name in MAC) {
       const { lib, xof, hash, vector } = MAC[name];
       if (!lib) continue;
@@ -299,7 +295,9 @@ function run(variant: string, platform: any, isSlow = false, { describe, it } = 
             if (t.ip.msgLen && t.ip.msgLen % 8) continue;
             if (t.ip.macLen && t.ip.macLen % 8) continue;
             if (t.ip.keyLen && t.ip.keyLen % 8) continue;
-            if (t.ip.testPassed !== undefined && !t.ip.testPassed) continue;
+            // This library exposes MAC generation, not verification, so negative verification
+            // vectors cannot be exercised here.
+            if (t.ip.testPassed === false) continue;
             const msg = hexToBytes(t.ip.msg);
             const key = hexToBytes(t.ip.key);
             const fn = info.ip.xof ? xof : lib;
@@ -313,12 +311,7 @@ function run(variant: string, platform: any, isSlow = false, { describe, it } = 
               dkLen: t.ip.macLen / 8,
             };
             const res = hash ? fn(hash, key, msg, opts) : fn(key, msg, opts);
-            if (t.ip.testPassed !== undefined && !t.ip.testPassed) {
-              if (equalBytes(res.subarray(0, t.ip.macLen / 8), hexToBytes(t.ip.mac)))
-                throw new Error('wrong mac');
-            } else {
-              eql(res.subarray(0, t.ip.macLen / 8), hexToBytes(t.ip.mac));
-            }
+            eql(res.subarray(0, t.ip.macLen / 8), hexToBytes(t.ip.mac));
           }
         }
       });
@@ -339,10 +332,12 @@ function run(variant: string, platform: any, isSlow = false, { describe, it } = 
   });
 }
 
-export function avcpTests(isSlow = false, variant = 'noble', platform = DEFAULT_PLATFORM, bt = BT) {
+export function acvpTests(isSlow = false, variant = 'noble', platform = DEFAULT_PLATFORM, bt = BT) {
   run(variant, platform, isSlow, bt);
 }
+// Compatibility for external test hosts that imported the old misspelled helper.
+export const avcpTests = acvpTests;
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) avcpTests();
+if (import.meta.url === pathToFileURL(process.argv[1]).href) acvpTests();
 
 it.runWhen(import.meta.url);

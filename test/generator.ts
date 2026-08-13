@@ -1,7 +1,6 @@
 import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql } from 'node:assert';
 import * as cryp from 'node:crypto';
-import { concatBytes } from '../src/utils.ts';
 import { fmt } from './utils.ts';
 
 const { createHash, hkdfSync, pbkdf2Sync } = cryp;
@@ -9,10 +8,12 @@ const { createHash, hkdfSync, pbkdf2Sync } = cryp;
 const isBunDeno = Boolean(process.versions.bun || process.versions.deno);
 // Random data, by using hash we trying to achieve uniform distribution of each byte values
 let start = new Uint8Array([1, 2, 3, 4, 5]);
-let RANDOM = Uint8Array.of();
+const RANDOM = new Uint8Array(1024 * 1024);
 // Fill with random data (1MB)
-for (let i = 0; i < 32 * 1024; i++)
-  RANDOM = concatBytes(RANDOM, (start = createHash('sha256').update(start).digest()));
+for (let offset = 0; offset < RANDOM.length; offset += 32) {
+  start = createHash('sha256').update(start).digest();
+  RANDOM.set(start, offset);
+}
 
 const optional = (val) => [undefined, ...val];
 const integer = (start, end) => Array.from({ length: end - start }, (_, j) => start + j);
@@ -45,7 +46,8 @@ const gen = (obj) => {
 const BT = { describe, it };
 function executeKDFTests(variant, platform, limit = true, { describe, it } = BT) {
   const { hkdf } = platform;
-  const { blake2b, blake2s, pbkdf2, pbkdf2Async, sha256, sha512, sha3_256, sha3_512 } = platform;
+  const { blake2b, blake2s, pbkdf2, pbkdf2Async, ripemd160, sha256, sha512, sha3_256, sha3_512 } =
+    platform;
   function genl(params) {
     const cases = gen(params);
     return limit ? cases.slice(0, 64) : cases;
@@ -82,7 +84,6 @@ function executeKDFTests(variant, platform, limit = true, { describe, it } = BT)
         salt: bytes(0, 1024),
       });
       for (let c of cases) {
-        if (c.dkLen === 0) continue; // Disallowed in node v22
         const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'sha256'));
         const opt = { c: c.c, dkLen: c.dkLen };
         eql(pbkdf2(sha256, c.pwd, c.salt, opt), exp, fmt`pbkdf2(sha256, ${opt})`);
@@ -145,29 +146,29 @@ function executeKDFTests(variant, platform, limit = true, { describe, it } = BT)
       }
     });
 
-    // Disable because openssl 3 deprecated ripemd
-    // it('PBKDF2(ripemd160) generator', async () => {
-    //   const cases = genl({
-    //     c: integer(1, 1024),
-    //     dkLen: integer(0, 1024),
-    //     pwd: bytes(0, 1024),
-    //     salt: bytes(0, 1024),
-    //   });
-    //   for (let c of cases) {
-    //     const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
-    //     const opt = { c: c.c, dkLen: c.dkLen };
-    //     deepStrictEqual(
-    //       pbkdf2(ripemd160, c.pwd, c.salt, opt),
-    //       exp,
-    //       fmt`pbkdf2(ripemd160, ${opt})`
-    //     );
-    //     deepStrictEqual(
-    //       await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
-    //       exp,
-    //       fmt`pbkdf2Async(ripemd160, ${opt})`
-    //     );
-    //   }
-    // });
+    it('PBKDF2(ripemd160) generator', async () => {
+      try {
+        pbkdf2Sync(Uint8Array.of(), Uint8Array.of(), 1, 1, 'ripemd160');
+      } catch {
+        return; // OpenSSL builds can disable RIPEMD-160.
+      }
+      const cases = genl({
+        c: integer(1, 1024),
+        dkLen: integer(1, 1024),
+        pwd: bytes(0, 1024),
+        salt: bytes(0, 1024),
+      });
+      for (const c of cases) {
+        const exp = Uint8Array.from(pbkdf2Sync(c.pwd, c.salt, c.c, c.dkLen, 'ripemd160'));
+        const opt = { c: c.c, dkLen: c.dkLen };
+        eql(pbkdf2(ripemd160, c.pwd, c.salt, opt), exp, fmt`pbkdf2(ripemd160, ${opt})`);
+        eql(
+          await pbkdf2Async(ripemd160, c.pwd, c.salt, opt),
+          exp,
+          fmt`pbkdf2Async(ripemd160, ${opt})`
+        );
+      }
+    });
 
     it('PBKDF2(blake2s) generator', async () => {
       if (isBunDeno) return; // skip

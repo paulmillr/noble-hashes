@@ -8,6 +8,9 @@ import { PLATFORMS } from './platform.ts';
 import { fmt, repeat, TYPE_TEST } from './utils.ts';
 
 // NIST test vectors (https://www.di-mgt.com.au/sha_testvectors.html)
+const NIST_1GB_PATTERN = utf8ToBytes(
+  'abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno'
+);
 const NIST_VECTORS = [
   [1, utf8ToBytes('abc')],
   [1, utf8ToBytes('')],
@@ -19,8 +22,6 @@ const NIST_VECTORS = [
     ),
   ],
   [1000000, utf8ToBytes('a')],
-  // Very slow, 1GB
-  //[16777216, utf8ToBytes('abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno')],
 ].map(([r, buf]) => [r, buf, repeat(buf, r)]);
 
 // Main idea: write 16k buffer with different values then test sliding window against node-js implementation
@@ -455,6 +456,20 @@ function getHashes(platform: any) {
   return HASHES;
 }
 const HASHES = getHashes(DEFAULT_PLATFORM);
+const HASHES_WITH_OPTS = new Set([
+  'SHAKE128',
+  'SHAKE256',
+  'KT128',
+  'TURBOSHAKE128',
+  'TURBOSHAKE256',
+  'BLAKE224',
+  'BLAKE256',
+  'BLAKE384',
+  'BLAKE512',
+  'BLAKE2s',
+  'BLAKE2b',
+  'BLAKE3',
+]);
 
 let BUF_768 = new Uint8Array(256 * 3);
 // Fill with random data
@@ -470,7 +485,6 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, it } =
       // All hashes has NIST vectors, some generated manually
       it('NIST vectors', () => {
         for (let i = 0; i < NIST_VECTORS.length; i++) {
-          if (!NIST_VECTORS[i]) continue;
           const [r, rbuf, buf] = NIST_VECTORS[i];
           eql(
             hash.obj().update(buf).digest(),
@@ -561,7 +575,8 @@ function init(variant = 'noble', platform = DEFAULT_PLATFORM, { describe, it } =
         }
         throws(() => hash.fn(), `compact(undefined)`);
         throws(() => hash.obj().update(undefined).digest(), `full(undefined)`);
-        for (const t of TYPE_TEST.opts) throws(() => hash.fn(undefined, t), fmt`opt(${t})`);
+        if (HASHES_WITH_OPTS.has(h))
+          for (const t of TYPE_TEST.opts) throws(() => hash.fn(Uint8Array.of(), t), fmt`opt(${t})`);
       });
 
       it('clone', () => {
@@ -664,7 +679,7 @@ describe('sha512/t IV derivation (FIPS 180-4 5.3.6)', () => {
   });
 });
 
-export { getHashes, HASHES, init, NIST_VECTORS };
+export { getHashes, HASHES, init, NIST_1GB_PATTERN, NIST_VECTORS };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) init();
 it.runWhen(import.meta.url);

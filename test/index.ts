@@ -8,7 +8,8 @@ const platform = PLATFORMS[variant] || Object.values(PLATFORMS)[0];
 async function run() {
   const [
     { init },
-    { avcpTests },
+    { acvpTests },
+    { test: argon2 },
     { test: blake },
     { test: hmac },
     { test: keccak },
@@ -16,11 +17,13 @@ async function run() {
   ] = await Promise.all([
     import('./hashes.test.ts'),
     import('./acvp.test.ts'),
+    import('./argon2.test.ts'),
     import('./blake.test.ts'),
     import('./hmac.test.ts'),
     import('./keccak.test.ts'),
     import('./async.test.ts'),
   ]);
+  // The final four modules register their suites through top-level import side effects.
   const [{ test: kdf }, { executeKDFTests }, { test: clone }, { test: info }] = await Promise.all([
     import('./kdf.test.ts'),
     import('./generator.ts'),
@@ -32,7 +35,8 @@ async function run() {
     import('./utils.test.ts'),
   ]);
   init(variant, platform);
-  avcpTests(false, variant, platform);
+  acvpTests(false, variant, platform);
+  argon2(variant, platform);
   blake(variant, platform);
   keccak(variant, platform);
   hmac(variant, platform);

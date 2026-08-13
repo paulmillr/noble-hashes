@@ -22,10 +22,6 @@ function hexa() {
   const items = '0123456789abcdef';
   return fc.integer({ min: 0, max: 15 }).map((n) => items[n]);
 }
-function hexaString(constraints = {}) {
-  return fc.string({ ...constraints, unit: hexa() });
-}
-
 describe('utils', () => {
   const staticHexVectors = [
     { bytes: Uint8Array.from([]), hex: '' },
@@ -48,13 +44,17 @@ describe('utils', () => {
   });
   it('hexToBytes <=> bytesToHex roundtrip', () =>
     fc.assert(
-      fc.property(hexaString({ minLength: 2, maxLength: 64 }), (hex) => {
-        if (hex.length % 2 !== 0) return;
-        eql(hex, bytesToHex(hexToBytes(hex)));
-        eql(hex, bytesToHex(hexToBytes(hex.toUpperCase())));
-        if (typeof Buffer !== 'undefined')
-          eql(hexToBytes(hex), Uint8Array.from(Buffer.from(hex, 'hex')));
-      })
+      fc.property(
+        fc
+          .array(fc.tuple(hexa(), hexa()), { minLength: 1, maxLength: 32 })
+          .map((pairs) => pairs.flat().join('')),
+        (hex) => {
+          eql(hex, bytesToHex(hexToBytes(hex)));
+          eql(hex, bytesToHex(hexToBytes(hex.toUpperCase())));
+          if (typeof Buffer !== 'undefined')
+            eql(hexToBytes(hex), Uint8Array.from(Buffer.from(hex, 'hex')));
+        }
+      )
     ));
   it('concatBytes', () => {
     const a = 1;
@@ -168,7 +168,6 @@ describe('utils etc', () => {
     );
   });
   it('randomBytes', () => {
-    if (typeof crypto === 'undefined') return;
     const t = randomBytes(32);
     eql(t instanceof Uint8Array, true);
     eql(t.length, 32);
@@ -195,6 +194,11 @@ describe('utils etc', () => {
 });
 
 describe('assert', () => {
+  it('checkOpts', () => {
+    eql(u.checkOpts({ a: 1 }, { b: 2 }), { a: 1, b: 2 });
+    u.checkOpts({}, Object.create(null));
+    for (const value of TYPE_TEST.opts) throws(() => u.checkOpts({}, value));
+  });
   it('anumber', () => {
     eql(u.anumber(10), 10);
     throws(() => u.anumber(1.2));
@@ -209,7 +213,6 @@ describe('assert', () => {
     u.abytes(new Uint8Array(11), 11, 12);
     u.abytes(new Uint8Array(12), 12, 12);
     throws(() => u.abytes('test'));
-    throws(() => u.abytes(new Uint8Array(10), 11, 12));
     throws(() => u.abytes(new Uint8Array(10), 11, 12));
   });
   it('ahash', () => {

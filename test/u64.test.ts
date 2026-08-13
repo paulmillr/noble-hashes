@@ -23,16 +23,6 @@ describe('u64', () => {
     }
   });
 
-  // it('shr_big', () => {
-  //   const val = [0x01234567, 0x89abcdef];
-  //   const big = u64.toBig(...val);
-  //   for (let i = 32; i < 64; i++) {
-  //     const h = u64.shrBH(val[0], val[1], i);
-  //     const l = u64.shrBL(val[0], val[1], i);
-  //     deepStrictEqual((big >> BigInt(i)) & U64_MASK, u64.toBig(h, l));
-  //   }
-  // });
-
   it('rotr_small', () => {
     const val = [0x01234567, 0x89abcdef];
     const big = u64.toBig(...val);

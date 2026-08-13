@@ -225,9 +225,8 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
         let out = prg.randomBytes(v.output.length / 2);
         if (out.length > 0 && out[0] & 1) {
           if (out[0] & 2) prg.addEntropy(input);
-          try {
-            prg.clean();
-          } catch (e) {}
+          if (1600 - +v.capacity < 801) throws(() => prg.clean(), /rate is too low/);
+          else prg.clean();
           if (out[0] & 4) out = prg.randomBytes(v.output.length / 2);
         }
         eql(out, fromHex(v.output), `prg vector ${i} failed`);
@@ -591,7 +590,7 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       }
     });
 
-    it('various vectors for cshake, hmac, kt128, p, t', () => {
+    it('various vectors for cshake, kmac, kt128, parallelhash, tuplehash', () => {
       const GEN_VECTORS = jsonGZ('vectors/sha3-addons.json.gz').v;
 
       const tupleData = (hex) => {
@@ -620,7 +619,7 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
           tuple128: () => tuplehash128(tupleData(v.data), opt),
           tuple256: () => tuplehash256(tupleData(v.data), opt),
         };
-        if (v.fn_name === 'blake3') return;
+        if (v.fn_name === 'blake3') continue;
         const method = fn[v.fn_name];
         let err = `(${i}): ${v.fn_name}`;
         if (!method) throw new Error('invalid fn ' + v.fn_name);
