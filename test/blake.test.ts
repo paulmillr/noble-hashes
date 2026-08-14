@@ -124,6 +124,59 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       throws(() => blake256.create({ salt: new Uint8Array(100) }));
       throws(() => blake256.create({ salt: new Uint8Array(0) }));
     });
+    it('Blake1 salted family and padding-boundary vectors', () => {
+      // Generated independently with @awasm/noble's pure-JS target. These cover every BLAKE1
+      // variant and both sides of the one-block padding threshold (55 / 111 bytes).
+      const vectors = [
+        [blake224, 16, 0, '3d57ffe9a741df39288918367b3939c48f2e3524b88931fea3ee8391'],
+        [blake224, 16, 55, '303b273ef1f866952a7786a6249df2b231dd004efe3757767af95b1d'],
+        [blake224, 16, 56, '93881558011d27bb9ce8db677fe36e567271ea391cc27cda19642a25'],
+        [blake256, 16, 0, '5a763c4847d1a3ed39b15c21bb09d3d54c48cb71d4c4dc22f6f562215a45f05f'],
+        [blake256, 16, 55, '7d42f0a7714c1aa4d62b4661ee556a6b1781d240c1950e131222cca3df05935b'],
+        [blake256, 16, 56, 'db77158b0a9fc360f95d81f5e17265b3dd4942422e218ea75daef23a1c5974d0'],
+        [
+          blake384,
+          32,
+          0,
+          'b010259f92c5deeb6f28f25d82309b8ae37ca443b7c74ec0a7284c70aaf159df33800fa3da5cf206c9af5a18ba0f02f8',
+        ],
+        [
+          blake384,
+          32,
+          111,
+          'fb390bb8952641eaf1c3ef7522e9e4d9fadf6fe0abedaeadc4e95060f3368910b3c7ed2b440822fe0c882350d609093e',
+        ],
+        [
+          blake384,
+          32,
+          112,
+          'aa765e9f3476a7675f705fe59922209f881fb813f01b1483b8ed40711a4e514ea194900b1d965bc18f553d1d938da832',
+        ],
+        [
+          blake512,
+          32,
+          0,
+          '67c891f74248b6c194930b473afdae9b7eae8e74c7d26918674568fbace88f2053047aa03abde87eb01ac5a88ff729a6bbfb013a790a450db58c22b24cd7fe5b',
+        ],
+        [
+          blake512,
+          32,
+          111,
+          '862dba34ccc407d0ff8e66c53afc521ce3dd8109937ab4d0b6583077d852d89f81b4ae8c5f6da38c6f78fd6ff7305603a71b5d8476e1a312254d06e7d9ee54d9',
+        ],
+        [
+          blake512,
+          32,
+          112,
+          'eea9b09cf54c5fc7f5e9dad79ac4d7a6def1fc8e8728493c5dad9244cf995752dce009e0b0b545fc64623fb6f001f78898ee326e8f0fdac49c0f9f5a21cd7255',
+        ],
+      ] as const;
+      for (const [hash, saltLen, len, expected] of vectors) {
+        const msg = Uint8Array.from({ length: len }, (_, i) => (len + 29 * i + i * i) & 255);
+        const salt = Uint8Array.from({ length: saltLen }, (_, i) => i + 1);
+        eql(bytesToHex(hash(msg, { salt })), expected);
+      }
+    });
     it('Blake2 vectors', () => {
       const blake2_kat_vectors = json('./vectors/blake2-kat.json');
       for (const v of blake2_kat_vectors) {
@@ -325,6 +378,59 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
             dkLen: v.hash.length / 2,
           });
           eql(bytesToHex(res_derive), v.derive_key, `Blake3 ${i} (derive)`);
+        }
+      });
+
+      it('one-shot fast path', () => {
+        const lengths = [
+          0, 1, 3, 4, 31, 32, 63, 64, 65, 127, 1023, 1024, 1025, 2047, 2048, 2049, 3072, 3073, 4096,
+          4097, 8192, 8193, 16384, 31744, 102400,
+        ];
+        for (const len of lengths) {
+          for (let offset = 0; offset < 4; offset++) {
+            const backing = pattern(0xfa, len + offset + 5);
+            const msg = backing.subarray(offset, offset + len);
+            const before = msg.slice();
+            const expected = blake3.create().update(msg).digest();
+            eql(blake3(msg), expected, `len=${len}, offset=${offset}`);
+            eql(msg, before, `input mutation: len=${len}, offset=${offset}`);
+          }
+        }
+
+        const first = blake3(Uint8Array.of(1));
+        const saved = first.slice();
+        const second = blake3(Uint8Array.of(2));
+        eql(first, saved, 'returned output aliases reusable scratch');
+        eql(second, blake3.create().update(Uint8Array.of(2)).digest());
+        eql(blake3.outputLen, 32);
+        eql(blake3.blockLen, 64);
+        eql(blake3.canXOF, true);
+        eql(Object.isFrozen(blake3), true);
+
+        // Typed-array view metadata can run user code before a nonstandard view is admitted to the
+        // direct traversal. Nested hashing must leave the outer result correct.
+        let nested: Uint8Array | undefined;
+        class ReentrantBytes extends Uint8Array {
+          get byteOffset() {
+            nested = blake3(Uint8Array.of(9));
+            return super.byteOffset;
+          }
+        }
+        const reentrant = new ReentrantBytes(32);
+        reentrant.set(pattern(0xfa, 32));
+        eql(blake3(reentrant), blake3.create().update(reentrant).digest());
+        eql(nested, blake3.create().update(Uint8Array.of(9)).digest());
+
+        // Overridden view metadata must not let a subclass make the direct traversal read outside
+        // the typed array's intrinsic range. Nonstandard views retain the stateful API behavior.
+        for (const forgedLength of [-1, 64]) {
+          class ForgedLength extends Uint8Array {
+            get length() {
+              return forgedLength;
+            }
+          }
+          const forged = new ForgedLength([1, 2, 3]);
+          eql(blake3(forged), blake3.create().update(forged).digest());
         }
       });
 
