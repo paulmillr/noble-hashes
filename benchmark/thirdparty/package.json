@@ -26,7 +26,7 @@
     "scrypt-async": "2.0.1",
     "scrypt-js": "3.0.1",
     "sha3": "2.1.4",
-    "@awasm/noble": "^0.1.4",
-    "blake3-bao": "^1.3.4"
+    "@awasm/noble": "0.1.4",
+    "blake3-bao": "1.3.4"
   }
 }

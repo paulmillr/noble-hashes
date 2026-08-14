@@ -1,4 +1,4 @@
-import bench from '@paulmillr/jsbt/benchmark.js';
+import bench, { buf, section } from '@paulmillr/jsbt/benchmark.js';
 import { blake256 } from '../src/blake1.ts';
 import { blake2b } from '../src/blake2.ts';
 import { blake3 } from '../src/blake3.ts';
@@ -13,10 +13,6 @@ import { sha3_256 } from '../src/sha3.ts';
 //   63B  - unaligned, every block goes through the internal buffer (worst case)
 //   256B - small aligned chunks, fast path with per-update views
 //   4KB  - large chunks, amortized everything
-
-function buf(size: number) {
-  return new Uint8Array(size).fill(size % 251);
-}
 
 const MB = 1024 * 1024;
 const INPUT = buf(MB);
@@ -40,7 +36,7 @@ async function main() {
   };
   for (const chunkLen of [63, 256, 4096]) {
     const parts = chunks(INPUT, chunkLen);
-    console.log(`# 1MB / ${chunkLen}B chunks (${parts.length} updates)`);
+    section(`1MB / ${chunkLen}B chunks (${parts.length} updates)`);
     for (const title in hashes) {
       const hash = hashes[title as keyof typeof hashes];
       await bench(`${title} stream`, () => {
@@ -57,7 +53,6 @@ async function main() {
         return h.digest();
       });
     }
-    console.log();
   }
 }
 

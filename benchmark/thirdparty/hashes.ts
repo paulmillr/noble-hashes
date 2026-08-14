@@ -16,7 +16,7 @@ import stableHmac from '@stablelib/hmac';
 import stable256 from '@stablelib/sha256';
 import stable3 from '@stablelib/sha3';
 import { default as stable2_512, default as stable512 } from '@stablelib/sha512';
-import { blake3 as awasmJs } from '@awasm/noble/js.js';
+import { blake3 as awasmJs, ripemd160 as awasmRipemd160Js } from '@awasm/noble/js.js';
 import { blake3 as awasmWasm } from '@awasm/noble/wasm.js';
 import { blake3 as awasmWasmThreads } from '@awasm/noble/wasm_threads.js';
 import _blakehash from 'blake-hash/js.js';
@@ -139,6 +139,7 @@ const HASHES = orderLibraries({
   },
   ripemd160: {
     noble: (buf) => ripemd160(buf),
+    'awasm-js': (buf) => awasmRipemd160Js(buf),
     'crypto-browserify': (buf) => createHash('ripemd160').update(Buffer.from(buf)).digest(),
     node: (buf) => crypto_createHash('ripemd160').update(buf).digest(),
   },
@@ -170,29 +171,19 @@ async function main() {
   await blake3BaoWasm.initSimd();
   // Usage:
   //   node hashes.ts
-  //   JSBT_FILTER='blake3' node hashes.ts
-  await compare(
-    'Hashes',
-    {
-      buffer: {
-        '32B': new Uint8Array(32).fill(1),
-        '10MB': new Uint8Array(10 * 1024 * 1024).fill(2),
-      },
-    }, //
-    HASHES,
-    {
-      libraryDimensions: ['algorithm', 'library'],
-      dimensions: ['buffer', 'algorithm', 'library'],
-      bytes: ({ args }) => args[0].length,
-    }
-  );
+  //   FILTER='blake3' node hashes.ts
+  //   FILTER='library=awasm,noble;algorithm=blake3' node hashes.ts
+  await compare('Hashes', HASHES, {
+    levels: ['algorithm', 'library'],
+    sizes: ['32B', '10MB'],
+  });
 
   await main_hkdf();
 }
 
 async function main_hkdf() {
   // HKDF examples:
-  //   JSBT_FILTER='HKDF-SHA256' node hashes.ts
+  //   FILTER='HKDF-SHA256' node hashes.ts
   const [hkpassword, hksalt] = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
   const HKDF = {
     'HKDF-SHA256': {
@@ -206,9 +197,9 @@ async function main_hkdf() {
       node: (len) => hkdfSync('sha512', hkpassword, hksalt, Uint8Array.of(), len),
     },
   };
-  await compare('HKDFs', { length: { 32: 32, 64: 64, 256: 256 } }, HKDF, {
-    libraryDimensions: ['algorithm', 'library'],
-    dimensions: ['length', 'algorithm', 'library'],
+  await compare('HKDFs', HKDF, {
+    levels: ['algorithm', 'library'],
+    inputs: { length: [32, 64, 256] },
   });
 }
 

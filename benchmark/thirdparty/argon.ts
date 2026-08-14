@@ -24,18 +24,14 @@ const KDF = {
 async function main() {
   // Usage:
   //   node argon.ts
-  //   JSBT_BENCHMARK_DIMENSIONS='algorithm,iters,memory,library' node argon.ts
-  await compare(
-    'Argon',
-    {
-      iters: { 3: 3 },
-      memory: { '64MB': 64 * 1024, '128MB': 128 * 1024, '256MB': 256 * 1024, '1GB': 1 * 1024 * 1024 },
+  //   JSBT_ORDER='algorithm,iters,memory,library' node argon.ts
+  await compare('Argon', KDF, {
+    levels: ['algorithm', 'library'],
+    inputs: {
+      iters: [3],
+      memory: { '64MB': 64 * 1024, '128MB': 128 * 1024, '256MB': 256 * 1024, '1GB': 1024 * 1024 },
     },
-    KDF,
-    {
-      libraryDimensions: ['algorithm', 'library'],
-    }
-  );
+  });
 }
 
 import url from 'node:url';

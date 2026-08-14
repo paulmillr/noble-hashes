@@ -1,4 +1,4 @@
-import bench from '@paulmillr/jsbt/benchmark.js';
+import bench, { buf, section, warmup } from '@paulmillr/jsbt/benchmark.js';
 import { argon2id } from '../src/argon2.ts';
 import { blake256 } from '../src/blake1.ts';
 import { blake2b, blake2s } from '../src/blake2.ts';
@@ -12,9 +12,6 @@ import { sha256, sha512 } from '../src/sha2.ts';
 import { kmac256, kt128, kt256, turboshake128 } from '../src/sha3-addons.ts';
 import { sha3_256, sha3_512 } from '../src/sha3.ts';
 
-function buf(size) {
-  return new Uint8Array(size).fill(size % 251);
-}
 
 const buffers = [
   // { size: '16B', data: buf(16) }, // common block size
@@ -27,28 +24,27 @@ const buffers = [
 
 async function main() {
   const d = buf(32);
-  for (let i = 0; i < 1_000_000; i++) sha256(d); // warm-up
+  await warmup(() => sha256(d));
 
   // prettier-ignore
   const hashes = {
     sha256, sha512, sha3_256, sha3_512, kt128, kt256, turboshake128, blake256, blake2b, blake2s, blake3, ripemd160, md5, sha1
   };
   for (const { size, data } of buffers) {
-    console.log('# ' + size);
-    const o = size === '32B' ? {} : { bytes: data.byteLength };
+    // small inputs read better as plain per-op time than as ops/sec
+    section(size, size === '32B' ? { mode: 'time' } : { bytes: data });
     for (const title in hashes) {
       const hash = hashes[title];
-      await bench(title, () => hash(data), o);
+      await bench(title, () => hash(data));
     }
     const b32 = buf(32);
-    await bench('hmac(sha256)', () => hmac(sha256, b32, data), o);
-    await bench('hmac(sha512)', () => hmac(sha512, b32, data), o);
-    await bench('kmac256', () => kmac256(b32, data), o);
-    await bench('blake3(key)', () => blake3(data, { key: b32 }), o);
-    console.log();
+    await bench('hmac(sha256)', () => hmac(sha256, b32, data));
+    await bench('hmac(sha512)', () => hmac(sha512, b32, data));
+    await bench('kmac256', () => kmac256(b32, data));
+    await bench('blake3(key)', () => blake3(data, { key: b32 }));
   }
 
-  console.log('## KDF');
+  section('KDF');
   const pass = buf(12);
   const salt = buf(14);
   const context = buf(32);

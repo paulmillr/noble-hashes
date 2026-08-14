@@ -63,10 +63,10 @@ const SCRYPT = {
 async function main_scrypt() {
   // Usage:
   //   node scrypt.ts
-  //   JSBT_BENCHMARK_DIMENSIONS='p,r,iters,sync,library' node scrypt.ts
-  await compare(
-    'Scrypt',
-    {
+  //   JSBT_ORDER='p,r,iters,sync,library' node scrypt.ts
+  await compare('Scrypt', SCRYPT, {
+    levels: ['sync', 'library'],
+    inputs: {
       iters: {
         2: 2,
         '2^10': 2 ** 10,
@@ -74,22 +74,11 @@ async function main_scrypt() {
         '2^16': 2 ** 16,
         '2^18': 2 ** 18,
       },
-      r: { 8: 8, 4: 4, 1: 1 },
-      p: { 1: 1, 2: 2, 4: 4 },
+      r: [8, 4, 1],
+      p: [1, 2, 4],
     },
-    SCRYPT,
-    {
-      libraryDimensions: ['sync', 'library'],
-      defaults: { library: 'noble', r: 8, p: 1 },
-      iterations: ({ args }) => {
-        const iters = args[0];
-        if (iters <= 2) return 10_000;
-        if (iters <= 2 ** 10) return 1_000;
-        if (iters <= 2 ** 14) return 10;
-        return 5;
-      },
-    }
-  );
+    defaults: { library: 'noble', r: 8, p: 1 },
+  });
 }
 
 import url from 'node:url';
