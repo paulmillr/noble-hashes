@@ -3,10 +3,11 @@
  * @module
  */
 import { hmac } from './hmac.ts';
+import { pbkdf2Get, type Pbkdf2FastFactory } from './_pbkdf2.ts';
 // prettier-ignore
 import {
   ahash, anumber,
-  asyncLoop, checkOpts, clean, createView, kdfInputToBytes,
+  checkOpts, clean, createView, kdfInputToBytes, nextTick,
   type CHash,
   type Hash,
   type KDFInput,
@@ -28,12 +29,32 @@ export type Pbkdf2Opt = {
   /** Max scheduler block time in milliseconds for the async variant. */
   asyncTick?: number;
 };
+
+// Private scheduler loop. Inputs were validated by pbkdf2Init; the resume hook revalidates an
+// accelerator after scheduler yields. As elsewhere, patched built-in intrinsics are unsupported.
+async function pbkdf2AsyncLoop(
+  iters: number,
+  tick: number,
+  cb: () => void,
+  afterYield?: () => void
+) {
+  let ts = Date.now();
+  for (let i = 0; i < iters; i++) {
+    cb();
+    const diff = Date.now() - ts;
+    if (diff >= 0 && diff < tick) continue;
+    await nextTick();
+    afterYield?.();
+    ts += diff;
+  }
+}
 // Common validation and per-call state setup for sync/async functions.
 function pbkdf2Init(
   hash: TArg<CHash>,
   _password: TArg<KDFInput>,
   _salt: TArg<KDFInput>,
-  _opts: Pbkdf2Opt
+  _opts: Pbkdf2Opt,
+  isAsync: boolean
 ) {
   ahash(hash);
   const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);
@@ -54,7 +75,13 @@ function pbkdf2Init(
   const { iHash, oHash, outputLen } = hmac.create(hash, p);
   // Drive keyed hashes directly; the wrapper is only needed to initialize their HMAC midstates.
   const u = new Uint8Array(outputLen);
-  const eng = pbkdf2Engine(iHash, oHash, s, u);
+  // c=1 is intentionally the exact generic path: scrypt uses PBKDF2-HMAC-SHA256(c=1), and a
+  // feedback-round accelerator cannot help it. This also avoids scratch allocation and lookup.
+  // The factory/guard cost is larger and less stable than the saved feedback work below this
+  // conservative all-engine crossover. Async tick=0 yields every round, so its post-resume guard
+  // dominates and stays on the generic path.
+  const fast = c >= 1000 && (!isAsync || asyncTick > 0) ? pbkdf2Get(hash) : undefined;
+  const eng = pbkdf2Engine(iHash, oHash, s, u, fast);
   return { c, dkLen, asyncTick, DK, outputLen, eng };
 }
 
@@ -64,7 +91,8 @@ function pbkdf2Engine(
   iHash: TArg<Hash<any>>,
   oHash: TArg<Hash<any>>,
   salt: TArg<Uint8Array>,
-  u: TArg<Uint8Array>
+  u: TArg<Uint8Array>,
+  fastFactory?: TArg<Pbkdf2FastFactory>
 ) {
   const counter = new Uint8Array(4);
   const view = createView(counter);
@@ -73,25 +101,56 @@ function pbkdf2Engine(
   // u1() overwrites the worker before reading it. Seed from the outer midstate so a long salt
   // cannot pre-populate a tree stack that the first reset would abandon without wiping.
   const work = oHash._cloneInto();
+  const factory = fastFactory as Pbkdf2FastFactory | undefined;
+  let attempted = !factory;
+  let fast: ReturnType<Pbkdf2FastFactory>;
   const iClone = iHash._cloneInto; // Capture before mixed feedback can materialize state tuples.
   const oClone = oHash._cloneInto;
+  const disableFast = (Ti: TArg<Uint8Array>, snapshot: boolean) => {
+    if (!fast) return;
+    if (snapshot) fast.snapshot(u, Ti);
+    fast.destroy();
+    fast = undefined;
+  };
   return {
     u1: (ti: number, Ti: TArg<Uint8Array>) => {
-      view.setInt32(0, ti, false);
-      salted._cloneInto(work).update(counter).digestInto(u);
-      oHash._cloneInto(work).update(u).digestInto(u);
-      Ti.set(u.subarray(0, Ti.length));
+      try {
+        view.setInt32(0, ti, false);
+        salted._cloneInto(work).update(counter).digestInto(u);
+        oHash._cloneInto(work).update(u).digestInto(u);
+      } catch (error) {
+        // A later block can fail after keyed fast state exists; wipe it before propagating.
+        disableFast(Ti, false);
+        throw error;
+      }
+      // Delay keyed numeric-state allocation until generic U1 has completed successfully. Attempt
+      // only once: a guard-disabled async engine must not be recreated for subsequent blocks.
+      if (!attempted) {
+        attempted = true;
+        fast = factory?.(iHash, oHash);
+      }
+      if (fast && !fast.valid()) disableFast(Ti, false);
+      if (fast) fast.start(u);
+      else Ti.set(u.subarray(0, Ti.length));
     },
     // Whole `F` inner loop for the sync variant: one optimized function owns the hot loop.
     rounds: (c: number, Ti: TArg<Uint8Array>) => {
+      if (fast) return fast.rounds(c - 1);
       for (let ui = 1; ui < c; ui++) {
         iClone.call(iHash, work).update(u).digestInto(u);
         oClone.call(oHash, work).update(u).digestInto(u);
         for (let i = 0; i < Ti.length; i++) Ti[i] ^= u[i];
       }
     },
+    finish: (Ti: TArg<Uint8Array>) => fast?.finish(Ti),
+    fast: () => !!fast,
+    validate: (Ti: TArg<Uint8Array>) => {
+      if (fast && !fast.valid()) disableFast(Ti, true);
+    },
     output: (DK: TArg<Uint8Array>): TRet<Uint8Array> => {
       // Keyed templates and derived worker states are secret material.
+      fast?.destroy();
+      fast = undefined;
       iHash.destroy();
       oHash.destroy();
       salted.destroy();
@@ -128,7 +187,7 @@ export function pbkdf2(
   salt: TArg<KDFInput>,
   opts: Pbkdf2Opt
 ): TRet<Uint8Array> {
-  const { c, dkLen, DK, outputLen, eng } = pbkdf2Init(hash, password, salt, opts);
+  const { c, dkLen, DK, outputLen, eng } = pbkdf2Init(hash, password, salt, opts, false);
   // DK = T1 + T2 + ⋯ + Tdklen/hlen
   for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
     // Ti = F(Password, Salt, c, i)
@@ -140,6 +199,7 @@ export function pbkdf2(
     eng.u1(ti, Ti);
     // Uc = PRF(Password, Uc−1); Ti ^= Uc
     eng.rounds(c, Ti);
+    eng.finish(Ti);
   }
   return eng.output(DK);
 }
@@ -181,7 +241,7 @@ export async function pbkdf2Async(
   salt: TArg<KDFInput>,
   opts: Pbkdf2Opt
 ): Promise<TRet<Uint8Array>> {
-  const { c, dkLen, asyncTick, DK, outputLen, eng } = pbkdf2Init(hash, password, salt, opts);
+  const { c, dkLen, asyncTick, DK, outputLen, eng } = pbkdf2Init(hash, password, salt, opts, true);
   // DK = T1 + T2 + ⋯ + Tdklen/hlen
   for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
     // Ti = F(Password, Salt, c, i)
@@ -191,10 +251,16 @@ export async function pbkdf2Async(
     // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc
     // U1 = PRF(Password, Salt + INT_32_BE(i))
     eng.u1(ti, Ti);
-    await asyncLoop(c - 1, asyncTick, () => {
-      // Uc = PRF(Password, Uc−1)
-      eng.rounds(2, Ti); // c=2 runs exactly one PRF iteration per callback.
-    });
+    const afterYield = eng.fast() ? () => eng.validate(Ti) : undefined;
+    await pbkdf2AsyncLoop(
+      c - 1,
+      asyncTick,
+      () => eng.rounds(2, Ti), // c=2 executes exactly one feedback iteration.
+      // Revalidate after the library yields, then either continue numeric state or snapshot U/T
+      // and finish through the generic engine. Patched built-in intrinsics are unsupported.
+      afterYield
+    );
+    eng.finish(Ti);
   }
   return eng.output(DK);
 }

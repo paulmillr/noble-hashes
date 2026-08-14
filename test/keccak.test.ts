@@ -21,6 +21,77 @@ const _dirname = dirname(fileURLToPath(import.meta.url));
 const isBun = !!process.versions.bun;
 const EMPTY = Uint8Array.of();
 
+const U64_MASK = (1n << 64n) - 1n;
+const KECCAK_IOTA = [
+  0x0000000000000001n,
+  0x0000000000008082n,
+  0x800000000000808an,
+  0x8000000080008000n,
+  0x000000000000808bn,
+  0x0000000080000001n,
+  0x8000000080008081n,
+  0x8000000000008009n,
+  0x000000000000008an,
+  0x0000000000000088n,
+  0x0000000080008009n,
+  0x000000008000000an,
+  0x000000008000808bn,
+  0x800000000000008bn,
+  0x8000000000008089n,
+  0x8000000000008003n,
+  0x8000000000008002n,
+  0x8000000000000080n,
+  0x000000000000800an,
+  0x800000008000000an,
+  0x8000000080008081n,
+  0x8000000000008080n,
+  0x0000000080000001n,
+  0x8000000080008008n,
+] as const;
+// Indexed as x + 5*y, matching the lane order in FIPS 202 section 3.2.
+const KECCAK_RHO = [
+  0, 1, 62, 28, 27, 36, 44, 6, 55, 20, 3, 10, 43, 25, 39, 41, 45, 15, 21, 8, 18, 2, 61, 56, 14,
+] as const;
+
+// Deliberately independent from src/sha3.ts: BigInt lanes and direct x/y transforms
+// make this a compact specification reference for the generated split-u32 permutation.
+function keccakPReference(state: Uint32Array, rounds: number): Uint32Array {
+  const a = Array.from(
+    { length: 25 },
+    (_, i) => BigInt(state[2 * i]) | (BigInt(state[2 * i + 1]) << 32n)
+  );
+  const rotl = (v: bigint, shift: number) =>
+    shift === 0 ? v : ((v << BigInt(shift)) | (v >> BigInt(64 - shift))) & U64_MASK;
+  for (let round = 24 - rounds; round < 24; round++) {
+    const c = Array.from(
+      { length: 5 },
+      (_, x) => a[x] ^ a[x + 5] ^ a[x + 10] ^ a[x + 15] ^ a[x + 20]
+    );
+    for (let y = 0; y < 5; y++) {
+      for (let x = 0; x < 5; x++) a[x + 5 * y] ^= c[(x + 4) % 5] ^ rotl(c[(x + 1) % 5], 1);
+    }
+    const b = new Array<bigint>(25);
+    for (let y = 0; y < 5; y++) {
+      for (let x = 0; x < 5; x++) {
+        b[y + 5 * ((2 * x + 3 * y) % 5)] = rotl(a[x + 5 * y], KECCAK_RHO[x + 5 * y]);
+      }
+    }
+    for (let y = 0; y < 5; y++) {
+      for (let x = 0; x < 5; x++) {
+        const i = x + 5 * y;
+        a[i] = b[i] ^ (~b[((x + 1) % 5) + 5 * y] & b[((x + 2) % 5) + 5 * y]);
+      }
+    }
+    a[0] ^= KECCAK_IOTA[round];
+  }
+  const out = new Uint32Array(50);
+  for (let i = 0; i < 25; i++) {
+    out[2 * i] = Number(a[i] & 0xffffffffn);
+    out[2 * i + 1] = Number((a[i] >> 32n) & 0xffffffffn);
+  }
+  return out;
+}
+
 function getVectors(name) {
   const vectors = readFileSync(`${_dirname}/vectors/${name}.txt`, 'utf8').split('\n\n');
   const res = [];
@@ -286,9 +357,25 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       eql(reused.randomBytes(16), expected.randomBytes(16));
     });
 
-    it('keccakP: rounds', () => {
-      throws(() => keccakP(new Uint32Array(50), 0));
-      throws(() => keccakP(new Uint32Array(50), 25));
+    it('keccakP: validates state and rounds', () => {
+      for (const state of [new Uint32Array(49), new Uint32Array(51), new Int32Array(50), []])
+        throws(() => keccakP(state as Uint32Array));
+      for (const rounds of [-1, 0, 1.5, 25, Number.NaN, Number.POSITIVE_INFINITY])
+        throws(() => keccakP(new Uint32Array(50), rounds));
+    });
+
+    it('keccakP: generated schedule matches independent reference for every round count', () => {
+      for (let rounds = 1; rounds <= 24; rounds++) {
+        for (let sample = 0; sample < 3; sample++) {
+          const state = Uint32Array.from(
+            { length: 50 },
+            (_, i) => Math.imul(i + 1 + sample * 53, 0x9e3779b1 ^ rounds) >>> 0
+          );
+          const expected = keccakPReference(state, rounds);
+          keccakP(state, rounds);
+          eql(state, expected, `rounds=${rounds} sample=${sample}`);
+        }
+      }
     });
 
     it('Keccak padding matches byte-level pad10*1 reference', () => {

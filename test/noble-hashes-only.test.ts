@@ -3,13 +3,26 @@
 // such as awasm-noble.
 import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
-import { HashMD } from '../src/_md.ts';
+import { runInNewContext } from 'node:vm';
+import { HashMD, SHA224_IV, SHA256_IV } from '../src/_md.ts';
 import { blake256, blake512 } from '../src/blake1.ts';
-import { blake2b } from '../src/blake2.ts';
+import { _BLAKE2s, blake2b, blake2s } from '../src/blake2.ts';
 import { _BLAKE3, blake3 } from '../src/blake3.ts';
 import { expand, hkdf } from '../src/hkdf.ts';
+import { _RIPEMD160, ripemd160 } from '../src/legacy.ts';
 import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
-import { _SHA256, sha256 } from '../src/sha2.ts';
+import { _SHA256, _SHA512, sha224, sha256, sha512 } from '../src/sha2.ts';
+import {
+  Keccak,
+  keccak_224,
+  keccak_256,
+  keccak_384,
+  keccak_512,
+  sha3_224,
+  sha3_256,
+  sha3_384,
+  sha3_512,
+} from '../src/sha3.ts';
 import { copyBytes, createHasher, hexToBytes, utf8ToBytes } from '../src/utils.ts';
 
 describe('noble-hashes only', () => {
@@ -17,6 +30,567 @@ describe('noble-hashes only', () => {
     // A shared clone feedback site becomes megamorphic across state layouts and materializes the
     // get() tuple, leaving chaining state in an allocation the library cannot explicitly wipe.
     eql(Object.hasOwn(HashMD.prototype, '_cloneInto'), false);
+  });
+  it('PBKDF2-SHA2 fast feedback matches the generic stateful path', () => {
+    for (const [name, hash, Hash, outputLen, blockLen] of [
+      ['sha256', sha256, _SHA256, 32, 64],
+      ['sha512', sha512, _SHA512, 64, 128],
+    ] as const) {
+      const generic = createHasher(() => new Hash());
+      for (const passwordLen of [blockLen - 1, blockLen + 1]) {
+        const password = Uint8Array.from(
+          { length: passwordLen },
+          (_, i) => (i * 17 + passwordLen) & 255
+        );
+        for (const saltLen of [blockLen - 1, blockLen + 1]) {
+          const salt = Uint8Array.from({ length: saltLen }, (_, i) => (i * 29 + saltLen) & 255);
+          for (const c of [999, 1000, 1001]) {
+            for (const dkLen of [1, outputLen, outputLen + 1, outputLen * 2 + 1]) {
+              const opts = { c, dkLen };
+              eql(
+                pbkdf2(hash, password, salt, opts),
+                pbkdf2(generic, password, salt, opts),
+                `${name}: p=${passwordLen}, s=${saltLen}, c=${c}, dk=${dkLen}`
+              );
+            }
+          }
+        }
+      }
+    }
+  });
+  it('PBKDF2-SHA2 fast feedback uses disjoint async state', async () => {
+    for (const [hash, outputLen] of [
+      [sha256, 32],
+      [sha512, 64],
+    ] as const) {
+      const jobs = Array.from({ length: 16 }, (_, i) => {
+        const password = Uint8Array.from({ length: i + 1 }, (_, j) => (i * 31 + j) & 255);
+        const salt = Uint8Array.from({ length: 2 * i + 1 }, (_, j) => (i * 13 + j) & 255);
+        const opts = {
+          c: 1000 + (i % 7),
+          dkLen: 1 + ((i * 19) % (3 * outputLen)),
+          asyncTick: 1,
+        };
+        return Promise.all([
+          pbkdf2Async(hash, password, salt, opts),
+          Promise.resolve(pbkdf2(hash, password, salt, opts)),
+        ]);
+      });
+      for (const [actual, expected] of await Promise.all(jobs)) eql(actual, expected);
+    }
+  });
+  it('PBKDF2-SHA2 falls back after a hash prototype change', () => {
+    for (const [hash, Hash, outputLen] of [
+      [sha256, _SHA256, 32],
+      [sha512, _SHA512, 64],
+    ] as const) {
+      const parent = Object.getPrototypeOf(Hash.prototype) as any;
+      const process = parent.process;
+      let calls = 0;
+      Object.defineProperty(Hash.prototype, 'process', {
+        configurable: true,
+        value(view: DataView, offset: number) {
+          calls++;
+          return process.call(this, view, offset);
+        },
+      });
+      try {
+        const opts = { c: 1000, dkLen: outputLen + 1 };
+        const password = Uint8Array.of(1, 2, 3);
+        const salt = Uint8Array.of(4, 5, 6);
+        const generic = createHasher(() => new Hash());
+        eql(pbkdf2(hash, password, salt, opts), pbkdf2(generic, password, salt, opts));
+        eql(calls > 40, true, 'stateful process was bypassed after prototype mutation');
+      } finally {
+        delete (Hash.prototype as any).process;
+      }
+    }
+  });
+  it('SHA224/256 short one-shot paths match stateful hashing', () => {
+    const hashes = [sha224, sha256];
+    const lengths = [0, 1, 3, 4, 31, 32, 52, 54, 55, 56, 63, 64, 65, 111, 112, 119, 120, 127];
+    for (const hash of hashes) {
+      for (const len of lengths) {
+        for (let offset = 0; offset < 4; offset++) {
+          const backing = Uint8Array.from(
+            { length: len + offset + 5 },
+            (_, i) => (len + 29 * i) & 255
+          );
+          const msg = backing.subarray(offset, offset + len);
+          const before = msg.slice();
+          eql(hash(msg), hash.create().update(msg).digest(), `len=${len}, offset=${offset}`);
+          eql(msg, before, `input mutation: len=${len}, offset=${offset}`);
+        }
+      }
+
+      const first = hash(Uint8Array.of(1));
+      const saved = first.slice();
+      eql(hash(Uint8Array.of(2)), hash.create().update(Uint8Array.of(2)).digest());
+      eql(first, saved, 'returned output aliases reusable scratch');
+      eql(
+        hash(Buffer.from([1, 2, 3])),
+        hash
+          .create()
+          .update(Buffer.from([1, 2, 3]))
+          .digest()
+      );
+      const crossRealm = runInNewContext('Uint8Array.from([1, 2, 3])');
+      eql(hash(crossRealm), hash.create().update(crossRealm).digest());
+      eql(Object.isFrozen(hash), true);
+      eql(hash.length, 2);
+      eql(hash.blockLen, 64);
+      eql(hash.outputLen, hash === sha224 ? 28 : 32);
+      eql(hash.canXOF, false);
+    }
+
+    let nested: Uint8Array | undefined;
+    class ReentrantBytes extends Uint8Array {
+      get length() {
+        nested = sha256(Uint8Array.of(9));
+        return super.length;
+      }
+    }
+    const reentrant = new ReentrantBytes(32);
+    reentrant.set(Uint8Array.from({ length: 32 }, (_, i) => i));
+    eql(sha256(reentrant), sha256.create().update(reentrant).digest());
+    eql(nested, sha256.create().update(Uint8Array.of(9)).digest());
+
+    // The old wrapper constructed its state (and copied the mutable exported IV) before update()
+    // could invoke input getters. Exotic inputs remain stateful to preserve that ordering.
+    const savedReentrantIV = SHA256_IV[0];
+    class IVMutatingLength extends Uint8Array {
+      get length() {
+        SHA256_IV[0] = savedReentrantIV ^ 1;
+        return super.length;
+      }
+    }
+    const ivMutating = new IVMutatingLength([1, 2, 3]);
+    try {
+      SHA256_IV[0] = savedReentrantIV;
+      const expected = sha256.create().update(ivMutating).digest();
+      SHA256_IV[0] = savedReentrantIV;
+      eql(sha256(ivMutating), expected, 'constructor-before-input-access ordering');
+    } finally {
+      SHA256_IV[0] = savedReentrantIV;
+    }
+
+    // Even an otherwise ordinary view can shadow metadata with an own getter. It must take the
+    // stateful path before that getter runs, for the same constructor/IV ordering guarantee.
+    const ownLength = Uint8Array.of(1, 2, 3);
+    Object.defineProperty(ownLength, 'length', {
+      get() {
+        SHA256_IV[0] = savedReentrantIV ^ 1;
+        return 3;
+      },
+    });
+    try {
+      SHA256_IV[0] = savedReentrantIV;
+      const expected = sha256.create().update(ownLength).digest();
+      SHA256_IV[0] = savedReentrantIV;
+      eql(sha256(ownLength), expected, 'own metadata constructor ordering');
+    } finally {
+      SHA256_IV[0] = savedReentrantIV;
+    }
+
+    // A Proxy can report Uint8Array.prototype while failing ArrayBuffer.isView(), and numeric
+    // property traps can reenter hashing while the outer call is reading message bytes. Keep
+    // proxies on the stateful path so they cannot alias the direct path's leased schedule.
+    let proxyNested: Uint8Array | undefined;
+    const proxyTarget = Uint8Array.from({ length: 32 }, (_, i) => i);
+    const proxy = new Proxy(proxyTarget, {
+      get(target, prop) {
+        if (typeof prop === 'string' && /^\d+$/.test(prop))
+          proxyNested = sha256.create().update(Uint8Array.of(9)).digest();
+        if (prop === 'length') return target.length;
+        return Reflect.get(target, prop, target);
+      },
+    });
+    eql(sha256(proxy), sha256.create().update(proxy).digest());
+    eql(proxyNested, sha256.create().update(Uint8Array.of(9)).digest());
+
+    // A non-byte typed array can have Uint8Array.prototype forged onto it. Check its intrinsic
+    // typed-array brand before direct byte loads; the existing validator keeps it stateful.
+    const forgedBrand = new Int8Array([1, -1, 3, 4, 5]);
+    Object.setPrototypeOf(forgedBrand, Uint8Array.prototype);
+    eql(
+      sha256(forgedBrand as Uint8Array),
+      sha256
+        .create()
+        .update(forgedBrand as Uint8Array)
+        .digest()
+    );
+
+    // Full-block subclass metadata affects the stateful DataView traversal. The optimized wrapper
+    // must detect forged intrinsic slots and preserve either the stateful digest or its error.
+    class ForgedOffset extends Uint8Array {
+      get byteOffset() {
+        return super.byteOffset + 1;
+      }
+    }
+    const forgedOffset = new ForgedOffset(64);
+    let directError: unknown;
+    let statefulError: unknown;
+    try {
+      sha256(forgedOffset);
+    } catch (error) {
+      directError = error;
+    }
+    try {
+      sha256.create().update(forgedOffset).digest();
+    } catch (error) {
+      statefulError = error;
+    }
+    eql((directError as Error)?.constructor, (statefulError as Error)?.constructor);
+    eql((directError as Error)?.message, (statefulError as Error)?.message);
+
+    // Overridden lengths retain the pre-existing stateful behavior instead of controlling the
+    // direct padding traversal.
+    for (const forgedLength of [-1, 54, 64]) {
+      class ForgedLength extends Uint8Array {
+        get length() {
+          return forgedLength;
+        }
+      }
+      const forged = new ForgedLength([1, 2, 3]);
+      if (forgedLength === 64) {
+        throws(() => sha256(forged), RangeError);
+        throws(() => sha256.create().update(forged).digest(), RangeError);
+      } else eql(sha256(forged), sha256.create().update(forged).digest());
+    }
+    for (const [hash, IV] of [
+      [sha224, SHA224_IV],
+      [sha256, SHA256_IV],
+    ] as const) {
+      const savedIV = IV[0];
+      try {
+        IV[0] ^= 1;
+        const msg = Uint8Array.of(1, 2, 3);
+        eql(hash(msg), hash.create().update(msg).digest(), 'mutable exported IV');
+      } finally {
+        IV[0] = savedIV;
+      }
+    }
+    throws(() => sha256({} as Uint8Array));
+    eql(sha256(Uint8Array.of(1)), sha256.create().update(Uint8Array.of(1)).digest());
+  });
+  it('SHA3/Keccak short one-shot paths match stateful hashing', () => {
+    const hashes = [
+      [sha3_224, 144, 28],
+      [sha3_256, 136, 32],
+      [sha3_384, 104, 48],
+      [sha3_512, 72, 64],
+      [keccak_224, 144, 28],
+      [keccak_256, 136, 32],
+      [keccak_384, 104, 48],
+      [keccak_512, 72, 64],
+    ] as const;
+    for (const [hash, blockLen, outputLen] of hashes) {
+      const lengths = [0, 1, 3, 4, 31, 32, blockLen - 1, blockLen, blockLen + 1];
+      for (const len of lengths) {
+        for (let offset = 0; offset < 4; offset++) {
+          const backing = Uint8Array.from(
+            { length: len + offset + 5 },
+            (_, i) => (len + 29 * i) & 255
+          );
+          const msg = backing.subarray(offset, offset + len);
+          const before = msg.slice();
+          eql(hash(msg), hash.create().update(msg).digest(), `len=${len}, offset=${offset}`);
+          eql(msg, before, `input mutation: len=${len}, offset=${offset}`);
+        }
+      }
+      eql(hash.blockLen, blockLen);
+      eql(hash.outputLen, outputLen);
+      eql(hash.canXOF, false);
+      eql(Object.isFrozen(hash), true);
+      eql(hash.length, 2);
+    }
+
+    const first = sha3_256(Uint8Array.of(1));
+    const saved = first.slice();
+    eql(sha3_256(Uint8Array.of(2)), sha3_256.create().update(Uint8Array.of(2)).digest());
+    eql(first, saved, 'returned output aliases reusable scratch');
+    const buffer = Buffer.from([1, 2, 3]);
+    eql(sha3_256(buffer), sha3_256.create().update(buffer).digest());
+    const crossRealm = runInNewContext('Uint8Array.from([1, 2, 3])');
+    eql(sha3_256(crossRealm), sha3_256.create().update(crossRealm).digest());
+
+    const ownLength = Uint8Array.of(1, 2, 3);
+    Object.defineProperty(ownLength, 'length', { get: () => 3 });
+    eql(sha3_256(ownLength), sha3_256.create().update(ownLength).digest());
+    const forgedBrand = new Int8Array([1, -1, 3, 4, 5]);
+    Object.setPrototypeOf(forgedBrand, Uint8Array.prototype);
+    eql(
+      sha3_256(forgedBrand as Uint8Array),
+      sha3_256
+        .create()
+        .update(forgedBrand as Uint8Array)
+        .digest()
+    );
+
+    const update = Keccak.prototype.update;
+    let updateCalls = 0;
+    Object.defineProperty(Keccak.prototype, 'update', {
+      configurable: true,
+      value(this: Keccak, msg: Uint8Array) {
+        updateCalls++;
+        return update.call(this, msg);
+      },
+    });
+    try {
+      sha3_256(Uint8Array.of(1, 2, 3));
+      eql(updateCalls, 0, 'plain short input did not use the direct path');
+      sha3_256(new Uint8Array(136));
+      eql(updateCalls, 1, 'long input did not use the stateful path');
+      sha3_256(Buffer.from([1, 2, 3]));
+      eql(updateCalls, 2, 'Buffer input did not use the stateful path');
+    } finally {
+      Object.defineProperty(Keccak.prototype, 'update', { configurable: true, value: update });
+    }
+
+    const NativeUint8Array = Uint8Array;
+    const outer = Uint8Array.from({ length: 32 }, (_, i) => i * 7);
+    const inner = Uint8Array.of(7, 8, 9);
+    const expectedOuter = sha3_256.create().update(outer).digest();
+    const expectedInner = sha3_256.create().update(inner).digest();
+    let nested: Uint8Array | undefined;
+    let entered = false;
+    class ReentrantOutput extends NativeUint8Array {
+      constructor(length: number) {
+        super(length);
+        if (!entered && length === 32) {
+          entered = true;
+          nested = sha3_256(inner);
+        }
+      }
+    }
+    try {
+      (globalThis as any).Uint8Array = ReentrantOutput;
+      eql(NativeUint8Array.from(sha3_256(outer)), expectedOuter);
+      eql(NativeUint8Array.from(nested!), expectedInner);
+    } finally {
+      (globalThis as any).Uint8Array = NativeUint8Array;
+    }
+    eql(sha3_256(outer), expectedOuter, 'shared state was not restored after reentry');
+    class ThrowingOutput extends NativeUint8Array {
+      constructor(length: number) {
+        super(length);
+        if (length === 32) throw new Error('forced output failure');
+      }
+    }
+    try {
+      (globalThis as any).Uint8Array = ThrowingOutput;
+      throws(() => sha3_256(outer), /forced output failure/);
+    } finally {
+      (globalThis as any).Uint8Array = NativeUint8Array;
+    }
+    eql(sha3_256(outer), expectedOuter, 'shared state was not restored after an exception');
+    throws(() => sha3_256({} as Uint8Array));
+  });
+  it('BLAKE2s default short one-shot path matches stateful hashing', () => {
+    for (let len = 0; len <= 70; len++) {
+      for (let offset = 0; offset < 4; offset++) {
+        const backing = Uint8Array.from(
+          { length: len + offset + 5 },
+          (_, i) => (len + 29 * i) & 255
+        );
+        const msg = backing.subarray(offset, offset + len);
+        const before = msg.slice();
+        eql(blake2s(msg), blake2s.create().update(msg).digest(), `len=${len}, offset=${offset}`);
+        eql(msg, before, `input mutation: len=${len}, offset=${offset}`);
+      }
+    }
+    const msg = Uint8Array.of(1, 2, 3);
+    eql(blake2s(msg, {}), blake2s.create({}).update(msg).digest());
+    const first = blake2s(Uint8Array.of(1));
+    const saved = first.slice();
+    eql(blake2s(Uint8Array.of(2)), blake2s.create().update(Uint8Array.of(2)).digest());
+    eql(first, saved, 'returned output aliases reusable scratch');
+    const buffer = Buffer.from(msg);
+    eql(blake2s(buffer), blake2s.create().update(buffer).digest());
+    const crossRealm = runInNewContext('Uint8Array.from([1, 2, 3])');
+    eql(blake2s(crossRealm), blake2s.create().update(crossRealm).digest());
+    eql(blake2s.blockLen, 64);
+    eql(blake2s.outputLen, 32);
+    eql(blake2s.canXOF, false);
+    eql(Object.isFrozen(blake2s), true);
+    eql(blake2s.length, 2);
+
+    const ownLength = Uint8Array.of(1, 2, 3);
+    Object.defineProperty(ownLength, 'length', { get: () => 3 });
+    eql(blake2s(ownLength), blake2s.create().update(ownLength).digest());
+    const forgedBrand = new Int8Array([1, -1, 3, 4, 5]);
+    Object.setPrototypeOf(forgedBrand, Uint8Array.prototype);
+    eql(
+      blake2s(forgedBrand as Uint8Array),
+      blake2s
+        .create()
+        .update(forgedBrand as Uint8Array)
+        .digest()
+    );
+
+    const descriptor = Object.getOwnPropertyDescriptor(_BLAKE2s.prototype, 'compress')!;
+    const compress = descriptor.value;
+    let compressCalls = 0;
+    Object.defineProperty(_BLAKE2s.prototype, 'compress', {
+      configurable: true,
+      value(this: _BLAKE2s, ...args: any[]) {
+        compressCalls++;
+        return compress.apply(this, args);
+      },
+    });
+    try {
+      blake2s(msg);
+      eql(compressCalls, 0, 'plain default input did not use the captured direct core');
+      blake2s(msg, {});
+      eql(compressCalls, 1, 'options did not use the stateful path');
+      blake2s(Buffer.from(msg));
+      eql(compressCalls, 2, 'Buffer input did not use the stateful path');
+      blake2s(new Uint8Array(65));
+      eql(compressCalls, 4, 'long input did not use the stateful path');
+    } finally {
+      Object.defineProperty(_BLAKE2s.prototype, 'compress', descriptor);
+    }
+
+    const NativeUint8Array = Uint8Array;
+    const outer = Uint8Array.from({ length: 32 }, (_, i) => i * 11);
+    const inner = Uint8Array.of(7, 8, 9);
+    const expectedOuter = blake2s.create().update(outer).digest();
+    const expectedInner = blake2s.create().update(inner).digest();
+    let nested: Uint8Array | undefined;
+    let entered = false;
+    class ReentrantOutput extends NativeUint8Array {
+      constructor(length: number) {
+        super(length);
+        if (!entered && length === 32) {
+          entered = true;
+          nested = blake2s(inner);
+        }
+      }
+    }
+    try {
+      (globalThis as any).Uint8Array = ReentrantOutput;
+      eql(NativeUint8Array.from(blake2s(outer)), expectedOuter);
+      eql(NativeUint8Array.from(nested!), expectedInner);
+    } finally {
+      (globalThis as any).Uint8Array = NativeUint8Array;
+    }
+    eql(blake2s(outer), expectedOuter, 'shared state was not restored after reentry');
+    class ThrowingOutput extends NativeUint8Array {
+      constructor(length: number) {
+        super(length);
+        if (length === 32) throw new Error('forced output failure');
+      }
+    }
+    try {
+      (globalThis as any).Uint8Array = ThrowingOutput;
+      throws(() => blake2s(outer), /forced output failure/);
+    } finally {
+      (globalThis as any).Uint8Array = NativeUint8Array;
+    }
+    eql(blake2s(outer), expectedOuter, 'shared state was not restored after an exception');
+    throws(() => blake2s({} as Uint8Array));
+  });
+  it('RIPEMD-160 short one-shot path matches stateful hashing', () => {
+    for (let len = 0; len <= 64; len++) {
+      for (let offset = 0; offset < 4; offset++) {
+        const backing = Uint8Array.from(
+          { length: len + offset + 5 },
+          (_, i) => (len + 29 * i) & 255
+        );
+        const msg = backing.subarray(offset, offset + len);
+        const before = msg.slice();
+        eql(
+          ripemd160(msg),
+          ripemd160.create().update(msg).digest(),
+          `len=${len}, offset=${offset}`
+        );
+        eql(msg, before, `input mutation: len=${len}, offset=${offset}`);
+      }
+    }
+
+    const first = ripemd160(Uint8Array.of(1));
+    const saved = first.slice();
+    eql(ripemd160(Uint8Array.of(2)), ripemd160.create().update(Uint8Array.of(2)).digest());
+    eql(first, saved, 'returned output aliases reusable scratch');
+    eql(
+      ripemd160(Buffer.from([1, 2, 3])),
+      ripemd160
+        .create()
+        .update(Buffer.from([1, 2, 3]))
+        .digest()
+    );
+    const crossRealm = runInNewContext('Uint8Array.from([1, 2, 3])');
+    eql(ripemd160(crossRealm), ripemd160.create().update(crossRealm).digest());
+    eql(Object.isFrozen(ripemd160), true);
+    eql(ripemd160.length, 2);
+    eql(ripemd160.blockLen, 64);
+    eql(ripemd160.outputLen, 20);
+    eql(ripemd160.canXOF, false);
+
+    let nested: Uint8Array | undefined;
+    class ReentrantBytes extends Uint8Array {
+      get length() {
+        nested = ripemd160(Uint8Array.of(9));
+        return super.length;
+      }
+    }
+    const reentrant = new ReentrantBytes(32);
+    reentrant.set(Uint8Array.from({ length: 32 }, (_, i) => i));
+    eql(ripemd160(reentrant), ripemd160.create().update(reentrant).digest());
+    eql(nested, ripemd160.create().update(Uint8Array.of(9)).digest());
+
+    // Reenter the direct path after the stateful compressor has populated its schedule. The two
+    // paths must use disjoint scratch or the nested digest will corrupt the outer block.
+    const outerMsg = Uint8Array.from({ length: 64 }, (_, i) => i * 17);
+    const outerExpected = ripemd160.create().update(outerMsg).digest();
+    const outer = new _RIPEMD160() as any;
+    let h0 = 0x67452301 | 0;
+    nested = undefined;
+    Object.defineProperty(outer, 'h0', {
+      configurable: true,
+      get() {
+        if (nested === undefined) nested = ripemd160(Uint8Array.of(7, 8, 9));
+        return h0;
+      },
+      set(value) {
+        h0 = value;
+      },
+    });
+    eql(outer.update(outerMsg).digest(), outerExpected);
+    eql(
+      nested,
+      ripemd160
+        .create()
+        .update(Uint8Array.of(7, 8, 9))
+        .digest()
+    );
+
+    const ownLength = Uint8Array.of(1, 2, 3);
+    Object.defineProperty(ownLength, 'length', {
+      get() {
+        nested = ripemd160(Uint8Array.of(4, 5, 6));
+        return 3;
+      },
+    });
+    eql(ripemd160(ownLength), ripemd160.create().update(ownLength).digest());
+    eql(
+      nested,
+      ripemd160
+        .create()
+        .update(Uint8Array.of(4, 5, 6))
+        .digest()
+    );
+
+    const forgedBrand = new Int8Array([1, -1, 3, 4, 5]);
+    Object.setPrototypeOf(forgedBrand, Uint8Array.prototype);
+    eql(
+      ripemd160(forgedBrand as Uint8Array),
+      ripemd160
+        .create()
+        .update(forgedBrand as Uint8Array)
+        .digest()
+    );
+    throws(() => ripemd160({} as Uint8Array));
   });
   it('HKDF supports cloneable tree hashes', () => {
     const input = Uint8Array.of(1, 2, 3);

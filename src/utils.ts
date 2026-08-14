@@ -864,6 +864,57 @@ export type CHash<T extends Hash<T> = Hash<any>, Opts = undefined> = {
 export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CHash<T, Opts>;
 
 /**
+ * Wraps a stateful hash with a bounded direct path for ordinary byte arrays.
+ * Algorithm-specific padding, scratch leasing, reentry, and cleanup remain inside `direct`.
+ * @param stateful - Existing createHasher-compatible fallback.
+ * @param maxLen - Largest input length accepted by the direct path, inclusive.
+ * @param direct - Closed short-input implementation.
+ * @param onlyDefaultOpts - Whether any supplied options object must use the stateful path.
+ * @returns Frozen callable hash with the stateful wrapper's public metadata.
+ * @example
+ * Wrap a one-block implementation whose padding accepts at most 55 input bytes.
+ * ```ts
+ * const hash = _wrapShortHash(stateful, 55, direct);
+ * ```
+ */
+export function _wrapShortHash<T extends Hash<T>, Opts = undefined>(
+  stateful: TArg<TRet<CHash<T, Opts>>>,
+  maxLen: number,
+  direct: TArg<(input: Uint8Array, len: number) => Uint8Array>,
+  onlyDefaultOpts = false
+): TRet<CHash<T, Opts>> {
+  const U8_PROTOTYPE = Uint8Array.prototype;
+  const GET_PROTOTYPE = Object.getPrototypeOf;
+  const IS_VIEW: (value: unknown) => boolean = ArrayBuffer.isView;
+  const HAS_OWN = Object.hasOwn;
+  const GET_TAG = Object.getOwnPropertyDescriptor(
+    GET_PROTOTYPE(U8_PROTOTYPE),
+    Symbol.toStringTag
+  )!.get!;
+  const oneShot: any = (msg: TArg<Uint8Array>, opts?: TArg<Opts>) => {
+    // These intrinsic checks cannot invoke input-controlled code: Proxies fail isView before
+    // getPrototypeOf, while subclasses, Buffer, cross-realm views, and forged metadata stay on the
+    // stateful constructor/update/digest path and preserve its observable ordering.
+    if (
+      (onlyDefaultOpts && opts !== undefined) ||
+      !IS_VIEW(msg) ||
+      GET_PROTOTYPE(msg) !== U8_PROTOTYPE ||
+      GET_TAG.call(msg) !== 'Uint8Array' ||
+      HAS_OWN(msg, 'length') ||
+      HAS_OWN(msg, 'buffer') ||
+      HAS_OWN(msg, 'byteOffset') ||
+      HAS_OWN(msg, 'byteLength')
+    )
+      return (stateful as any)(msg, opts);
+    const input = abytes(msg);
+    const len = input.length;
+    return len <= maxLen ? direct(input, len) : (stateful as any)(input, opts);
+  };
+  Object.assign(oneShot, stateful);
+  return Object.freeze(oneShot) as TRet<CHash<T, Opts>>;
+}
+
+/**
  * Creates a callable hash function from a stateful class constructor.
  * @param hashCons - hash constructor or factory
  * @param info - optional metadata such as DER OID

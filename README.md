@@ -6,7 +6,7 @@ Audited & minimal JS implementation of hash functions, MACs and KDFs.
 - 🪶 Minimal: 2.7KB (gzipped) sha256, unused code is excluded from your builds
 - 🏎 Fast: hand-optimized for caveats of JS engines
 - 🔍 Reliable: chained / ACVP tests ensure correctness
-- 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
+- 🔁 Reproducible generated hot loops: compact generators and differential tests keep them auditable
 - 🦘 Includes SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF, Scrypt, Argon2
 - 🥈 Wrapper with identical API over native WebCrypto
 
@@ -499,7 +499,8 @@ multi-hour large-input tests `npm run test:slow`, ACVP LDT vectors `npm run test
 and memory-intensive KDF tests `npm run test:ultra`. The 9–17GiB scrypt cases require an
 explicitly provisioned machine and run separately with `npm run test:ultra:scrypt`.
 
-`test/misc` directory contains unrolled implementations (sha3, argon2) and misc helper scripts.
+`test/misc` contains generators for optimized Argon2, BLAKE1, BLAKE2, BLAKE3, legacy SHA-1/MD5,
+SHA2, SHA3, and scrypt cores, plus misc helper scripts.
 
 Some hashes are outside of scope of the library:
 - [Pedersen in micro-zk-proofs](https://github.com/paulmillr/micro-zk-proofs/blob/1ed5ce1253583b2e540eef7f3477fb52bf5344ff/src/pedersen.ts)
