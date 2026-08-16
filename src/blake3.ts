@@ -167,7 +167,13 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
       // 2 (010) - leaf finished at depth=1 (merge with last elm on stack and push back)
       // 3 (011) - last leaf not finished
       // 4 (100) - leafs finished at depth=1 and depth=2
-      for (let last, chunks = this.chunksDone + 1; isLast || !(chunks & 1); chunks >>= 1) {
+      // Reading the low bit is safe for parity, but keep division full-width: shifting would
+      // truncate the safe-integer chunk counter to 32 bits.
+      for (
+        let last, chunks = this.chunksDone + 1;
+        isLast || !(chunks & 1);
+        chunks = Math.floor(chunks / 2)
+      ) {
         if (!(last = this.stack.pop())) break;
         this.buffer32.set(last, 0);
         this.buffer32.set(chunk, 8);
@@ -282,7 +288,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     abytes(out);
     this.finish();
     const { blockLen, bufferOut } = this;
-    for (let pos = 0, len = out.length; pos < len; ) {
+    for (let pos = 0, len = out.length; pos < len;) {
       if (this.posOut >= blockLen) this.b2CompressOut();
       const take = Math.min(blockLen - this.posOut, len - pos);
       out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);

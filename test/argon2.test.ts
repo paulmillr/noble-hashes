@@ -1,6 +1,7 @@
 import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, throws } from 'node:assert';
 import { pathToFileURL } from 'node:url';
+import { _BLAKE2b } from '../src/blake2.ts';
 import { bytesToHex, hexToBytes } from '../src/utils.ts';
 import { ARGON2_CASES, argon2Inputs } from './argon2-cases.ts';
 import { PLATFORMS } from './platform.ts';
@@ -397,6 +398,54 @@ function run(variant: string, platform: any, { describe, it } = BT, isSlow = fal
           {
             message: '"maxmem" limit was hit: memUsed(mP*1024)=8192, maxmem=3000',
           }
+        );
+      });
+    if (!isSlow && variant === 'noble')
+      it('default costs are t=3, m=1GiB, p=1 with a 1GiB maxmem limit', () => {
+        // Override m to keep the output comparison cheap while exercising default t and p.
+        eql(
+          argon2id('password', 'saltsalt', { m: 8 }),
+          argon2id('password', 'saltsalt', { t: 3, m: 8, p: 1 })
+        );
+
+        const oneGiB = 1024 ** 3;
+        throws(() => argon2id('password', 'saltsalt', { maxmem: oneGiB - 1 }), {
+          message: `"maxmem" limit was hit: memUsed(mP*1024)=${oneGiB}, maxmem=${oneGiB - 1}`,
+        });
+        throws(() => argon2id('password', 'saltsalt', { m: 1024 ** 2 + 4 }), {
+          message: `"maxmem" limit was hit: memUsed(mP*1024)=${oneGiB + 4096}, maxmem=${oneGiB}`,
+        });
+      });
+    if (!isSlow && variant === 'noble')
+      it('destroys every finalized BLAKE2b instance', () => {
+        const digestInto = _BLAKE2b.prototype.digestInto;
+        const destroy = _BLAKE2b.prototype.destroy;
+        const finalized = new Set<_BLAKE2b>();
+        const destroyed = new Set<_BLAKE2b>();
+        _BLAKE2b.prototype.digestInto = function (out) {
+          finalized.add(this);
+          digestInto.call(this, out);
+        };
+        _BLAKE2b.prototype.destroy = function () {
+          destroy.call(this);
+          destroyed.add(this);
+        };
+        try {
+          argon2id('password-marker', 'salt1234', {
+            t: 1,
+            m: 32,
+            p: 1,
+            key: 'KEY-MARKER-KEY-MARKER-KEY-MARKER',
+            personalization: 'PERS-MARKER-PERS-MARKER',
+          });
+        } finally {
+          _BLAKE2b.prototype.digestInto = digestInto;
+          _BLAKE2b.prototype.destroy = destroy;
+        }
+        eql(finalized.size > 0, true);
+        eql(
+          [...finalized].filter((instance) => !destroyed.has(instance)),
+          []
         );
       });
     for (let i = 0; i < VECTORS.length; i++) {

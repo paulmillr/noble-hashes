@@ -4,6 +4,7 @@ import {
   ahash,
   anumber,
   checkOpts,
+  clean,
   kdfInputToBytes,
   type CHash,
   type KDFInput,
@@ -233,10 +234,20 @@ export async function pbkdf2(
   // RFC 8018 §5.2 defines dkLen as a positive integer.
   if (dkLen < 1) throw new Error('"dkLen" must be >= 1');
   const _password = kdfInputToBytes(password, 'password');
-  const _salt = kdfInputToBytes(salt, 'salt');
-  const key = await crypto.importKey('raw', _password as BufferSource, 'PBKDF2', false, [
-    'deriveBits',
-  ]);
-  const deriveOpts = { name: 'PBKDF2', salt: _salt, iterations: c, hash: hash.webCryptoName };
-  return new Uint8Array(await crypto.deriveBits(deriveOpts, key, 8 * dkLen)) as TRet<Uint8Array>;
+  try {
+    const _salt = kdfInputToBytes(salt, 'salt');
+    try {
+      const key = await crypto.importKey('raw', _password as BufferSource, 'PBKDF2', false, [
+        'deriveBits',
+      ]);
+      const deriveOpts = { name: 'PBKDF2', salt: _salt, iterations: c, hash: hash.webCryptoName };
+      return new Uint8Array(
+        await crypto.deriveBits(deriveOpts, key, 8 * dkLen)
+      ) as TRet<Uint8Array>;
+    } finally {
+      if (typeof salt === 'string') clean(_salt);
+    }
+  } finally {
+    if (typeof password === 'string') clean(_password);
+  }
 }

@@ -48,14 +48,23 @@ function pbkdf2Init(
   // before allocating the destination buffer.
   if (dkLen > (2 ** 32 - 1) * hash.outputLen) throw new Error('derived key too long');
   const p = kdfInputToBytes(_password, 'password');
-  const s = kdfInputToBytes(_salt, 'salt');
-  // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
-  const DK = new Uint8Array(dkLen);
-  const { iHash, oHash, outputLen } = hmac.create(hash, p);
-  // Drive keyed hashes directly; the wrapper is only needed to initialize their HMAC midstates.
-  const u = new Uint8Array(outputLen);
-  const eng = pbkdf2Engine(iHash, oHash, s, u);
-  return { c, dkLen, asyncTick, DK, outputLen, eng };
+  try {
+    const s = kdfInputToBytes(_salt, 'salt');
+    try {
+      // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
+      const DK = new Uint8Array(dkLen);
+      const { iHash, oHash, outputLen } = hmac.create(hash, p);
+      // Drive keyed hashes directly; the wrapper is only needed to initialize their HMAC midstates.
+      const u = new Uint8Array(outputLen);
+      const eng = pbkdf2Engine(iHash, oHash, s, u);
+      return { c, dkLen, asyncTick, DK, outputLen, eng };
+    } finally {
+      // Uint8Array inputs belong to the caller; only wipe our UTF-8 conversion.
+      if (typeof _salt === 'string') clean(s);
+    }
+  } finally {
+    if (typeof _password === 'string') clean(p);
+  }
 }
 
 // Per-call PRF driver writes U1 into both `u` and `Ti`, then later digests into `u`;

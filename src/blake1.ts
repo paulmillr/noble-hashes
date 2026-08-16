@@ -118,7 +118,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     const { view, buffer, blockLen } = this;
     const len = data.length;
     let dataView;
-    for (let pos = 0; pos < len; ) {
+    for (let pos = 0; pos < len;) {
       const take = Math.min(blockLen - this.pos, len - pos);
       // Fast path only when there is no buffered partial block: `take === blockLen` implies
       // `this.pos === 0`, so we can process full blocks directly from the input view.

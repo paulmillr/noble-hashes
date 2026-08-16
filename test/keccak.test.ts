@@ -246,6 +246,19 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       }
       eql(err?.message, 'digest is not allowed, use .randomBytes() instead');
     });
+    it('keccakprg requires addEntropy before output', () => {
+      const prg = keccakprg();
+      throws(() => prg.randomBytes(1), /addEntropy\(\) must be called before randomBytes\(\)/);
+      throws(() => prg.xof(1), /addEntropy\(\) must be called before randomBytes\(\)/);
+      throws(
+        () => prg.xofInto(new Uint8Array(1)),
+        /addEntropy\(\) must be called before randomBytes\(\)/
+      );
+      prg.update(new Uint8Array([1, 2, 3]));
+      throws(() => prg.randomBytes(1), /addEntropy\(\) must be called before randomBytes\(\)/);
+      prg.addEntropy(new Uint8Array([4, 5, 6]));
+      eql(prg.randomBytes(1).length, 1);
+    });
     it('keccakprg clean throws after destroy', () => {
       const prg = keccakprg();
       prg.addEntropy(new Uint8Array([1, 2, 3]));
@@ -322,7 +335,7 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
           perm();
         }
         const out = new Uint8Array(outLen);
-        for (let pos = 0; pos < outLen; ) {
+        for (let pos = 0; pos < outLen;) {
           const take = Math.min(blockLen, outLen - pos);
           out.set(state.subarray(0, take), pos);
           pos += take;

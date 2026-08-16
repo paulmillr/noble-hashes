@@ -171,7 +171,7 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
     const len = data.length;
     const offset = data.byteOffset;
     const buf = data.buffer;
-    for (let pos = 0; pos < len; ) {
+    for (let pos = 0; pos < len;) {
       // If buffer is full and we still have input (don't process last block, same as blake2s)
       if (this.pos === blockLen) {
         swap32IfBE(buffer32);

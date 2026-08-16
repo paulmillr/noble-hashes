@@ -627,7 +627,14 @@ declare const TextEncoder: any;
  */
 export function utf8ToBytes(str: string): TRet<Uint8Array> {
   if (typeof str !== 'string') throw new TypeError('string expected');
-  return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
+  const encoded = new TextEncoder().encode(str);
+  try {
+    // Copy into the current realm for Firefox extension contexts. Callers that own the returned
+    // buffer can then wipe it independently of TextEncoder's temporary result.
+    return new Uint8Array(encoded) as TRet<Uint8Array>; // https://bugzil.la/1681809
+  } finally {
+    clean(encoded);
+  }
 }
 
 /** KDFs can accept string or Uint8Array for user convenience. */
