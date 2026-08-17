@@ -398,7 +398,7 @@ The library has been audited:
 
 It is tested against official (ACVP / KAT) vectors, cross-library chained hashing,
 sliding-window length sweeps and property-based tests (fast-check),
-and is being fuzzed in [the separate repo](https://github.com/paulmillr/fuzzing).
+and is being fuzzed in [the separate repo](https://github.com/paulmillr/cryptofuzz).
 
 If you see anything unusual: investigate and report.
 
