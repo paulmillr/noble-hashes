@@ -142,7 +142,6 @@ import {
   parallelhash256, tuplehash256,
   turboshake128, turboshake256,
 } from '@noble/hashes/sha3-addons.js';
-import { randomBytes } from '@noble/hashes/utils.js';
 const data = Uint8Array.from([0x10, 0x20, 0x30]);
 const personalization = new TextEncoder().encode('def');
 const ec1 = cshake128(data, { personalization });
@@ -160,8 +159,8 @@ const ek12 = kt128(data); // kangarootwelve 128-bit
 const ek13 = kt256(data); // kangarootwelve 256-bit
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
 const p = keccakprg(254);
-// addEntropy() is required before requesting output. Seed it from the platform CSPRNG.
-p.addEntropy(randomBytes(32));
+// addEntropy() is required before output and uses the platform CSPRNG by default.
+p.addEntropy();
 const rand1b = p.randomBytes(32);
 ```
 

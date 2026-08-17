@@ -808,9 +808,9 @@ export interface Hash<T> {
 export interface PRG {
   /**
    * Mixes fresh entropy into the current generator state.
-   * @param seed - Entropy bytes to absorb.
+   * @param seed - Entropy bytes to absorb. When omitted, the implementation uses its system RNG.
    */
-  addEntropy(seed: TArg<Uint8Array>): void;
+  addEntropy(seed?: TArg<Uint8Array>): void;
   /**
    * Produces a requested number of pseudorandom bytes.
    * @param bytesLength - Number of bytes to generate.
