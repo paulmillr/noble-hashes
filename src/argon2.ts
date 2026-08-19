@@ -224,12 +224,12 @@ function indexAlpha(
 
 /** Argon2 cost, output, and optional secret/personalization inputs. */
 export type ArgonOpts = {
-  /** Time cost measured in iterations. */
-  t: number;
-  /** Memory cost in kibibytes. */
-  m: number;
-  /** Parallelization parameter. */
-  p: number;
+  /** Time cost measured in iterations. Defaults to `3`. */
+  t?: number;
+  /** Memory cost in kibibytes. Defaults to `1024 ** 2` (1 GiB). */
+  m?: number;
+  /** Parallelization parameter. Defaults to `1`. */
+  p?: number;
   /** Argon2 version number. Defaults to `0x13`. */
   version?: number;
   /** Optional secret key mixed into initialization. */
@@ -240,7 +240,7 @@ export type ArgonOpts = {
   dkLen?: number;
   /** Max scheduler block time in milliseconds for the async variants. */
   asyncTick?: number;
-  /** Maximum temporary memory budget in bytes. */
+  /** Maximum temporary memory budget in bytes. Defaults to 1 GiB. */
   maxmem?: number;
   /**
    * Optional progress callback invoked during long-running derivations.
@@ -251,17 +251,22 @@ export type ArgonOpts = {
 
 // Exclusive `2^32` sentinel used by `isU32(...)`, not the inclusive maximum u32 value.
 const maxUint32 = Math.pow(2, 32);
+const ARGON2_DEFAULT_MEMORY = 1024 ** 2; // KiB: 1 GiB
+const ARGON2_DEFAULT_MAXMEM = ARGON2_DEFAULT_MEMORY * 1024;
 // Validate safe JS integers in `[0, 2^32 - 1]`.
 function isU32(num: number) {
   return Number.isSafeInteger(num) && num >= 0 && num < maxUint32;
 }
 
-function argon2Opts(opts: TArg<ArgonOpts>) {
+function argon2Opts(opts: TArg<ArgonOpts> = {}) {
   opts = checkOpts({}, opts);
   const merged: any = {
+    t: 3,
+    m: ARGON2_DEFAULT_MEMORY,
+    p: 1,
     version: 0x13,
     dkLen: 32,
-    maxmem: maxUint32 - 1,
+    maxmem: ARGON2_DEFAULT_MAXMEM,
     asyncTick: 10,
   };
   // Unknown keys are copied through unchanged here and later ignored unless
@@ -289,87 +294,126 @@ function argon2Opts(opts: TArg<ArgonOpts>) {
   return merged;
 }
 
+function argon2InitialHash(
+  password: TArg<KDFInput>,
+  salt: TArg<KDFInput>,
+  type: Types,
+  opts: TArg<ArgonOpts>
+) {
+  const ownedInputs: Uint8Array[] = [];
+  const BUF = new Uint32Array(1);
+  const BUF8 = u8(BUF);
+  let h: ReturnType<typeof blake2b.create> | undefined;
+  let H0: Uint32Array | undefined;
+  let succeeded = false;
+  const rememberOwned = (input: unknown, bytes: TArg<TRet<Uint8Array>>): TRet<Uint8Array> => {
+    if (typeof input === 'string') ownedInputs.push(bytes);
+    return bytes as TRet<Uint8Array>;
+  };
+  try {
+    const passwordBytes = rememberOwned(password, kdfInputToBytes(password, 'password'));
+    const saltBytes = rememberOwned(salt, kdfInputToBytes(salt, 'salt'));
+    if (!isU32(passwordBytes.length)) throw new Error('"password" must be less of length 1..4Gb');
+    // RFC 9106 §3.1 only requires S <= 2^32-1 bytes and says 16 bytes is RECOMMENDED for password
+    // hashing; this library intentionally takes the stricter common >=8-byte salt path.
+    if (!isU32(saltBytes.length) || saltBytes.length < 8)
+      throw new Error('"salt" must be of length 8..4Gb');
+    if (!Object.values(AT).includes(type)) throw new Error('"type" was invalid');
+    let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } =
+      argon2Opts(opts);
+    // Validation
+    const keyInput = key;
+    key = rememberOwned(keyInput, abytesOrZero(keyInput, 'key'));
+    const personalizationInput = personalization;
+    personalization = rememberOwned(
+      personalizationInput,
+      abytesOrZero(personalizationInput, 'personalization')
+    );
+    // H_0 = H^(64)(LE32(p) || LE32(T) || LE32(m) || LE32(t) ||
+    //       LE32(v) || LE32(y) || LE32(length(P)) || P ||
+    //       LE32(length(S)) || S ||  LE32(length(K)) || K ||
+    //       LE32(length(X)) || X)
+    h = blake2b.create();
+    for (let item of [p, dkLen, m, t, version, type]) {
+      // RFC 9106 H0 encodes these scalars as LE32, so normalize the host word before
+      // exposing bytes.
+      BUF[0] = swap8IfBE(item);
+      h.update(BUF8);
+    }
+    for (let i of [passwordBytes, saltBytes, key, personalization]) {
+      BUF[0] = swap8IfBE(i.length); // BUF is u32 array, this is valid once normalized to LE bytes
+      h.update(BUF8).update(i);
+    }
+    // Reserve two extra LE32 words after the 64-byte `H_0` so Figures 3-4 can append
+    // `LE32(0 or 1) || LE32(i)` in place for the lane-starting blocks.
+    H0 = new Uint32Array(18);
+    h.digestInto(u8(H0));
+    succeeded = true;
+    return { H0, p, dkLen, m, t, version, maxmem, onProgress, asyncTick };
+  } finally {
+    // digestInto() does not destroy BLAKE2 state. It and all string-derived inputs contain secrets.
+    if (h) h.destroy();
+    clean(BUF, ...ownedInputs);
+    if (!succeeded && H0) clean(H0);
+  }
+}
+
 function argon2Init(
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
   type: Types,
   opts: TArg<ArgonOpts>
 ) {
-  password = kdfInputToBytes(password, 'password');
-  salt = kdfInputToBytes(salt, 'salt');
-  if (!isU32(password.length)) throw new Error('"password" must be less of length 1..4Gb');
-  // RFC 9106 §3.1 only requires S <= 2^32-1 bytes and says 16 bytes is RECOMMENDED for password
-  // hashing; this library intentionally takes the stricter common >=8-byte salt path.
-  if (!isU32(salt.length) || salt.length < 8) throw new Error('"salt" must be of length 8..4Gb');
-  if (!Object.values(AT).includes(type)) throw new Error('"type" was invalid');
-  let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } =
-    argon2Opts(opts);
-  // Validation
-  key = abytesOrZero(key, 'key');
-  personalization = abytesOrZero(personalization, 'personalization');
-  // H_0 = H^(64)(LE32(p) || LE32(T) || LE32(m) || LE32(t) ||
-  //       LE32(v) || LE32(y) || LE32(length(P)) || P ||
-  //       LE32(length(S)) || S ||  LE32(length(K)) || K ||
-  //       LE32(length(X)) || X)
-  const h = blake2b.create();
-  const BUF = new Uint32Array(1);
-  const BUF8 = u8(BUF);
-  for (let item of [p, dkLen, m, t, version, type]) {
-    // RFC 9106 H0 encodes these scalars as LE32, so normalize the host word before exposing bytes.
-    BUF[0] = swap8IfBE(item);
-    h.update(BUF8);
-  }
-  for (let i of [password, salt, key, personalization]) {
-    BUF[0] = swap8IfBE(i.length); // BUF is u32 array, this is valid once normalized to LE bytes
-    h.update(BUF8).update(i);
-  }
-  // Reserve two extra LE32 words after the 64-byte `H_0` so Figures 3-4 can append
-  // `LE32(0 or 1) || LE32(i)` in place for the lane-starting blocks.
-  const H0 = new Uint32Array(18);
-  const H0_8 = u8(H0);
-  h.digestInto(H0_8);
+  const { H0, p, dkLen, m, t, version, maxmem, onProgress, asyncTick } = argon2InitialHash(
+    password,
+    salt,
+    type,
+    opts
+  );
   // 256 u32 = 1024 (BLOCK_SIZE), fills A2_BUF on processing
-
-  // Params
-  const lanes = p;
-  // m' = 4 * p * floor (m / 4p)
-  const mP = 4 * p * Math.floor(m / (ARGON2_SYNC_POINTS * p));
-  //q = m' / p columns
-  const laneLen = Math.floor(mP / p);
-  const segmentLen = Math.floor(laneLen / ARGON2_SYNC_POINTS);
-  // `maxmem` is documented in bytes; compare against the actual 1024-byte block allocation.
-  const memUsed = mP * 1024;
-  if (!isU32(maxmem)) throw new Error('"maxmem" expected <2**32, got ' + maxmem);
-  if (memUsed > maxmem)
-    throw new Error('"maxmem" limit was hit: memUsed(mP*1024)=' + memUsed + ', maxmem=' + maxmem);
-  const B = new Uint32Array(memUsed / 4);
-  // Fill first blocks
-  for (let l = 0; l < p; l++) {
-    const i = 256 * laneLen * l;
-    // B[i][0] = H'^(1024)(H_0 || LE32(0) || LE32(i))
-    H0[17] = swap8IfBE(l);
-    H0[16] = swap8IfBE(0);
-    B.set(swap32IfBE(u32(Hp(H0, 1024))), i);
-    // B[i][1] = H'^(1024)(H_0 || LE32(1) || LE32(i))
-    H0[16] = swap8IfBE(1);
-    B.set(swap32IfBE(u32(Hp(H0, 1024))), i + 256);
+  try {
+    // Params
+    const lanes = p;
+    // m' = 4 * p * floor (m / 4p)
+    const mP = 4 * p * Math.floor(m / (ARGON2_SYNC_POINTS * p));
+    //q = m' / p columns
+    const laneLen = Math.floor(mP / p);
+    const segmentLen = Math.floor(laneLen / ARGON2_SYNC_POINTS);
+    // `maxmem` is documented in bytes; compare against the actual 1024-byte block allocation.
+    const memUsed = mP * 1024;
+    if (!isU32(maxmem)) throw new Error('"maxmem" expected <2**32, got ' + maxmem);
+    if (memUsed > maxmem)
+      throw new Error('"maxmem" limit was hit: memUsed(mP*1024)=' + memUsed + ', maxmem=' + maxmem);
+    const B = new Uint32Array(memUsed / 4);
+    // Fill first blocks
+    for (let l = 0; l < p; l++) {
+      const i = 256 * laneLen * l;
+      // B[i][0] = H'^(1024)(H_0 || LE32(0) || LE32(i))
+      H0[17] = swap8IfBE(l);
+      H0[16] = swap8IfBE(0);
+      B.set(swap32IfBE(u32(Hp(H0, 1024))), i);
+      // B[i][1] = H'^(1024)(H_0 || LE32(1) || LE32(i))
+      H0[16] = swap8IfBE(1);
+      B.set(swap32IfBE(u32(Hp(H0, 1024))), i + 256);
+    }
+    let perBlock = () => {};
+    if (onProgress) {
+      // The first segment of the first pass skips two preinitialized blocks per lane.
+      const totalBlock = t * ARGON2_SYNC_POINTS * p * segmentLen - 2 * p;
+      // Invoke callback if progress changes from 10.01 to 10.02
+      // Allows to draw smooth progress bar on up to 8K screen
+      const callbackPer = Math.max(Math.floor(totalBlock / 10000), 1);
+      let blockCnt = 0;
+      perBlock = () => {
+        blockCnt++;
+        if (onProgress && (!(blockCnt % callbackPer) || blockCnt === totalBlock))
+          onProgress(blockCnt / totalBlock);
+      };
+    }
+    return { type, mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick };
+  } finally {
+    clean(H0);
   }
-  let perBlock = () => {};
-  if (onProgress) {
-    // The first segment of the first pass skips two preinitialized blocks per lane.
-    const totalBlock = t * ARGON2_SYNC_POINTS * p * segmentLen - 2 * p;
-    // Invoke callback if progress changes from 10.01 to 10.02
-    // Allows to draw smooth progress bar on up to 8K screen
-    const callbackPer = Math.max(Math.floor(totalBlock / 10000), 1);
-    let blockCnt = 0;
-    perBlock = () => {
-      blockCnt++;
-      if (onProgress && (!(blockCnt % callbackPer) || blockCnt === totalBlock))
-        onProgress(blockCnt / totalBlock);
-    };
-  }
-  clean(BUF, H0);
-  return { type, mP, p, t, version, B, laneLen, lanes, segmentLen, dkLen, perBlock, asyncTick };
 }
 
 function argon2Output(
@@ -510,7 +554,7 @@ function argon2(
 export const argon2d = (
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<ArgonOpts>
+  opts: TArg<ArgonOpts> = {}
 ): TRet<Uint8Array> => argon2(AT.Argon2d, password, salt, opts);
 /**
  * Argon2i side-channel-resistant version.
@@ -528,7 +572,7 @@ export const argon2d = (
 export const argon2i = (
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<ArgonOpts>
+  opts: TArg<ArgonOpts> = {}
 ): TRet<Uint8Array> => argon2(AT.Argon2i, password, salt, opts);
 /**
  * Argon2id, combining i+d, the most popular version from RFC 9106.
@@ -546,7 +590,7 @@ export const argon2i = (
 export const argon2id = (
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<ArgonOpts>
+  opts: TArg<ArgonOpts> = {}
 ): TRet<Uint8Array> => argon2(AT.Argon2id, password, salt, opts);
 
 async function argon2Async(
@@ -603,7 +647,7 @@ async function argon2Async(
 export const argon2dAsync = (
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<ArgonOpts>
+  opts: TArg<ArgonOpts> = {}
 ): Promise<TRet<Uint8Array>> => argon2Async(AT.Argon2d, password, salt, opts);
 /**
  * Argon2i async side-channel-resistant version.
@@ -621,7 +665,7 @@ export const argon2dAsync = (
 export const argon2iAsync = (
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<ArgonOpts>
+  opts: TArg<ArgonOpts> = {}
 ): Promise<TRet<Uint8Array>> => argon2Async(AT.Argon2i, password, salt, opts);
 /**
  * Argon2id async, combining i+d, the most popular version from RFC 9106.
@@ -639,5 +683,5 @@ export const argon2iAsync = (
 export const argon2idAsync = (
   password: TArg<KDFInput>,
   salt: TArg<KDFInput>,
-  opts: TArg<ArgonOpts>
+  opts: TArg<ArgonOpts> = {}
 ): Promise<TRet<Uint8Array>> => argon2Async(AT.Argon2id, password, salt, opts);
