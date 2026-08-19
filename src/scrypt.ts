@@ -96,6 +96,9 @@ function BlockMix(
   }
 }
 
+// 128*r*(N+p+1) for N=2**20, r=8, p=1: 1 GiB main table plus 2 KiB workspace.
+const SCRYPT_DEFAULT_MAXMEM = 128 * 8 * (2 ** 20 + 1 + 1);
+
 /**
  * Scrypt options:
  * - `N` is cpu/mem work factor (power of 2 e.g. `2**18`)
@@ -103,7 +106,8 @@ function BlockMix(
  * - `p` is parallelization factor (1 is common)
  * - `dkLen` is output key length in bytes e.g. 32, and must be `>= 1` per RFC 7914 §2.
  * - `asyncTick` - (default: 10) max time in ms for which async function can block execution
- * - `maxmem` - (default: `1024 ** 3 + 1024` aka 1GB+1KB). A limit that the app could use for scrypt
+ * - `maxmem` - (default: `1024 ** 3 + 2 * 1024` aka 1GiB+2KiB). A limit that the app
+ *   could use for scrypt
  * - `onProgress` - callback function that would be executed for progress report
  */
 export type ScryptOpts = {
@@ -130,12 +134,11 @@ export type ScryptOpts = {
 
 // Common prologue and epilogue for sync/async functions
 function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: ScryptOpts) {
-  // Maxmem - 1GB+1KB by default
   const opts = checkOpts(
     {
       dkLen: 32,
       asyncTick: 10,
-      maxmem: 1024 ** 3 + 1024,
+      maxmem: SCRYPT_DEFAULT_MAXMEM,
     },
     _opts
   );
