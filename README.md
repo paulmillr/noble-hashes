@@ -159,7 +159,8 @@ const ek12 = kt128(data); // kangarootwelve 128-bit
 const ek13 = kt256(data); // kangarootwelve 256-bit
 // pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
 const p = keccakprg(254);
-p.addEntropy(Uint8Array.from([1, 2, 3]));
+// addEntropy() is required before output and uses the platform CSPRNG by default.
+p.addEntropy();
 const rand1b = p.randomBytes(32);
 ```
 
@@ -296,7 +297,7 @@ Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
   JS doesn't support parallelization, making increasing `p` meaningless.
 - `dkLen` is the length of output bytes e.g. `32` or `64`
 - `onProgress` can be used with async version of the function to report progress to a user.
-- `maxmem` prevents DoS and is limited to `1GB + 1KB` (`2**30 + 2**10`), but can be adjusted using formula: `128 * r * (N + p + 1)`
+- `maxmem` prevents DoS and defaults to `1GiB + 2KiB` (`2**30 + 2**11`), enough for `N: 2**20, r: 8, p: 1`. It can be adjusted using formula: `128 * r * (N + p + 1)`
 
 Time it takes to derive Scrypt key under different values of N (2\*\*N) on Apple M4 (mobile phones can be 1x-4x slower):
 
@@ -322,7 +323,8 @@ Time it takes to derive Scrypt key under different values of N (2\*\*N) on Apple
 
 ```ts
 import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js';
-const arg1 = argon2id('password', 'saltsalt', { t: 2, m: 65536, p: 1, maxmem: 2 ** 32 - 1 });
+// Defaults to t=3, m=1GiB (specified in KiB), p=1, and a 1GiB maxmem limit.
+const arg1 = argon2id('password', 'saltsalt');
 ```
 
 Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
@@ -414,9 +416,9 @@ Use low-level libraries & languages.
 
 ### Memory dumping
 
-The library shares state buffers between hash
-function calls. The buffers are zeroed-out after each call. However, if an attacker
-can read application memory, you are doomed in any case:
+The library shares state buffers between hash function calls. Library-owned working buffers are
+zeroed after use, including mutable UTF-8 copies created from password-KDF string inputs. However,
+if an attacker can read application memory, you are doomed in any case:
 
 - At some point, input will be a string and strings are immutable in JS:
   there is no way to overwrite them with zeros. For example: deriving

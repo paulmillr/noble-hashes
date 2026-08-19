@@ -72,6 +72,28 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
           );
           await rejects(() => webcrypto.pbkdf2(web, 'pwd', 'salt', { c: 1, dkLen: 0 }));
         });
+        if (name === 'sha256')
+          it('pbkdf2 wipes library-owned UTF-8 input copies', async () => {
+            const markers = new Set(['web-password-owned-marker', 'web-salt-owned-marker']);
+            const wiped = Object.fromEntries([...markers].map((marker) => [marker, 0]));
+            const fill = Uint8Array.prototype.fill;
+            Uint8Array.prototype.fill = function (value, start, end) {
+              if (value === 0 && this.length < 128) {
+                let text = '';
+                for (const byte of this) text += String.fromCharCode(byte);
+                if (markers.has(text)) wiped[text]++;
+              }
+              return fill.call(this, value, start, end);
+            };
+            try {
+              await webcrypto.pbkdf2(web, 'web-password-owned-marker', 'web-salt-owned-marker', {
+                c: 1,
+              });
+            } finally {
+              Uint8Array.prototype.fill = fill;
+            }
+            eql(wiped, { 'web-password-owned-marker': 2, 'web-salt-owned-marker': 2 });
+          });
       });
     }
   });

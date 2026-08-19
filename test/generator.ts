@@ -64,7 +64,8 @@ function executeKDFTests(variant, platform, limit = true, { describe, it } = BT)
         info: optional(bytes(0, 1024)), // Nodejs limits length of info field to 1024 bytes which is not enforced by spec.
       });
       for (let c of cases) {
-        const exp = new Uint8Array( // returns ArrayBuffer
+        const exp = new Uint8Array(
+          // returns ArrayBuffer
           hkdfSync(
             'sha256',
             c.ikm,

@@ -305,6 +305,43 @@ describe('noble-hashes only', () => {
       }
     );
   });
+  it('BLAKE3 merges CVs with full-width chunk counters', () => {
+    const TWO32 = 2 ** 32;
+    const boundaries = [
+      { chunks: TWO32, stackSize: 32, expectedSize: 1 },
+      { chunks: 2 * TWO32, stackSize: 33, expectedSize: 1 },
+      { chunks: 3 * TWO32, stackSize: 33, expectedSize: 2 },
+    ];
+    const actual = boundaries.map(({ chunks, stackSize }) => {
+      const hash: any = new _BLAKE3();
+      hash.chunksDone = chunks - 1;
+      hash.chunkPos = 15;
+      hash.stack = Array.from({ length: stackSize }, (_, i) =>
+        Uint32Array.from({ length: 8 }, () => i + 1)
+      );
+      const oldest = Uint32Array.from(hash.stack[0]);
+      // Complete the synthetic boundary chunk directly: hashing 3 * 2^32 chunks would require
+      // 12 TiB of input, but the tree merge depends only on this counter and valid stack shape.
+      hash.compress(new Uint32Array(16));
+      const stack = hash.stack as Uint32Array[];
+      const result = {
+        chunks: hash.chunksDone,
+        stackSize: stack.length,
+        oldestPreserved:
+          stack.length > 1 && stack[0].every((word, wordPos) => word === oldest[wordPos]),
+      };
+      hash.destroy();
+      return result;
+    });
+    eql(
+      actual,
+      boundaries.map(({ chunks, expectedSize }) => ({
+        chunks,
+        stackSize: expectedSize,
+        oldestPreserved: expectedSize > 1,
+      }))
+    );
+  });
   it('BLAKE3 unfinished clones skip dead output scratch and wipe stale XOF output', () => {
     const key = Uint8Array.from({ length: 32 }, (_, i) => 255 - i);
     const prefix = Uint8Array.of(1, 2, 3);

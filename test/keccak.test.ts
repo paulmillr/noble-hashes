@@ -246,6 +246,54 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       }
       eql(err?.message, 'digest is not allowed, use .randomBytes() instead');
     });
+    it('keccakprg requires addEntropy before output', () => {
+      const prg = keccakprg();
+      throws(() => prg.randomBytes(1), /addEntropy\(\) must be called before randomBytes\(\)/);
+      throws(() => prg.xof(1), /addEntropy\(\) must be called before randomBytes\(\)/);
+      throws(
+        () => prg.xofInto(new Uint8Array(1)),
+        /addEntropy\(\) must be called before randomBytes\(\)/
+      );
+      prg.update(new Uint8Array([1, 2, 3]));
+      throws(() => prg.randomBytes(1), /addEntropy\(\) must be called before randomBytes\(\)/);
+      prg.addEntropy(new Uint8Array([4, 5, 6]));
+      eql(prg.randomBytes(1).length, 1);
+    });
+    it('keccakprg addEntropy defaults to system random bytes', () => {
+      const systemSeed = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+      const cryptoDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+      let generated: Uint8Array | undefined;
+      let actual: Uint8Array | undefined;
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: {
+          getRandomValues(out: Uint8Array) {
+            generated = out;
+            out.set(systemSeed);
+            return out;
+          },
+        },
+      });
+      try {
+        const prg = keccakprg();
+        prg.addEntropy();
+        actual = prg.randomBytes(32);
+        prg.destroy();
+      } finally {
+        if (cryptoDescriptor) Object.defineProperty(globalThis, 'crypto', cryptoDescriptor);
+        else delete (globalThis as any).crypto;
+      }
+      const explicit = keccakprg();
+      explicit.addEntropy(systemSeed);
+      const expected = explicit.randomBytes(32);
+      explicit.destroy();
+      eql(actual, expected);
+      eql(generated, new Uint8Array(32));
+      eql(
+        systemSeed,
+        Uint8Array.from({ length: 32 }, (_, i) => i + 1)
+      );
+    });
     it('keccakprg clean throws after destroy', () => {
       const prg = keccakprg();
       prg.addEntropy(new Uint8Array([1, 2, 3]));

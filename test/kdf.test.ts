@@ -392,6 +392,25 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       });
     });
 
+    if (variant === 'noble')
+      it('Scrypt default maxmem accommodates N=2**20, r=8, p=1', async () => {
+        const opts = { N: 2 ** 20, r: 8, p: 1 };
+        const inputError = {
+          name: 'TypeError',
+          message: '"password" expected Uint8Array, got type=boolean',
+        };
+        // Invalid input fails immediately after the memory-limit check, avoiding a 1GiB allocation.
+        throws(() => scrypt(true, 'salt', opts), inputError);
+        await rejects(() => scryptAsync(true, 'salt', opts), inputError);
+
+        const nextProfile = { ...opts, N: 2 ** 21 };
+        const memUsed = scryptMaxmem(nextProfile);
+        const defaultMaxmem = scryptMaxmem(opts);
+        throws(() => scrypt('pwd', 'salt', nextProfile), {
+          message: `"maxmem" limit was hit: memUsed(128*r*(N+p+1))=${memUsed}, maxmem=${defaultMaxmem}`,
+        });
+      });
+
     it('Scrypt boundary cross-test with node:crypto', async () => {
       // Runtimes without node:crypto scryptSync skip silently.
       if (typeof nodeCrypto.scryptSync !== 'function') return;
@@ -436,6 +455,88 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
   });
 
   describe(`KDF (${variant})`, () => {
+    if (variant === 'noble')
+      it('wipes library-owned UTF-8 input copies without touching caller bytes', () => {
+        const expected = {
+          'pb-password-owned-marker': 2,
+          'pb-salt-owned-marker': 2,
+          'sc-password-owned-marker': 4,
+          'sc-salt-owned-marker': 2,
+          'abort-password-owned-marker': 2,
+          'abort-salt-owned-marker': 2,
+          'ar-password-owned-marker': 2,
+          'ar-salt-owned-marker': 2,
+          'ar-key-owned-marker': 2,
+          'ar-pers-owned-marker': 2,
+          'invalid-password-owned-marker': 2,
+          'invalid-salt-owned-marker': 2,
+        };
+        const markers = new Set(Object.keys(expected));
+        const wiped = Object.fromEntries([...markers].map((marker) => [marker, 0]));
+        const fill = Uint8Array.prototype.fill;
+        Uint8Array.prototype.fill = function (value, start, end) {
+          if (value === 0 && this.length < 128) {
+            let text = '';
+            for (const byte of this) text += String.fromCharCode(byte);
+            if (markers.has(text)) wiped[text]++;
+          }
+          return fill.call(this, value, start, end);
+        };
+        try {
+          pbkdf2(sha256, 'pb-password-owned-marker', 'pb-salt-owned-marker', { c: 1 });
+          scrypt('sc-password-owned-marker', 'sc-salt-owned-marker', { N: 16, r: 1, p: 1 });
+          throws(
+            () =>
+              scrypt('abort-password-owned-marker', 'abort-salt-owned-marker', {
+                N: 16,
+                r: 1,
+                p: 1,
+                onProgress() {
+                  throw new Error('stop');
+                },
+              }),
+            /stop/
+          );
+          argon2id('ar-password-owned-marker', 'ar-salt-owned-marker', {
+            t: 1,
+            m: 32,
+            p: 1,
+            key: 'ar-key-owned-marker',
+            personalization: 'ar-pers-owned-marker',
+          });
+          throws(
+            () =>
+              argon2id('invalid-password-owned-marker', 'invalid-salt-owned-marker', {
+                t: 0,
+                m: 32,
+                p: 1,
+              }),
+            /"t"/
+          );
+        } finally {
+          Uint8Array.prototype.fill = fill;
+        }
+        // Each conversion wipes TextEncoder's temporary and the current-realm copy. Scrypt
+        // converts its password once for each of its two internal PBKDF2 invocations.
+        eql(wiped, expected);
+
+        const callerPassword = utf8ToBytes('caller-password-marker');
+        const callerSalt = utf8ToBytes('caller-salt-marker');
+        const callerKey = utf8ToBytes('caller-key-marker');
+        const callerPers = utf8ToBytes('caller-pers-marker');
+        const snapshots = [callerPassword, callerSalt, callerKey, callerPers].map((i) => i.slice());
+        pbkdf2(sha256, callerPassword, callerSalt, { c: 1 });
+        scrypt(callerPassword, callerSalt, { N: 16, r: 1, p: 1 });
+        argon2id(callerPassword, callerSalt, {
+          t: 1,
+          m: 32,
+          p: 1,
+          key: callerKey,
+          personalization: callerPers,
+        });
+        eql([callerPassword, callerSalt, callerKey, callerPers], snapshots);
+      });
+
     it('progress 100%', async () => {
       const scryptOpts = { N: 16, r: 1, p: 1, dkLen: 32 };
       await progress1((onProgress) => scrypt('pwd', 'salt', { ...scryptOpts, onProgress }));
