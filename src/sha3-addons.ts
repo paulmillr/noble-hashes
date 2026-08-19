@@ -20,6 +20,7 @@ import {
   clean,
   copyBytes,
   createHasher,
+  randomBytes,
   type Hash,
   type HashXOF,
   type KDFInput,
@@ -1052,6 +1053,7 @@ export const HopMAC256: TRet<HopMAC> = /* @__PURE__ */ genHopMAC(kt256);
  */
 export class _KeccakPRG extends Keccak implements PRG {
   protected rate: number;
+  private entropyAdded = false;
   constructor(capacity: number) {
     anumber(capacity);
     const rate = 1600 - capacity;
@@ -1080,8 +1082,23 @@ export class _KeccakPRG extends Keccak implements PRG {
   digestInto(_out: TArg<Uint8Array>): void {
     throw new Error('digest is not allowed, use .randomBytes() instead');
   }
-  addEntropy(seed: TArg<Uint8Array>): void {
-    this.update(seed);
+  addEntropy(seed?: TArg<Uint8Array>): void {
+    // Check lifecycle before asking the system RNG for entropy that cannot be used.
+    aexists(this);
+    const generated = seed === undefined;
+    const entropy = generated ? randomBytes() : seed;
+    try {
+      this.update(entropy);
+      this.entropyAdded = true;
+    } finally {
+      // This temporary is library-owned; caller-provided entropy remains caller-owned.
+      if (generated) clean(entropy);
+    }
+  }
+  xofInto(out: TArg<Uint8Array>): TRet<Uint8Array> {
+    aexists(this, false);
+    if (!this.entropyAdded) throw new Error('addEntropy() must be called before randomBytes()');
+    return super.xofInto(out);
   }
   randomBytes(length: number): TRet<Uint8Array> {
     return this.xof(length);
@@ -1103,6 +1120,7 @@ export class _KeccakPRG extends Keccak implements PRG {
     to ||= new _KeccakPRG(1600 - rate);
     super._cloneInto(to);
     to.rate = rate;
+    to.entropyAdded = this.entropyAdded;
     return to;
   }
   clone(): _KeccakPRG {
@@ -1113,6 +1131,9 @@ export class _KeccakPRG extends Keccak implements PRG {
 /**
  * KeccakPRG: pseudo-random generator based on Keccak.
  * See {@link https://keccak.team/files/CSF-0.1.pdf}.
+ * Fresh instances reject output until `.addEntropy()` has been called. With no
+ * argument, `addEntropy()` obtains 32 bytes from the platform CSPRNG; callers
+ * may instead supply their own entropy bytes.
  * @param capacity - sponge capacity in bits. Accepted values are those that
  *   keep `rho = 1598 - capacity` byte-aligned; the default `254` is chosen
  *   because it satisfies that duplex layout while leaving a wide byte-aligned
@@ -1121,7 +1142,10 @@ export class _KeccakPRG extends Keccak implements PRG {
  * @example
  * Create a Keccak-based pseudorandom generator and read bytes from it.
  * ```ts
+ * import { keccakprg } from '@noble/hashes/sha3-addons.js';
+ *
  * const prg = keccakprg(254);
+ * prg.addEntropy();
  * prg.randomBytes(8);
  * ```
  */
