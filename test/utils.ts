@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join as joinPath } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gunzipSync } from 'node:zlib';
 
 export const _dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -21,8 +20,10 @@ export function json(path) {
   }
 }
 
+import { jsonGZ as readJsonGZ } from './vectors/acvp-vectors/utils.js';
+
 export function jsonGZ(path) {
-  return JSON.parse(gunzipSync(readRel(path)).toString('utf8'));
+  return readJsonGZ(joinPath(_dirname, path));
 }
 
 function median(list) {
