@@ -52,8 +52,6 @@ export type BlakeOpts = {
 // Shared unsalted sentinel, sized for the 64-bit path and reused by the 32-bit path via prefix.
 const EMPTY_SALT = /* @__PURE__ */ new Uint32Array(8);
 
-// Base destroy logic only clears salt-derived state; the partial message buffer and length/position
-// bookkeeping remain until the instance or backing buffer is reused.
 abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
   readonly canXOF = false;
   protected finished = false;
@@ -118,7 +116,7 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     const { view, buffer, blockLen } = this;
     const len = data.length;
     let dataView;
-    for (let pos = 0; pos < len; ) {
+    for (let pos = 0; pos < len;) {
       const take = Math.min(blockLen - this.pos, len - pos);
       // Fast path only when there is no buffered partial block: `take === blockLen` implies
       // `this.pos === 0`, so we can process full blocks directly from the input view.
@@ -145,6 +143,9 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
   }
   destroy(): void {
     this.destroyed = true;
+    clean(this.buffer);
+    this.length = 0;
+    this.pos = 0;
     if (this.salt !== EMPTY_SALT) {
       clean(this.salt, this.constants);
     }
