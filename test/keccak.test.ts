@@ -118,6 +118,24 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       }
     });
 
+    it('shake defaults ignore Object.prototype.dkLen', () => {
+      const previous = Object.getOwnPropertyDescriptor(Object.prototype, 'dkLen');
+      Object.defineProperty(Object.prototype, 'dkLen', {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: 0,
+      });
+      try {
+        eql(shake128(EMPTY).length, 16);
+        eql(shake256(EMPTY).length, 32);
+        eql(shake256.create().outputLen, 32);
+      } finally {
+        if (previous === undefined) delete (Object.prototype as any).dkLen;
+        else Object.defineProperty(Object.prototype, 'dkLen', previous);
+      }
+    });
+
     it('shake128: dkLen', () => {
       const input = utf8ToBytes('test');
       for (const dkLen of TYPE_TEST.int) throws(() => shake128(input, { dkLen }));

@@ -195,7 +195,11 @@ describe('utils etc', () => {
 
 describe('assert', () => {
   it('checkOpts', () => {
-    eql(u.checkOpts({ a: 1 }, { b: 2 }), { a: 1, b: 2 });
+    const inputDefaults = { a: 1 };
+    const merged = u.checkOpts(inputDefaults, { b: 2 });
+    eql({ ...merged }, { a: 1, b: 2 });
+    eql(Object.getPrototypeOf(merged), null);
+    eql(inputDefaults, { a: 1 });
     u.checkOpts({}, Object.create(null));
     const defaults = {};
     const jsonProto = JSON.parse('{"__proto__":{"c":1}}');

@@ -745,7 +745,7 @@ export const validateObject = (
  * @param defaults - base option object
  * @param opts - user overrides
  * @param title - label included in thrown override errors
- * @returns Merged option object. The merge mutates `defaults` in place.
+ * @returns Fresh merged option object with a null prototype.
  * @throws On wrong argument types. {@link TypeError}
  * @example
  * Merge user overrides onto default options.
@@ -760,7 +760,9 @@ export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
 ): T1 & T2 {
   aopts(defaults as Record<string, any>, 'defaults');
   if (opts !== undefined) aopts(opts as Record<string, any>, title);
-  const merged = Object.assign(defaults, opts);
+  // Callers read optional fields directly, so omitted values must not fall through to ambient
+  // Object.prototype pollution (for example a forged `dkLen` changing SHAKE's default output).
+  const merged = Object.assign(Object.create(null), defaults, opts);
   return merged as T1 & T2;
 }
 
