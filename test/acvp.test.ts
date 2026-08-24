@@ -265,7 +265,7 @@ function run(variant: string, platform: any, isSlow = false, { describe, it } = 
               if (contentLength % 8 || fullLength % 8) continue;
               const c = hexToBytes(content);
               const h = fn.create(opts);
-              for (let left = fullLength / 8; left; ) {
+              for (let left = fullLength / 8; left;) {
                 const take = Math.min(c.length, left);
                 h.update(c.subarray(0, take));
                 left -= take;

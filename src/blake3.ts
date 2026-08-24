@@ -288,7 +288,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     abytes(out);
     this.finish();
     const { blockLen, bufferOut } = this;
-    for (let pos = 0, len = out.length; pos < len; ) {
+    for (let pos = 0, len = out.length; pos < len;) {
       if (this.posOut >= blockLen) this.b2CompressOut();
       const take = Math.min(blockLen - this.posOut, len - pos);
       out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);

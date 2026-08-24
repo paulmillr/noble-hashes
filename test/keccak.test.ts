@@ -220,8 +220,11 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       for (let i = 0; i < PRG_VECTORS.length; i++) {
         const v = PRG_VECTORS[i];
         const input = fromHex(v.input);
+        // XKCP also publishes raw unseeded-state outputs. They are deliberately unreachable through
+        // the guarded public PRG API, so only feed KATs with non-empty input apply here.
+        if (input.length === 0) continue;
         const prg = keccakprg(+v.capacity);
-        prg.addEntropy(fromHex(v.input));
+        prg.addEntropy(input);
         let out = prg.randomBytes(v.output.length / 2);
         if (out.length > 0 && out[0] & 1) {
           if (out[0] & 2) prg.addEntropy(input);
@@ -257,6 +260,14 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
       prg.update(new Uint8Array([1, 2, 3]));
       throws(() => prg.randomBytes(1), /addEntropy\(\) must be called before randomBytes\(\)/);
       prg.addEntropy(new Uint8Array([4, 5, 6]));
+      eql(prg.randomBytes(1).length, 1);
+    });
+    it('keccakprg rejects empty entropy', () => {
+      const prg = keccakprg();
+      throws(() => prg.addEntropy(EMPTY), /"seed" must not be empty/);
+      // A rejected feed must not unlock the output gate.
+      throws(() => prg.randomBytes(1), /addEntropy\(\) must be called before randomBytes\(\)/);
+      prg.addEntropy(Uint8Array.of(1));
       eql(prg.randomBytes(1).length, 1);
     });
     it('keccakprg addEntropy defaults to system random bytes', () => {
@@ -370,7 +381,7 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
           perm();
         }
         const out = new Uint8Array(outLen);
-        for (let pos = 0; pos < outLen; ) {
+        for (let pos = 0; pos < outLen;) {
           const take = Math.min(blockLen, outLen - pos);
           out.set(state.subarray(0, take), pos);
           pos += take;

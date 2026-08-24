@@ -232,7 +232,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     const canUseU32 = blockLen % 4 === 0 && data.byteOffset % 4 === 0;
     const blockLen32 = blockLen / 4;
     const data32 = canUseU32 && len >= blockLen ? u32(data) : undefined;
-    for (let pos = 0; pos < len; ) {
+    for (let pos = 0; pos < len;) {
       if (data32 !== undefined && this.pos === 0 && pos % 4 === 0 && len - pos >= blockLen) {
         for (let i = 0, o = pos / 4; i < blockLen32; i++) state32[i] ^= data32[o + i];
         pos += blockLen;
@@ -269,7 +269,7 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     this.finish();
     const bufferOut = this.state;
     const { blockLen } = this;
-    for (let pos = 0, len = out.length; pos < len; ) {
+    for (let pos = 0, len = out.length; pos < len;) {
       if (this.posOut >= blockLen) this.keccak();
       const take = Math.min(blockLen - this.posOut, len - pos);
       out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);

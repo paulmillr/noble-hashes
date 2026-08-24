@@ -2,7 +2,7 @@
 // details that should not leak into shared test helpers reused by other projects
 // such as awasm-noble.
 import { describe, it } from '@paulmillr/jsbt/test.js';
-import { deepStrictEqual as eql, throws } from 'node:assert';
+import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { HashMD } from '../src/_md.ts';
 import { blake256, blake512 } from '../src/blake1.ts';
 import { blake2b } from '../src/blake2.ts';
@@ -11,6 +11,7 @@ import { expand, hkdf } from '../src/hkdf.ts';
 import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
 import { _SHA256, sha256 } from '../src/sha2.ts';
 import { copyBytes, createHasher, hexToBytes, utf8ToBytes } from '../src/utils.ts';
+import * as webcrypto from '../src/webcrypto.ts';
 
 describe('noble-hashes only', () => {
   it('HashMD requires family-local clone implementations', () => {
@@ -68,6 +69,44 @@ describe('noble-hashes only', () => {
       ],
       [wideExpected, wideExpected]
     );
+  });
+  it('rejects __proto__ option injection', () => {
+    const input = Uint8Array.of(1, 2, 3);
+    const kdfOpts = JSON.parse('{"__proto__":{"c":1}}');
+    throws(() => pbkdf2(sha256, input, input, kdfOpts), /opts\.__proto__/);
+
+    const hashOpts: any = Object.create(null);
+    hashOpts.__proto__ = { key: new Uint8Array(32) };
+    throws(() => blake3(input, hashOpts), /opts\.__proto__/);
+  });
+  it('WebCrypto PBKDF2 rejects backend-overflowing iterations before native calls', async () => {
+    const cryptoDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+    let backendCalls = 0;
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: {
+        subtle: {
+          importKey() {
+            backendCalls++;
+            throw new Error('native WebCrypto must not be called');
+          },
+        },
+      },
+    });
+    try {
+      await rejects(
+        () =>
+          webcrypto.pbkdf2(webcrypto.sha256, 'password', 'salt', {
+            c: 2 ** 31,
+            dkLen: 32,
+          }),
+        /"c" exceeds WebCrypto backend limit/
+      );
+    } finally {
+      if (cryptoDescriptor) Object.defineProperty(globalThis, 'crypto', cryptoDescriptor);
+      else delete (globalThis as any).crypto;
+    }
+    eql(backendCalls, 0);
   });
   it('PBKDF2-BLAKE3 does not abandon live keyed CV stacks', () => {
     const abandoned: Uint32Array[] = [];
@@ -175,6 +214,20 @@ describe('noble-hashes only', () => {
         expandOut,
       ])
     );
+  });
+  it('BLAKE1 destroy wipes retained message blocks and counters', () => {
+    for (const hash of [blake256, blake512]) {
+      const secret = Uint8Array.from({ length: hash.blockLen }, (_, i) => i + 1);
+      const instance: any = hash.create();
+      // Split a full block so it is assembled in the internal buffer before compression.
+      instance.update(secret.subarray(0, -1)).update(secret.subarray(-1));
+      eql(instance.buffer, secret);
+      instance.destroy();
+      eql(
+        { buffer: instance.buffer, length: instance.length, pos: instance.pos },
+        { buffer: new Uint8Array(hash.blockLen), length: 0, pos: 0 }
+      );
+    }
   });
   it('BLAKE1 unsalted clone replacements clear dead buffers and reuse immutable state', () => {
     const suffix = Uint8Array.of(1, 2, 3);
