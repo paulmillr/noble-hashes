@@ -23,17 +23,18 @@ async function run() {
     import('./keccak.test.ts'),
     import('./async.test.ts'),
   ]);
-  // The final four modules register their suites through top-level import side effects.
   const [{ test: kdf }, { executeKDFTests }, { test: clone }, { test: info }] = await Promise.all([
     import('./kdf.test.ts'),
     import('./generator.ts'),
     import('./clone.test.ts'),
     import('./info.test.ts'),
-    import('./eskdf.test.ts'),
-    import('./noble-hashes-only.test.ts'),
-    import('./u64.test.ts'),
-    import('./utils.test.ts'),
   ]);
+  // These modules register suites through top-level side effects. Their order must be stable when
+  // jsbt replays this entrypoint in workers, so don't load them concurrently with Promise.all().
+  await import('./eskdf.test.ts');
+  await import('./noble-hashes-only.test.ts');
+  await import('./u64.test.ts');
+  await import('./utils.test.ts');
   init(variant, platform);
   acvpTests(false, variant, platform);
   argon2(variant, platform);
