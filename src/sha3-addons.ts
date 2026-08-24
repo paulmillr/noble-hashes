@@ -523,7 +523,7 @@ export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
     aexists(this);
     abytes(data);
     const { chunkLen, leafCons } = this;
-    for (let pos = 0, len = data.length; pos < len; ) {
+    for (let pos = 0, len = data.length; pos < len;) {
       if (this.chunkPos == chunkLen || !this.leafHash) {
         if (this.leafHash) this.flushLeaf();
         // Clone a pristine template instead of re-running the constructor;
@@ -834,7 +834,7 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
     aexists(this);
     abytes(data);
     const { chunkLen, blockLen, leafLen, rounds } = this;
-    for (let pos = 0, len = data.length; pos < len; ) {
+    for (let pos = 0, len = data.length; pos < len;) {
       if (this.chunkPos == chunkLen) {
         if (this.leafHash) this.flushLeaf();
         else {
@@ -1085,6 +1085,10 @@ export class _KeccakPRG extends Keccak implements PRG {
   addEntropy(seed?: TArg<Uint8Array>): void {
     // Check lifecycle before asking the system RNG for entropy that cannot be used.
     aexists(this);
+    if (seed !== undefined) {
+      abytes(seed, undefined, 'seed');
+      if (seed.length === 0) throw new Error('"seed" must not be empty');
+    }
     const generated = seed === undefined;
     const entropy = generated ? randomBytes() : seed;
     try {
@@ -1133,7 +1137,7 @@ export class _KeccakPRG extends Keccak implements PRG {
  * See {@link https://keccak.team/files/CSF-0.1.pdf}.
  * Fresh instances reject output until `.addEntropy()` has been called. With no
  * argument, `addEntropy()` obtains 32 bytes from the platform CSPRNG; callers
- * may instead supply their own entropy bytes.
+ * may instead supply their own non-empty entropy bytes.
  * @param capacity - sponge capacity in bits. Accepted values are those that
  *   keep `rho = 1598 - capacity` byte-aligned; the default `254` is chosen
  *   because it satisfies that duplex layout while leaving a wide byte-aligned
