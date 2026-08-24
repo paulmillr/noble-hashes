@@ -197,6 +197,14 @@ describe('assert', () => {
   it('checkOpts', () => {
     eql(u.checkOpts({ a: 1 }, { b: 2 }), { a: 1, b: 2 });
     u.checkOpts({}, Object.create(null));
+    const defaults = {};
+    const jsonProto = JSON.parse('{"__proto__":{"c":1}}');
+    throws(() => u.checkOpts(defaults, jsonProto), /opts\.__proto__/);
+    eql(defaults, {});
+    eql(Object.getPrototypeOf(defaults), Object.prototype);
+    const nullProto: any = Object.create(null);
+    nullProto.__proto__ = { key: new Uint8Array(32) };
+    throws(() => u.checkOpts({}, nullProto), /opts\.__proto__/);
     for (const value of TYPE_TEST.opts) throws(() => u.checkOpts({}, value));
   });
   it('anumber', () => {

@@ -47,7 +47,7 @@ const DEFAULT_PROGRESS = {
 
 export function test(
   variant = 'noble',
-  { sha256, scrypt, scryptAsync, pbkdf2Async } = DEFAULT,
+  { argon2idAsync, sha256, scrypt, scryptAsync, pbkdf2Async } = DEFAULT,
   { describe, it } = BT,
   PROGRESS = DEFAULT_PROGRESS
 ) {
@@ -100,6 +100,19 @@ export function test(
       if (i) eql(t[i] > t[i - 1], true, `progress monotonicity at ${i}`);
     }
   };
+  const checkHostYield = async (name, fn) => {
+    let timerFired = false;
+    const timer = new Promise<void>((resolve) =>
+      setTimeout(() => {
+        timerFired = true;
+        resolve();
+      }, 0)
+    );
+    await fn();
+    const firedDuringKdf = timerFired;
+    await timer; // Do not leave a pending timer behind when the assertion fails.
+    eql(firedDuringKdf, true, `${name} did not yield to the host event loop`);
+  };
 
   describe(`async (${variant})`, () => {
     it.serial('Scrypt timing, parallel, progress', async () => {
@@ -116,6 +129,18 @@ export function test(
     }
     it.serial('PBKDF2 parallel', async () => {
       await checkParallel('PBKDF2');
+    });
+    it.serial('KDFs yield to timers', async () => {
+      await checkHostYield('PBKDF2', () =>
+        pbkdf2Async(sha256, PWD, SALT, { c: 3, dkLen: 32, asyncTick: 0 })
+      );
+      await checkHostYield('scrypt', () =>
+        scryptAsync(PWD, SALT, { N: 16, r: 1, p: 1, dkLen: 32, asyncTick: 0 })
+      );
+      if (argon2idAsync)
+        await checkHostYield('Argon2', () =>
+          argon2idAsync(PWD, 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32, asyncTick: 0 })
+        );
     });
   });
 }

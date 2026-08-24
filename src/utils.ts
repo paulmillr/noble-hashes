@@ -262,6 +262,9 @@ const aopts = (value: Record<string, any>, label: string) => {
   const proto = Object.getPrototypeOf(value);
   if (proto !== Object.prototype && proto !== null)
     throw new TypeError(`"${label}" expected plain object`);
+  // Object.assign() treats an own "__proto__" source key as a write to the target's legacy
+  // prototype setter. Reject it before merging so inherited option values cannot be injected.
+  if (Object.hasOwn(value, '__proto__')) throw new TypeError(`"${label}.__proto__" is not allowed`);
 };
 
 /**
@@ -563,20 +566,22 @@ export function hexToBytes(hex: string): TRet<Uint8Array> {
 }
 
 /**
- * There is no setImmediate in browser and setTimeout is slow.
- * This yields to the Promise/microtask scheduler queue, not to timers or the
- * full macrotask event loop.
+ * Yields to the host task scheduler so timers, I/O, and rendering can make progress.
+ * Uses the Web Scheduling API when available or `setTimeout` as a cross-platform fallback.
  * @example
  * Yield to the next scheduler tick.
  * ```ts
  * await nextTick();
  * ```
  */
-export const nextTick = async (): Promise<void> => {};
+export function nextTick(): Promise<void> {
+  const host = globalThis as any;
+  if (typeof host.scheduler?.yield === 'function') return host.scheduler.yield();
+  return new Promise((resolve) => host.setTimeout(resolve, 0));
+}
 
 /**
- * Returns control to the Promise/microtask scheduler every `tick`
- * milliseconds to avoid blocking long loops.
+ * Returns control to the host event loop every `tick` milliseconds to avoid blocking long loops.
  * @param iters - number of loop iterations to run
  * @param tick - maximum time slice in milliseconds
  * @param cb - callback executed on each iteration
@@ -605,7 +610,7 @@ export async function asyncLoop(
     if (diff >= 0 && diff < tick) continue;
     await nextTick();
     // Track only synchronous work time; scheduler delay after yielding is outside our budget.
-    ts += diff;
+    ts = Date.now();
   }
 }
 
@@ -808,7 +813,8 @@ export interface Hash<T> {
 export interface PRG {
   /**
    * Mixes fresh entropy into the current generator state.
-   * @param seed - Entropy bytes to absorb. When omitted, the implementation uses its system RNG.
+   * @param seed - Non-empty entropy bytes to absorb. When omitted, the implementation uses its
+   * system RNG.
    */
   addEntropy(seed?: TArg<Uint8Array>): void;
   /**

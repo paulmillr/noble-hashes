@@ -608,7 +608,8 @@ async function argon2Async(
     const diff = Date.now() - ts;
     if (diff >= 0 && diff < ctx.asyncTick) continue;
     await nextTick();
-    ts += diff;
+    // Scheduler delay is outside the synchronous work budget.
+    ts = Date.now();
   }
   return argon2Output(ctx.B, ctx.p, ctx.laneLen, ctx.dkLen);
 }
