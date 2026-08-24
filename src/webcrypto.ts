@@ -161,8 +161,7 @@ export const hmac: TRet<WebHmacFn> = /* @__PURE__ */ (() => {
  * @param length - length of output keying material in bytes.
  *   RFC 5869 §2.3 allows `0..255*HashLen`, so `0` requests an empty OKM.
  * @returns Promise resolving to derived key bytes.
- * The RFC `L <= 255 * HashLen` bound is currently enforced only by backend
- * `deriveBits()` rejection, not by an explicit library-side guard.
+ * The RFC `L <= 255 * HashLen` bound is enforced before calling WebCrypto.
  * @throws If the current runtime does not provide `crypto.subtle`. {@link Error}
  * @example
  * WebCrypto HKDF (RFC 5869): derive keys from an initial input.
@@ -186,6 +185,7 @@ export async function hkdf(
   ahashWeb(hash);
   abytes(ikm, undefined, 'ikm');
   anumber(length, 'length');
+  if (length > 255 * hash.outputLen) throw new Error('Length must be <= 255*HashLen');
   if (salt !== undefined) abytes(salt, undefined, 'salt');
   if (info !== undefined) abytes(info, undefined, 'info');
   const wkey = await crypto.importKey('raw', ikm as BufferSource, 'HKDF', false, ['deriveBits']);
@@ -195,7 +195,12 @@ export async function hkdf(
     salt: salt === undefined ? new Uint8Array(0) : salt,
     info: info === undefined ? new Uint8Array(0) : info,
   };
-  return new Uint8Array(await crypto.deriveBits(opts, wkey, 8 * length)) as TRet<Uint8Array>;
+  const out = new Uint8Array(await crypto.deriveBits(opts, wkey, 8 * length));
+  if (out.length !== length) {
+    clean(out);
+    throw new Error('WebCrypto returned an invalid derived key length');
+  }
+  return out as TRet<Uint8Array>;
 }
 
 /**
@@ -210,7 +215,7 @@ export async function hkdf(
  * @returns Promise resolving to derived key bytes.
  * Positive-iteration enforcement is currently delegated to backend
  * `deriveBits()` rejection (for example `c = 0`), not a dedicated
- * library-side guard.
+ * library-side guard. Values above the signed 32-bit backend range are rejected locally.
  * @throws If the current runtime does not provide `crypto.subtle`. {@link Error}
  * @example
  * WebCrypto PBKDF2-HMAC: RFC 2898 key derivation function.
@@ -231,8 +236,14 @@ export async function pbkdf2(
   const { c, dkLen } = _opts;
   anumber(c, 'c');
   anumber(dkLen, 'dkLen');
+  // Node's native WebCrypto PBKDF2 binding accepts only a signed 32-bit iteration count and aborts
+  // the process on larger values instead of returning a rejected promise.
+  if (c > 0x7fffffff) throw new Error('"c" exceeds WebCrypto backend limit');
   // RFC 8018 §5.2 defines dkLen as a positive integer.
   if (dkLen < 1) throw new Error('"dkLen" must be >= 1');
+  // SubtleCrypto.deriveBits() accepts an unsigned-long bit count. Byte lengths at or above
+  // 2^29 would wrap after multiplication by eight instead of requesting the intended length.
+  if (dkLen >= 2 ** 29) throw new Error('derived key too long');
   const _password = kdfInputToBytes(password, 'password');
   try {
     const _salt = kdfInputToBytes(salt, 'salt');
@@ -241,9 +252,12 @@ export async function pbkdf2(
         'deriveBits',
       ]);
       const deriveOpts = { name: 'PBKDF2', salt: _salt, iterations: c, hash: hash.webCryptoName };
-      return new Uint8Array(
-        await crypto.deriveBits(deriveOpts, key, 8 * dkLen)
-      ) as TRet<Uint8Array>;
+      const out = new Uint8Array(await crypto.deriveBits(deriveOpts, key, 8 * dkLen));
+      if (out.length !== dkLen) {
+        clean(out);
+        throw new Error('WebCrypto returned an invalid derived key length');
+      }
+      return out as TRet<Uint8Array>;
     } finally {
       if (typeof salt === 'string') clean(_salt);
     }

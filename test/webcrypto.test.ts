@@ -56,6 +56,15 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
             await webcrypto.hkdf(web, BUF1, undefined, undefined, 1000),
             hkdf(noble, BUF1, undefined, undefined, 1000)
           );
+          await rejects(
+            () => webcrypto.hkdf(web, BUF1, BUF2, BUF3, 255 * web.outputLen + 1),
+            /Length must be <= 255\*HashLen/
+          );
+          // 8 * 2^29 wraps to zero in WebCrypto's unsigned-long bit-length argument.
+          await rejects(
+            () => webcrypto.hkdf(web, BUF1, BUF2, BUF3, 2 ** 29),
+            /Length must be <= 255\*HashLen/
+          );
         });
         it('pbkdf2', async () => {
           eql(
@@ -71,6 +80,11 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
             pbkdf2(noble, 'pwd', 'salt', { c: 11, dkLen: 1000 })
           );
           await rejects(() => webcrypto.pbkdf2(web, 'pwd', 'salt', { c: 1, dkLen: 0 }));
+          // 8 * 2^29 wraps to zero in WebCrypto's unsigned-long bit-length argument.
+          await rejects(
+            () => webcrypto.pbkdf2(web, 'pwd', 'salt', { c: 1, dkLen: 2 ** 29 }),
+            /derived key too long/
+          );
         });
         if (name === 'sha256')
           it('pbkdf2 wipes library-owned UTF-8 input copies', async () => {
