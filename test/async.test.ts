@@ -71,8 +71,10 @@ export function test(
       await fn(ms);
       const info = w.info(true);
       // console.log('\tKDF took', info);
-      // we compare avg with exepcted+2ms to avoid flaky tests
-      eql(info.avg < ms + 2, true, 'avg');
+      // The interval includes both our synchronous work and host scheduling delay. Under parallel
+      // test workers, the latter can exceed a timer tick even when the KDF yields on time.
+      const schedulingJitter = Math.max(10, ms / 4);
+      eql(info.avg < ms + schedulingJitter, true, 'avg');
       eql(info.total > ms, true, 'total');
     } finally {
       w.end();
