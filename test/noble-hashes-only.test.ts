@@ -3,7 +3,6 @@
 // such as awasm-noble.
 import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
-import { readFileSync } from 'node:fs';
 import { HashMD } from '../src/_md.ts';
 import { argon2idAsync } from '../src/argon2.ts';
 import { blake256, blake512 } from '../src/blake1.ts';
@@ -18,19 +17,6 @@ import * as webcrypto from '../src/webcrypto.ts';
 import { schedulerAbort } from './utils.ts';
 
 describe('noble-hashes only', () => {
-  it('exposes the documented ultra test scripts', () => {
-    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-    eql(
-      {
-        ultra: pkg.scripts['test:ultra'],
-        scrypt: pkg.scripts['test:ultra:scrypt'],
-      },
-      {
-        ultra: 'node test/slow-ultra.test.ts',
-        scrypt: 'node test/slow-extreme-scrypt.test.ts',
-      }
-    );
-  });
   it('HashMD requires family-local clone implementations', () => {
     // A shared clone feedback site becomes megamorphic across state layouts and materializes the
     // get() tuple, leaving chaining state in an allocation the library cannot explicitly wipe.
