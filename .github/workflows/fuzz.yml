@@ -1,9 +1,15 @@
-name: Run scheduled tests
+name: Fuzz
 on:
   schedule:
-    - cron: '0 12 * * 1,4' # 06:00 bi-weekly (mon, thu)
+    - cron: '0 12 * * *'
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
+  fuzz:
+    uses: paulmillr/cryptofuzz/.github/workflows/noble-commit-fuzz.yml@3cf64538a2a5dd52591e1daef511ec098a140174
+    with:
+      ref: ${{ github.sha }}
   slow:
     name: Slow large input tests
     uses: paulmillr/jsbt/.github/workflows/test-custom.yml@78e04b481416536e0d4369a3c9f718be306491f8
