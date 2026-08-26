@@ -439,10 +439,12 @@ function argon2Output(
  * processed block so callers control pacing: the sync driver just drains the
  * generator, while the async driver awaits `nextTick()` between time slices.
  */
-function* argon2Blocks(ctx: ReturnType<typeof argon2Init>): Generator<void, void> {
+function* argon2Blocks(
+  ctx: ReturnType<typeof argon2Init>,
+  address: TArg<Uint32Array>
+): Generator<void, void> {
   const { type, mP, p, t, version, B, laneLen, lanes, segmentLen, perBlock } = ctx;
   // [address, input, zero_block] format so we can pass single U32 to block function
-  const address = new Uint32Array(3 * 256);
   address[256 + 6] = mP;
   address[256 + 8] = t;
   address[256 + 10] = type;
@@ -514,7 +516,7 @@ function argon2(
   opts: TArg<ArgonOpts>
 ): TRet<Uint8Array> {
   const ctx = argon2Init(password, salt, type, opts);
-  const blocks = argon2Blocks(ctx);
+  const blocks = argon2Blocks(ctx, new Uint32Array(3 * 256));
   while (!blocks.next().done) {}
   return argon2Output(ctx.B, ctx.p, ctx.laneLen, ctx.dkLen);
 }
@@ -600,14 +602,17 @@ async function argon2Async(
   opts: TArg<ArgonOpts>
 ): Promise<TRet<Uint8Array>> {
   const ctx = argon2Init(password, salt, type, opts);
-  const blocks = argon2Blocks(ctx);
+  // Keep the generator-local address block reachable so an aborted scheduler yield can wipe it.
+  const address = new Uint32Array(3 * 256);
+  const blocks = argon2Blocks(ctx, address);
+  const abort = () => clean(address, ctx.B);
   let ts = Date.now();
   while (!blocks.next().done) {
     // Date.now() is not monotonic. If the clock goes backwards,
     // still yield control.
     const diff = Date.now() - ts;
     if (diff >= 0 && diff < ctx.asyncTick) continue;
-    await nextTick();
+    await nextTick(abort);
     // Scheduler delay is outside the synchronous work budget.
     ts = Date.now();
   }

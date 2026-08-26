@@ -191,6 +191,11 @@ export async function pbkdf2Async(
   opts: Pbkdf2Opt
 ): Promise<TRet<Uint8Array>> {
   const { c, dkLen, asyncTick, DK, outputLen, eng } = pbkdf2Init(hash, password, salt, opts);
+  // Reuse normal state destruction, then wipe the incomplete output if a host yield aborts.
+  const abort = () => {
+    eng.output(DK);
+    clean(DK);
+  };
   // DK = T1 + T2 + ⋯ + Tdklen/hlen
   for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
     // Ti = F(Password, Salt, c, i)
@@ -200,10 +205,15 @@ export async function pbkdf2Async(
     // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc
     // U1 = PRF(Password, Salt + INT_32_BE(i))
     eng.u1(ti, Ti);
-    await asyncLoop(c - 1, asyncTick, () => {
-      // Uc = PRF(Password, Uc−1)
-      eng.rounds(2, Ti); // c=2 runs exactly one PRF iteration per callback.
-    });
+    await asyncLoop(
+      c - 1,
+      asyncTick,
+      () => {
+        // Uc = PRF(Password, Uc−1)
+        eng.rounds(2, Ti); // c=2 runs exactly one PRF iteration per callback.
+      },
+      abort
+    );
   }
   return eng.output(DK);
 }

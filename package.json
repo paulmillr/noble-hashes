@@ -28,7 +28,9 @@
     "test:dos": "node test/slow-dos.test.ts",
     "test:slow": "node test/slow-big.test.ts",
     "test:acvp": "node test/slow-acvp.test.ts",
-    "test:kdf": "node test/slow-kdf.test.ts"
+    "test:kdf": "node test/slow-kdf.test.ts",
+    "test:ultra": "node test/slow-ultra.test.ts",
+    "test:ultra:scrypt": "node test/slow-extreme-scrypt.test.ts"
   },
   "exports": {
     ".": "./index.js",

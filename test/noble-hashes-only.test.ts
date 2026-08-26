@@ -3,17 +3,34 @@
 // such as awasm-noble.
 import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
+import { readFileSync } from 'node:fs';
 import { HashMD } from '../src/_md.ts';
+import { argon2idAsync } from '../src/argon2.ts';
 import { blake256, blake512 } from '../src/blake1.ts';
 import { blake2b } from '../src/blake2.ts';
 import { _BLAKE3, blake3 } from '../src/blake3.ts';
 import { expand, hkdf } from '../src/hkdf.ts';
 import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
+import { scryptAsync } from '../src/scrypt.ts';
 import { _SHA256, sha256 } from '../src/sha2.ts';
 import { copyBytes, createHasher, hexToBytes, utf8ToBytes } from '../src/utils.ts';
 import * as webcrypto from '../src/webcrypto.ts';
+import { schedulerAbort } from './utils.ts';
 
 describe('noble-hashes only', () => {
+  it('exposes the documented ultra test scripts', () => {
+    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+    eql(
+      {
+        ultra: pkg.scripts['test:ultra'],
+        scrypt: pkg.scripts['test:ultra:scrypt'],
+      },
+      {
+        ultra: 'node test/slow-ultra.test.ts',
+        scrypt: 'node test/slow-extreme-scrypt.test.ts',
+      }
+    );
+  });
   it('HashMD requires family-local clone implementations', () => {
     // A shared clone feedback site becomes megamorphic across state layouts and materializes the
     // get() tuple, leaving chaining state in an allocation the library cannot explicitly wipe.
@@ -160,6 +177,100 @@ describe('noble-hashes only', () => {
             '131ab02b66de5e7dad0c54f172ee4b25fc800dea31e40a5d0e9547b365d911' +
             '8b5fd4b'
         ),
+      }
+    );
+  });
+  it.serial('async KDFs clean state if their scheduler continuation is aborted', async () => {
+    const argonReason = new Error('Argon2 task aborted');
+    const argonWipes: number[] = [];
+    let argonError: unknown;
+    const fill32 = Uint32Array.prototype.fill;
+    Uint32Array.prototype.fill = function (value, start, end) {
+      if (value === 0 && (this.length === 768 || this.length === 2048))
+        argonWipes.push(this.length);
+      return fill32.call(this, value, start, end);
+    };
+    try {
+      await schedulerAbort(argonReason, () =>
+        argon2idAsync('password', 'saltsalt', {
+          t: 1,
+          m: 8,
+          p: 1,
+          dkLen: 32,
+          asyncTick: 0,
+        })
+      );
+    } catch (error) {
+      argonError = error;
+    } finally {
+      Uint32Array.prototype.fill = fill32;
+    }
+
+    const pbkdf2Reason = new Error('PBKDF2 task aborted');
+    const states: TrackedSHA256[] = [];
+    class TrackedSHA256 extends _SHA256 {
+      wiped = false;
+      constructor() {
+        super();
+        states.push(this);
+      }
+      destroy(): void {
+        this.wiped = true;
+        super.destroy();
+      }
+    }
+    const tracked = createHasher(() => new TrackedSHA256());
+    states.length = 0; // Ignore createHasher's metadata probe.
+    let pbkdf2Error: unknown;
+    try {
+      await schedulerAbort(pbkdf2Reason, () =>
+        pbkdf2Async(tracked, 'password', 'salt', { c: 2, dkLen: 32, asyncTick: 0 })
+      );
+    } catch (error) {
+      pbkdf2Error = error;
+    }
+
+    const scryptReason = new Error('scrypt task aborted');
+    const scryptWipes: string[] = [];
+    const fill8 = Uint8Array.prototype.fill;
+    const scryptFill32 = Uint32Array.prototype.fill;
+    Uint8Array.prototype.fill = function (value, start, end) {
+      if (value === 0 && this.length === 128) scryptWipes.push('B:128');
+      return fill8.call(this, value, start, end);
+    };
+    Uint32Array.prototype.fill = function (value, start, end) {
+      if (value === 0 && this.length === 512) scryptWipes.push('V:512');
+      if (value === 0 && this.length === 32) scryptWipes.push('tmp:32');
+      return scryptFill32.call(this, value, start, end);
+    };
+    let scryptError: unknown;
+    try {
+      await schedulerAbort(scryptReason, () =>
+        scryptAsync('password', 'salt', {
+          N: 16,
+          r: 1,
+          p: 1,
+          dkLen: 32,
+          asyncTick: 0,
+        })
+      );
+    } catch (error) {
+      scryptError = error;
+    } finally {
+      Uint8Array.prototype.fill = fill8;
+      Uint32Array.prototype.fill = scryptFill32;
+    }
+
+    eql(
+      {
+        argon2: { error: argonError, wipes: argonWipes },
+        pbkdf2: { error: pbkdf2Error, wipes: states.map((state) => state.wiped) },
+        scrypt: { error: scryptError, wipes: scryptWipes },
+      },
+      {
+        argon2: { error: argonReason, wipes: [768, 2048] },
+        pbkdf2: { error: pbkdf2Reason, wipes: [true, true, true, true] },
+        scrypt: { error: scryptReason, wipes: ['B:128', 'V:512', 'tmp:32'] },
       }
     );
   });

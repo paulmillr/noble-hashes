@@ -4,6 +4,31 @@ import { fileURLToPath } from 'node:url';
 
 export const _dirname = dirname(fileURLToPath(import.meta.url));
 
+export async function schedulerAbort(reason, fn) {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'scheduler');
+  Object.defineProperty(globalThis, 'scheduler', {
+    configurable: true,
+    value: {
+      yield() {
+        const controller = new AbortController();
+        const promise = new Promise((_, reject) => {
+          controller.signal.addEventListener('abort', () => reject(controller.signal.reason), {
+            once: true,
+          });
+        });
+        queueMicrotask(() => controller.abort(reason));
+        return promise;
+      },
+    },
+  });
+  try {
+    return await fn();
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'scheduler', descriptor);
+    else delete globalThis.scheduler;
+  }
+}
+
 function readRel(path, opts) {
   return readFileSync(joinPath(_dirname, path), opts);
 }

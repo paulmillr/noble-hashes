@@ -568,15 +568,24 @@ export function hexToBytes(hex: string): TRet<Uint8Array> {
 /**
  * Yields to the host task scheduler so timers, I/O, and rendering can make progress.
  * Uses the Web Scheduling API when available or `setTimeout` as a cross-platform fallback.
+ * Host-task yields are much slower than microtasks (roughly 1ms with the timer fallback), so
+ * async loops should use `asyncTick >= 10` to amortize scheduling overhead to about 10% while
+ * still allowing other event-loop work to proceed.
+ * @param onReject - optional cleanup invoked only if the host yield fails
  * @example
  * Yield to the next scheduler tick.
  * ```ts
  * await nextTick();
  * ```
  */
-export function nextTick(): Promise<void> {
+export function nextTick(onReject?: () => void): Promise<void> {
   const host = globalThis as any;
-  if (typeof host.scheduler?.yield === 'function') return host.scheduler.yield();
+  if (typeof host.scheduler?.yield === 'function') {
+    const promise: Promise<void> = host.scheduler.yield();
+    // Keep the original scheduler rejection; this handler exists only for cleanup.
+    if (onReject) promise.catch(onReject);
+    return promise;
+  }
   return new Promise((resolve) => host.setTimeout(resolve, 0));
 }
 
@@ -585,6 +594,7 @@ export function nextTick(): Promise<void> {
  * @param iters - number of loop iterations to run
  * @param tick - maximum time slice in milliseconds
  * @param cb - callback executed on each iteration
+ * @param onReject - optional cleanup invoked only if a host yield fails
  * @throws On wrong argument types. {@link TypeError}
  * @throws On wrong argument ranges or values. {@link RangeError}
  * @example
@@ -596,7 +606,8 @@ export function nextTick(): Promise<void> {
 export async function asyncLoop(
   iters: number,
   tick: number,
-  cb: (i: number) => void
+  cb: (i: number) => void,
+  onReject?: () => void
 ): Promise<void> {
   anumber(iters, 'iters');
   anumber(tick, 'tick');
@@ -608,7 +619,7 @@ export async function asyncLoop(
     // Date.now() is not monotonic, so in case if clock goes backwards we return return control too
     const diff = Date.now() - ts;
     if (diff >= 0 && diff < tick) continue;
-    await nextTick();
+    await nextTick(onReject);
     // Track only synchronous work time; scheduler delay after yielding is outside our budget.
     ts = Date.now();
   }
