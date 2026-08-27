@@ -3,7 +3,7 @@
 Audited & minimal JS implementation of hash functions, MACs and KDFs.
 
 - 🔒 [**Audited**](#security) by an independent security firm
-- 🪶 Minimal: 2.7KB (gzipped) sha256, unused code is excluded from your builds
+- 🪶 Minimal: 2.8KB (gzipped) sha256, unused code is excluded from your builds
 - 🏎 Fast: hand-optimized for caveats of JS engines
 - 🔍 Reliable: chained / ACVP tests ensure correctness
 - 🔁 No unrolled loops: makes it easier to verify and reduces source code size up to 5x
@@ -97,7 +97,7 @@ Hash functions:
 
 ```typescript
 import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '@noble/hashes/sha2.js';
-const res = sha256(Uint8Array.from([0xbc])); // basic
+const res = sha256(Uint8Array.from([0xbc]));
 for (let hash of [sha256, sha384, sha512, sha224, sha512_224, sha512_256]) {
   const arr = Uint8Array.from([0x10, 0x20, 0x30]);
   const a = hash(arr);
@@ -105,8 +105,6 @@ for (let hash of [sha256, sha384, sha512, sha224, sha512_224, sha512_256]) {
 }
 ```
 
-Check out [RFC 6234](https://datatracker.ietf.org/doc/html/rfc6234) and
-[the paper on truncated SHA512/256](https://eprint.iacr.org/2010/548.pdf).
 
 #### sha3: FIPS, SHAKE, Keccak
 
@@ -127,11 +125,6 @@ for (let hash of [
 const shka = shake128(Uint8Array.from([0x10]), { dkLen: 512 });
 const shkb = shake256(Uint8Array.from([0x30]), { dkLen: 512 });
 ```
-
-Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
-[Website](https://keccak.team/keccak.html).
-
-Check out [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub)
 
 #### sha3-addons: cSHAKE, KMAC, KT128, TurboSHAKE
 
@@ -155,20 +148,12 @@ const ep1 = parallelhash256(data, { blockLen: 8 });
 const kk = Uint8Array.from([0xca]);
 const ek10 = kmac128(kk, data);
 const ek11 = kmac256(kk, data);
-const ek12 = kt128(data); // kangarootwelve 128-bit
-const ek13 = kt256(data); // kangarootwelve 256-bit
-// pseudo-random generator, first argument is capacity. XKCP recommends 254 bits capacity for 128-bit security strength.
+const ek12 = kt128(data);
+const ek13 = kt256(data);
 const p = keccakprg(254);
-// addEntropy() is required before output and uses the platform CSPRNG by default.
 p.addEntropy();
 const rand1b = p.randomBytes(32);
 ```
-
-- cSHAKE, KMAC, TupleHash, ParallelHash + XOF are available, matching
-  [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
-- Reduced-round Keccak KT128 (KangarooTwelve 🦘, K12) and TurboSHAKE are available, matching
-  [RFC 9861](https://datatracker.ietf.org/doc/rfc9861/).
-- [KeccakPRG](https://keccak.team/files/CSF-0.1.pdf): pseudo-random generator based on Keccak
 
 #### blake1, blake2, blake3
 
@@ -202,18 +187,7 @@ blake3(ab, { key: new Uint8Array(32) });
 blake3(ab, { context: txt.encode('application-name') });
 ```
 
-- Blake1 is legacy hash, one of SHA3 proposals. It is rarely used anywhere. See [pdf](https://www.aumasson.jp/blake/blake.pdf).
-- Blake2 is popular fast hash. blake2b focuses on 64-bit platforms while blake2s is for 8-bit to 32-bit ones. See [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693), [Website](https://www.blake2.net)
-- Blake3 is faster, reduced-round blake2. See [Website & specs](https://blake3.io)
-
 #### legacy: sha1, md5, ripemd160
-
-SHA1 (RFC 3174), MD5 (RFC 1321) and RIPEMD160 (ISO/IEC 10118-3) legacy, weak hash functions.
-Don't use them in a new protocol. What "weak" means:
-
-- Collisions can be made with 2^24 effort in MD5 (seconds on commodity hardware), 2^61 in SHA1 (demonstrated in practice), 2^80 in RIPEMD160.
-- No practical pre-image attacks (only theoretical, 2^123.4)
-- HMAC seems kinda ok: https://datatracker.ietf.org/doc/html/rfc6151
 
 ```typescript
 import { md5, ripemd160, sha1 } from '@noble/hashes/legacy.js';
@@ -235,8 +209,6 @@ const mac1 = hmac(sha256, key, msg);
 const mac2 = hmac.create(sha256, key).update(msg).digest();
 ```
 
-Conforms to [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104).
-
 #### hkdf
 
 ```typescript
@@ -254,8 +226,6 @@ const prk = extract(sha256, inputKey, salt);
 const hk2 = expand(sha256, prk, info, 32);
 ```
 
-Conforms to [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869).
-
 #### pbkdf2
 
 ```typescript
@@ -268,8 +238,6 @@ const pbkey3 = await pbkdf2Async(sha256, Uint8Array.from([1, 2, 3]), Uint8Array.
   dkLen: 32,
 });
 ```
-
-Conforms to [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018).
 
 #### scrypt
 
@@ -285,12 +253,9 @@ const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5
   onProgress(percentage) {
     console.log('progress', percentage);
   },
-  maxmem: 128 * 8 * (2 ** 17 + 1 + 1), // 128 * r * (N + p + 1)
+  // maxmem: 128 * 8 * (2 ** 17 + 1 + 1), // 128 * r * (N + p + 1)
 });
 ```
-
-Conforms to [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914),
-[Website](https://www.tarsnap.com/scrypt.html)
 
 - `N, r, p` are work factors. It is common to only adjust N, while keeping `r: 8, p: 1`.
   See [the blog post](https://blog.filippo.io/the-scrypt-parameters/).
@@ -326,8 +291,6 @@ import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js';
 // Defaults to t=3, m=1GiB (specified in KiB), p=1, and a 1GiB maxmem limit.
 const arg1 = argon2id('password', 'saltsalt');
 ```
-
-Argon2 [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106) implementation.
 
 > [!WARNING]
 > Argon2 can't be fast in JS, because there is no fast Uint64Array.
@@ -386,21 +349,39 @@ console.log(toHex(randomBytes(32)));
 - `bytesToHex` will convert `Uint8Array` to a hex string
 - `randomBytes(bytes)` will produce cryptographically secure random `Uint8Array` of length `bytes`
 
+### Specs
+
+- SHA2: [RFC 6234](https://datatracker.ietf.org/doc/html/rfc6234)
+- SHA2-512/256: [pdf](https://eprint.iacr.org/2010/548.pdf)
+- SHA3: [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)
+- SHA3-addons: [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf)
+- SHA3-addons KT128 (KangarooTwelve 🦘, K12) / TurboSHAKE: [RFC 9861](https://datatracker.ietf.org/doc/rfc9861/)
+- BLAKE1: [pdf](https://www.aumasson.jp/blake/blake.pdf)
+- BLAKE2: [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693)
+- BLAKE3: [site](https://blake3.io)
+- SHA1: [RFC 3174](https://datatracker.ietf.org/doc/html/rfc3174)
+- MD5: [RFC 1321](https://datatracker.ietf.org/doc/html/rfc1321)
+- RIPEMD160 (ISO/IEC 10118-3)
+- HMAC: [RFC 2104](https://datatracker.ietf.org/doc/html/rfc2104)
+- HKDF: [RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869)
+- PBKDF2: [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)
+- Scrypt: [RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914)
+- Argon2: [RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106)
+
 ## Security
 
 The library has been audited:
 
-- at version 2.2.0, in Apr 2026, by ourselves (self-audited)
-  - Scope: everything
-  - [Changes since audit](https://github.com/paulmillr/noble-hashes/compare/2.2.0..main)
 - at version 1.0.0, in Jan 2022, independently, by [Cure53](https://cure53.de)
   - PDFs: [website](https://cure53.de/pentest-report_hashing-libs.pdf), [in-repo](./audit/2022-01-05-cure53-audit-nbl2.pdf)
   - Scope: everything, besides `blake3`, `sha3-addons`, `sha1` and `argon2`, which have not been audited
   - The audit has been funded by [Ethereum Foundation](https://ethereum.org/en/) with help of [Nomic Labs](https://nomiclabs.io)
 
+We've started regular AI-assisted self-audits in Apr 2026.
+
 It is tested against official (ACVP / KAT) vectors, cross-library chained hashing,
 sliding-window length sweeps and property-based tests (fast-check),
-and is being fuzzed in [the separate repo](https://github.com/paulmillr/fuzzing).
+and is being fuzzed in CI.
 
 If you see anything unusual: investigate and report.
 
@@ -527,51 +508,51 @@ which does unrolling in an auditable way and allows to achieve 10GB/s BLAKE3.
 
 ```
 # 32B
-sha256 x 2,178,649 ops/sec @ 459ns/op
-sha512 x 783,699 ops/sec @ 1μs/op
-sha3_256 x 520,562 ops/sec @ 1μs/op
-sha3_512 x 526,870 ops/sec @ 1μs/op
-kt128 x 762,195 ops/sec @ 1μs/op
-kt256 x 769,230 ops/sec @ 1μs/op
-turboshake128 x 902,527 ops/sec @ 1μs/op
-blake256 x 796,812 ops/sec @ 1μs/op
-blake2b x 455,788 ops/sec @ 2μs/op
-blake2s x 1,015,228 ops/sec @ 985ns/op
-blake3 x 1,095,290 ops/sec @ 913ns/op
-ripemd160 x 1,594,896 ops/sec @ 627ns/op
-md5 x 2,123,142 ops/sec @ 471ns/op
-sha1 x 1,876,172 ops/sec @ 533ns/op
-hmac(sha256) x 500,000 ops/sec @ 2μs/op
-hmac(sha512) x 188,857 ops/sec @ 5μs/op
-kmac256 x 149,633 ops/sec @ 6μs/op
-blake3(key) x 957,854 ops/sec @ 1μs/op
+sha256 438 ns
+sha512 1219 ns
+sha3_256 1853 ns
+sha3_512 1864 ns
+kt128 1380 ns
+kt256 1370 ns
+turboshake128 1191 ns
+blake256 1335 ns
+blake2b 2186 ns
+blake2s 1055 ns
+blake3 981 ns
+ripemd160 563 ns
+md5 449 ns
+sha1 507 ns
+hmac(sha256) 1955 ns
+hmac(sha512) 5126 ns
+kmac256 6653 ns
+blake3(key) 1120 ns
 
 # 1MB
-sha256 x 293 mib/sec
-sha512 x 128 mib/sec
-sha3_256 x 76.7 mib/sec
-sha3_512 x 40.2 mib/sec
-kt128 x 177 mib/sec
+sha256 x 297 mib/sec
+sha512 x 130 mib/sec
+sha3_256 x 78.1 mib/sec
+sha3_512 x 41.9 mib/sec
+kt128 x 184 mib/sec
 kt256 x 147 mib/sec
-turboshake128 x 187 mib/sec
-blake256 x 57.3 mib/sec
-blake2b x 66.9 mib/sec
-blake2s x 79.6 mib/sec
-blake3 x 100 mib/sec
+turboshake128 x 186 mib/sec
+blake256 x 56.7 mib/sec
+blake2b x 66.2 mib/sec
+blake2s x 62.9 mib/sec
+blake3 x 90 mib/sec
 ripemd160 x 179 mib/sec
-md5 x 273 mib/sec
-sha1 x 401 mib/sec
+md5 x 275 mib/sec
+sha1 x 417 mib/sec
 hmac(sha256) x 290 mib/sec
-hmac(sha512) x 127 mib/sec
-kmac256 x 74.8 mib/sec
-blake3(key) x 97.2 mib/sec
+hmac(sha512) x 129 mib/sec
+kmac256 x 78.4 mib/sec
+blake3(key) x 90.5 mib/sec
 
-## KDF
-hkdf(sha256) x 242,541 ops/sec @ 4μs/op
-blake3(context) x 495,294 ops/sec @ 2μs/op
-pbkdf2(sha256, c: 2 ** 18) x 4 ops/sec @ 205ms/op ± 11.57% (203ms..206ms)
-scrypt(n: 2 ** 19, r: 8, p: 1) x 1 ops/sec @ 768ms/op
-argon2id(t: 1, m: 128MB) x 2 ops/sec @ 357ms/op ± 26.23% (349ms..364ms)
+# KDF
+hkdf(sha256) x 249,100 ops/sec @ 4015 ns/op
+blake3(context) x 480,400 ops/sec @ 2081 ns/op
+pbkdf2(sha256, c: 2 ** 18) x 5 ops/sec @ 199 ms/op
+scrypt(n: 2 ** 19, r: 8, p: 1) x 1 ops/sec @ 751 ms/op
+argon2id(t: 1, m: 128MB) x 3 ops/sec @ 276 ms/op
 ```
 
 ## License
