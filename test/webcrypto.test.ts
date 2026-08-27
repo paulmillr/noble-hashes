@@ -87,6 +87,49 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
           );
         });
         if (name === 'sha256')
+          it('snapshots inputs before asynchronous WebCrypto steps', async () => {
+            const key = new Uint8Array([1, 2, 3]);
+            const message = new Uint8Array([4, 5, 6]);
+            const keyCopy = key.slice();
+            const messageCopy = message.slice();
+            const mac = webcrypto.hmac(web, key, message);
+            key.fill(7);
+            message.fill(8);
+            eql(await mac, hmac(noble, keyCopy, messageCopy));
+
+            const ikm = new Uint8Array([9, 10, 11]);
+            const salt = new Uint8Array([12, 13, 14]);
+            const info = new Uint8Array([15, 16, 17]);
+            const ikmCopy = ikm.slice();
+            const saltCopy = salt.slice();
+            const infoCopy = info.slice();
+            const mutableHash = Object.assign((msg: Uint8Array) => web(msg), {
+              create: web.create,
+              webCryptoName: web.webCryptoName,
+              outputLen: web.outputLen,
+              blockLen: web.blockLen,
+            });
+            const okm = webcrypto.hkdf(mutableHash, ikm, salt, info, 16);
+            ikm.fill(18);
+            salt.fill(19);
+            info.fill(20);
+            mutableHash.webCryptoName = 'SHA-512';
+            mutableHash.outputLen = 64;
+            eql(await okm, hkdf(noble, ikmCopy, saltCopy, infoCopy, 16));
+
+            const password = new Uint8Array([21, 22, 23]);
+            const pbSalt = new Uint8Array([24, 25, 26]);
+            const passwordCopy = password.slice();
+            const pbSaltCopy = pbSalt.slice();
+            const opts = { c: 1, dkLen: 16 };
+            const derived = webcrypto.pbkdf2(web, password, pbSalt, opts);
+            password.fill(27);
+            pbSalt.fill(28);
+            opts.c = 2;
+            opts.dkLen = 32;
+            eql(await derived, pbkdf2(noble, passwordCopy, pbSaltCopy, { c: 1, dkLen: 16 }));
+          });
+        if (name === 'sha256')
           it('pbkdf2 wipes library-owned UTF-8 input copies', async () => {
             const markers = new Set(['web-password-owned-marker', 'web-salt-owned-marker']);
             const wiped = Object.fromEntries([...markers].map((marker) => [marker, 0]));
