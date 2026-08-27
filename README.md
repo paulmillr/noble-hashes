@@ -42,34 +42,8 @@ A standalone file [noble-hashes.js](https://github.com/paulmillr/noble-hashes/re
 
 ```js
 // import * from '@noble/hashes'; // Error: use sub-imports, to ensure small app size
-import { sha256 as noble_sha256 } from '@noble/hashes/sha2.js';
-const hash = noble_sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23]));
-
-// Available modules
-import { sha256, sha384, sha512, sha224, sha512_224, sha512_256 } from '@noble/hashes/sha2.js';
-import {
-  sha3_256, sha3_512,
-  keccak_256, keccak_512,
-  shake128, shake256,
-} from '@noble/hashes/sha3.js';
-import {
-  cshake256, turboshake256, kmac256, tuplehash256,
-  kt128, kt256, keccakprg,
-} from '@noble/hashes/sha3-addons.js';
-import { blake3 } from '@noble/hashes/blake3.js';
-import { blake2b, blake2s } from '@noble/hashes/blake2.js';
-import { blake256, blake512 } from '@noble/hashes/blake1.js';
-import { sha1, md5, ripemd160 } from '@noble/hashes/legacy.js';
-import { hmac } from '@noble/hashes/hmac.js';
-import { hkdf } from '@noble/hashes/hkdf.js';
-import { pbkdf2, pbkdf2Async } from '@noble/hashes/pbkdf2.js';
-import { scrypt, scryptAsync } from '@noble/hashes/scrypt.js';
-import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js';
-import { eskdf } from '@noble/hashes/eskdf.js';
-import * as webcrypto from '@noble/hashes/webcrypto.js';
-// const { sha256, sha384, sha512, hmac, hkdf, pbkdf2 } = webcrypto;
-import * as utils from '@noble/hashes/utils.js';
-const { bytesToHex, concatBytes, equalBytes, hexToBytes } = utils;
+import { sha256 } from '@noble/hashes/sha2.js';
+const hash = sha256(Uint8Array.from([0xca, 0xfe, 0x01, 0x23]));
 ```
 
 - [sha2: sha256, sha384, sha512](#sha2-sha256-sha384-sha512-and-others)
@@ -98,11 +72,6 @@ Hash functions:
 ```typescript
 import { sha224, sha256, sha384, sha512, sha512_224, sha512_256 } from '@noble/hashes/sha2.js';
 const res = sha256(Uint8Array.from([0xbc]));
-for (let hash of [sha256, sha384, sha512, sha224, sha512_224, sha512_256]) {
-  const arr = Uint8Array.from([0x10, 0x20, 0x30]);
-  const a = hash(arr);
-  const b = hash.create().update(arr).digest();
-}
 ```
 
 
@@ -114,14 +83,7 @@ import {
   keccak_224, keccak_256, keccak_384, keccak_512,
   shake128, shake256,
 } from '@noble/hashes/sha3.js';
-for (let hash of [
-  sha3_224, sha3_256, sha3_384, sha3_512,
-  keccak_224, keccak_256, keccak_384, keccak_512,
-]) {
-  const arr = Uint8Array.from([0x10, 0x20, 0x30]);
-  const a = hash(arr);
-  const b = hash.create().update(arr).digest();
-}
+const s = sha3_256(Uint8Array.from([0x10, 0x20, 0x30]));
 const shka = shake128(Uint8Array.from([0x10]), { dkLen: 512 });
 const shkb = shake256(Uint8Array.from([0x30]), { dkLen: 512 });
 ```
@@ -136,20 +98,14 @@ import {
   turboshake128, turboshake256,
 } from '@noble/hashes/sha3-addons.js';
 const data = Uint8Array.from([0x10, 0x20, 0x30]);
-const personalization = new TextEncoder().encode('def');
-const ec1 = cshake128(data, { personalization });
-const ec2 = cshake256(data, { personalization });
-const et1 = turboshake128(data);
-const et2 = turboshake256(data, { D: 0x05 });
+const ec = cshake128(data, { personalization: new TextEncoder().encode('def') });
+const et = turboshake256(data, { D: 0x05 });
 // tuplehash(['ab', 'c']) !== tuplehash(['a', 'bc']) !== tuplehash([data])
-const et3 = tuplehash256([new TextEncoder().encode('ab'), new TextEncoder().encode('c')]);
+const eu = tuplehash256([new TextEncoder().encode('ab'), new TextEncoder().encode('c')]);
 // Not parallel in JS (similar to blake3 / kt128), added for compat
-const ep1 = parallelhash256(data, { blockLen: 8 });
-const kk = Uint8Array.from([0xca]);
-const ek10 = kmac128(kk, data);
-const ek11 = kmac256(kk, data);
-const ek12 = kt128(data);
-const ek13 = kt256(data);
+const ep = parallelhash256(data, { blockLen: 8 });
+const ek = kmac256(Uint8Array.from([0xca]), data);
+const ekt = kt128(data);
 const p = keccakprg(254);
 p.addEntropy();
 const rand1b = p.randomBytes(32);
@@ -161,27 +117,16 @@ const rand1b = p.randomBytes(32);
 import { blake224, blake256, blake384, blake512 } from '@noble/hashes/blake1.js';
 import { blake2b, blake2s } from '@noble/hashes/blake2.js';
 import { blake3 } from '@noble/hashes/blake3.js';
-
-for (let hash of [blake224, blake256, blake384, blake512, blake2b, blake2s, blake3]) {
-  const arr = Uint8Array.from([0x10, 0x20, 0x30]);
-  const a = hash(arr);
-  const b = hash.create().update(arr).digest();
-}
+const ab = Uint8Array.from([0x01]);
+blake256(ab);
 
 // blake2 advanced usage
-const ab = Uint8Array.from([0x01]);
 const txt = new TextEncoder();
-blake2s(ab);
-blake2s(ab, { key: new Uint8Array(32) });
-blake2s(ab, { personalization: txt.encode('pers1234') });
-blake2s(ab, { salt: txt.encode('salt1234') });
-blake2b(ab);
-blake2b(ab, { key: new Uint8Array(64) });
-blake2b(ab, { personalization: txt.encode('pers1234pers1234') });
-blake2b(ab, { salt: txt.encode('salt1234salt1234') });
+blake2s(ab, { key: new Uint8Array(32) }); // blake2b keys can be 64 bytes
+blake2s(ab, { personalization: txt.encode('pers1234') }); // 16 bytes for blake2b
+blake2s(ab, { salt: txt.encode('salt1234') }); // 16 bytes for blake2b
 
 // blake3 advanced usage
-blake3(ab);
 blake3(ab, { dkLen: 256 });
 blake3(ab, { key: new Uint8Array(32) });
 blake3(ab, { context: txt.encode('application-name') });
@@ -191,11 +136,7 @@ blake3(ab, { context: txt.encode('application-name') });
 
 ```typescript
 import { md5, ripemd160, sha1 } from '@noble/hashes/legacy.js';
-for (let hash of [md5, ripemd160, sha1]) {
-  const arr = Uint8Array.from([0x10, 0x20, 0x30]);
-  const a = hash(arr);
-  const b = hash.create().update(arr).digest();
-}
+const h = sha1(Uint8Array.from([0x10, 0x20, 0x30]));
 ```
 
 #### hmac
@@ -264,19 +205,8 @@ const scr3 = await scryptAsync(Uint8Array.from([1, 2, 3]), Uint8Array.from([4, 5
 - `onProgress` can be used with async version of the function to report progress to a user.
 - `maxmem` prevents DoS and defaults to `1GiB + 2KiB` (`2**30 + 2**11`), enough for `N: 2**20, r: 8, p: 1`. It can be adjusted using formula: `128 * r * (N + p + 1)`
 
-Time it takes to derive Scrypt key under different values of N (2\*\*N) on Apple M4 (mobile phones can be 1x-4x slower):
-
-| N pow | Time | RAM   |
-| ----- | ---- | ----- |
-| 16    | 0.1s | 64MB  |
-| 17    | 0.2s | 128MB |
-| 18    | 0.4s | 256MB |
-| 19    | 0.8s | 512MB |
-| 20    | 1.5s | 1GB   |
-| 21    | 3.1s | 2GB   |
-| 22    | 6.2s | 4GB   |
-| 23    | 13s  | 8GB   |
-| 24    | 27s  | 16GB  |
+On Apple M4, `N: 2**16` takes 0.1s and 64MB RAM; each increment of N doubles both,
+up to `N: 2**24` at 27s and 16GB. Mobile phones can be 1x-4x slower.
 
 > [!NOTE]
 > We support N larger than `2**20` where available, however,
@@ -330,14 +260,8 @@ const hk1 = await hkdf(sha256, inputKey, salt, info, 32);
 const pbkey1 = await pbkdf2(sha256, 'password', 'salt', { c: 524288, dkLen: 32 });
 ```
 
-Sometimes people want to use built-in `crypto.subtle` instead of pure JS implementation.
-However, it has terrible API.
-
-We simplify access to built-ins with API which mirrors noble-hashes.
-The overhead is minimal - just 30+ lines of code, which verify input correctness.
-
-> [!NOTE]
-> Webcrypto methods are always async.
+A thin wrapper over built-in `crypto.subtle`, mirroring the noble-hashes API and validating
+inputs, in just 30+ lines of code. Webcrypto methods are always async.
 
 #### utils
 
@@ -398,31 +322,21 @@ Use low-level libraries & languages.
 ### Memory dumping
 
 The library shares state buffers between hash function calls. Library-owned working buffers are
-zeroed after use, including mutable UTF-8 copies created from password-KDF string inputs. However,
-if an attacker can read application memory, you are doomed in any case:
+zeroed after use, including mutable UTF-8 copies created from password-KDF string inputs.
+However, if an attacker can read application memory, you are doomed in any case:
 
-- At some point, input will be a string and strings are immutable in JS:
-  there is no way to overwrite them with zeros. For example: deriving
-  key from `scrypt(password, salt)` where password and salt are strings
-- Input from a file will stay in file buffers
-- Input / output will be re-used multiple times in application which means it could stay in memory
-- `await anything()` will always write all internal variables (including numbers)
-  to memory. With async functions / Promises there are no guarantees when the code
-  chunk would be executed. Which means attacker can have plenty of time to read data from memory
-- There is no way to guarantee anything about zeroing sensitive data without
-  complex tests-suite which will dump process memory and verify that there is
-  no sensitive data left. For JS it means testing all browsers (incl. mobile),
-  which is complex. And of course it will be useless without using the same
-  test-suite in the actual application that consumes the library
+- JS strings are immutable and can't be overwritten with zeros — e.g. a password passed
+  to `scrypt(password, salt)` as a string stays in memory
+- Inputs & outputs are re-used across the application and stay in file buffers / memory anyway
+- `await anything()` writes all internal variables (including numbers) to memory, with no
+  guarantee of when they get overwritten — plenty of time for an attacker to read them
 
 ### Supply chain security
 
 - **Commits** are signed with PGP keys to prevent forgery. Be sure to verify the commit signatures
 - **Releases** are made transparently through token-less GitHub CI and Trusted Publishing. Be sure to verify the [provenance logs](https://docs.npmjs.com/generating-provenance-statements) for authenticity.
 - **Rare releasing** is practiced to minimize the need for re-audits by end-users.
-- **Dependencies** are minimized and strictly pinned to reduce supply-chain risk.
-  - We use as few dependencies as possible.
-  - Version ranges are locked, and changes are checked with npm-diff.
+- **Dependencies** are minimized, strictly pinned, and changes are checked with npm-diff.
 - **Dev dependencies** are excluded from end-user installs; they’re only used for development and build steps.
 
 For this package, there are 0 dependencies; and a few dev dependencies:
