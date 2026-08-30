@@ -1,5 +1,5 @@
 import { describe, it } from '@paulmillr/jsbt/test.js';
-import fc from 'fast-check';
+import * as fc from '@paulmillr/jsbt/random.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { hmac } from '../src/hmac.ts';
 import { sha256 } from '../src/sha2.ts';
