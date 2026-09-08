@@ -804,6 +804,13 @@ export function test(variant: string, platform: any, { describe, it } = BT) {
 
     it('validate Keccak construction opts', () => {
       new Keccak(144, 0x06, 224 / 8);
+      new Keccak(144, 0xff, 224 / 8);
+      throws(() => new Keccak(144, 0, 224 / 8), {
+        message: '"suffix" expected integer 1..255, got 0',
+      });
+      throws(() => new Keccak(144, 0x100, 224 / 8), {
+        message: '"suffix" expected integer 1..255, got 256',
+      });
       throws(() => new Keccak(201, 0x06, 224 / 8));
       throws(() => new Keccak(0, 0x06, 224 / 8));
     });

@@ -197,6 +197,10 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
   ) {
     anumber(blockLen, 'blockLen');
     anumber(suffix, 'suffix');
+    // Delimited suffix is XORed into one state byte. Zero omits the delimiter and makes
+    // trailing zero message bytes ambiguous; values above one byte would be silently truncated.
+    if (suffix < 1 || suffix > 0xff)
+      throw new RangeError('"suffix" expected integer 1..255, got ' + suffix);
     anumber(rounds, 'rounds');
     abool(enableXOF, 'enableXOF');
     this.blockLen = blockLen;

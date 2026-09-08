@@ -1061,7 +1061,9 @@ export class _KeccakPRG extends Keccak implements PRG {
     // Rho must be full bytes
     if (capacity < 0 || capacity > 1600 - 10 || rho % 8) throw new Error('invalid capacity');
     // blockLen = rho in bytes
-    super(rho / 8, 0, 0, true);
+    // The base suffix is unused: this PRG overrides both finish() and keccak() with duplex
+    // framing. Keep a valid placeholder so the base Keccak constructor can reject unsafe suffixes.
+    super(rho / 8, 0x01, 0, true);
     this.rate = rate;
     this.posOut = Math.floor((rate + 7) / 8);
   }
