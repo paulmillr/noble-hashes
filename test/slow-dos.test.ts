@@ -6,7 +6,13 @@ import { HASHES } from './hashes.test.ts';
 import { PLATFORMS } from './platform.ts';
 import { stats } from './utils.ts';
 
-const getTime = () => Number(process.hrtime.bigint());
+// Wall-clock timings include time when the process is descheduled. On a busy CI runner that can
+// make a larger input look disproportionately slow, so measure CPU time spent by this process.
+const getCpuTime = () => {
+  const { user, system } = process.cpuUsage();
+  return user + system;
+};
+const MIN_SAMPLE_TIME = 10_000; // 10ms in the microseconds returned by process.cpuUsage().
 const DEFAULT_PLATFORM = PLATFORMS.noble || Object.values(PLATFORMS)[0];
 const BT = { describe, it };
 
@@ -24,11 +30,18 @@ function quadratic(buf) {
 }
 
 async function medianTime(callback, samples = 5) {
+  let runs = 1;
+  while (true) {
+    const started = getCpuTime();
+    for (let i = 0; i < runs; i++) await callback();
+    if (getCpuTime() - started >= MIN_SAMPLE_TIME) break;
+    runs *= 2;
+  }
   const timings = [];
   for (let i = 0; i < samples; i++) {
-    const started = getTime();
-    await callback();
-    timings.push(getTime() - started);
+    const started = getCpuTime();
+    for (let j = 0; j < runs; j++) await callback();
+    timings.push((getCpuTime() - started) / runs);
   }
   return stats(timings).median;
 }
