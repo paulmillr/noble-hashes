@@ -251,6 +251,7 @@ abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
     return this._cloneIntoMeta(to);
   }
   protected process(view: DataView, offset: number): void {
+    // Inline fixed 64-bit operations to avoid helper calls and temporary objects.
     // Extend the first 16 words into the remaining 64 words w[16..79] of the message schedule array
     for (let i = 0; i < 16; i++, offset += 4) {
       SHA512_W_H[i] = view.getUint32(offset);
@@ -260,16 +261,22 @@ abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
       // s0 := (w[i-15] rightrotate 1) xor (w[i-15] rightrotate 8) xor (w[i-15] rightshift 7)
       const W15h = SHA512_W_H[i - 15] | 0;
       const W15l = SHA512_W_L[i - 15] | 0;
-      const s0h = u64.rotrSH(W15h, W15l, 1) ^ u64.rotrSH(W15h, W15l, 8) ^ u64.shrSH(W15h, W15l, 7);
-      const s0l = u64.rotrSL(W15h, W15l, 1) ^ u64.rotrSL(W15h, W15l, 8) ^ u64.shrSL(W15h, W15l, 7);
+      const s0h = ((W15h >>> 1) | (W15l << 31)) ^ ((W15h >>> 8) | (W15l << 24)) ^ (W15h >>> 7);
+      const s0l =
+        ((W15h << 31) | (W15l >>> 1)) ^
+        ((W15h << 24) | (W15l >>> 8)) ^
+        ((W15h << 25) | (W15l >>> 7));
       // s1 := (w[i-2] rightrotate 19) xor (w[i-2] rightrotate 61) xor (w[i-2] rightshift 6)
       const W2h = SHA512_W_H[i - 2] | 0;
       const W2l = SHA512_W_L[i - 2] | 0;
-      const s1h = u64.rotrSH(W2h, W2l, 19) ^ u64.rotrBH(W2h, W2l, 61) ^ u64.shrSH(W2h, W2l, 6);
-      const s1l = u64.rotrSL(W2h, W2l, 19) ^ u64.rotrBL(W2h, W2l, 61) ^ u64.shrSL(W2h, W2l, 6);
+      const s1h = ((W2h >>> 19) | (W2l << 13)) ^ ((W2h << 3) | (W2l >>> 29)) ^ (W2h >>> 6);
+      const s1l =
+        ((W2h << 13) | (W2l >>> 19)) ^ ((W2h >>> 29) | (W2l << 3)) ^ ((W2h << 26) | (W2l >>> 6));
       // SHA512_W[i] = s0 + s1 + SHA512_W[i - 7] + SHA512_W[i - 16];
-      const SUMl = u64.add4L(s0l, s1l, SHA512_W_L[i - 7], SHA512_W_L[i - 16]);
-      const SUMh = u64.add4H(SUMl, s0h, s1h, SHA512_W_H[i - 7], SHA512_W_H[i - 16]);
+      const SUMl =
+        (s0l >>> 0) + (s1l >>> 0) + (SHA512_W_L[i - 7] >>> 0) + (SHA512_W_L[i - 16] >>> 0);
+      const SUMh =
+        (s0h + s1h + SHA512_W_H[i - 7] + SHA512_W_H[i - 16] + ((SUMl / 4294967296) | 0)) | 0;
       SHA512_W_H[i] = SUMh | 0;
       SHA512_W_L[i] = SUMl | 0;
     }
@@ -277,19 +284,24 @@ abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
     // Compression function main loop, 80 rounds
     for (let i = 0; i < 80; i++) {
       // S1 := (e rightrotate 14) xor (e rightrotate 18) xor (e rightrotate 41)
-      const sigma1h = u64.rotrSH(Eh, El, 14) ^ u64.rotrSH(Eh, El, 18) ^ u64.rotrBH(Eh, El, 41);
-      const sigma1l = u64.rotrSL(Eh, El, 14) ^ u64.rotrSL(Eh, El, 18) ^ u64.rotrBL(Eh, El, 41);
+      const sigma1h =
+        ((Eh >>> 14) | (El << 18)) ^ ((Eh >>> 18) | (El << 14)) ^ ((Eh << 23) | (El >>> 9));
+      const sigma1l =
+        ((Eh << 18) | (El >>> 14)) ^ ((Eh << 14) | (El >>> 18)) ^ ((Eh >>> 9) | (El << 23));
       //const T1 = (H + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i]) | 0;
       const CHIh = (Eh & Fh) ^ (~Eh & Gh);
       const CHIl = (El & Fl) ^ (~El & Gl);
       // T1 = H + sigma1 + Chi(E, F, G) + SHA512_K[i] + SHA512_W[i]
       // prettier-ignore
-      const T1ll = u64.add5L(Hl, sigma1l, CHIl, SHA512_Kl[i], SHA512_W_L[i]);
-      const T1h = u64.add5H(T1ll, Hh, sigma1h, CHIh, SHA512_Kh[i], SHA512_W_H[i]);
+      const T1ll = (Hl >>> 0) + (sigma1l >>> 0) + (CHIl >>> 0) + (SHA512_Kl[i] >>> 0) + (SHA512_W_L[i] >>> 0);
+      const T1h =
+        (Hh + sigma1h + CHIh + SHA512_Kh[i] + SHA512_W_H[i] + ((T1ll / 4294967296) | 0)) | 0;
       const T1l = T1ll | 0;
       // S0 := (a rightrotate 28) xor (a rightrotate 34) xor (a rightrotate 39)
-      const sigma0h = u64.rotrSH(Ah, Al, 28) ^ u64.rotrBH(Ah, Al, 34) ^ u64.rotrBH(Ah, Al, 39);
-      const sigma0l = u64.rotrSL(Ah, Al, 28) ^ u64.rotrBL(Ah, Al, 34) ^ u64.rotrBL(Ah, Al, 39);
+      const sigma0h =
+        ((Ah >>> 28) | (Al << 4)) ^ ((Ah << 30) | (Al >>> 2)) ^ ((Ah << 25) | (Al >>> 7));
+      const sigma0l =
+        ((Ah << 4) | (Al >>> 28)) ^ ((Ah >>> 2) | (Al << 30)) ^ ((Ah >>> 7) | (Al << 25));
       const MAJh = (Ah & Bh) ^ (Ah & Ch) ^ (Bh & Ch);
       const MAJl = (Al & Bl) ^ (Al & Cl) ^ (Bl & Cl);
       Hh = Gh | 0;
@@ -298,26 +310,44 @@ abstract class SHA2_64B<T extends SHA2_64B<T>> extends HashMD<T> {
       Gl = Fl | 0;
       Fh = Eh | 0;
       Fl = El | 0;
-      ({ h: Eh, l: El } = u64.add(Dh | 0, Dl | 0, T1h | 0, T1l | 0));
+      const DlPlusT1l = ((Dl | 0) >>> 0) + ((T1l | 0) >>> 0);
+      Eh = ((Dh | 0) + (T1h | 0) + ((DlPlusT1l / 4294967296) | 0)) | 0;
+      El = DlPlusT1l | 0;
       Dh = Ch | 0;
       Dl = Cl | 0;
       Ch = Bh | 0;
       Cl = Bl | 0;
       Bh = Ah | 0;
       Bl = Al | 0;
-      const All = u64.add3L(T1l, sigma0l, MAJl);
-      Ah = u64.add3H(All, T1h, sigma0h, MAJh);
+      const All = (T1l >>> 0) + (sigma0l >>> 0) + (MAJl >>> 0);
+      Ah = (T1h + sigma0h + MAJh + ((All / 4294967296) | 0)) | 0;
       Al = All | 0;
     }
     // Add the compressed chunk to the current hash value
-    ({ h: Ah, l: Al } = u64.add(this.Ah | 0, this.Al | 0, Ah | 0, Al | 0));
-    ({ h: Bh, l: Bl } = u64.add(this.Bh | 0, this.Bl | 0, Bh | 0, Bl | 0));
-    ({ h: Ch, l: Cl } = u64.add(this.Ch | 0, this.Cl | 0, Ch | 0, Cl | 0));
-    ({ h: Dh, l: Dl } = u64.add(this.Dh | 0, this.Dl | 0, Dh | 0, Dl | 0));
-    ({ h: Eh, l: El } = u64.add(this.Eh | 0, this.El | 0, Eh | 0, El | 0));
-    ({ h: Fh, l: Fl } = u64.add(this.Fh | 0, this.Fl | 0, Fh | 0, Fl | 0));
-    ({ h: Gh, l: Gl } = u64.add(this.Gh | 0, this.Gl | 0, Gh | 0, Gl | 0));
-    ({ h: Hh, l: Hl } = u64.add(this.Hh | 0, this.Hl | 0, Hh | 0, Hl | 0));
+    const AlSum = ((this.Al | 0) >>> 0) + ((Al | 0) >>> 0);
+    Ah = ((this.Ah | 0) + (Ah | 0) + ((AlSum / 4294967296) | 0)) | 0;
+    Al = AlSum | 0;
+    const BlSum = ((this.Bl | 0) >>> 0) + ((Bl | 0) >>> 0);
+    Bh = ((this.Bh | 0) + (Bh | 0) + ((BlSum / 4294967296) | 0)) | 0;
+    Bl = BlSum | 0;
+    const ClSum = ((this.Cl | 0) >>> 0) + ((Cl | 0) >>> 0);
+    Ch = ((this.Ch | 0) + (Ch | 0) + ((ClSum / 4294967296) | 0)) | 0;
+    Cl = ClSum | 0;
+    const DlSum = ((this.Dl | 0) >>> 0) + ((Dl | 0) >>> 0);
+    Dh = ((this.Dh | 0) + (Dh | 0) + ((DlSum / 4294967296) | 0)) | 0;
+    Dl = DlSum | 0;
+    const ElSum = ((this.El | 0) >>> 0) + ((El | 0) >>> 0);
+    Eh = ((this.Eh | 0) + (Eh | 0) + ((ElSum / 4294967296) | 0)) | 0;
+    El = ElSum | 0;
+    const FlSum = ((this.Fl | 0) >>> 0) + ((Fl | 0) >>> 0);
+    Fh = ((this.Fh | 0) + (Fh | 0) + ((FlSum / 4294967296) | 0)) | 0;
+    Fl = FlSum | 0;
+    const GlSum = ((this.Gl | 0) >>> 0) + ((Gl | 0) >>> 0);
+    Gh = ((this.Gh | 0) + (Gh | 0) + ((GlSum / 4294967296) | 0)) | 0;
+    Gl = GlSum | 0;
+    const HlSum = ((this.Hl | 0) >>> 0) + ((Hl | 0) >>> 0);
+    Hh = ((this.Hh | 0) + (Hh | 0) + ((HlSum / 4294967296) | 0)) | 0;
+    Hl = HlSum | 0;
     this.set(Ah, Al, Bh, Bl, Ch, Cl, Dh, Dl, Eh, El, Fh, Fl, Gh, Gl, Hh, Hl);
   }
   protected roundClean(): void {
