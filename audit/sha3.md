@@ -59,6 +59,82 @@ tree-shaken `sha3_256` bundle from `8972 / 3498` to `9700 / 3814` bytes minified
 +9.0%`) and complete `sha3.js` from `9460 / 3689` to `10197 / 4006` (`+7.8% / +8.6%`). Keeping its
 state inside `genKeccak` leaves SHAKE-only and `keccakP` bundles unchanged.
 
+### 2026-11-09 arm64 follow-up
+
+Tested on Apple M5 Pro with Node 26.10.0 (V8) and system JavaScriptCore; method, bundle tables,
+branch-drift caveats, and the JSC pitfall are in [arm64.md](./arm64.md). The plane-by-plane /
+early-parity generator listed under "Remaining directions" was built and is now the shipped core.
+
+| Case (V8 / JSC)     |           2.4.0 |         before |        after | after / 2.4.0 |
+| ------------------- | --------------: | -------------: | -----------: | ------------: |
+| sha3_256 32 B       |  1.76 / 1.67 µs | 949 ns / 41 µs | 518 / 496 ns | 3.40x / 3.39x |
+| sha3_256 1 MiB      | 12.16 / 9.78 ms |    6.70 / 5.62 |  3.65 / 3.22 | 3.33x / 3.09x |
+| turboshake128 1 MiB |  5.08 / 3.88 ms |    2.86 / 2.33 |  1.60 / 1.32 | 3.18x / 2.96x |
+| kmac256 32 B        |  6.14 / 4.33 µs |    3.96 / 2.83 |  1.53 / 1.09 | 4.01x / 3.96x |
+
+| Change                                                                               |                          Result |
+| ------------------------------------------------------------------------------------ | ------------------------------: |
+| Plane-by-plane rounds: Theta, Rho, Pi into ten locals per plane, Chi into the output |               ~1.8x over before |
+| Early parity: next round's column parities accumulated while Chi stores              |          no separate Theta pass |
+| Two round bodies per loop iteration, alternating caller state and a module buffer    | `s -> t -> s`; odd count copies |
+| All permutation reads through `Int32Array` views                                     |             JSC 41 µs -> 496 ns |
+| sha3-addons: safe-integer length encoding, shared zero pad, KMAC precomputed prefix  |               kmac256 32 B 2.6x |
+
+The shared module buffer is reentrancy-safe because the permutation never runs caller code, and
+it is zeroed before every return. Subclasses that replace `state` / `state32` (as `_KMAC`'s clone
+does) are followed through an `Int32Array` view of the same buffer. In `before`, JSC's SHA3-256 at
+32 B ranged from 801 ns to 40 µs per process because the generated permutation read `Uint32Array`
+words and kept deoptimizing; the `Int32Array` views remove that entirely.
+
+The addons change encodes lengths with `%` and `/` by 256 on safe integers, falling back to BigInt
+only past `Number.MAX_SAFE_INTEGER`; KMAC without a customization string reuses the sponge state
+after absorbing `bytepad(encode_string("KMAC") || encode_string(""), rate)`, kept per rate.
+
+#### Size/speed frontier
+
+gzip bytes of the tree-shaken `sha3_256` export; speeds versus 2.4.0 as V8 / JSC.
+
+| Variant                                             | gzip | vs 2.4.0 |          32 B |         1 MiB |  kmac256 32 B |
+| --------------------------------------------------- | ---: | -------: | ------------: | ------------: | ------------: |
+| 2.4.0                                               | 2821 |          |               |               |               |
+| 2.4.0 permutation, cheaper plumbing                 | 2598 |   -223 B | 1.01x / 1.03x | 1.00x / 1.00x | 1.65x / 1.57x |
+| compact two-pass loop                               | 2750 |    -71 B | 1.31x / 1.39x | 1.36x / 1.38x | 2.02x / 1.98x |
+| two-pass loop, Chi in locals                        | 2881 |    +60 B | 1.40x / 1.66x | 1.47x / 1.78x | 2.22x / 2.66x |
+| straight-line permutation, no short path            | 3436 |   +615 B | 2.58x / 2.61x | 3.34x / 3.09x | 3.93x / 4.01x |
+| straight-line + short path, deduplicated round body | 3781 |   +960 B | 3.47x / 3.30x | 3.36x / 3.12x | 3.99x / 4.23x |
+| `after`                                             | 4095 |  +1274 B | 3.42x / 3.37x | 3.31x / 3.08x | 4.05x / 4.07x |
+
+Other exports for the same rows, gzip: `keccakP` 1237 / 1091 / 1194 / 1319 / 1847 / 1847 / 2161;
+`kmac256` 3252 / 3126 / 3218 / 3413 / 3993 / 3993 / 4306. Full-length results also covered
+SHA3-512, SHAKE256 64 KiB XOF, TurboSHAKE128 at 32 B and 1 MiB, and KT128; the ratios track the
+SHA3-256 rows within a few percent, except KT128 at 32 B where `after` is 2.2x / 2.3x.
+
+- Deduplicated round body: `after`'s two round bodies are textually different because the second
+  writes to different names. Writing both under the same block-scoped names (`a`, `b`) lets gzip
+  store the second body as a back-reference, and deriving Iota with the FIPS 202 LFSR in `Number`
+  arithmetic at import replaces the 48 emitted words. Speed is identical and it is 314 B smaller
+  than `after`; the saving was verified with esbuild/bismar only, not terser.
+- The compact loops reach 1.3-1.8x and are smaller than 2.4.0, but the only step beyond them is the
+  straight-line permutation at +555 B over the best loop. The compact two-pass loop relies on
+  variable shift counts, which the 2026-08 pass found weak on x64.
+
+#### Applied on `speedup-pareto` (2026-11-09)
+
+The straight-line + short path, deduplicated round body row is applied on the branch rebased onto
+2.4.0. The permutation still runs two rounds per loop iteration (`s -> t -> s`), but both round
+bodies are emitted as the same text: each sits in its own block with `const a = <src>, b = <dst>`,
+reads `a[...]`, writes `b[...]`, and `round` is incremented between them so both index Iota with
+`[round]`. The 48 emitted Iota words are replaced by the FIPS 202 rc() LFSR run once at import in
+`Number` arithmetic into two `Int32Array(24)`; the generator re-derives them with BigInt and checks
+both halves against the official table. Int32Array views, the short-input path and the sha3-addons
+changes are unchanged. The saving holds with terser as well as esbuild: terser keeps the block
+aliases and gives both bodies the same mangled names. gzip for `sha3_256` / `keccakP` / `kmac256`:
+4140 / 2170 / 4375 before, 3825 / 1857 / 4061 after with esbuild (bismar), and 3899 / 1914 / 4155 to
+3577 / 1600 / 3828 with terser. Speed equals the previous tree on V8 and JSC (0.98-1.01 at 32 B,
+1 MiB and KMAC256 32 B), and JSC per-process timings at 32 B stay unimodal at 565-706 ns. A
+48,146-check differential against `node:crypto` and the previous implementation found no mismatch.
+Regenerate or verify with `node test/misc/unrolled-sha3.js [--check]`.
+
 ## Shipped wins
 
 | Change                                                                    |                                Result |

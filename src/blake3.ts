@@ -3,8 +3,9 @@
  *
  * Native BLAKE3 gets most of its headline speed from SIMD and threads. Portable JavaScript has
  * neither explicit SIMD nor implicit worker parallelism, so this implementation specializes the
- * scalar core instead: all seven fixed rounds are unrolled, the message schedule is static, and
- * the 16-word state and message stay in locals. See `audit/blake3.md` for measurements.
+ * scalar core instead: the 16-word state and message stay in locals, and two spelled-out rounds
+ * run three times (plus one tail round) with the message words permuted in locals between
+ * iterations. See `audit/blake3.md` for measurements.
  * @module
  */
 import { SHA256_IV } from './_md.ts';
@@ -16,7 +17,7 @@ import {
   checkOpts,
   clean,
   copyBytes,
-  createHasher, swap32IfBE,
+  createHasher, swap32IfBE, _wrapShortHash,
   isLE, u32, u8,
   type CHashXOF,
   type HashXOF,
@@ -52,16 +53,94 @@ function b3Compress(
   flags: number,
   out?: TArg<Uint32Array>
 ) {
-  const c0 = cv[0] | 0, c1 = cv[1] | 0, c2 = cv[2] | 0, c3 = cv[3] | 0;
-  const c4 = cv[4] | 0, c5 = cv[5] | 0, c6 = cv[6] | 0, c7 = cv[7] | 0;
-  const m0 = msg[offset] | 0, m1 = msg[offset + 1] | 0, m2 = msg[offset + 2] | 0, m3 = msg[offset + 3] | 0;
-  const m4 = msg[offset + 4] | 0, m5 = msg[offset + 5] | 0, m6 = msg[offset + 6] | 0, m7 = msg[offset + 7] | 0;
-  const m8 = msg[offset + 8] | 0, m9 = msg[offset + 9] | 0, m10 = msg[offset + 10] | 0, m11 = msg[offset + 11] | 0;
-  const m12 = msg[offset + 12] | 0, m13 = msg[offset + 13] | 0, m14 = msg[offset + 14] | 0, m15 = msg[offset + 15] | 0;
-  let v0 = c0, v1 = c1, v2 = c2, v3 = c3, v4 = c4, v5 = c5, v6 = c6, v7 = c7;
-  let v8 = 0x6a09e667 | 0, v9 = 0xbb67ae85 | 0, v10 = 0x3c6ef372 | 0, v11 = 0xa54ff53a | 0;
+  let v0 = cv[0] | 0, v1 = cv[1] | 0, v2 = cv[2] | 0, v3 = cv[3] | 0;
+  let v4 = cv[4] | 0, v5 = cv[5] | 0, v6 = cv[6] | 0, v7 = cv[7] | 0;
+  let m0 = msg[offset] | 0, m1 = msg[offset + 1] | 0, m2 = msg[offset + 2] | 0, m3 = msg[offset + 3] | 0;
+  let m4 = msg[offset + 4] | 0, m5 = msg[offset + 5] | 0, m6 = msg[offset + 6] | 0, m7 = msg[offset + 7] | 0;
+  let m8 = msg[offset + 8] | 0, m9 = msg[offset + 9] | 0, m10 = msg[offset + 10] | 0, m11 = msg[offset + 11] | 0;
+  let m12 = msg[offset + 12] | 0, m13 = msg[offset + 13] | 0, m14 = msg[offset + 14] | 0, m15 = msg[offset + 15] | 0;
+  let v8 = B3_IV[0] | 0, v9 = B3_IV[1] | 0, v10 = B3_IV[2] | 0, v11 = B3_IV[3] | 0;
   let v12 = t0 | 0, v13 = t1 | 0, v14 = blockLen | 0, v15 = flags | 0;
-  // Round 0: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+  // Message indices below name the locals a round reads, not the original message words: after
+  // each iteration the locals are permuted so that the same code reads the next rounds' schedule.
+  for (let i = 0, t = 0; i < 3; i++) {
+    // Round 2 * i: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+    // columns
+    v0 = (v0 + v4 + m0) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
+    v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
+    v0 = (v0 + v4 + m1) | 0; v12 ^= v0; v12 = (v12 >>> 8) | (v12 << 24);
+    v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 7) | (v4 << 25);
+    v1 = (v1 + v5 + m2) | 0; v13 ^= v1; v13 = (v13 >>> 16) | (v13 << 16);
+    v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 12) | (v5 << 20);
+    v1 = (v1 + v5 + m3) | 0; v13 ^= v1; v13 = (v13 >>> 8) | (v13 << 24);
+    v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 7) | (v5 << 25);
+    v2 = (v2 + v6 + m4) | 0; v14 ^= v2; v14 = (v14 >>> 16) | (v14 << 16);
+    v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 12) | (v6 << 20);
+    v2 = (v2 + v6 + m5) | 0; v14 ^= v2; v14 = (v14 >>> 8) | (v14 << 24);
+    v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 7) | (v6 << 25);
+    v3 = (v3 + v7 + m6) | 0; v15 ^= v3; v15 = (v15 >>> 16) | (v15 << 16);
+    v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 12) | (v7 << 20);
+    v3 = (v3 + v7 + m7) | 0; v15 ^= v3; v15 = (v15 >>> 8) | (v15 << 24);
+    v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 7) | (v7 << 25);
+    // diagonals
+    v0 = (v0 + v5 + m8) | 0; v15 ^= v0; v15 = (v15 >>> 16) | (v15 << 16);
+    v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 12) | (v5 << 20);
+    v0 = (v0 + v5 + m9) | 0; v15 ^= v0; v15 = (v15 >>> 8) | (v15 << 24);
+    v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 7) | (v5 << 25);
+    v1 = (v1 + v6 + m10) | 0; v12 ^= v1; v12 = (v12 >>> 16) | (v12 << 16);
+    v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 12) | (v6 << 20);
+    v1 = (v1 + v6 + m11) | 0; v12 ^= v1; v12 = (v12 >>> 8) | (v12 << 24);
+    v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 7) | (v6 << 25);
+    v2 = (v2 + v7 + m12) | 0; v13 ^= v2; v13 = (v13 >>> 16) | (v13 << 16);
+    v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 12) | (v7 << 20);
+    v2 = (v2 + v7 + m13) | 0; v13 ^= v2; v13 = (v13 >>> 8) | (v13 << 24);
+    v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 7) | (v7 << 25);
+    v3 = (v3 + v4 + m14) | 0; v14 ^= v3; v14 = (v14 >>> 16) | (v14 << 16);
+    v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
+    v3 = (v3 + v4 + m15) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
+    v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
+    // Round 2 * i + 1: 2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8
+    // columns
+    v0 = (v0 + v4 + m2) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
+    v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
+    v0 = (v0 + v4 + m6) | 0; v12 ^= v0; v12 = (v12 >>> 8) | (v12 << 24);
+    v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 7) | (v4 << 25);
+    v1 = (v1 + v5 + m3) | 0; v13 ^= v1; v13 = (v13 >>> 16) | (v13 << 16);
+    v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 12) | (v5 << 20);
+    v1 = (v1 + v5 + m10) | 0; v13 ^= v1; v13 = (v13 >>> 8) | (v13 << 24);
+    v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 7) | (v5 << 25);
+    v2 = (v2 + v6 + m7) | 0; v14 ^= v2; v14 = (v14 >>> 16) | (v14 << 16);
+    v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 12) | (v6 << 20);
+    v2 = (v2 + v6 + m0) | 0; v14 ^= v2; v14 = (v14 >>> 8) | (v14 << 24);
+    v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 7) | (v6 << 25);
+    v3 = (v3 + v7 + m4) | 0; v15 ^= v3; v15 = (v15 >>> 16) | (v15 << 16);
+    v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 12) | (v7 << 20);
+    v3 = (v3 + v7 + m13) | 0; v15 ^= v3; v15 = (v15 >>> 8) | (v15 << 24);
+    v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 7) | (v7 << 25);
+    // diagonals
+    v0 = (v0 + v5 + m1) | 0; v15 ^= v0; v15 = (v15 >>> 16) | (v15 << 16);
+    v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 12) | (v5 << 20);
+    v0 = (v0 + v5 + m11) | 0; v15 ^= v0; v15 = (v15 >>> 8) | (v15 << 24);
+    v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 7) | (v5 << 25);
+    v1 = (v1 + v6 + m12) | 0; v12 ^= v1; v12 = (v12 >>> 16) | (v12 << 16);
+    v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 12) | (v6 << 20);
+    v1 = (v1 + v6 + m5) | 0; v12 ^= v1; v12 = (v12 >>> 8) | (v12 << 24);
+    v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 7) | (v6 << 25);
+    v2 = (v2 + v7 + m9) | 0; v13 ^= v2; v13 = (v13 >>> 16) | (v13 << 16);
+    v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 12) | (v7 << 20);
+    v2 = (v2 + v7 + m14) | 0; v13 ^= v2; v13 = (v13 >>> 8) | (v13 << 24);
+    v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 7) | (v7 << 25);
+    v3 = (v3 + v4 + m15) | 0; v14 ^= v3; v14 = (v14 >>> 16) | (v14 << 16);
+    v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
+    v3 = (v3 + v4 + m8) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
+    v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
+    // Apply the message permutation twice, one temporary per cycle.
+    t = m0; m0 = m3; m3 = m12; m12 = m11; m11 = t;
+    t = m1; m1 = m4; m4 = m13; m13 = m15; m15 = t;
+    t = m2; m2 = m10; m10 = m9; m9 = m5; m5 = t;
+    t = m6; m6 = m7; m7 = m14; m14 = m8; m8 = t;
+  }
+  // Round 6: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
   // columns
   v0 = (v0 + v4 + m0) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
   v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
@@ -96,372 +175,91 @@ function b3Compress(
   v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
   v3 = (v3 + v4 + m15) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
   v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
-  // Round 1: 2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8
-  // columns
-  v0 = (v0 + v4 + m2) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
-  v0 = (v0 + v4 + m6) | 0; v12 ^= v0; v12 = (v12 >>> 8) | (v12 << 24);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 7) | (v4 << 25);
-  v1 = (v1 + v5 + m3) | 0; v13 ^= v1; v13 = (v13 >>> 16) | (v13 << 16);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 12) | (v5 << 20);
-  v1 = (v1 + v5 + m10) | 0; v13 ^= v1; v13 = (v13 >>> 8) | (v13 << 24);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 7) | (v5 << 25);
-  v2 = (v2 + v6 + m7) | 0; v14 ^= v2; v14 = (v14 >>> 16) | (v14 << 16);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 12) | (v6 << 20);
-  v2 = (v2 + v6 + m0) | 0; v14 ^= v2; v14 = (v14 >>> 8) | (v14 << 24);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 7) | (v6 << 25);
-  v3 = (v3 + v7 + m4) | 0; v15 ^= v3; v15 = (v15 >>> 16) | (v15 << 16);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 12) | (v7 << 20);
-  v3 = (v3 + v7 + m13) | 0; v15 ^= v3; v15 = (v15 >>> 8) | (v15 << 24);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 7) | (v7 << 25);
-  // diagonals
-  v0 = (v0 + v5 + m1) | 0; v15 ^= v0; v15 = (v15 >>> 16) | (v15 << 16);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 12) | (v5 << 20);
-  v0 = (v0 + v5 + m11) | 0; v15 ^= v0; v15 = (v15 >>> 8) | (v15 << 24);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 7) | (v5 << 25);
-  v1 = (v1 + v6 + m12) | 0; v12 ^= v1; v12 = (v12 >>> 16) | (v12 << 16);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 12) | (v6 << 20);
-  v1 = (v1 + v6 + m5) | 0; v12 ^= v1; v12 = (v12 >>> 8) | (v12 << 24);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 7) | (v6 << 25);
-  v2 = (v2 + v7 + m9) | 0; v13 ^= v2; v13 = (v13 >>> 16) | (v13 << 16);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 12) | (v7 << 20);
-  v2 = (v2 + v7 + m14) | 0; v13 ^= v2; v13 = (v13 >>> 8) | (v13 << 24);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 7) | (v7 << 25);
-  v3 = (v3 + v4 + m15) | 0; v14 ^= v3; v14 = (v14 >>> 16) | (v14 << 16);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
-  v3 = (v3 + v4 + m8) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
-  // Round 2: 3, 4, 10, 12, 13, 2, 7, 14, 6, 5, 9, 0, 11, 15, 8, 1
-  // columns
-  v0 = (v0 + v4 + m3) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
-  v0 = (v0 + v4 + m4) | 0; v12 ^= v0; v12 = (v12 >>> 8) | (v12 << 24);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 7) | (v4 << 25);
-  v1 = (v1 + v5 + m10) | 0; v13 ^= v1; v13 = (v13 >>> 16) | (v13 << 16);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 12) | (v5 << 20);
-  v1 = (v1 + v5 + m12) | 0; v13 ^= v1; v13 = (v13 >>> 8) | (v13 << 24);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 7) | (v5 << 25);
-  v2 = (v2 + v6 + m13) | 0; v14 ^= v2; v14 = (v14 >>> 16) | (v14 << 16);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 12) | (v6 << 20);
-  v2 = (v2 + v6 + m2) | 0; v14 ^= v2; v14 = (v14 >>> 8) | (v14 << 24);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 7) | (v6 << 25);
-  v3 = (v3 + v7 + m7) | 0; v15 ^= v3; v15 = (v15 >>> 16) | (v15 << 16);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 12) | (v7 << 20);
-  v3 = (v3 + v7 + m14) | 0; v15 ^= v3; v15 = (v15 >>> 8) | (v15 << 24);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 7) | (v7 << 25);
-  // diagonals
-  v0 = (v0 + v5 + m6) | 0; v15 ^= v0; v15 = (v15 >>> 16) | (v15 << 16);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 12) | (v5 << 20);
-  v0 = (v0 + v5 + m5) | 0; v15 ^= v0; v15 = (v15 >>> 8) | (v15 << 24);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 7) | (v5 << 25);
-  v1 = (v1 + v6 + m9) | 0; v12 ^= v1; v12 = (v12 >>> 16) | (v12 << 16);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 12) | (v6 << 20);
-  v1 = (v1 + v6 + m0) | 0; v12 ^= v1; v12 = (v12 >>> 8) | (v12 << 24);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 7) | (v6 << 25);
-  v2 = (v2 + v7 + m11) | 0; v13 ^= v2; v13 = (v13 >>> 16) | (v13 << 16);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 12) | (v7 << 20);
-  v2 = (v2 + v7 + m15) | 0; v13 ^= v2; v13 = (v13 >>> 8) | (v13 << 24);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 7) | (v7 << 25);
-  v3 = (v3 + v4 + m8) | 0; v14 ^= v3; v14 = (v14 >>> 16) | (v14 << 16);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
-  v3 = (v3 + v4 + m1) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
-  // Round 3: 10, 7, 12, 9, 14, 3, 13, 15, 4, 0, 11, 2, 5, 8, 1, 6
-  // columns
-  v0 = (v0 + v4 + m10) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
-  v0 = (v0 + v4 + m7) | 0; v12 ^= v0; v12 = (v12 >>> 8) | (v12 << 24);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 7) | (v4 << 25);
-  v1 = (v1 + v5 + m12) | 0; v13 ^= v1; v13 = (v13 >>> 16) | (v13 << 16);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 12) | (v5 << 20);
-  v1 = (v1 + v5 + m9) | 0; v13 ^= v1; v13 = (v13 >>> 8) | (v13 << 24);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 7) | (v5 << 25);
-  v2 = (v2 + v6 + m14) | 0; v14 ^= v2; v14 = (v14 >>> 16) | (v14 << 16);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 12) | (v6 << 20);
-  v2 = (v2 + v6 + m3) | 0; v14 ^= v2; v14 = (v14 >>> 8) | (v14 << 24);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 7) | (v6 << 25);
-  v3 = (v3 + v7 + m13) | 0; v15 ^= v3; v15 = (v15 >>> 16) | (v15 << 16);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 12) | (v7 << 20);
-  v3 = (v3 + v7 + m15) | 0; v15 ^= v3; v15 = (v15 >>> 8) | (v15 << 24);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 7) | (v7 << 25);
-  // diagonals
-  v0 = (v0 + v5 + m4) | 0; v15 ^= v0; v15 = (v15 >>> 16) | (v15 << 16);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 12) | (v5 << 20);
-  v0 = (v0 + v5 + m0) | 0; v15 ^= v0; v15 = (v15 >>> 8) | (v15 << 24);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 7) | (v5 << 25);
-  v1 = (v1 + v6 + m11) | 0; v12 ^= v1; v12 = (v12 >>> 16) | (v12 << 16);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 12) | (v6 << 20);
-  v1 = (v1 + v6 + m2) | 0; v12 ^= v1; v12 = (v12 >>> 8) | (v12 << 24);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 7) | (v6 << 25);
-  v2 = (v2 + v7 + m5) | 0; v13 ^= v2; v13 = (v13 >>> 16) | (v13 << 16);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 12) | (v7 << 20);
-  v2 = (v2 + v7 + m8) | 0; v13 ^= v2; v13 = (v13 >>> 8) | (v13 << 24);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 7) | (v7 << 25);
-  v3 = (v3 + v4 + m1) | 0; v14 ^= v3; v14 = (v14 >>> 16) | (v14 << 16);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
-  v3 = (v3 + v4 + m6) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
-  // Round 4: 12, 13, 9, 11, 15, 10, 14, 8, 7, 2, 5, 3, 0, 1, 6, 4
-  // columns
-  v0 = (v0 + v4 + m12) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
-  v0 = (v0 + v4 + m13) | 0; v12 ^= v0; v12 = (v12 >>> 8) | (v12 << 24);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 7) | (v4 << 25);
-  v1 = (v1 + v5 + m9) | 0; v13 ^= v1; v13 = (v13 >>> 16) | (v13 << 16);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 12) | (v5 << 20);
-  v1 = (v1 + v5 + m11) | 0; v13 ^= v1; v13 = (v13 >>> 8) | (v13 << 24);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 7) | (v5 << 25);
-  v2 = (v2 + v6 + m15) | 0; v14 ^= v2; v14 = (v14 >>> 16) | (v14 << 16);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 12) | (v6 << 20);
-  v2 = (v2 + v6 + m10) | 0; v14 ^= v2; v14 = (v14 >>> 8) | (v14 << 24);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 7) | (v6 << 25);
-  v3 = (v3 + v7 + m14) | 0; v15 ^= v3; v15 = (v15 >>> 16) | (v15 << 16);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 12) | (v7 << 20);
-  v3 = (v3 + v7 + m8) | 0; v15 ^= v3; v15 = (v15 >>> 8) | (v15 << 24);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 7) | (v7 << 25);
-  // diagonals
-  v0 = (v0 + v5 + m7) | 0; v15 ^= v0; v15 = (v15 >>> 16) | (v15 << 16);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 12) | (v5 << 20);
-  v0 = (v0 + v5 + m2) | 0; v15 ^= v0; v15 = (v15 >>> 8) | (v15 << 24);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 7) | (v5 << 25);
-  v1 = (v1 + v6 + m5) | 0; v12 ^= v1; v12 = (v12 >>> 16) | (v12 << 16);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 12) | (v6 << 20);
-  v1 = (v1 + v6 + m3) | 0; v12 ^= v1; v12 = (v12 >>> 8) | (v12 << 24);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 7) | (v6 << 25);
-  v2 = (v2 + v7 + m0) | 0; v13 ^= v2; v13 = (v13 >>> 16) | (v13 << 16);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 12) | (v7 << 20);
-  v2 = (v2 + v7 + m1) | 0; v13 ^= v2; v13 = (v13 >>> 8) | (v13 << 24);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 7) | (v7 << 25);
-  v3 = (v3 + v4 + m6) | 0; v14 ^= v3; v14 = (v14 >>> 16) | (v14 << 16);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
-  v3 = (v3 + v4 + m4) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
-  // Round 5: 9, 14, 11, 5, 8, 12, 15, 1, 13, 3, 0, 10, 2, 6, 4, 7
-  // columns
-  v0 = (v0 + v4 + m9) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
-  v0 = (v0 + v4 + m14) | 0; v12 ^= v0; v12 = (v12 >>> 8) | (v12 << 24);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 7) | (v4 << 25);
-  v1 = (v1 + v5 + m11) | 0; v13 ^= v1; v13 = (v13 >>> 16) | (v13 << 16);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 12) | (v5 << 20);
-  v1 = (v1 + v5 + m5) | 0; v13 ^= v1; v13 = (v13 >>> 8) | (v13 << 24);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 7) | (v5 << 25);
-  v2 = (v2 + v6 + m8) | 0; v14 ^= v2; v14 = (v14 >>> 16) | (v14 << 16);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 12) | (v6 << 20);
-  v2 = (v2 + v6 + m12) | 0; v14 ^= v2; v14 = (v14 >>> 8) | (v14 << 24);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 7) | (v6 << 25);
-  v3 = (v3 + v7 + m15) | 0; v15 ^= v3; v15 = (v15 >>> 16) | (v15 << 16);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 12) | (v7 << 20);
-  v3 = (v3 + v7 + m1) | 0; v15 ^= v3; v15 = (v15 >>> 8) | (v15 << 24);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 7) | (v7 << 25);
-  // diagonals
-  v0 = (v0 + v5 + m13) | 0; v15 ^= v0; v15 = (v15 >>> 16) | (v15 << 16);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 12) | (v5 << 20);
-  v0 = (v0 + v5 + m3) | 0; v15 ^= v0; v15 = (v15 >>> 8) | (v15 << 24);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 7) | (v5 << 25);
-  v1 = (v1 + v6 + m0) | 0; v12 ^= v1; v12 = (v12 >>> 16) | (v12 << 16);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 12) | (v6 << 20);
-  v1 = (v1 + v6 + m10) | 0; v12 ^= v1; v12 = (v12 >>> 8) | (v12 << 24);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 7) | (v6 << 25);
-  v2 = (v2 + v7 + m2) | 0; v13 ^= v2; v13 = (v13 >>> 16) | (v13 << 16);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 12) | (v7 << 20);
-  v2 = (v2 + v7 + m6) | 0; v13 ^= v2; v13 = (v13 >>> 8) | (v13 << 24);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 7) | (v7 << 25);
-  v3 = (v3 + v4 + m4) | 0; v14 ^= v3; v14 = (v14 >>> 16) | (v14 << 16);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
-  v3 = (v3 + v4 + m7) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
-  // Round 6: 11, 15, 5, 0, 1, 9, 8, 6, 14, 10, 2, 12, 3, 4, 7, 13
-  // columns
-  v0 = (v0 + v4 + m11) | 0; v12 ^= v0; v12 = (v12 >>> 16) | (v12 << 16);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 12) | (v4 << 20);
-  v0 = (v0 + v4 + m15) | 0; v12 ^= v0; v12 = (v12 >>> 8) | (v12 << 24);
-  v8 = (v8 + v12) | 0; v4 ^= v8; v4 = (v4 >>> 7) | (v4 << 25);
-  v1 = (v1 + v5 + m5) | 0; v13 ^= v1; v13 = (v13 >>> 16) | (v13 << 16);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 12) | (v5 << 20);
-  v1 = (v1 + v5 + m0) | 0; v13 ^= v1; v13 = (v13 >>> 8) | (v13 << 24);
-  v9 = (v9 + v13) | 0; v5 ^= v9; v5 = (v5 >>> 7) | (v5 << 25);
-  v2 = (v2 + v6 + m1) | 0; v14 ^= v2; v14 = (v14 >>> 16) | (v14 << 16);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 12) | (v6 << 20);
-  v2 = (v2 + v6 + m9) | 0; v14 ^= v2; v14 = (v14 >>> 8) | (v14 << 24);
-  v10 = (v10 + v14) | 0; v6 ^= v10; v6 = (v6 >>> 7) | (v6 << 25);
-  v3 = (v3 + v7 + m8) | 0; v15 ^= v3; v15 = (v15 >>> 16) | (v15 << 16);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 12) | (v7 << 20);
-  v3 = (v3 + v7 + m6) | 0; v15 ^= v3; v15 = (v15 >>> 8) | (v15 << 24);
-  v11 = (v11 + v15) | 0; v7 ^= v11; v7 = (v7 >>> 7) | (v7 << 25);
-  // diagonals
-  v0 = (v0 + v5 + m14) | 0; v15 ^= v0; v15 = (v15 >>> 16) | (v15 << 16);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 12) | (v5 << 20);
-  v0 = (v0 + v5 + m10) | 0; v15 ^= v0; v15 = (v15 >>> 8) | (v15 << 24);
-  v10 = (v10 + v15) | 0; v5 ^= v10; v5 = (v5 >>> 7) | (v5 << 25);
-  v1 = (v1 + v6 + m2) | 0; v12 ^= v1; v12 = (v12 >>> 16) | (v12 << 16);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 12) | (v6 << 20);
-  v1 = (v1 + v6 + m12) | 0; v12 ^= v1; v12 = (v12 >>> 8) | (v12 << 24);
-  v11 = (v11 + v12) | 0; v6 ^= v11; v6 = (v6 >>> 7) | (v6 << 25);
-  v2 = (v2 + v7 + m3) | 0; v13 ^= v2; v13 = (v13 >>> 16) | (v13 << 16);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 12) | (v7 << 20);
-  v2 = (v2 + v7 + m4) | 0; v13 ^= v2; v13 = (v13 >>> 8) | (v13 << 24);
-  v8 = (v8 + v13) | 0; v7 ^= v8; v7 = (v7 >>> 7) | (v7 << 25);
-  v3 = (v3 + v4 + m7) | 0; v14 ^= v3; v14 = (v14 >>> 16) | (v14 << 16);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 12) | (v4 << 20);
-  v3 = (v3 + v4 + m13) | 0; v14 ^= v3; v14 = (v14 >>> 8) | (v14 << 24);
-  v9 = (v9 + v14) | 0; v4 ^= v9; v4 = (v4 >>> 7) | (v4 << 25);
+  // `out` must not overlap `cv`: the second output half rereads the input CV.
   const dst = out || cv;
   dst[0] = v0 ^ v8; dst[1] = v1 ^ v9; dst[2] = v2 ^ v10; dst[3] = v3 ^ v11;
   dst[4] = v4 ^ v12; dst[5] = v5 ^ v13; dst[6] = v6 ^ v14; dst[7] = v7 ^ v15;
   if (out) {
-    out[8] = v8 ^ c0; out[9] = v9 ^ c1; out[10] = v10 ^ c2; out[11] = v11 ^ c3;
-    out[12] = v12 ^ c4; out[13] = v13 ^ c5; out[14] = v14 ^ c6; out[15] = v15 ^ c7;
+    out[8] = v8 ^ cv[0]; out[9] = v9 ^ cv[1]; out[10] = v10 ^ cv[2]; out[11] = v11 ^ cv[3];
+    out[12] = v12 ^ cv[4]; out[13] = v13 ^ cv[5]; out[14] = v14 ^ cv[6]; out[15] = v15 ^ cv[7];
   }
 }
 // END generated BLAKE3 compression
 
-// Reusable scratch for the default one-shot path. It is wiped after every call and
-// never contains a key. Reentrant calls get private scratch instead of aliasing the active call.
-const B3_ONE_SHOT_SCRATCH = /* @__PURE__ */ new Uint32Array(24 + 8 * 54);
-let b3OneShotBusy = false;
-const B3_U8_PROTOTYPE = Uint8Array.prototype;
-const B3_GET_PROTOTYPE = Object.getPrototypeOf;
-const B3_TYPED_ARRAY_PROTOTYPE = B3_GET_PROTOTYPE(B3_U8_PROTOTYPE);
-const B3_GET_LENGTH = Object.getOwnPropertyDescriptor(B3_TYPED_ARRAY_PROTOTYPE, 'length')!.get!;
-const B3_GET_OFFSET = Object.getOwnPropertyDescriptor(B3_TYPED_ARRAY_PROTOTYPE, 'byteOffset')!.get!;
-const B3_GET_BUFFER = Object.getOwnPropertyDescriptor(B3_TYPED_ARRAY_PROTOTYPE, 'buffer')!.get!;
+// Default-options one-shot for inputs of at most one 1 KiB chunk. Such inputs have no tree: the
+// chunk's last block is the root, so class construction, option copies, and cleanup (which
+// dominate tiny hashes) can be skipped. Longer inputs and any options use the stateful class.
+// Scratch layout, in 32-bit words: [0, 8) chaining value; [8, 24) message block. It holds only
+// public IV words and message-derived state, and is wiped before a call returns or throws.
+const B3_CHUNK_SCRATCH = /* @__PURE__ */ new Uint32Array(24);
+// Int32 alias used by everything except the compressor. JSC speculates Uint32Array loads as
+// int32, and words >= 2^31 can trap the one-shot glue in repeated deoptimization; Int32Array
+// loads never overflow. The compressor keeps seeing only Uint32Array, so it stays monomorphic.
+const B3_CHUNK_WORDS = /* @__PURE__ */ new Int32Array(B3_CHUNK_SCRATCH.buffer);
+// Inputs are plain Uint8Arrays (checked by _wrapShortHash), so no input-controlled code can run
+// while the scratch is live. The lease is defense in depth: a reentrant call would get private
+// scratch instead of aliasing the active call.
+let b3ChunkBusy = false;
 
+// Decode `blockLen` little-endian input bytes into the zero-padded message block w[8, 24).
 function b3LoadBlock(
   input: TArg<Uint8Array>,
   inputOffset: number,
   blockLen: number,
-  words: TArg<Uint32Array>
+  w: TArg<Int32Array>
 ) {
-  words.fill(0, 8, 24);
   let pos = 0;
-  for (; pos + 4 <= blockLen; pos += 4) {
-    const offset = inputOffset + pos;
-    words[8 + (pos >>> 2)] =
-      input[offset] |
-      (input[offset + 1] << 8) |
-      (input[offset + 2] << 16) |
-      (input[offset + 3] << 24);
+  let i = 8;
+  for (; pos + 4 <= blockLen; pos += 4, i++) {
+    const o = inputOffset + pos;
+    w[i] = input[o] | (input[o + 1] << 8) | (input[o + 2] << 16) | (input[o + 3] << 24);
   }
   if (pos < blockLen) {
-    const offset = inputOffset + pos;
     let word = 0;
     for (let shift = 0; pos < blockLen; pos++, shift += 8)
       word |= input[inputOffset + pos] << shift;
-    words[8 + ((offset - inputOffset) >>> 2)] = word;
+    w[i++] = word;
   }
+  for (; i < 24; i++) w[i] = 0;
 }
 
-function b3ResetCV(scratch: TArg<Uint32Array>) {
-  scratch[0] = 0x6a09e667;
-  scratch[1] = 0xbb67ae85;
-  scratch[2] = 0x3c6ef372;
-  scratch[3] = 0xa54ff53a;
-  scratch[4] = 0x510e527f;
-  scratch[5] = 0x9b05688c;
-  scratch[6] = 0x1f83d9ab;
-  scratch[7] = 0x5be0cd19;
-}
-
-// Class construction and cleanup dominate one-shot hashing, especially tiny inputs. Retain the
-// same validated public API, but traverse complete chunks with a flat wiped CV stack and keep the
-// final Output descriptor available for ROOT compression. Configured calls use the stateful class.
-function b3HashOneShot(
-  input: TArg<Uint8Array>,
-  len: number,
-  knownOffset?: number,
-  knownBuffer?: ArrayBufferLike
-): TRet<Uint8Array> {
-  const msg = input;
-  const scratch = b3OneShotBusy ? new Uint32Array(24 + 8 * 54) : B3_ONE_SHOT_SCRATCH;
-  const shared = scratch === B3_ONE_SHOT_SCRATCH;
-  let usedWords = 24;
-  if (shared) b3OneShotBusy = true;
+function b3HashChunk(input: TArg<Uint8Array>, len: number): TRet<Uint8Array> {
+  const shared = !b3ChunkBusy;
+  const s = shared ? B3_CHUNK_SCRATCH : new Uint32Array(24);
+  const w = shared ? B3_CHUNK_WORDS : new Int32Array(s.buffer);
+  if (shared) b3ChunkBusy = true;
   try {
-    b3ResetCV(scratch);
-    const byteOffset = len >= 64 ? (knownOffset === undefined ? msg.byteOffset : knownOffset) : 0;
-    const aligned = isLE && !(byteOffset & 3);
-    // Short views make the compressor's zero-padding reads out-of-bounds. SpiderMonkey handles
-    // those much worse than decoding the partial block into owned scratch; full blocks still use
-    // the zero-copy view.
-    const input32 =
-      aligned && len >= 64
-        ? new Uint32Array(
-            knownBuffer === undefined ? msg.buffer : knownBuffer,
-            byteOffset,
-            Math.floor(len / 4)
-          )
-        : undefined;
-    const chunks = len === 0 ? 1 : Math.ceil(len / 1024);
-    let stackLen = 0;
+    w[0] = 0x6a09e667;
+    w[1] = 0xbb67ae85;
+    w[2] = 0x3c6ef372;
+    w[3] = 0xa54ff53a;
+    w[4] = 0x510e527f;
+    w[5] = 0x9b05688c;
+    w[6] = 0x1f83d9ab;
+    w[7] = 0x5be0cd19;
     let offset = 0;
-
-    for (let chunk = 0; chunk < chunks; chunk++) {
-      b3ResetCV(scratch);
-      const chunkL = fromNumL(chunk);
-      const chunkH = fromNumH(chunk);
-      const chunkEnd = Math.min(len, offset + 1024);
-      let block = 0;
-      // Retain each chunk's final block. For the final chunk this preserves the root Output; for
-      // earlier chunks it supplies CHUNK_END before the CV is folded into the tree stack.
-      while (chunkEnd - offset > 64) {
-        const flags = block === 0 ? B3_Flags.CHUNK_START : 0;
-        if (input32) b3Compress(input32, offset / 4, scratch, chunkL, chunkH, 64, flags);
-        else {
-          b3LoadBlock(msg, offset, 64, scratch);
-          b3Compress(scratch, 8, scratch, chunkL, chunkH, 64, flags);
-        }
-        offset += 64;
-        block++;
-      }
-
-      const blockLen = chunkEnd - offset;
-      const chunkFlags = (block === 0 ? B3_Flags.CHUNK_START : 0) | B3_Flags.CHUNK_END;
-      if (input32 && blockLen === 64) {
-        for (let i = 0; i < 16; i++) scratch[8 + i] = input32[offset / 4 + i] | 0;
-      } else b3LoadBlock(msg, offset, blockLen, scratch);
-      offset = chunkEnd;
-
-      if (chunk === chunks - 1 && stackLen === 0) {
-        b3Compress(scratch, 8, scratch, chunkL, chunkH, blockLen, chunkFlags | B3_Flags.ROOT);
-        break;
-      }
-      b3Compress(scratch, 8, scratch, chunkL, chunkH, blockLen, chunkFlags);
-
-      let total = chunk + 1;
-      if (chunk !== chunks - 1)
-        while (total % 2 === 0 && stackLen > 0) {
-          stackLen--;
-          scratch.copyWithin(8, 24 + stackLen * 8, 24 + (stackLen + 1) * 8);
-          scratch.copyWithin(16, 0, 8);
-          b3ResetCV(scratch);
-          b3Compress(scratch, 8, scratch, 0, 0, 64, B3_Flags.PARENT);
-          total /= 2;
-        }
-
-      if (chunk !== chunks - 1) {
-        const stackOffset = 24 + stackLen * 8;
-        usedWords = Math.max(usedWords, stackOffset + 8);
-        scratch.copyWithin(stackOffset, 0, 8);
-        stackLen++;
-        continue;
-      }
-
-      // Fold the final chunk CV with left subtrees from smallest to largest. The last parent is
-      // the root Output descriptor, so apply ROOT during that compression instead of afterwards.
-      while (stackLen > 0) {
-        stackLen--;
-        scratch.copyWithin(8, 24 + stackLen * 8, 24 + (stackLen + 1) * 8);
-        scratch.copyWithin(16, 0, 8);
-        b3ResetCV(scratch);
-        const flags = B3_Flags.PARENT | (stackLen === 0 ? B3_Flags.ROOT : 0);
-        b3Compress(scratch, 8, scratch, 0, 0, 64, flags);
+    let flags: number = B3_Flags.CHUNK_START;
+    // Aligned little-endian input: full non-final blocks are read in place through a word view.
+    // The final block is always decoded into owned scratch, so the compressor never reads past a
+    // short view (SpiderMonkey handles out-of-bounds zero-padding reads badly).
+    const input32 =
+      isLE && len > 64 && !(input.byteOffset & 3)
+        ? new Uint32Array(input.buffer, input.byteOffset, len >>> 2)
+        : undefined;
+    // The chunk counter is 0: this is the only chunk.
+    for (; len - offset > 64; offset += 64, flags = 0) {
+      if (input32) b3Compress(input32, offset >>> 2, s, 0, 0, 64, flags);
+      else {
+        b3LoadBlock(input, offset, 64, w);
+        b3Compress(s, 8, s, 0, 0, 64, flags);
       }
     }
-
+    const blockLen = len - offset;
+    b3LoadBlock(input, offset, blockLen, w);
+    b3Compress(s, 8, s, 0, 0, blockLen, flags | B3_Flags.CHUNK_END | B3_Flags.ROOT);
     const out = new Uint8Array(32);
     for (let i = 0; i < 8; i++) {
-      const word = scratch[i];
+      const word = w[i];
       const pos = i * 4;
       out[pos] = word;
       out[pos + 1] = word >>> 8;
@@ -470,11 +268,9 @@ function b3HashOneShot(
     }
     return out as TRet<Uint8Array>;
   } finally {
-    // Wipe only the live prefix. Clearing the full maximum-depth stack made tiny hashes
-    // disproportionately expensive on SpiderMonkey; every higher word was wiped by the call that
-    // last used it.
-    scratch.fill(0, 0, usedWords);
-    if (shared) b3OneShotBusy = false;
+    // A plain loop beats fill() for a range this short.
+    for (let i = 0; i < 24; i++) w[i] = 0;
+    if (shared) b3ChunkBusy = false;
   }
 }
 
@@ -550,26 +346,24 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
     return [];
   }
   protected set(): void {}
-  // Truncated chunk/parent compression: seed v8..v15 as IV[0..3], t0, t1,
-  // block length, and flags, then keep only the first 8 output words.
-  private b2Compress(counter: number, flags: number, buf: Uint32Array, bufPos: number = 0) {
-    const { state: s, pos } = this;
-    const t0 = fromNumL(counter);
-    const t1 = fromNumH(counter);
-    b3Compress(buf, bufPos, s, t0, t1, pos, flags);
-  }
   protected compress(buf: Uint32Array, bufPos: number = 0, isLast: boolean = false): void {
     // Compress last block
     let flags = this.flags;
     if (!this.chunkPos) flags |= B3_Flags.CHUNK_START;
     if (this.chunkPos === 15 || isLast) flags |= B3_Flags.CHUNK_END;
     if (!isLast) this.pos = this.blockLen;
-    this.b2Compress(this.chunksDone, flags, buf, bufPos);
+    // Truncated chunk compression: seed v8..v15 as IV[0..3], t0, t1, block length, and flags,
+    // then keep only the first 8 output words.
+    const counter = this.chunksDone;
+    b3Compress(buf, bufPos, this.state, fromNumL(counter), fromNumH(counter), this.pos, flags);
     this.chunkPos += 1;
     // If current block is last in chunk (16 blocks), then compress chunks
     if (this.chunkPos === 16 || isLast) {
-      let chunk = this.state;
-      this.state = this.IV.slice();
+      const { IV, stack, buffer32 } = this;
+      // The finished chunk CV is folded in place: each parent copies its two children into
+      // buffer32, resets this array to the key words, and compresses into it.
+      const chunk = this.state;
+      let spare: Uint32Array | undefined;
       // If not the last one, compress only when there are trailing zeros in chunk counter
       // Chunks are used as a binary tree where the current stack is the path.
       // Zero means the current leaf is finished and can be compressed.
@@ -580,21 +374,27 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
       // Reading the low bit is safe for parity, but keep division full-width: shifting would
       // truncate the safe-integer chunk counter to 32 bits.
       for (
-        let last, chunks = this.chunksDone + 1;
+        let chunks = this.chunksDone + 1;
         isLast || !(chunks & 1);
         chunks = Math.floor(chunks / 2)
       ) {
-        if (!(last = this.stack.pop())) break;
-        this.buffer32.set(last, 0);
-        this.buffer32.set(chunk, 8);
-        this.pos = this.blockLen;
-        this.b2Compress(0, this.flags | B3_Flags.PARENT, this.buffer32, 0);
-        chunk = this.state;
-        this.state = this.IV.slice();
+        const left = stack.pop();
+        if (!left) break;
+        buffer32.set(left, 0);
+        buffer32.set(chunk, 8);
+        chunk.set(IV);
+        b3Compress(buffer32, 0, chunk, 0, 0, 64, this.flags | B3_Flags.PARENT);
+        // Recycle one popped entry as the next chunk state; wipe any others before dropping.
+        if (spare) clean(spare);
+        spare = left;
       }
       this.chunksDone++;
       this.chunkPos = 0;
-      this.stack.push(chunk);
+      stack.push(chunk);
+      // finish() relies on a fresh key-word state after the last fold (it reruns that parent).
+      const next = spare || new Uint32Array(8);
+      next.set(IV);
+      this.state = next;
     }
     this.pos = 0;
   }
@@ -708,29 +508,8 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   }
 }
 
-const blake3Stateful: TRet<CHashXOF<_BLAKE3, Blake3Opts>> = /* @__PURE__ */ createHasher(
-  (opts = {}) => new _BLAKE3(opts)
-);
-
-const blake3OneShot: any = (msg: TArg<Uint8Array>, opts?: TArg<Blake3Opts>) => {
-  if (opts !== undefined) return blake3Stateful(msg, opts);
-  const input = abytes(msg);
-  const length = input.length;
-  if (B3_GET_PROTOTYPE(input) === B3_U8_PROTOTYPE) return b3HashOneShot(input, length);
-  const byteOffset = input.byteOffset;
-  const buffer = input.buffer;
-  // Uint8Array subclasses may override view metadata. Use the fast path only when those values
-  // agree with the intrinsic slots; otherwise preserve the stateful implementation's behavior.
-  if (
-    !ArrayBuffer.isView(input) ||
-    B3_GET_LENGTH.call(input) !== length ||
-    B3_GET_OFFSET.call(input) !== byteOffset ||
-    B3_GET_BUFFER.call(input) !== buffer
-  )
-    return blake3Stateful(input);
-  return b3HashOneShot(input, length, byteOffset, buffer);
-};
-Object.assign(blake3OneShot, blake3Stateful);
+// Only plain Uint8Array inputs of at most one chunk with no options object take the direct path;
+// keyed, derive-key, and custom-length calls keep the stateful class above.
 /**
  * BLAKE3 hash function. Can be used as MAC and KDF.
  * @param msg - message that would be hashed
@@ -750,5 +529,9 @@ Object.assign(blake3OneShot, blake3Stateful);
  * const xof = blake3(data, { dkLen: 64 });
  * ```
  */
-export const blake3: TRet<CHashXOF<_BLAKE3, Blake3Opts>> =
-  /* @__PURE__ */ Object.freeze(blake3OneShot);
+export const blake3: TRet<CHashXOF<_BLAKE3, Blake3Opts>> = /* @__PURE__ */ _wrapShortHash(
+  /* @__PURE__ */ createHasher((opts = {}) => new _BLAKE3(opts)),
+  1024,
+  b3HashChunk,
+  true
+) as TRet<CHashXOF<_BLAKE3, Blake3Opts>>;

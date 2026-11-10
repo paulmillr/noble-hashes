@@ -30,6 +30,29 @@ At `c = 1000`, paired gains were `+63-71% / +21-22%` on V8,
 cutoffs caused setup losses and engine-tier cliffs. Keeping `c = 1` generic avoids regressing both
 PBKDF2 stages used by scrypt.
 
+### 2026-11-09 arm64 follow-up
+
+Measured on Apple M5 Pro, Node 26.10.0 (V8) and system JavaScriptCore, against the 2.4.0 release
+(method in [arm64.md](./arm64.md)): PBKDF2-SHA-256 `c = 16384` 9.96 → 4.87 ms (2.04x) on V8;
+PBKDF2-SHA-512 `c = 4096` 8.06 → 4.66 ms / 8.05 → 4.90 ms (1.73x / 1.65x). The SHA-512 feedback
+compressor now reuses the shared `sha512Compress` core, which is where the SHA-512 gain over the
+branch (6.13 → 4.66 ms on V8) came from. scrypt, which stays on the generic `c = 1` path, is 1.12x
+on V8 and 3.86x on JSC for `N = 2^15, r = 8`.
+
+Bundle cost is the main open question. The accelerators are attached to the `sha256` / `sha512`
+objects through `pbkdf2Register`, so every importer of those hashes pays for them and tree shaking
+cannot remove them: about 1.0 KB gzip on the `sha256` export (3842 versus 2836 B with nothing else
+changed) and about 710 B on `sha512`. SHA-256 variants without the accelerator keep every non-PBKDF2
+speed-up (see [sha2.md](./sha2.md)). Alternatives that would keep the cost on PBKDF2 users only, such
+as registering from `pbkdf2.ts` or a separate `sha2-pbkdf2` entry, were not prototyped.
+
+Decision on `speedup-pareto` (2026-11-09): the SHA-256 accelerator was removed, so
+PBKDF2-HMAC-SHA256 runs on the generic engine (1.23x versus 2.4.0 on V8 for `c = 16384`, 0.66x of
+the accelerated path) and the `sha256` export drops to 3673 B gzip. The SHA-512 accelerator is kept;
+`sha512` with it is still smaller than 2.4.0 (4027 versus 4177 B) because of the array-state and
+derived-constant changes in [sha2.md](./sha2.md). The "Shipped wins" and bundle tables below
+describe the August pass, which accelerated both hashes.
+
 ## Shipped wins
 
 | Change                                                   |                                      Result |

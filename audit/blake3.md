@@ -13,7 +13,6 @@ implementation and prototype was pure JavaScript; no WASM was initialized or mea
 | JavaScriptCore | 1.01 Mops / 173 MiB/s |  6.29 Mops / 502 MiB/s | +523% / +190% |
 | SpiderMonkey   | 0.53 Mops / 113 MiB/s |  5.32 Mops / 600 MiB/s | +904% / +431% |
 
-
 The final comparison used fresh processes, pinned CPU 11, nine samples per cell, forward/reverse
 size order, and a third tie-break pass on V8 and JSC. Every digest was checked before timing.
 
@@ -32,6 +31,86 @@ The dedicated default one-shot path confirms that small-call headroom was constr
 validation, cleanup, and serialization rather than compression arithmetic. The generated
 compressor and one-shot path grow `src/blake3.ts` from 12.6 to 35.5 kB (+182%); gzip size grows from
 4.53 to 7.93 kB (+75%).
+
+### 2026-11-09 arm64 follow-up
+
+Tested on Apple M5 Pro with Node 26.10.0 (V8) and system JavaScriptCore; method, bundle tables,
+branch-drift caveats, and the JSC pitfall are in [arm64.md](./arm64.md).
+
+| Case (V8 / JSC)     |          2.4.0 |       before |        after | after / 2.4.0 |
+| ------------------- | -------------: | -----------: | -----------: | ------------: |
+| blake3 32 B         |  846 / 1240 ns | 115 / 125 ns | 107 / 108 ns | 7.83x / 11.6x |
+| blake3 1 MiB        | 8.54 / 2.71 ms |  1.04 / 1.38 |  1.02 / 1.34 | 8.38x / 1.87x |
+| blake3 keyed 32 B   |  980 / 1680 ns | 550 / 527 ns | 153 / 150 ns | 6.42x / 9.58x |
+| blake3 context 32 B |                |              |              | 8.49x / 13.2x |
+
+| Change                                                                                 |                                                    Result |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------: | ------------------- |
+| Extend the one-shot traversal to keyed, derive-key context, and XOF output             |                                  keyed 32 B 550 -> 153 ns |
+| Flat scratch: CV, block, key words, XOF block, 54-entry CV stack, 4 KiB staging window |                                      one wiped allocation |
+| Copy unaligned inputs of at least one chunk into the staging window in 4 KiB pieces    |                                     1 MiB unaligned ~1.4x |
+| Return root `blockLen                                                                  | flags << 8` so digest and XOF share one Output descriptor | no second traversal |
+| `Int32Array` alias of the scratch for all glue code; compressor keeps `Uint32Array`    |                                     JSC 1 KiB -16% -> -2% |
+
+The 4 KiB staging window exists because one native copy is far cheaper than decoding every word
+from bytes; the vendor-shaped byte decode that was rejected above stays rejected. The first `after`
+candidate lost 16% at 1 KiB on JSC in 17 of 20 processes: the one-shot glue read `Uint32Array`
+words, and chaining values with bit 31 set trapped it in Baseline. Reading the same words through
+an `Int32Array` alias restored 1220-1232 ns versus 1195-1207 ns for `before`; the compressor sees
+only `Uint32Array` so its type feedback stays monomorphic.
+
+#### Size/speed frontier
+
+A loop-form compressor was revisited, because "inline G but keep the seven-round loop" above kept
+the schedule table and typed message reads. The new loop variants keep the 16 state and 16 message
+words in locals and permute the message in locals between rounds: `k1` runs one spelled-out round
+seven times, `k2` runs two spelled-out rounds three times plus one tail round, `k7` is the shipped
+full unroll. `s0` has no one-shot path, `sc2` has the default-option one-shot through 1 KiB via
+`_wrapShortHash`, `s2` has `after`'s full keyed / context / XOF one-shot. All inline the wrapper
+(-19 B). gzip bytes of the `blake3` export; speeds versus 2.4.0 as V8 / JSC.
+
+| Variant              |   min / gzip | vs 2.4.0 |        32 B |       1 MiB |  keyed 32 B | XOF 64 KiB |
+| -------------------- | -----------: | -------: | ----------: | ----------: | ----------: | ---------: |
+| 2.4.0                |  9294 / 3733 |          |             |             |             |            |
+| k1, no one-shot      |  8890 / 3728 |     -5 B | 2.0x / 5.1x | 8.1x / 1.3x | 1.8x / 4.1x |       5.7x |
+| k2, no one-shot      | 10722 / 3843 |   +110 B | 2.0x / 4.8x | 7.9x / 1.6x | 1.8x / 4.2x |       5.7x |
+| k2, default one-shot | 12040 / 4382 |   +649 B |  7.5x / 15x | 8.1x / 1.7x | 1.8x / 4.0x |       5.7x |
+| k7, default one-shot | 15597 / 4608 |   +875 B |  7.7x / 12x | 8.2x / 1.8x | 1.8x / 4.4x |       6.0x |
+| k2, full one-shot    | 14347 / 5330 |  +1597 B |  7.5x / 15x | 8.8x / 1.8x |  6.4x / 12x |       7.5x |
+| k7, full one-shot    | 17901 / 5561 |  +1828 B |  8.2x / 16x | 9.1x / 1.9x |  6.8x / 13x |       7.7x |
+| `after`              | 17956 / 5581 |  +1848 B |  8.1x / 15x | 9.2x / 1.9x |  6.7x / 13x |       8.0x |
+
+JSC 32 B ratios are loose (±25-30%) because 2.4.0 itself is bimodal there. Streaming
+`.create().update(1 MiB).digest()` is 7.9-8.7x on V8 and 1.3-1.7x on JSC for every row.
+
+- The loop-form compressor is nearly free on arm64: `k2` is within 3-8% of the full unroll on V8 at
+  every size and smaller than 2.4.0's generic code. This contradicts the x64 result above, where
+  the loop was 570 versus 997 MiB/s; that loop kept the schedule table and typed reads, which the
+  new form does not. `k1` is weak on JSC (1.3x at 1 MiB) and was bimodal at 4 KiB and 1 MiB.
+- The default-only one-shot through 1 KiB is where almost all of the short-input gain is; keyed,
+  context, and XOF one-shots add about 950 B gzip and help only MAC, KDF, and XOF callers.
+- Full unroll over `k2` costs about 230 B gzip and 3.6 KB minified for 3-8%.
+
+#### Applied on `speedup-pareto` (2026-11-09)
+
+The `k2, default one-shot` row is applied on the branch rebased onto 2.4.0. `b3Compress` keeps the
+16 state and 16 message words in locals and spells out two rounds inside a loop that runs three
+times, then one tail round; the message locals are permuted by P^2 (four 4-cycles, one temporary) at
+the end of each iteration, so there is no schedule table and no typed-array message read inside a
+round. `test/misc/unrolled-blake3.js` generates the function and symbolically checks that every
+round reads the official schedule. The one-shot path is reduced to `b3HashChunk`: default options,
+plain `Uint8Array`, at most one 1 KiB chunk, routed by `_wrapShortHash(..., 1024, b3HashChunk, true)`
+with a 24-word wiped scratch whose glue reads go through an `Int32Array` alias. Keyed, derive-key,
+custom-`dkLen` and longer calls use the `_BLAKE3` class with the same compressor; the keyed / context
+/ XOF one-shot, flat CV stack and staging window were removed, and the `b2Compress` wrapper is
+inlined. All 2.4.0 hardening for inputs of 2^32 chunks and more is unchanged. Removing the old
+one-shot also restores 2.4.0's rejection of a `Uint8Array` with a forged own `length`, which the
+previous tree hashed using the forged length. `blake3` is 12168 min / 4427 gzip (2.4.0: 3738 gzip,
+before: 18071 / 5630). V8 versus 2.4.0: 8.2x at 32 B, 8.7x at 1 KiB, 7.6-8.1x at 1 MiB, 1.7x keyed
+32 B, 5.6x XOF 64 KiB; keyed 32 B is 0.29x and XOF 64 KiB 0.73x of the previous tree because those
+calls lost their one-shot. JSC: about 13x at 32 B, 1.6-2.2x at 1 KiB, 1.6x at 1 MiB, with no 1 KiB
+regression. The machine was under load; the JSC 1 MiB figure should be re-measured. A 460,000-check
+differential against 2.4.0 found no mismatch.
 
 ## Shipped wins
 

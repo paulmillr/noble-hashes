@@ -59,3 +59,17 @@ boundaries, unaligned input, output ownership, options, exotic and forged views,
 forced reentry and exceptions, and scratch restoration. Type checking, build, formatting, and the
 SHA3, BLAKE2, and legacy generators passed. The only check warnings are two pre-existing long
 comments in `src/argon2.ts`.
+
+## 2026-11-09 arm64 follow-up
+
+Two more users of `_wrapShortHash` were added on arm64 (details in [arm64.md](./arm64.md)): SHA-384
+/ SHA-512 / SHA-512-t through 239 B, built on the shared SHA-512 compressor, and the BLAKE3
+default-option one-shot variants through 1 KiB evaluated in [blake3.md](./blake3.md). The shared
+wrapper's cost is unchanged.
+
+JavaScriptCore note: direct paths read chaining values and message words from scratch typed
+arrays. JSC speculates that `Uint32Array` loads fit int32 and deoptimizes on words with bit 31 set,
+which can leave a direct path stuck in Baseline for the rest of the process (SHA3-256 at 32 B
+ranged 801 ns to 40 µs per process; BLAKE3 at 1 KiB lost 16%). Glue code should read such words
+through `Int32Array` views; XOR, store, and compare results are identical. The compressor itself
+should keep a single array type so its type feedback stays monomorphic.

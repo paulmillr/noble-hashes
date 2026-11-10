@@ -1,4 +1,4 @@
-/** Generates the statically scheduled Keccak-p[1600] round in src/sha3.ts. */
+/** Generates the plane-by-plane Keccak-p[1600] permutation in src/sha3.ts. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -70,75 +70,165 @@ function schedules() {
   return { pi, rot };
 }
 
-const hex32 = (n) => `0x${n.toString(16).padStart(8, '0')}`;
-const rotH = (h, l, s) =>
-  s > 32
-    ? `((${l} << ${s - 32}) | (${h} >>> ${64 - s}))`
-    : `((${h} << ${s}) | (${l} >>> ${32 - s}))`;
-const rotL = (h, l, s) =>
-  s > 32
-    ? `((${h} << ${s - 32}) | (${l} >>> ${64 - s}))`
-    : `((${l} << ${s}) | (${h} >>> ${32 - s}))`;
+// Rho offsets by lane: walking the Pi cycle from lane (1, 0), the t-th visited lane rotates by
+// rot[t], and pi[t] is the word index that lane moves to. Lane (0, 0) is not rotated.
+function rhoOffsets(pi, rot) {
+  const R = Array.from({ length: 5 }, () => Array(5).fill(0));
+  const seen = new Set(['0,0']);
+  for (let t = 0, x = 1, y = 0; t < 24; t++) {
+    R[x][y] = rot[t];
+    seen.add(`${x},${y}`);
+    const lane = pi[t] / 2;
+    [x, y] = [lane % 5, Math.floor(lane / 5)];
+  }
+  assert.equal(seen.size, 25);
+  // FIPS 202 Table 2 spot checks: r[x][y] for (1,0), (0,1), (4,4), (2,3), (3,4).
+  assert.deepEqual([R[1][0], R[0][1], R[4][4], R[2][3], R[3][4]], [1, 36, 14, 15, 56]);
+  return R;
+}
+
+const mod5 = (n) => ((n % 5) + 5) % 5;
+// Lane (x, y) occupies words 2 * (x + 5 * y) (low half) and 2 * (x + 5 * y) + 1 (high half).
+const word = (x, y) => 2 * (x + 5 * y);
+// Low and high words of a 64-bit left rotation of the lane held in locals `l`, `h`.
+const rot64 = (l, h, s) => {
+  if (s === 32) return [h, l];
+  if (s > 32) {
+    const q = s - 32;
+    return [`((${h} << ${q}) | (${l} >>> ${32 - q}))`, `((${l} << ${q}) | (${h} >>> ${32 - q}))`];
+  }
+  return [`((${l} << ${s}) | (${h} >>> ${32 - s}))`, `((${h} << ${s}) | (${l} >>> ${32 - s}))`];
+};
+
+// One plane-by-plane round from `src` to `dst`. On entry c0..c9 hold the Theta column parities
+// of `src`; on exit they hold the column parities of `dst` (early parity for the next round).
+function round(R, src, dst, iota) {
+  const out = ['// Theta θ column effects, from the parities carried in c0..c9'];
+  for (let x = 0; x < 5; x++) {
+    const n = 2 * mod5(x + 1);
+    const p = 2 * mod5(x - 1);
+    out.push(`d${2 * x} = ((c${n} << 1) | (c${n + 1} >>> 31)) ^ c${p};`);
+    out.push(`d${2 * x + 1} = ((c${n + 1} << 1) | (c${n} >>> 31)) ^ c${p + 1};`);
+  }
+  for (let y = 0; y < 5; y++) {
+    // Pi π fills output lane (x, y) from input lane (x + 3y, x); Theta and Rho ρ apply on load.
+    out.push(`// Plane y=${y}: Theta, Rho ρ and Pi π into e0..e9, then Chi χ into ${dst}`);
+    for (let x = 0; x < 5; x++) {
+      const sx = mod5(x + 3 * y);
+      const w = word(sx, x);
+      const r = R[sx][x];
+      if (r === 0) {
+        out.push(`e${2 * x} = ${src}[${w}] ^ d${2 * sx}; e${2 * x + 1} = ${src}[${w + 1}] ^ d${2 * sx + 1};`);
+        continue;
+      }
+      const [lo, hi] = rot64('l', 'h', r);
+      out.push(`l = ${src}[${w}] ^ d${2 * sx}; h = ${src}[${w + 1}] ^ d${2 * sx + 1};`);
+      out.push(`e${2 * x} = ${lo}; e${2 * x + 1} = ${hi};`);
+    }
+    for (let x = 0; x < 5; x++) {
+      const a = 2 * x;
+      const b = 2 * mod5(x + 1);
+      const c = 2 * mod5(x + 2);
+      const w = word(x, y);
+      const op = y === 0 ? '=' : '^=';
+      // Iota ι folds into lane (0, 0).
+      const iLo = y === 0 && x === 0 ? ` ^ SHA3_IOTA_LO[${iota}]` : '';
+      const iHi = y === 0 && x === 0 ? ` ^ SHA3_IOTA_HI[${iota}]` : '';
+      out.push(`v = e${a} ^ (~e${b} & e${c})${iLo}; ${dst}[${w}] = v; c${a} ${op} v;`);
+      out.push(`v = e${a + 1} ^ (~e${b + 1} & e${c + 1})${iHi}; ${dst}[${w + 1}] = v; c${a + 1} ${op} v;`);
+    }
+  }
+  return out;
+}
+
+const locals = (p, from) =>
+  Array.from({ length: 5 }, (_, i) => `${p}${from + i}: number`).join(', ');
+const indent = (n, lines) => lines.map((line) => ' '.repeat(n) + line);
+
+// Emulates the load-time Iota loop emitted below with the same Number arithmetic, so the
+// generator checks it against the official constants before emitting it.
+function iotaWords() {
+  const lo = new Int32Array(24);
+  const hi = new Int32Array(24);
+  for (let round = 0, R = 1; round < 24; round++) {
+    for (let j = 0; j < 7; j++) {
+      R = ((R << 1) ^ ((R >> 7) * 0x71)) & 0xff;
+      if (R & 2) {
+        if (j < 6) lo[round] ^= 1 << ((1 << j) - 1);
+        else hi[round] ^= 1 << 31;
+      }
+    }
+  }
+  return { lo, hi };
+}
 
 function generate() {
   const constants = iotas();
-  const iotaLo = constants.map((n) => Number(n & 0xffffffffn));
-  const iotaHi = constants.map((n) => Number((n >> 32n) & 0xffffffffn));
+  const { lo, hi } = iotaWords();
+  assert.deepEqual(
+    Array.from(lo, (n) => n >>> 0),
+    constants.map((n) => Number(n & 0xffffffffn))
+  );
+  assert.deepEqual(
+    Array.from(hi, (n) => n >>> 0),
+    constants.map((n) => Number((n >> 32n) & 0xffffffffn))
+  );
   const { pi, rot } = schedules();
-  const out = [
+  const R = rhoOffsets(pi, rot);
+  const parity = [];
+  for (let x = 0; x < 10; x++)
+    parity.push(`c${x} = s[${x}] ^ s[${x + 10}] ^ s[${x + 20}] ^ s[${x + 30}] ^ s[${x + 40}];`);
+  // Both round bodies read `a` and write `b`, so they are the same text: the minifier gives the
+  // block-scoped aliases the same names, and gzip stores the second body as back-references.
+  const body = round(R, 'a', 'b', 'round');
+  return [
     START,
     '// Generated by test/misc/unrolled-sha3.js. Do not edit by hand.',
-    '// prettier-ignore',
-    `const SHA3_IOTA_LO = /* @__PURE__ */ Uint32Array.from([${iotaLo.map(hex32).join(', ')}]);`,
-    '// prettier-ignore',
-    `const SHA3_IOTA_HI = /* @__PURE__ */ Uint32Array.from([${iotaHi.map(hex32).join(', ')}]);`,
-    '',
-    '// prettier-ignore',
-    'function keccakP1600(s: TArg<Uint32Array>, rounds: number): void {',
-    '  let h: number, l: number, sh: number, sl: number;',
-    '  let b0: number, b1: number, b2: number, b3: number, b4: number;',
-    '  let b5: number, b6: number, b7: number, b8: number, b9: number;',
-    '  for (let round = 24 - rounds; round < 24; round++) {',
-    '    // Theta θ',
-  ];
-  for (let x = 0; x < 10; x++)
-    out.push(`    b${x} = s[${x}] ^ s[${x + 10}] ^ s[${x + 20}] ^ s[${x + 30}] ^ s[${x + 40}];`);
-  for (let x = 0; x < 10; x += 2) {
-    const next = (x + 2) % 10;
-    const prev = (x + 8) % 10;
-    out.push(`    h = ((b${next} << 1) | (b${next + 1} >>> 31)) ^ b${prev};`);
-    out.push(`    l = ((b${next + 1} << 1) | (b${next} >>> 31)) ^ b${prev + 1};`);
-    for (let y = 0; y < 50; y += 10) out.push(`    s[${x + y}] ^= h; s[${x + y + 1}] ^= l;`);
-  }
-  out.push('    // Rho ρ and Pi π', '    sh = s[2]; sl = s[3];');
-  for (let t = 0; t < 24; t++) {
-    const p = pi[t];
-    out.push(`    h = ${rotH('sh', 'sl', rot[t])}; l = ${rotL('sh', 'sl', rot[t])};`);
-    out.push(`    sh = s[${p}]; sl = s[${p + 1}]; s[${p}] = h; s[${p + 1}] = l;`);
-  }
-  out.push('    // Chi χ');
-  for (let y = 0; y < 50; y += 10) {
-    out.push(`    b0 = s[${y}]; b1 = s[${y + 1}]; b2 = s[${y + 2}]; b3 = s[${y + 3}];`);
-    out.push(
-      `    s[${y}] ^= ~s[${y + 2}] & s[${y + 4}]; s[${y + 1}] ^= ~s[${y + 3}] & s[${y + 5}];`
-    );
-    out.push(
-      `    s[${y + 2}] ^= ~s[${y + 4}] & s[${y + 6}]; s[${y + 3}] ^= ~s[${y + 5}] & s[${y + 7}];`
-    );
-    out.push(
-      `    s[${y + 4}] ^= ~s[${y + 6}] & s[${y + 8}]; s[${y + 5}] ^= ~s[${y + 7}] & s[${y + 9}];`
-    );
-    out.push(`    s[${y + 6}] ^= ~s[${y + 8}] & b0; s[${y + 7}] ^= ~s[${y + 9}] & b1;`);
-    out.push(`    s[${y + 8}] ^= ~b0 & b2; s[${y + 9}] ^= ~b1 & b3;`);
-  }
-  out.push(
-    '    // Iota ι',
-    '    s[0] ^= SHA3_IOTA_LO[round]; s[1] ^= SHA3_IOTA_HI[round];',
+    '// Every typed array read here is an Int32Array: JSC can speculate that Uint32Array loads fit',
+    '// in int32 and then keep deoptimizing on words with bit 31 set. XOR results are identical.',
+    '// FIPS 202 Algorithm 5 rc(): an 8-bit LFSR with feedback mask 0x71. Round-constant bit 2^j - 1',
+    '// (j = 0..6) is bit 0, 1, 3, 7, 15 or 31 of the low word, or bit 31 of the high word for j = 6.',
+    'const SHA3_IOTA_LO = /* @__PURE__ */ new Int32Array(24);',
+    'const SHA3_IOTA_HI = /* @__PURE__ */ new Int32Array(24);',
+    'for (let round = 0, R = 1; round < 24; round++) {',
+    '  for (let j = 0; j < 7; j++) {',
+    '    R = ((R << 1) ^ ((R >> 7) * 0x71)) & 0xff;',
+    '    if (R & 2) {',
+    '      if (j < 6) SHA3_IOTA_LO[round] ^= 1 << ((1 << j) - 1);',
+    '      else SHA3_IOTA_HI[round] ^= 1 << 31;',
+    '    }',
     '  }',
     '}',
-    END
-  );
-  return out.join('\n');
+    '// Rounds alternate between the caller state and this buffer. The permutation never runs',
+    '// caller code, so sharing it is reentrancy-safe; it is zeroed before every return.',
+    'const SHA3_SCRATCH = /* @__PURE__ */ new Int32Array(50);',
+    '',
+    '// prettier-ignore',
+    'function keccakP1600(s: TArg<Int32Array>, rounds: number): void {',
+    '  const t = SHA3_SCRATCH;',
+    '  let h: number, l: number, v: number;',
+    ...['c', 'd', 'e'].flatMap((p) => [`  let ${locals(p, 0)};`, `  let ${locals(p, 5)};`]),
+    ...indent(2, parity),
+    '  // Rounds run in pairs s -> t -> s; an odd count replaces the first half with a copy.',
+    '  // Both halves read `a` and write `b`: identical text, so gzip stores the second half as a',
+    '  // back-reference. The aliases are block-scoped constants and cost nothing at run time.',
+    '  const start = 24 - rounds;',
+    '  for (let round = start & ~1; round < 24; round++) {',
+    '    if (round < start) t.set(s);',
+    '    else {',
+    '      const a = s, b = t;',
+    ...indent(6, body),
+    '    }',
+    '    round++;',
+    '    {',
+    '      const a = t, b = s;',
+    ...indent(6, body),
+    '    }',
+    '  }',
+    '  for (let i = 0; i < 50; i++) t[i] = 0;',
+    '}',
+    END,
+  ].join('\n');
 }
 
 const generated = generate();

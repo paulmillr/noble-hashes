@@ -65,6 +65,17 @@ split-u64 representation and register allocation:
 - the shipped floating-low-sum form gives the best compact V8/JSC balance without JSC's scalar
   tier cliff.
 
+### 2026-11-09 arm64 observation
+
+Measured on Apple M5 Pro, Node 26.10.0 (V8) and system JavaScriptCore, against the 2.4.0 release
+(method in [arm64.md](./arm64.md)); BLAKE2 code is unchanged since the pass above. V8 confirms the
+x64 result: BLAKE2s 32 B 904 → 135 ns, 1 MiB 11.17 → 1.33 ms, BLAKE-256 1 MiB 15.64 → 2.35 ms.
+JSC does not: BLAKE2s 1 MiB regressed from 2.31 to 3.58 ms (0.64x), BLAKE-256 1 MiB from 3.42 to
+4.27 ms (0.80x), and BLAKE2s 32 B is flat (289 → 286 ns). BLAKE2b is unchanged within noise on
+both engines. The likely cause is the same `Uint32Array` speculation problem described in
+[arm64.md](./arm64.md), but this was not investigated; the generated BLAKE2s / BLAKE-256 cores
+should be checked with `Int32Array` state on JSC before release.
+
 ## Shipped wins
 
 | Change                                                      |                                 Result |

@@ -57,6 +57,118 @@ confirming that the direct SHA-224/SHA-256 core tree-shakes away. In an isolated
 comparison, replacing load-time BigInt parsing with generated split-u32 constants reduced median
 import time by 19% / 11% / 15% on V8 / JSC / SpiderMonkey.
 
+### 2026-11-09 arm64 follow-up
+
+Tested on Apple M5 Pro with Node 26.10.0 (V8) and system JavaScriptCore; method, bundle tables,
+branch-drift caveats, and the JSC pitfall are in [arm64.md](./arm64.md). `2.4.0` is the release,
+`before` is branch commit `64b83f45` (the pass above), `after` is the working tree.
+
+| Case (V8 / JSC)       |          2.4.0 |       before |        after | after / 2.4.0 |
+| --------------------- | -------------: | -----------: | -----------: | ------------: |
+| sha256 32 B           |   408 / 381 ns | 254 / 224 ns | 236 / 217 ns | 1.73x / 1.71x |
+| sha256 1 MiB          | 3.48 / 3.86 ms |  2.42 / 2.97 |  2.44 / 2.97 | 1.44x / 1.30x |
+| sha512 32 B           | 1.11 / 1.03 µs |  1.12 / 1.04 | 665 / 778 ns | 1.66x / 1.33x |
+| sha512 1 MiB          | 7.14 / 7.13 ms |  7.15 / 7.11 |  4.73 / 4.83 | 1.51x / 1.47x |
+| pbkdf2-sha256 c=16384 |        9.96 ms |         4.87 |         4.87 |         2.04x |
+| pbkdf2-sha512 c=4096  | 8.06 / 8.05 ms |  6.13 / 5.19 |  4.66 / 4.90 | 1.73x / 1.65x |
+
+The only SHA-256 change is operand order in the two one-shot cores: summing the state-independent
+`H + K[i] + W[j]` first leaves only `Ch` and `Sigma1` on the `E` dependency chain, worth 7-8% at
+32 B over `before` on V8 and JSC (1.07x). The same order regressed the two-round `process()` on
+V8, so the stateful compressor keeps its order. The SHA-512 compressor, left alone in the pass
+above, was rewritten:
+
+| Change                                                                                 |                     Result |
+| -------------------------------------------------------------------------------------- | -------------------------: |
+| One shared `sha512Compress(S, Wh, Wl)` for the class, short one-shots, and PBKDF2      |    no duplicated 80 rounds |
+| 16-word rolling high/low schedule computed inside the round loop                       | replaces the 80-word array |
+| Defer the low-half carry: keep the untruncated low sum, derive the carry once per `T1` |       fewer carry compares |
+| XOR-form rotates for `Sigma0/1` and `sigma0/1`                                         |            smaller, faster |
+| `Int32Array` chaining state and `S.set(IV)` from an `Int32Array` copy                  |            JSC ~10% faster |
+| Short one-shot path for SHA-384/512/512-t inputs through 239 B via `_wrapShortHash`    |        32 B: 1.66x / 1.33x |
+| PBKDF2 feedback compressor reuses the shared core                                      |              1.73x / 1.65x |
+
+The short path adds only padding and serialization code because it reuses the shared compressor;
+the 239 B cutoff is one or two padded 128-byte blocks. JSC 32 B timing is bimodal (656-951 ns) even after the `Int32Array` change.
+
+#### SHA-256 size/speed frontier
+
+Variants of `after` were built by editing the export line and the shared pieces; gzip bytes are the
+tree-shaken `sha256` export, speeds are versus 2.4.0 (V8 32 B / 100 B / 1 MiB / HMAC 32 B /
+PBKDF2 c=16384; JSC 32 B / 1 MiB / PBKDF2).
+
+| Variant                                           | gzip | vs 2.4.0 |                               V8 |                JSC |
+| ------------------------------------------------- | ---: | -------: | -------------------------------: | -----------------: |
+| 2.4.0                                             | 2836 |          |                                  |                    |
+| compressor only, one-round ring                   | 2784 |    -52 B | 1.19 / 1.21 / 1.42 / 1.18 / 1.24 |                    |
+| compressor only, two-round ring                   | 2825 |    -11 B | 1.21 / 1.22 / 1.43 / 1.20 / 1.26 | 1.14 / 1.28 / 1.19 |
+| + short path on a shared core, class keeps inline | 3627 |   +791 B | 1.79 / 1.71 / 1.43 / 1.20 / 1.27 | 1.51 / 1.28 / 1.19 |
+| + PBKDF2 accelerator only, no short path          | 3842 |  +1006 B | 1.19 / 1.24 / 1.43 / 1.20 / 2.01 | 1.16 / 1.28 / 1.71 |
+| + short path and PBKDF2, shared core              | 4424 |  +1588 B | 1.76 / 1.72 / 1.43 / 1.20 / 2.00 | 1.52 / 1.28 / 1.69 |
+| `after` (four copies of the round function)       | 4966 |  +2130 B | 1.73 / 1.81 / 1.43 / 1.19 / 2.01 | 1.70 / 1.28 / 1.70 |
+
+The two-round compressor alone is a strict improvement over 2.4.0. `after` carries four textual
+copies of the SHA-256 round function (`process()`, one-block core, two-block core, PBKDF2
+compressor); routing the one-shot and PBKDF2 cores through one standalone compressor keeps nearly
+all of the short-input gain for 800 B instead of 2100 B. Other measured points: one-block-only short
+path 3568 B without / 4554 B with PBKDF2; fully shared core including `process()` 3456 / 4243 B.
+
+#### SHA-512 size/speed frontier
+
+gzip bytes of the `sha512` export (`sha384` in parentheses), speeds versus 2.4.0 as V8 / JSC.
+
+| Variant                                 |        gzip | vs 2.4.0 |          32 B |         1 MiB |        PBKDF2 |
+| --------------------------------------- | ----------: | -------: | ------------: | ------------: | ------------: |
+| 2.4.0                                   | 4169 (4166) |          |               |               |               |
+| array state, compressor only            | 3696 (3701) |   -473 B | 1.33x / 1.44x | 1.51x / 1.40x | 1.42x / 1.41x |
+| + short path                            | 4184 (4189) |    +15 B | 1.57x / 1.64x | 1.48x / 1.44x | 1.40x / 1.45x |
+| + PBKDF2 accelerator                    | 4896 (4189) |   +727 B | 1.59x / 1.57x | 1.50x / 1.41x | 1.69x / 1.66x |
+| same, round constants derived at import | 3980 (3287) |   -189 B | 1.60x / 1.59x | 1.51x / 1.38x | 1.66x / 1.64x |
+| `after` with `S.set(IV)` fix            | 5299 (4551) |  +1130 B | 1.67x / 1.60x | 1.47x / 1.41x | 1.66x / 1.62x |
+| `after`                                 | 5307 (4556) |  +1138 B | 1.58x / 1.60x | 1.47x / 1.37x | 1.66x / 1.63x |
+
+- Array state: holding the eight 64-bit chaining words in one `Int32Array` instead of sixteen
+  class fields saves 411 B at the same speed. It changes the protected internals of `_SHA512`,
+  and one repository test needs a two-line update.
+- Derived constants: generating the 80 split constants from BigInt cube roots at import saves
+  about 900 B more but costs 0.2-0.3 ms at import and reverses the emitted-table decision above.
+- The PBKDF2 accelerator is about 710 B on every `sha512` import for 1.2x on PBKDF2 only.
+- The `S.set(IV)` from an `Int32Array` copy is 8 B smaller and should be applied regardless.
+
+#### Applied on `speedup-pareto` (2026-11-09)
+
+The branch was rebased onto 2.4.0 and the following frontier rows were applied. Sizes are bismar
+gzip of the tree-shaken export on the rebased tree, which is about 40 B heavier than the pre-rebase
+tree the tables above were measured on.
+
+SHA-224 / SHA-256: two-round compressor plus short path on a shared core, no PBKDF2 accelerator.
+`_SHA256.process()` keeps its inline two-round ring. The one-shot path (`_wrapShortHash`, inputs up
+to 119 B) pads one or two blocks in one loop in `sha256OneShotCore` and calls a single standalone
+`sha256Compress(S, W)`; `sha256TwoBlockCore` is gone. `S` is a leased `Int32Array(8)` wiped with `W`
+after every call, with private scratch for reentrant calls. The SHA-256 PBKDF2 feedback accelerator
+and its `pbkdf2Register` call were removed, so PBKDF2-HMAC-SHA256 runs on the generic engine. The
+round function now has two textual copies instead of four. `sha256` is 3673 B (2.4.0: 2843, before:
+5011). Versus 2.4.0 on V8: 1.87x at 32 B, 1.82x at 100 B, 1.33x at 1 MiB, 1.19x HMAC 32 B, 1.23x
+PBKDF2 c=16384 (0.66x of the accelerated path it replaces). JSC: 1.74x, 1.59x, 1.19x, 1.21x, 1.14x.
+
+SHA-384 / SHA-512: array state, short path, PBKDF2 accelerator, round constants derived at import.
+The eight chaining words of `_SHA512` and its subclasses live in one `protected S: Int32Array(16)`
+that the shared `sha512Compress(S, Wh, Wl)` updates in place; `_cloneInto` is `S.set`, `destroy()`
+wipes `S` with the buffer, and the one-shot IV load is `S.set(IV)`. Code reaching into the old
+`Ah..Hl` fields must use `S[0..15]`. The 80 round constants are derived at import by one
+`/* @__PURE__ */` IIFE into an interleaved `Uint32Array(160)` (`SHA512_K[2t]` high, `[2t+1]` low)
+from exact BigInt integer cube roots; a `Math.cbrt` estimate only seeds the Newton iteration, which
+takes one unconditional step and so converges to the exact floor from any start. The prototype's
+array-destructured two-table form did not tree-shake (a `sha256`-only bundle carried the BigInt
+derivation); the single binding does. `test/misc/sha2-constants.js --check` compares the derived
+block with the FIPS 180-4 table and an independent derivation. `sha512` is 4027 B and `sha384`
+3330 B (2.4.0: 4177 / 4174, before: 5360 / 4606), so both are smaller than 2.4.0. Versus 2.4.0:
+1.69x / 1.34x / 1.56x on V8 and 1.56x / 1.44x / 1.62x on JSC at 32 B / 1 MiB / PBKDF2 c=16384,
+speed-neutral against the previous tree. Import cost is +0.13 ms on V8 and +0.27 ms on JSC.
+
+Speeds were measured while sibling benchmark processes loaded the machine; V8 1 MiB ratios in
+particular were ±5-10% and should be re-measured on a quiet machine.
+
 ## Shipped wins
 
 | Change                                                                         |                                     Result |

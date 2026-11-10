@@ -57,9 +57,8 @@ export function test(
     // (checkTiming asserts `total > ms`), so it scales with the tick size.
     PBKDF2: (ms) =>
       pbkdf2Async(sha256, PWD, SALT, {
-        // Keep the derivation longer than the requested scheduling window even when the
-        // SHA-256 feedback fast path is active. The test is about yielding, not a fixed
-        // historical throughput target.
+        // Keep the derivation longer than the requested scheduling window on fast hosts.
+        // The test is about yielding, not a fixed historical throughput target.
         c: ms >= 100 ? 2 ** 19 : ms >= 50 ? 2 ** 18 : 2 ** 17,
         asyncTick: ms,
       }),

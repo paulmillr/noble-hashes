@@ -40,13 +40,21 @@ const _ffn = /* @__PURE__ */ BigInt(0xff);
 // Callers are still expected to supply SP 800-185-valid lengths
 // (`0 <= x < 2^2040`); this helper does not enforce that bound.
 // Minimal big-endian bytes of `n`, at least one byte long (SP 800-185 §2.3.1).
+// Callers pass numbers only as safe integers, where `%` and `/` by 256 are exact; this avoids
+// BigInt allocation for every realistic length.
 function encodeBytes(n: number | bigint): number[] {
-  n = BigInt(n);
+  if (typeof n === 'number') {
+    const res = [n % 256];
+    for (n = Math.floor(n / 256); n > 0; n = Math.floor(n / 256)) res.unshift(n % 256);
+    return res;
+  }
   const res = [Number(n & _ffn)];
   n >>= _8n;
   for (; n > 0; n >>= _8n) res.unshift(Number(n & _ffn));
   return res;
 }
+// Length in bits for the encoders: a safe number for every practical length, BigInt beyond.
+const bitLen = (len: number): number | bigint => (len < 2 ** 50 ? len * 8 : _8n * BigInt(len));
 
 // left_encode(n): byte count is prepended.
 function leftEncode(n: number | bigint): TRet<Uint8Array> {
@@ -77,7 +85,9 @@ const abytesOrZero = (buf?: TArg<Uint8Array>, title = '') => {
 // current element takes a whole block.
 // Callers only pass the fixed positive Keccak rates here (`168` or `136`);
 // `block <= 0` is not validated locally.
-const getPadding = (len: number, block: number) => new Uint8Array((block - (len % block)) % block);
+const padLen = (len: number, block: number) => (block - (len % block)) % block;
+// Padding is read-only update() input, so one never-written zero buffer serves every call.
+const ZERO_PAD = /* @__PURE__ */ new Uint8Array(200);
 /** Options for cSHAKE and related SP 800-185 functions. */
 export type cShakeOpts = ShakeOpts & {
   /** Optional personalization string mixed into domain separation. */
@@ -103,7 +113,7 @@ function bytepadUpdate(h: TArg<Keccak>, ...chunks: TArg<Uint8Array[]>): TRet<Kec
     hash.update(chunk);
     totalLen += chunk.length;
   }
-  hash.update(getPadding(totalLen, hash.blockLen));
+  hash.update(ZERO_PAD.subarray(0, padLen(totalLen, hash.blockLen)));
   return hash as TRet<Keccak>;
 }
 
@@ -114,9 +124,9 @@ function cshakePers(h: TArg<Keccak>, opts: TArg<cShakeOpts> = {}): TRet<Keccak> 
   if (opts.personalization === undefined && opts.NISTfn === undefined) return hash;
   // bytepad(encode_string(N) || encode_string(S), rate)
   const fn = opts.NISTfn === undefined ? EMPTY_BUFFER : kdfInputToBytes(opts.NISTfn);
-  const fnLen = leftEncode(_8n * BigInt(fn.length)); // length in bits
+  const fnLen = leftEncode(bitLen(fn.length)); // length in bits
   const pers = abytesOrZero(opts.personalization, 'personalization');
-  const persLen = leftEncode(_8n * BigInt(pers.length)); // length in bits
+  const persLen = leftEncode(bitLen(pers.length)); // length in bits
   if (!fn.length && !pers.length) return hash;
   // SP 800-185 cSHAKE appends `00` instead of SHAKE's `1111`; in this Keccak implementation
   // that changes the delimited suffix byte from `0x1f` to `0x04` once N or S is non-empty.
@@ -203,6 +213,9 @@ export const cshake256: TRet<CHashXOF<Keccak, cShakeOpts>> = /* @__PURE__ */ gen
   32
 );
 
+// Sponge state after absorbing bytepad(encode_string("KMAC") || encode_string(""), rate), per rate.
+const KMAC_PREFIX: Record<number, Uint32Array> = {};
+
 /**
  * Internal KMAC class.
  * SP 800-185 §8.4.1 still recommends keys at least as long as the target
@@ -219,16 +232,26 @@ export class _KMAC extends Keccak implements HashXOF<_KMAC> {
     super(blockLen, 0x1f, outputLen, enableXOF);
     // Preload T = bytepad(encode_string("KMAC") || encode_string(S), rate); later updates append
     // newX = bytepad(encode_string(K), rate) || X and `finish()` appends right_encode(L or 0).
-    cshakePers(this, { NISTfn: 'KMAC', personalization: opts.personalization });
+    const personalization = opts.personalization;
+    // Without S, T is a public constant that ends on a rate boundary: reuse the absorbed state.
+    const prefix = personalization === undefined ? KMAC_PREFIX[blockLen] : undefined;
+    if (prefix !== undefined) {
+      this.state32.set(prefix);
+      this.suffix = 0x04; // what cshakePers() sets for a non-empty N
+    } else {
+      cshakePers(this, { NISTfn: 'KMAC', personalization });
+      if (personalization === undefined && this.pos === 0)
+        KMAC_PREFIX[blockLen] = this.state32.slice();
+    }
     abytes(key, undefined, 'key');
     // 1. newX = bytepad(encode_string(K), rate) || X || right_encode(L),
     // with `rate = this.blockLen`.
-    bytepadUpdate(this, leftEncode(_8n * BigInt(key.length)), key);
+    bytepadUpdate(this, leftEncode(bitLen(key.length)), key);
   }
   protected finish(): void {
     // SP 800-185 uses right_encode(L) for fixed-length KMAC and right_encode(0) for KMACXOF.
     // outputLen in bits
-    if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen)));
+    if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : bitLen(this.outputLen)));
     super.finish();
   }
   _cloneInto(to?: _KMAC): _KMAC {
@@ -239,7 +262,8 @@ export class _KMAC extends Keccak implements HashXOF<_KMAC> {
       to = Object.create(Object.getPrototypeOf(this), {}) as _KMAC;
       to.state = this.state.slice();
       to.blockLen = this.blockLen;
-      to.state32 = u32(to.state);
+      to.state32 = to.stateI32Src = u32(to.state);
+      to.stateI32 = new Int32Array(to.state.buffer);
     }
     return super._cloneInto(to) as _KMAC;
   }
@@ -378,7 +402,7 @@ export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
     abytes(data);
     // SP 800-185 encodes each tuple element as
     // encode_string(X[i]) = left_encode(len(X[i])) || X[i].
-    super.update(leftEncode(_8n * BigInt(data.length)));
+    super.update(leftEncode(bitLen(data.length)));
     super.update(data);
     return this;
   }
@@ -387,7 +411,7 @@ export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
     // and right_encode(0) for TupleHashXOF.
     if (!this.finished)
       // outputLen in bits
-      super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen)));
+      super.update(rightEncode(this.enableXOF ? 0 : bitLen(this.outputLen)));
     super.finish();
   }
   _cloneInto(to?: _TupleHash): _TupleHash {
@@ -549,7 +573,7 @@ export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
     // right_encode(L) with right_encode(0).
     super.update(rightEncode(this.chunksDone));
     // outputLen in bits
-    super.update(rightEncode(this.enableXOF ? 0 : _8n * BigInt(this.outputLen)));
+    super.update(rightEncode(this.enableXOF ? 0 : bitLen(this.outputLen)));
     super.finish();
   }
   // Overriding hides Keccak's flat implementation, which would otherwise be inherited
@@ -772,13 +796,13 @@ export const turboshake256: TRet<CHashXOF<Keccak, TurboshakeOpts>> = /* @__PURE_
 );
 
 // Same as NIST rightEncode, but returns `[0]` for the zero string.
-// Callers still need to keep `x < 256^255` per RFC 9861 §3.3.
-function rightEncodeK12(n: number | bigint): TRet<Uint8Array> {
-  n = BigInt(n);
+// Callers still need to keep `x < 256^255` per RFC 9861 §3.3. Callers pass safe-integer lengths
+// and chunk counts, where `%` and `/` by 256 are exact.
+function rightEncodeK12(n: number): TRet<Uint8Array> {
   const res: number[] = [];
-  for (; n > 0; n >>= _8n) res.unshift(Number(n & _ffn));
+  for (; n > 0; n = Math.floor(n / 256)) res.unshift(n % 256);
   res.push(res.length);
-  return Uint8Array.from(res);
+  return new Uint8Array(res);
 }
 
 /** K12 options. */
@@ -854,7 +878,8 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
         this.chunkPos = 0;
       }
       const take = Math.min(chunkLen - this.chunkPos, len - pos);
-      const chunk = data.subarray(pos, pos + take);
+      // Short inputs fit in the current chunk whole; skip the view allocation for them.
+      const chunk = take === len ? data : data.subarray(pos, pos + take);
       if (this.leafHash) this.leafHash.update(chunk);
       else super.update(chunk);
       this.chunkPos += take;

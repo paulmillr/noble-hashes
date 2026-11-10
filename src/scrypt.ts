@@ -21,31 +21,40 @@ import {
 // destruction, and error order while omitting its variable-hash/options/feedback machinery.
 function scryptPbkdf2(password: TArg<KDFInput>, salt: TArg<KDFInput>, dkLen: number) {
   const p = kdfInputToBytes(password, 'password');
-  const s = kdfInputToBytes(salt, 'salt');
-  const DK = new Uint8Array(dkLen);
-  const { iHash, oHash, outputLen } = hmac.create(sha256, p);
-  const u = new Uint8Array(outputLen);
-  const counter = new Uint8Array(4);
-  const view = createView(counter);
-  const salted = iHash._cloneInto().update(s);
-  const work = oHash._cloneInto();
-  // The generic c=1 engine captures these feedback clone methods even though c=1 has no feedback
-  // round. Preserve the two observable property reads for patched prototype accessors.
-  void iHash._cloneInto;
-  void oHash._cloneInto;
-  for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
-    const Ti = DK.subarray(pos, pos + outputLen);
-    view.setInt32(0, ti, false);
-    salted._cloneInto(work).update(counter).digestInto(u);
-    oHash._cloneInto(work).update(u).digestInto(u);
-    Ti.set(u.subarray(0, Ti.length));
+  try {
+    const s = kdfInputToBytes(salt, 'salt');
+    try {
+      const DK = new Uint8Array(dkLen);
+      const { iHash, oHash, outputLen } = hmac.create(sha256, p);
+      const u = new Uint8Array(outputLen);
+      const counter = new Uint8Array(4);
+      const view = createView(counter);
+      const salted = iHash._cloneInto().update(s);
+      const work = oHash._cloneInto();
+      // The generic c=1 engine captures these feedback clone methods even though c=1 has no
+      // feedback round. Preserve the two observable property reads for patched prototype accessors.
+      void iHash._cloneInto;
+      void oHash._cloneInto;
+      for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += outputLen) {
+        const Ti = DK.subarray(pos, pos + outputLen);
+        view.setInt32(0, ti, false);
+        salted._cloneInto(work).update(counter).digestInto(u);
+        oHash._cloneInto(work).update(u).digestInto(u);
+        Ti.set(u.subarray(0, Ti.length));
+      }
+      iHash.destroy();
+      oHash.destroy();
+      salted.destroy();
+      work.destroy();
+      clean(u);
+      return DK as TRet<Uint8Array>;
+    } finally {
+      // Uint8Array inputs belong to the caller; only wipe our UTF-8 conversion.
+      if (typeof salt === 'string') clean(s);
+    }
+  } finally {
+    if (typeof password === 'string') clean(p);
   }
-  iHash.destroy();
-  oHash.destroy();
-  salted.destroy();
-  work.destroy();
-  clean(u);
-  return DK as TRet<Uint8Array>;
 }
 
 // The main Scrypt loop: uses Salsa extensively.

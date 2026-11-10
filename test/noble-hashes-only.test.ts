@@ -4,7 +4,7 @@
 import { describe, it } from '@paulmillr/jsbt/test.js';
 import { deepStrictEqual as eql, rejects, throws } from 'node:assert';
 import { runInNewContext } from 'node:vm';
-import { HashMD, SHA224_IV, SHA256_IV } from '../src/_md.ts';
+import { HashMD, SHA224_IV, SHA256_IV, SHA384_IV, SHA512_IV } from '../src/_md.ts';
 import { argon2idAsync } from '../src/argon2.ts';
 import { blake256, blake512 } from '../src/blake1.ts';
 import { _BLAKE2s, blake2b, blake2s } from '../src/blake2.ts';
@@ -13,7 +13,16 @@ import { expand, hkdf } from '../src/hkdf.ts';
 import { _RIPEMD160, ripemd160 } from '../src/legacy.ts';
 import { pbkdf2, pbkdf2Async } from '../src/pbkdf2.ts';
 import { scryptAsync } from '../src/scrypt.ts';
-import { _SHA256, _SHA512, sha224, sha256, sha512 } from '../src/sha2.ts';
+import {
+  _SHA256,
+  _SHA512,
+  sha224,
+  sha256,
+  sha384,
+  sha512,
+  sha512_224,
+  sha512_256,
+} from '../src/sha2.ts';
 import {
   Keccak,
   keccak_224,
@@ -35,6 +44,8 @@ describe('noble-hashes only', () => {
     // get() tuple, leaving chaining state in an allocation the library cannot explicitly wipe.
     eql(Object.hasOwn(HashMD.prototype, '_cloneInto'), false);
   });
+  // Only sha512 registers a numeric feedback accelerator. sha256 stays in these PBKDF2 tests as
+  // the generic-engine control: it must keep matching a plain createHasher() wrapper.
   it('PBKDF2-SHA2 fast feedback matches the generic stateful path', () => {
     for (const [name, hash, Hash, outputLen, blockLen] of [
       ['sha256', sha256, _SHA256, 32, 64],
@@ -276,6 +287,106 @@ describe('noble-hashes only', () => {
     }
     throws(() => sha256({} as Uint8Array));
     eql(sha256(Uint8Array.of(1)), sha256.create().update(Uint8Array.of(1)).digest());
+  });
+  it('SHA384/512/512t short one-shot paths match stateful hashing', () => {
+    const hashes = [
+      [sha384, 48],
+      [sha512, 64],
+      [sha512_224, 28],
+      [sha512_256, 32],
+    ] as const;
+    // 0..111 bytes pad into one block, 112..239 into two; 240+ stays stateful.
+    const lengths = [0, 1, 7, 8, 9, 63, 64, 110, 111, 112, 113, 127, 128, 129, 238, 239, 240, 255];
+    for (const [hash, outputLen] of hashes) {
+      for (const len of lengths) {
+        for (let offset = 0; offset < 8; offset++) {
+          const backing = Uint8Array.from(
+            { length: len + offset + 9 },
+            (_, i) => (len + 29 * i) & 255
+          );
+          const msg = backing.subarray(offset, offset + len);
+          const before = msg.slice();
+          eql(hash(msg), hash.create().update(msg).digest(), `len=${len}, offset=${offset}`);
+          eql(msg, before, `input mutation: len=${len}, offset=${offset}`);
+        }
+      }
+      const first = hash(Uint8Array.of(1));
+      const saved = first.slice();
+      eql(hash(Uint8Array.of(2)), hash.create().update(Uint8Array.of(2)).digest());
+      eql(first, saved, 'returned output aliases reusable scratch');
+      eql(
+        hash(Buffer.from([1, 2, 3])),
+        hash
+          .create()
+          .update(Buffer.from([1, 2, 3]))
+          .digest()
+      );
+      const crossRealm = runInNewContext('Uint8Array.from([1, 2, 3])');
+      eql(hash(crossRealm), hash.create().update(crossRealm).digest());
+      const forgedBrand = new Int8Array([1, -1, 3, 4, 5]);
+      Object.setPrototypeOf(forgedBrand, Uint8Array.prototype);
+      eql(
+        hash(forgedBrand as Uint8Array),
+        hash
+          .create()
+          .update(forgedBrand as Uint8Array)
+          .digest()
+      );
+      eql(Object.isFrozen(hash), true);
+      eql(hash.length, 2);
+      eql(hash.blockLen, 128);
+      eql(hash.outputLen, outputLen);
+      eql(hash.canXOF, false);
+      throws(() => hash({} as Uint8Array));
+    }
+
+    // One-shot calls share scratch with stateful process(); interleaving must not corrupt either.
+    const long = Uint8Array.from({ length: 1000 }, (_, i) => (i * 7) & 255);
+    const streaming = sha512.create().update(long.subarray(0, 300));
+    eql(sha512(long.subarray(0, 50)), sha512.create().update(long.subarray(0, 50)).digest());
+    streaming.update(long.subarray(300));
+    eql(streaming.digest(), sha512.create().update(long).digest());
+
+    let nested: Uint8Array | undefined;
+    class ReentrantBytes extends Uint8Array {
+      get length() {
+        nested = sha512(Uint8Array.of(9));
+        return super.length;
+      }
+    }
+    const reentrant = new ReentrantBytes(32);
+    reentrant.set(Uint8Array.from({ length: 32 }, (_, i) => i));
+    eql(sha512(reentrant), sha512.create().update(reentrant).digest());
+    eql(nested, sha512.create().update(Uint8Array.of(9)).digest());
+
+    let proxyNested: Uint8Array | undefined;
+    const proxyTarget = Uint8Array.from({ length: 32 }, (_, i) => i);
+    const proxy = new Proxy(proxyTarget, {
+      get(target, prop) {
+        if (typeof prop === 'string' && /^\d+$/.test(prop)) proxyNested = sha512(Uint8Array.of(9));
+        if (prop === 'length') return target.length;
+        return Reflect.get(target, prop, target);
+      },
+    });
+    eql(sha512(proxy), sha512.create().update(proxy).digest());
+    eql(proxyNested, sha512.create().update(Uint8Array.of(9)).digest());
+
+    // The exported IV tables are mutable; the direct path must read them on every call.
+    for (const [hash, IV] of [
+      [sha384, SHA384_IV],
+      [sha512, SHA512_IV],
+    ] as const) {
+      for (const idx of [0, 15]) {
+        const savedIV = IV[idx];
+        try {
+          IV[idx] ^= 1;
+          const msg = Uint8Array.of(1, 2, 3);
+          eql(hash(msg), hash.create().update(msg).digest(), 'mutable exported IV');
+        } finally {
+          IV[idx] = savedIV;
+        }
+      }
+    }
   });
   it('SHA3/Keccak short one-shot paths match stateful hashing', () => {
     const hashes = [
@@ -746,7 +857,9 @@ describe('noble-hashes only', () => {
     let argonError: unknown;
     const fill32 = Uint32Array.prototype.fill;
     Uint32Array.prototype.fill = function (value, start, end) {
-      if (value === 0 && (this.length === 768 || this.length === 2048))
+      // Address scratch is [address, input, zero, tmp] = 4 blocks; memory is 8 blocks. Count only
+      // whole-array wipes: block() also zero-fills single 256-word output ranges of the scratch.
+      if (value === 0 && start === undefined && (this.length === 1024 || this.length === 2048))
         argonWipes.push(this.length);
       return fill32.call(this, value, start, end);
     };
@@ -828,7 +941,7 @@ describe('noble-hashes only', () => {
         scrypt: { error: scryptError, wipes: scryptWipes },
       },
       {
-        argon2: { error: argonReason, wipes: [768, 2048] },
+        argon2: { error: argonReason, wipes: [1024, 2048] },
         pbkdf2: { error: pbkdf2Reason, wipes: [true, true, true, true] },
         scrypt: { error: scryptReason, wipes: ['B:128', 'V:512', 'tmp:32'] },
       }

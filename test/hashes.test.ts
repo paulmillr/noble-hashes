@@ -648,20 +648,16 @@ describe('sha512/t IV derivation (FIPS 180-4 5.3.6)', () => {
   // Pins the hardcoded T224_IV / T256_IV tables in sha2.ts to their spec derivation:
   // SHA-512 with IV xored by 0xa5a5..a5 hashes the name string, producing the variant IV.
   it('T224_IV / T256_IV match derivation from SHA512_IV', () => {
-    // prettier-ignore
-    const FIELDS = [
-      'Ah', 'Al', 'Bh', 'Bl', 'Ch', 'Cl', 'Dh', 'Dl',
-      'Eh', 'El', 'Fh', 'Fl', 'Gh', 'Gl', 'Hh', 'Hl',
-    ];
+    // `S` is the internal chaining state: sixteen u32 halves (Ah, Al, ..., Hh, Hl).
     const deriveIV = (name: string): Uint8Array => {
       const h = new _SHA512() as any;
-      for (const f of FIELDS) h[f] = (h[f] ^ 0xa5a5a5a5) | 0;
+      for (let i = 0; i < 16; i++) h.S[i] ^= 0xa5a5a5a5;
       return h.update(utf8ToBytes(name)).digest(); // 64 bytes: derived IV, big-endian
     };
     const withIV = (iv: Uint8Array) => {
       const h = new _SHA512() as any;
       const view = createView(iv);
-      FIELDS.forEach((f, i) => (h[f] = view.getUint32(4 * i) | 0));
+      for (let i = 0; i < 16; i++) h.S[i] = view.getUint32(4 * i);
       return h;
     };
     const cases: [string, (msg: Uint8Array) => Uint8Array, number][] = [

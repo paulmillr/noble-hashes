@@ -21,6 +21,74 @@ Further single-thread improvement is likely **1-3%, not 30-50%**:
 
 Large gains require extra CPU cores.
 
+### 2026-11-09 arm64 follow-up
+
+Tested on Apple M5 Pro with Node 26.10.0 (V8) and system JavaScriptCore; method, bundle tables,
+branch-drift caveats, and the JSC pitfall are in [arm64.md](./arm64.md). Main benchmark:
+Argon2id `t = 1, p = 1`, 128 MiB.
+
+| Case (V8 / JSC)     |            2.4.0 |        before |         after | after / 2.4.0 |
+| ------------------- | ---------------: | ------------: | ------------: | ------------: |
+| argon2id 128 MiB    | 257.8 / 249.5 ms | 191.1 / 246.7 | 169.7 / 167.0 | 1.51x / 1.49x |
+| argon2id 1 MiB      |                  |               |               | 1.47x / 1.51x |
+| argon2id 64 KiB     |                  |               |               | 1.57x / 1.42x |
+| argon2id t=3, 8 MiB |                  |               |               |         1.60x |
+
+`before`'s four-chain `P()` gained nothing on JSC at 128 MiB; `after` gains on both engines.
+
+| Change                                                                                        |                                                  Result |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------: | ----------- |
+| Load all 16 `P()` words into 32 u32 locals once and store once at the end                     |                                no per-quarter-round I/O |
+| Fuse the block-level XORs of `G` into `P()`: rows load `R = X ^ Y` directly, park in a buffer |                                no separate 1 KiB passes |
+| Column pass finishes `G` in place: `x[o..] ^= R ^ Z`, rereading the still-hot `X` / `Y`       |                               one write per output word |
+| `                                                                                             | 0` on index sums so the JIT drops int32 overflow checks | small, free |
+| Reuse one pristine BLAKE2b-512 hasher for the `H'` variable-length blocks                     |                               no per-block construction |
+| Separate `tmp` block so `block()` outputs never overlap its inputs                            |                                       correctness guard |
+
+"Fuse `block()` and `P()`" above fell to 10 MB/s on x64 JSC; this is a different fusion. `block()`
+remains the driver, and only the 1 KiB XOR passes moved into `P()`'s loads and stores. Pass 0
+writes each non-initial block once into still-zero memory, so XOR there equals overwrite, which
+keeps the `0x10` version's overwrite semantics without a flag in the hot loop.
+
+#### Size/speed frontier
+
+The sweep was built on 2.4.0 sources, so these rows include the argon2 zeroization and scheduler
+hardening that the branch is missing. gzip bytes of the `argon2id` export; speeds versus 2.4.0 as
+V8 / JSC.
+
+| Variant                                  |   min / gzip | vs 2.4.0 |         1 MiB |       128 MiB |
+| ---------------------------------------- | -----------: | -------: | ------------: | ------------: |
+| 2.4.0                                    | 14500 / 5824 |          |               |               |
+| 2.4.0 permutation, small fixes           | 14572 / 5850 |    +26 B | 1.02x / 1.04x | 1.01x / 1.04x |
+| loop-form four-chain permutation         | 18527 / 6860 |  +1036 B | 1.32x / 1.36x | 1.29x / 1.37x |
+| loop-form permutation with fused XORs    | 19667 / 7296 |  +1472 B | 1.44x / 1.58x | 1.45x / 1.59x |
+| `after` rebased onto 2.4.0 (full unroll) | 22301 / 7594 |  +1770 B | 1.44x / 1.58x | 1.52x / 1.51x |
+| `after` as-is (missing hardening)        | 21791 / 7383 |  +1559 B | 1.47x / 1.51x | 1.44x / 1.50x |
+
+Argon2id has no variant that is both smaller and faster than 2.4.0: the gain is the permutation
+itself, and the cheapest form of it costs about 1 KB gzip. The fused loop form saves 298 B gzip
+and 2.6 KB minified against the unrolled `after` for 0-4% on V8 and gains 3-6% on JSC. JSC spreads
+at 1 MiB were ±14-19%.
+
+#### Applied on `speedup-pareto` (2026-11-09)
+
+`src/argon2.ts` is now 2.4.0 (option parsing, zeroization, per-block generator yield,
+`nextTick(abort)` cleanup) with the permutation replaced by the fused loop form. `P` keeps 16 words
+in 32 locals and runs one four-chain interleaved half-round twice; rows 1..3 rotate by local moves,
+so the column code also does the diagonals. Row calls load `X ^ Y` and column calls finish
+`out ^= X ^ Y ^ Z`. H′ reuses a pristine BLAKE2b state. Address generation uses a fourth scratch
+block because `block()` outputs must not overlap its inputs, so the address scratch is 1024 words and
+the scheduler-abort test expects `[1024, 2048]` whole-array wipes. The August "yield every 32
+blocks" was dropped: it never yields when `segmentLen < 32`, which is why `argon2idAsync` never
+yielded on the old branch, and restoring the per-block yield costs only 1-2%. Scheduler hand-offs at
+`asyncTick: 0` now equal 2.4.0 exactly. `argon2id` is 19651 min / 7293 gzip (2.4.0: 5830 gzip, full
+unroll: 7598). Apple M5, t=1..3, 1 MiB and 128 MiB: V8 1.44-1.55x and JSC 1.53-1.57x versus 2.4.0;
+versus the full unroll, 3-5% slower on V8 and 5-8% faster on JSC. A 12,668-check differential
+against 2.4.0 and OpenSSL (d / i / id, 0x10 / 0x13, t 1-4, p 1-4, m 8p to 8 MiB, six dkLens, key and
+personalization, sync and async) found no mismatch, and the 100 Argon2 cases of
+`test/slow-kdf.test.ts` pass, so the earlier crosstest report does not reproduce. The permutation is
+generated by `test/misc/unrolled-argon2.js` between BEGIN/END markers.
+
 ## Shipped wins
 
 | Change                                                                             |                   Gain |
