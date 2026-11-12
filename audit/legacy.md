@@ -66,6 +66,30 @@ Profiles attributed 95.4% of SHA-1 and 98.3% of RIPEMD-160 V8 ticks to `process(
 MD5 profile attributed about 94% to compression and round helpers. Traversal was under 1% where
 separately visible.
 
+### 2026-11-10 shared RIPEMD-160 compressor
+
+The bounded one-shot core above was a second, fixed-group copy of the RIPEMD-160 compressor next
+to the stateful table/dispatch loop. Both paths now call one standalone fixed-group
+`ripemd160Compress(S, W)`: ten 16-step loops, each with its boolean function and constant fixed, so
+no step dispatches on the group. The class keeps its chaining value in a private `Int32Array(5)`
+instead of five fields (`h0..h4`), reads the block into an `Int32Array` scratch, and drops
+`ripemd_f`, `Kl160`, and `Kr160`. With the compressor shared, the one-shot path was extended from
+one block (55 B) to two (119 B) for 33 B gzip. The ten-loop form shows no JSC tier cliff at 1 MiB.
+
+| `ripemd160` variant                |  min / gzip | V8 32 B / 100 B / 1 MiB | JSC 32 B / 1 MiB |
+| ---------------------------------- | ----------: | ----------------------: | ---------------: |
+| 2.4.0                              | 5529 / 2584 |      1.0x / 1.0x / 1.0x |      1.0x / 1.0x |
+| generic class + one-block core     | 7831 / 3291 |    2.27x / 0.99x / 1.0x |     1.55x / 1.0x |
+| shared, one-block one-shot         | 7170 / 3021 |   2.20x / 1.42x / 1.98x |    1.46x / 1.15x |
+| shared, two-block one-shot (ships) | 7234 / 3054 |     2.0x / 2.2x / 1.98x |    1.44x / 1.15x |
+| shared, no one-shot                | 6227 / 2633 |   1.31x / 1.45x / 1.98x |    1.04x / 1.15x |
+
+The shipped row's 32 B and 100 B figures come from a separate run and are compared with 2.4.0
+through absolute times; at 100 B it is 1.55x faster than the one-block variant. The scheduler-reentry test now hooks the class's `S` property, which
+`process()` reads after filling its schedule. A 24,420-check differential against `node:crypto`
+(lengths 0-2100 at four offsets, Buffer, streaming, clone, 2,000 HMAC cases, `destroy()` wiping)
+found no mismatch.
+
 ## Shipped wins
 
 | Change                                                       |                                 Result |

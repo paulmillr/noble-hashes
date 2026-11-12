@@ -39,6 +39,27 @@ Profiles put almost all large-input time in the old compressors and their helper
 negligible. BLAKE-256 also spent 8.1% of V8 ticks in GC from 224 helper-result objects per block.
 BLAKE-512's remaining portable headroom is limited by split-u64 register-allocation tradeoffs.
 
+### 2026-11-10 arm64 loop form
+
+On arm64, JSC ran the fourteen unrolled BLAKE-256 rounds at 0.79x of 2.4.0 at 1 MiB, for the same
+reason as BLAKE2s (see [blake2.md](./blake2.md)). BLAKE-224/256 now runs one serial-G round body
+fourteen times. Message words are loaded once per block into an `Int32Array(16)` scratch with
+`getInt32`, wiped after the block, and read through `BSIGMA`. Companion constants come from
+`B256_T`, derived at import as `B32C[BSIGMA[k ^ 1]]` because G mixes `m[sigma[2i]]` with
+`c[sigma[2i + 1]]` and vice versa. Staged G order and direct `DataView` reads per use were no
+faster. The generator's `--check` verifies `BSIGMA` for fourteen rounds and the `B256_T` rule.
+BLAKE-384/512 is unchanged.
+
+| `blake256` variant |   min / gzip | V8 32 B / 1 MiB | JSC 32 B / 1 MiB |
+| ------------------ | -----------: | --------------: | ---------------: |
+| 2.4.0              |  7977 / 3304 |     1.0x / 1.0x |      1.0x / 1.0x |
+| unrolled           | 23448 / 4293 |     3.0x / 7.0x |     3.5x / 0.79x |
+| loop (ships)       |  8294 / 3427 |     2.7x / 5.1x |     5.0x / 1.38x |
+
+The loop form is 11-27% slower than the unrolled code on V8 and 1.4-1.8x faster on JSC. A
+24,524-check differential against 2.4.0 for all four BLAKE-1 sizes (lengths 0-1100 at three offsets,
+streaming, clone, 1 MiB, 6,000 salted cases) found no mismatch.
+
 ## Shipped wins
 
 | Change                                                    |                                     Result |

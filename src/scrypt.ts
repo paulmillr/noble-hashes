@@ -3,18 +3,21 @@
  * @module
  */
 import { hmac } from './hmac.ts';
-import { sha256 } from './sha2.ts';
+import { _SHA256 } from './sha2.ts';
 // prettier-ignore
 import {
   anumber, asyncLoop,
-  checkOpts, clean, createView, kdfInputToBytes,
-  rotl,
+  checkOpts, clean, createHasher, createView, kdfInputToBytes,
   swap32IfBE,
   u32,
   type KDFInput,
   type TArg,
   type TRet
 } from './utils.ts';
+
+// Plain SHA-256 hasher for HMAC. Scrypt only calls `.create()`, so the exported `sha256`'s short
+// one-shot path would be dead weight in scrypt-only bundles; the digests are identical.
+const scryptSha256 = /* @__PURE__ */ createHasher(() => new _SHA256());
 
 // Exact PBKDF2-HMAC-SHA256(c=1) subset used by RFC 7914's two PBKDF2 stages.
 // This deliberately mirrors the generic engine's conversion, allocation, clone, truncation,
@@ -25,7 +28,7 @@ function scryptPbkdf2(password: TArg<KDFInput>, salt: TArg<KDFInput>, dkLen: num
     const s = kdfInputToBytes(salt, 'salt');
     try {
       const DK = new Uint8Array(dkLen);
-      const { iHash, oHash, outputLen } = hmac.create(sha256, p);
+      const { iHash, oHash, outputLen } = hmac.create(scryptSha256, p);
       const u = new Uint8Array(outputLen);
       const counter = new Uint8Array(4);
       const view = createView(counter);
@@ -57,99 +60,16 @@ function scryptPbkdf2(password: TArg<KDFInput>, salt: TArg<KDFInput>, dkLen: num
   }
 }
 
-// The main Scrypt loop: uses Salsa extensively.
-// Six versions of the function were tried, this is the fastest one.
-// RFC 7914 §3 / §4 step 2 applies Salsa20/8 to one 16-word (64-byte) block
-// after xor'ing two such blocks.
-// The local `y*` snapshot keeps the xor input stable even when `out` aliases `prev` or `input`.
-// prettier-ignore
-function XorAndSalsa(
-  prev: TArg<Uint32Array>,
-  pi: number,
-  input: TArg<Uint32Array>,
-  ii: number,
-  out: TArg<Uint32Array>,
-  oi: number
-) {
-  // Based on https://cr.yp.to/salsa20.html and RFC 7914's Salsa20/8 core.
-  // Xor blocks
-  let y00 = prev[pi++] ^ input[ii++], y01 = prev[pi++] ^ input[ii++];
-  let y02 = prev[pi++] ^ input[ii++], y03 = prev[pi++] ^ input[ii++];
-  let y04 = prev[pi++] ^ input[ii++], y05 = prev[pi++] ^ input[ii++];
-  let y06 = prev[pi++] ^ input[ii++], y07 = prev[pi++] ^ input[ii++];
-  let y08 = prev[pi++] ^ input[ii++], y09 = prev[pi++] ^ input[ii++];
-  let y10 = prev[pi++] ^ input[ii++], y11 = prev[pi++] ^ input[ii++];
-  let y12 = prev[pi++] ^ input[ii++], y13 = prev[pi++] ^ input[ii++];
-  let y14 = prev[pi++] ^ input[ii++], y15 = prev[pi++] ^ input[ii++];
-  // Save state to temporary variables (salsa)
-  let x00 = y00, x01 = y01, x02 = y02, x03 = y03,
-      x04 = y04, x05 = y05, x06 = y06, x07 = y07,
-      x08 = y08, x09 = y09, x10 = y10, x11 = y11,
-      x12 = y12, x13 = y13, x14 = y14, x15 = y15;
-  // Main loop (salsa)
-  for (let i = 0; i < 8; i += 2) {
-    x04 ^= rotl(x00 + x12 | 0,  7); x08 ^= rotl(x04 + x00 | 0,  9);
-    x12 ^= rotl(x08 + x04 | 0, 13); x00 ^= rotl(x12 + x08 | 0, 18);
-    x09 ^= rotl(x05 + x01 | 0,  7); x13 ^= rotl(x09 + x05 | 0,  9);
-    x01 ^= rotl(x13 + x09 | 0, 13); x05 ^= rotl(x01 + x13 | 0, 18);
-    x14 ^= rotl(x10 + x06 | 0,  7); x02 ^= rotl(x14 + x10 | 0,  9);
-    x06 ^= rotl(x02 + x14 | 0, 13); x10 ^= rotl(x06 + x02 | 0, 18);
-    x03 ^= rotl(x15 + x11 | 0,  7); x07 ^= rotl(x03 + x15 | 0,  9);
-    x11 ^= rotl(x07 + x03 | 0, 13); x15 ^= rotl(x11 + x07 | 0, 18);
-    x01 ^= rotl(x00 + x03 | 0,  7); x02 ^= rotl(x01 + x00 | 0,  9);
-    x03 ^= rotl(x02 + x01 | 0, 13); x00 ^= rotl(x03 + x02 | 0, 18);
-    x06 ^= rotl(x05 + x04 | 0,  7); x07 ^= rotl(x06 + x05 | 0,  9);
-    x04 ^= rotl(x07 + x06 | 0, 13); x05 ^= rotl(x04 + x07 | 0, 18);
-    x11 ^= rotl(x10 + x09 | 0,  7); x08 ^= rotl(x11 + x10 | 0,  9);
-    x09 ^= rotl(x08 + x11 | 0, 13); x10 ^= rotl(x09 + x08 | 0, 18);
-    x12 ^= rotl(x15 + x14 | 0,  7); x13 ^= rotl(x12 + x15 | 0,  9);
-    x14 ^= rotl(x13 + x12 | 0, 13); x15 ^= rotl(x14 + x13 | 0, 18);
-  }
-  // Write output (salsa)
-  out[oi++] = (y00 + x00) | 0; out[oi++] = (y01 + x01) | 0;
-  out[oi++] = (y02 + x02) | 0; out[oi++] = (y03 + x03) | 0;
-  out[oi++] = (y04 + x04) | 0; out[oi++] = (y05 + x05) | 0;
-  out[oi++] = (y06 + x06) | 0; out[oi++] = (y07 + x07) | 0;
-  out[oi++] = (y08 + x08) | 0; out[oi++] = (y09 + x09) | 0;
-  out[oi++] = (y10 + x10) | 0; out[oi++] = (y11 + x11) | 0;
-  out[oi++] = (y12 + x12) | 0; out[oi++] = (y13 + x13) | 0;
-  out[oi++] = (y14 + x14) | 0; out[oi++] = (y15 + x15) | 0;
-}
-
-function BlockMixBase(
-  input: TArg<Uint32Array>,
-  ii: number,
-  out: TArg<Uint32Array>,
-  oi: number,
-  r: number
-) {
-  // The block B is `r` 128-byte chunks, i.e. `2r` 16-word (64-byte) Salsa blocks.
-  let head = oi;
-  let tail = oi + 16 * r;
-  // The first previous block can be read directly from B[2r-1]. Later previous blocks already
-  // live in `out`; splitting the first pair removes a 16-word copy and the old per-pair branch.
-  XorAndSalsa(input, ii + (2 * r - 1) * 16, input, ii, out, head);
-  XorAndSalsa(out, head, input, ii + 16, out, tail);
-  head += 16;
-  tail += 16;
-  ii += 32;
-  for (let i = 1; i < r; i++, head += 16, tail += 16, ii += 32) {
-    // RFC 7914 §4 step 3 outputs `Y[0], Y[2], ...` first, then `Y[1], Y[3], ...`;
-    // `head` and `tail` lay out those even/odd halves in place.
-    XorAndSalsa(out, tail - 16, input, ii, out, head);
-    // tail[i] = Salsa(blockIn[2*i+1] ^ head[i])
-    XorAndSalsa(out, head, input, ii + 16, out, tail);
-  }
-}
-
 // 128*r*(N+p+1) for N=2**20, r=8, p=1: 1 GiB main table plus 2 KiB workspace.
 const SCRYPT_DEFAULT_MAXMEM = 128 * 8 * (2 ** 20 + 1 + 1);
 
 // BEGIN generated scrypt scalar BlockMix
 // Generated by test/misc/unrolled-scrypt.js. Do not edit by hand.
-// Carrying the chaining block in scalars avoids 15 intermediate 64-byte output reloads at r=8.
+// Carrying the chaining block in scalars avoids reloading every 64-byte Salsa output. One Salsa20/8
+// body runs per 64-byte half-block, alternating between the even (head) and odd (tail) output
+// halves of RFC 7914 section 4 step 3, so the same small function serves every r.
 // prettier-ignore
-function BlockMixScalar(
+function BlockMix(
   input: TArg<Uint32Array>,
   ii: number,
   out: TArg<Uint32Array>,
@@ -167,15 +87,15 @@ function BlockMixScalar(
   let s10 = input[si++], s11 = input[si++];
   let s12 = input[si++], s13 = input[si++];
   let s14 = input[si++], s15 = input[si++];
-  for (let block = 0; block < r; block++) {
-  let y00 = s00 ^ input[ii++], y01 = s01 ^ input[ii++];
-  let y02 = s02 ^ input[ii++], y03 = s03 ^ input[ii++];
-  let y04 = s04 ^ input[ii++], y05 = s05 ^ input[ii++];
-  let y06 = s06 ^ input[ii++], y07 = s07 ^ input[ii++];
-  let y08 = s08 ^ input[ii++], y09 = s09 ^ input[ii++];
-  let y10 = s10 ^ input[ii++], y11 = s11 ^ input[ii++];
-  let y12 = s12 ^ input[ii++], y13 = s13 ^ input[ii++];
-  let y14 = s14 ^ input[ii++], y15 = s15 ^ input[ii++];
+  for (let block = 0; block < 2 * r; block++) {
+  const y00 = s00 ^ input[ii++], y01 = s01 ^ input[ii++];
+  const y02 = s02 ^ input[ii++], y03 = s03 ^ input[ii++];
+  const y04 = s04 ^ input[ii++], y05 = s05 ^ input[ii++];
+  const y06 = s06 ^ input[ii++], y07 = s07 ^ input[ii++];
+  const y08 = s08 ^ input[ii++], y09 = s09 ^ input[ii++];
+  const y10 = s10 ^ input[ii++], y11 = s11 ^ input[ii++];
+  const y12 = s12 ^ input[ii++], y13 = s13 ^ input[ii++];
+  const y14 = s14 ^ input[ii++], y15 = s15 ^ input[ii++];
   let x00 = y00, x01 = y01, x02 = y02, x03 = y03,
       x04 = y04, x05 = y05, x06 = y06, x07 = y07,
       x08 = y08, x09 = y09, x10 = y10, x11 = y11,
@@ -214,68 +134,17 @@ function BlockMixScalar(
     x12 ^= ((x15 + x14 | 0) << 7) | ((x15 + x14 | 0) >>> 25); x13 ^= ((x12 + x15 | 0) << 9) | ((x12 + x15 | 0) >>> 23);
     x14 ^= ((x13 + x12 | 0) << 13) | ((x13 + x12 | 0) >>> 19); x15 ^= ((x14 + x13 | 0) << 18) | ((x14 + x13 | 0) >>> 14);
   }
-  s00 = (y00 + x00) | 0; out[head++] = s00; s01 = (y01 + x01) | 0; out[head++] = s01;
-  s02 = (y02 + x02) | 0; out[head++] = s02; s03 = (y03 + x03) | 0; out[head++] = s03;
-  s04 = (y04 + x04) | 0; out[head++] = s04; s05 = (y05 + x05) | 0; out[head++] = s05;
-  s06 = (y06 + x06) | 0; out[head++] = s06; s07 = (y07 + x07) | 0; out[head++] = s07;
-  s08 = (y08 + x08) | 0; out[head++] = s08; s09 = (y09 + x09) | 0; out[head++] = s09;
-  s10 = (y10 + x10) | 0; out[head++] = s10; s11 = (y11 + x11) | 0; out[head++] = s11;
-  s12 = (y12 + x12) | 0; out[head++] = s12; s13 = (y13 + x13) | 0; out[head++] = s13;
-  s14 = (y14 + x14) | 0; out[head++] = s14; s15 = (y15 + x15) | 0; out[head++] = s15;
-  y00 = s00 ^ input[ii++], y01 = s01 ^ input[ii++];
-  y02 = s02 ^ input[ii++], y03 = s03 ^ input[ii++];
-  y04 = s04 ^ input[ii++], y05 = s05 ^ input[ii++];
-  y06 = s06 ^ input[ii++], y07 = s07 ^ input[ii++];
-  y08 = s08 ^ input[ii++], y09 = s09 ^ input[ii++];
-  y10 = s10 ^ input[ii++], y11 = s11 ^ input[ii++];
-  y12 = s12 ^ input[ii++], y13 = s13 ^ input[ii++];
-  y14 = s14 ^ input[ii++], y15 = s15 ^ input[ii++];
-  x00 = y00, x01 = y01, x02 = y02, x03 = y03,
-      x04 = y04, x05 = y05, x06 = y06, x07 = y07,
-      x08 = y08, x09 = y09, x10 = y10, x11 = y11,
-      x12 = y12, x13 = y13, x14 = y14, x15 = y15;
-  for (let round = 0; round < 4; round += 2) {
-    x04 ^= ((x00 + x12 | 0) << 7) | ((x00 + x12 | 0) >>> 25); x08 ^= ((x04 + x00 | 0) << 9) | ((x04 + x00 | 0) >>> 23);
-    x12 ^= ((x08 + x04 | 0) << 13) | ((x08 + x04 | 0) >>> 19); x00 ^= ((x12 + x08 | 0) << 18) | ((x12 + x08 | 0) >>> 14);
-    x09 ^= ((x05 + x01 | 0) << 7) | ((x05 + x01 | 0) >>> 25); x13 ^= ((x09 + x05 | 0) << 9) | ((x09 + x05 | 0) >>> 23);
-    x01 ^= ((x13 + x09 | 0) << 13) | ((x13 + x09 | 0) >>> 19); x05 ^= ((x01 + x13 | 0) << 18) | ((x01 + x13 | 0) >>> 14);
-    x14 ^= ((x10 + x06 | 0) << 7) | ((x10 + x06 | 0) >>> 25); x02 ^= ((x14 + x10 | 0) << 9) | ((x14 + x10 | 0) >>> 23);
-    x06 ^= ((x02 + x14 | 0) << 13) | ((x02 + x14 | 0) >>> 19); x10 ^= ((x06 + x02 | 0) << 18) | ((x06 + x02 | 0) >>> 14);
-    x03 ^= ((x15 + x11 | 0) << 7) | ((x15 + x11 | 0) >>> 25); x07 ^= ((x03 + x15 | 0) << 9) | ((x03 + x15 | 0) >>> 23);
-    x11 ^= ((x07 + x03 | 0) << 13) | ((x07 + x03 | 0) >>> 19); x15 ^= ((x11 + x07 | 0) << 18) | ((x11 + x07 | 0) >>> 14);
-    x01 ^= ((x00 + x03 | 0) << 7) | ((x00 + x03 | 0) >>> 25); x02 ^= ((x01 + x00 | 0) << 9) | ((x01 + x00 | 0) >>> 23);
-    x03 ^= ((x02 + x01 | 0) << 13) | ((x02 + x01 | 0) >>> 19); x00 ^= ((x03 + x02 | 0) << 18) | ((x03 + x02 | 0) >>> 14);
-    x06 ^= ((x05 + x04 | 0) << 7) | ((x05 + x04 | 0) >>> 25); x07 ^= ((x06 + x05 | 0) << 9) | ((x06 + x05 | 0) >>> 23);
-    x04 ^= ((x07 + x06 | 0) << 13) | ((x07 + x06 | 0) >>> 19); x05 ^= ((x04 + x07 | 0) << 18) | ((x04 + x07 | 0) >>> 14);
-    x11 ^= ((x10 + x09 | 0) << 7) | ((x10 + x09 | 0) >>> 25); x08 ^= ((x11 + x10 | 0) << 9) | ((x11 + x10 | 0) >>> 23);
-    x09 ^= ((x08 + x11 | 0) << 13) | ((x08 + x11 | 0) >>> 19); x10 ^= ((x09 + x08 | 0) << 18) | ((x09 + x08 | 0) >>> 14);
-    x12 ^= ((x15 + x14 | 0) << 7) | ((x15 + x14 | 0) >>> 25); x13 ^= ((x12 + x15 | 0) << 9) | ((x12 + x15 | 0) >>> 23);
-    x14 ^= ((x13 + x12 | 0) << 13) | ((x13 + x12 | 0) >>> 19); x15 ^= ((x14 + x13 | 0) << 18) | ((x14 + x13 | 0) >>> 14);
-    x04 ^= ((x00 + x12 | 0) << 7) | ((x00 + x12 | 0) >>> 25); x08 ^= ((x04 + x00 | 0) << 9) | ((x04 + x00 | 0) >>> 23);
-    x12 ^= ((x08 + x04 | 0) << 13) | ((x08 + x04 | 0) >>> 19); x00 ^= ((x12 + x08 | 0) << 18) | ((x12 + x08 | 0) >>> 14);
-    x09 ^= ((x05 + x01 | 0) << 7) | ((x05 + x01 | 0) >>> 25); x13 ^= ((x09 + x05 | 0) << 9) | ((x09 + x05 | 0) >>> 23);
-    x01 ^= ((x13 + x09 | 0) << 13) | ((x13 + x09 | 0) >>> 19); x05 ^= ((x01 + x13 | 0) << 18) | ((x01 + x13 | 0) >>> 14);
-    x14 ^= ((x10 + x06 | 0) << 7) | ((x10 + x06 | 0) >>> 25); x02 ^= ((x14 + x10 | 0) << 9) | ((x14 + x10 | 0) >>> 23);
-    x06 ^= ((x02 + x14 | 0) << 13) | ((x02 + x14 | 0) >>> 19); x10 ^= ((x06 + x02 | 0) << 18) | ((x06 + x02 | 0) >>> 14);
-    x03 ^= ((x15 + x11 | 0) << 7) | ((x15 + x11 | 0) >>> 25); x07 ^= ((x03 + x15 | 0) << 9) | ((x03 + x15 | 0) >>> 23);
-    x11 ^= ((x07 + x03 | 0) << 13) | ((x07 + x03 | 0) >>> 19); x15 ^= ((x11 + x07 | 0) << 18) | ((x11 + x07 | 0) >>> 14);
-    x01 ^= ((x00 + x03 | 0) << 7) | ((x00 + x03 | 0) >>> 25); x02 ^= ((x01 + x00 | 0) << 9) | ((x01 + x00 | 0) >>> 23);
-    x03 ^= ((x02 + x01 | 0) << 13) | ((x02 + x01 | 0) >>> 19); x00 ^= ((x03 + x02 | 0) << 18) | ((x03 + x02 | 0) >>> 14);
-    x06 ^= ((x05 + x04 | 0) << 7) | ((x05 + x04 | 0) >>> 25); x07 ^= ((x06 + x05 | 0) << 9) | ((x06 + x05 | 0) >>> 23);
-    x04 ^= ((x07 + x06 | 0) << 13) | ((x07 + x06 | 0) >>> 19); x05 ^= ((x04 + x07 | 0) << 18) | ((x04 + x07 | 0) >>> 14);
-    x11 ^= ((x10 + x09 | 0) << 7) | ((x10 + x09 | 0) >>> 25); x08 ^= ((x11 + x10 | 0) << 9) | ((x11 + x10 | 0) >>> 23);
-    x09 ^= ((x08 + x11 | 0) << 13) | ((x08 + x11 | 0) >>> 19); x10 ^= ((x09 + x08 | 0) << 18) | ((x09 + x08 | 0) >>> 14);
-    x12 ^= ((x15 + x14 | 0) << 7) | ((x15 + x14 | 0) >>> 25); x13 ^= ((x12 + x15 | 0) << 9) | ((x12 + x15 | 0) >>> 23);
-    x14 ^= ((x13 + x12 | 0) << 13) | ((x13 + x12 | 0) >>> 19); x15 ^= ((x14 + x13 | 0) << 18) | ((x14 + x13 | 0) >>> 14);
-  }
-  s00 = (y00 + x00) | 0; out[tail++] = s00; s01 = (y01 + x01) | 0; out[tail++] = s01;
-  s02 = (y02 + x02) | 0; out[tail++] = s02; s03 = (y03 + x03) | 0; out[tail++] = s03;
-  s04 = (y04 + x04) | 0; out[tail++] = s04; s05 = (y05 + x05) | 0; out[tail++] = s05;
-  s06 = (y06 + x06) | 0; out[tail++] = s06; s07 = (y07 + x07) | 0; out[tail++] = s07;
-  s08 = (y08 + x08) | 0; out[tail++] = s08; s09 = (y09 + x09) | 0; out[tail++] = s09;
-  s10 = (y10 + x10) | 0; out[tail++] = s10; s11 = (y11 + x11) | 0; out[tail++] = s11;
-  s12 = (y12 + x12) | 0; out[tail++] = s12; s13 = (y13 + x13) | 0; out[tail++] = s13;
-  s14 = (y14 + x14) | 0; out[tail++] = s14; s15 = (y15 + x15) | 0; out[tail++] = s15;
+  let o = block & 1 ? tail : head;
+  s00 = (y00 + x00) | 0; out[o++] = s00; s01 = (y01 + x01) | 0; out[o++] = s01;
+  s02 = (y02 + x02) | 0; out[o++] = s02; s03 = (y03 + x03) | 0; out[o++] = s03;
+  s04 = (y04 + x04) | 0; out[o++] = s04; s05 = (y05 + x05) | 0; out[o++] = s05;
+  s06 = (y06 + x06) | 0; out[o++] = s06; s07 = (y07 + x07) | 0; out[o++] = s07;
+  s08 = (y08 + x08) | 0; out[o++] = s08; s09 = (y09 + x09) | 0; out[o++] = s09;
+  s10 = (y10 + x10) | 0; out[o++] = s10; s11 = (y11 + x11) | 0; out[o++] = s11;
+  s12 = (y12 + x12) | 0; out[o++] = s12; s13 = (y13 + x13) | 0; out[o++] = s13;
+  s14 = (y14 + x14) | 0; out[o++] = s14; s15 = (y15 + x15) | 0; out[o++] = s15;
+  if (block & 1) tail = o;
+  else head = o;
   }
 }
 // END generated scrypt scalar BlockMix
@@ -443,16 +312,15 @@ export function scrypt(
     salt,
     opts
   );
-  const blockMix = r < 4 ? BlockMixBase : BlockMixScalar;
   swap32IfBE(B32);
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
     for (let i = 0; i < blockSize32; i++) V[i] = B32[Pi + i]; // V[0] = B[i]
     for (let i = 0, pos = 0; i < N - 1; i++) {
-      blockMix(V, pos, V, (pos += blockSize32), r); // V[i] = blockMix(V[i-1]);
+      BlockMix(V, pos, V, (pos += blockSize32), r); // V[i] = BlockMix(V[i-1]);
       blockMixCb();
     }
-    blockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
+    BlockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
     blockMixCb();
     for (let i = 0; i < N; i++) {
       // First u32 of the last 64-byte block (u32 is LE)
@@ -474,7 +342,7 @@ export function scrypt(
         tmp[k + 6] = B32[Pi + k + 6] ^ V[vj + k + 6];
         tmp[k + 7] = B32[Pi + k + 7] ^ V[vj + k + 7];
       }
-      blockMix(tmp, 0, B32, Pi, r); // B = blockMix(B ^ V[j])
+      BlockMix(tmp, 0, B32, Pi, r); // B = BlockMix(B ^ V[j])
       blockMixCb();
     }
   }
@@ -526,7 +394,6 @@ export async function scryptAsync(
   );
   // One failure handler covers both yield boundaries without putting the hot loops in a try block.
   const abort = () => clean(B, V, tmp);
-  const blockMix = r < 4 ? BlockMixBase : BlockMixScalar;
   swap32IfBE(B32);
   for (let pi = 0; pi < p; pi++) {
     const Pi = blockSize32 * pi;
@@ -536,12 +403,12 @@ export async function scryptAsync(
       N - 1,
       asyncTick,
       () => {
-        blockMix(V, pos, V, (pos += blockSize32), r); // V[i] = blockMix(V[i-1]);
+        BlockMix(V, pos, V, (pos += blockSize32), r); // V[i] = BlockMix(V[i-1]);
         blockMixCb();
       },
       abort
     );
-    blockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
+    BlockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
     blockMixCb();
     await asyncLoop(
       N,
@@ -566,7 +433,7 @@ export async function scryptAsync(
           tmp[k + 6] = B32[Pi + k + 6] ^ V[vj + k + 6];
           tmp[k + 7] = B32[Pi + k + 7] ^ V[vj + k + 7];
         }
-        blockMix(tmp, 0, B32, Pi, r); // B = blockMix(B ^ V[j])
+        BlockMix(tmp, 0, B32, Pi, r); // B = BlockMix(B ^ V[j])
         blockMixCb();
       },
       abort

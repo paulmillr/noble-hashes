@@ -606,7 +606,7 @@ describe('noble-hashes only', () => {
     throws(() => blake2s({} as Uint8Array));
   });
   it('RIPEMD-160 short one-shot path matches stateful hashing', () => {
-    for (let len = 0; len <= 64; len++) {
+    for (let len = 0; len <= 128; len++) {
       for (let offset = 0; offset < 4; offset++) {
         const backing = Uint8Array.from(
           { length: len + offset + 5 },
@@ -658,17 +658,16 @@ describe('noble-hashes only', () => {
     // paths must use disjoint scratch or the nested digest will corrupt the outer block.
     const outerMsg = Uint8Array.from({ length: 64 }, (_, i) => i * 17);
     const outerExpected = ripemd160.create().update(outerMsg).digest();
+    // process() reads its chaining-state array after filling the block schedule and before
+    // compressing, so a getter on it reenters the direct path at that point.
     const outer = new _RIPEMD160() as any;
-    let h0 = 0x67452301 | 0;
+    const state = outer.S;
     nested = undefined;
-    Object.defineProperty(outer, 'h0', {
+    Object.defineProperty(outer, 'S', {
       configurable: true,
       get() {
         if (nested === undefined) nested = ripemd160(Uint8Array.of(7, 8, 9));
-        return h0;
-      },
-      set(value) {
-        h0 = value;
+        return state;
       },
     });
     eql(outer.update(outerMsg).digest(), outerExpected);

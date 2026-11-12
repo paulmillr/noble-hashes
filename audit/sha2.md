@@ -166,6 +166,11 @@ block with the FIPS 180-4 table and an independent derivation. `sha512` is 4027 
 1.69x / 1.34x / 1.56x on V8 and 1.56x / 1.44x / 1.62x on JSC at 32 B / 1 MiB / PBKDF2 c=16384,
 speed-neutral against the previous tree. Import cost is +0.13 ms on V8 and +0.27 ms on JSC.
 
+On 2026-11-10 both SHA-256 ring copies (`SHA2_32B.process()` and `sha256Compress`) became
+generated regions of `test/misc/unrolled-sha2.js`, emitted from one round template; `--check` also
+verifies `SHA256_K` against cube roots of the first 64 primes. Speed was unchanged within noise on
+V8 and JSC, and `sha256` grew by 1 B gzip.
+
 Speeds were measured while sibling benchmark processes loaded the machine; V8 1 MiB ratios in
 particular were ±5-10% and should be re-measured on a quiet machine.
 

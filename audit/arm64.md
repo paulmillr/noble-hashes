@@ -87,7 +87,8 @@ JSC `sha512` 32 B is bimodal in `after` (656-951 ns per process), so its ratio i
 Regressions versus 2.4.0 that were observed but not investigated, all introduced by `before` and
 unchanged by `after`, all JSC only: BLAKE2s 1 MiB 0.64x (2.31 → 3.58 ms), BLAKE-256 1 MiB 0.80x
 (3.42 → 4.27 ms), and BLAKE2s 32 B flat (289 → 286 ns) where V8 gains 6.8x. See
-[blake2.md](./blake2.md).
+[blake2.md](./blake2.md). Resolved on 2026-11-10 by the loop forms below: the cause was the unrolled
+bodies running slowly in JSC's top tier, not `Uint32Array` speculation.
 
 ## JavaScriptCore JIT pitfall
 
@@ -179,6 +180,32 @@ which this pass did not revisit. The combined tree passes all 727 tests and ever
 `--check`. The per-primitive speed figures were measured while the five implementations were
 benchmarked concurrently (load average up to about 90), so they should be re-measured on a quiet
 machine before release.
+
+### 2026-11-10: BLAKE2s, BLAKE-256, RIPEMD-160, scrypt
+
+The same sweep was then run, one primitive at a time on a quiet machine (load average about 2), for
+the four primitives the August pass had grown most outside the five above. gzip bytes from bismar;
+"last commit" is the tree above.
+
+| Export      | 2.4.0 | last commit |   now | now - 2.4.0 | now - last commit |
+| ----------- | ----: | ----------: | ----: | ----------: | ----------------: |
+| package     | 25091 |       35183 | 32204 |       +7113 |             -2979 |
+| `blake2s`   |  3137 |        4023 |  3714 |        +577 |              -309 |
+| `blake256`  |  3304 |        4293 |  3427 |        +123 |              -866 |
+| `ripemd160` |  2584 |        3291 |  3052 |        +468 |              -239 |
+| `scrypt`    |  5079 |        6501 |  5131 |         +52 |             -1370 |
+| `eskdf`     |  6631 |        8662 |  8105 |       +1474 |              -557 |
+
+- BLAKE2s and BLAKE-256: loop-form compressors reading message words through `BSIGMA`. They are
+  11-27% slower than the unrolled code on V8 but still 5.1-6.6x 2.4.0 at 1 MiB, and on JSC they turn
+  0.67x / 0.79x of 2.4.0 into 1.72x / 1.38x.
+- RIPEMD-160: one fixed-group compressor shared by the class and a two-block one-shot path; 1 MiB
+  is 1.98x 2.4.0 on V8 (was 1.0x) and 1.15x on JSC.
+- scrypt: one compact scalar BlockMix for every `r`, and a private SHA-256 hasher so scrypt no longer
+  bundles `sha256`'s one-shot path; speed equals the previous tree (1.09-1.14x 2.4.0 on V8).
+
+Details, variant tables and differentials are in [blake2.md](./blake2.md),
+[blake1.md](./blake1.md), [legacy.md](./legacy.md), and [scrypt.md](./scrypt.md).
 
 ## Not verified
 

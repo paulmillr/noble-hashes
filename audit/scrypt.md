@@ -39,6 +39,34 @@ A V8 `N = 2^20` profile showed why: the engine refused to inline `XorAndSalsa` i
 leaving 33,554,432 helper calls. Fill was the gap versus generated awasm JavaScript; random mix and
 zeroization were already tied.
 
+### 2026-11-10 arm64 size pass
+
+On arm64 the scalar BlockMix was worth only about 5% at `r = 8` for most of its size, and the
+largest cost in the `scrypt` export was not scrypt code: importing the exported `sha256` pulled in
+its short one-shot path (about 830 B gzip), which HMAC never uses because it only calls `.create()`.
+
+- One generated `BlockMix` now serves every `r`: one Salsa20/8 body per 64-byte half-block,
+  alternating between the even (head) and odd (tail) output halves, with the chaining block carried
+  in scalars. `XorAndSalsa` and `BlockMixBase` are gone, and so is the `r < 4` selector, with no JSC
+  regression at small `r` on arm64.
+- Scrypt's HMAC uses a private `createHasher(() => new _SHA256())`. Digests are identical; the
+  hasher is not the exported `sha256` object, which only an observer of HMAC's hash argument could
+  notice.
+
+| Variant                          | `scrypt` min / gzip | V8 `r=8` / `r=1` / `p=4` | JSC `r=8` / `r=1` / `p=4` |
+| -------------------------------- | ------------------: | -----------------------: | ------------------------: |
+| 2.4.0                            |        12024 / 5079 |       1.0x / 1.0x / 1.0x |        1.0x / 1.0x / 1.0x |
+| previous tree                    |        18617 / 6501 |    1.11x / 1.13x / 1.12x |     1.14x / 0.91x / 1.18x |
+| base BlockMix only               |        13669 / 5707 |    1.05x / 1.13x / 1.04x |     1.07x / 0.93x / 1.06x |
+| one compact BlockMix             |        15013 / 5963 |    1.07x / 1.17x / 1.10x |     1.15x / 0.96x / 1.21x |
+| + private SHA-256 hasher (ships) |        12994 / 5136 |    1.09x / 1.14x / 1.10x |     1.13x / 0.93x / 1.18x |
+
+`N = 2^14` for the `r` columns and `N = 2^10, r = 8, p = 4` for the last. Complete `eskdf` drops
+from 8662 to 8105 B. The JSC `r = 1` result below 2.4.0 predates this change and was not
+investigated. A differential against `node:crypto.scryptSync` and 2.4.0 (`r` 1-16, `p` 1-5, `N` 2-1024,
+five `dkLen`s, async with ticks 0-2, string inputs, `onProgress` sequences, and error messages) found
+no mismatch.
+
 ## Shipped wins
 
 | Change                                               |                                     Result |

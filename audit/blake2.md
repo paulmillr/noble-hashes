@@ -76,6 +76,31 @@ both engines. The likely cause is the same `Uint32Array` speculation problem des
 [arm64.md](./arm64.md), but this was not investigated; the generated BLAKE2s / BLAKE-256 cores
 should be checked with `Int32Array` state on JSC before release.
 
+### 2026-11-10 arm64 loop form
+
+The JSC regression above is not the `Uint32Array` speculation problem: per-process timings were
+tight, not bimodal, and disabling FTL made the unrolled code slower still, so it does reach the top
+tier. JSC simply runs the ten fully unrolled rounds slower than 2.4.0's compact loop. BLAKE2s now
+runs one staged round body ten times and reads message words through the flat `BSIGMA` table as
+`msg[offset + S[j + k]] | 0`; BLAKE2 SIGMA rows are not powers of one permutation, unlike BLAKE3, so
+the message cannot be permuted in locals. Copying the block into an `Int32Array` scratch first, or
+loading each round's sixteen words into locals, was slower on both engines; two round bodies per
+iteration and serial versus staged G order made no difference. The one-shot path is kept. The
+generator's `--check` now also verifies `BSIGMA` against RFC 7693.
+
+| `blake2s` variant       |   min / gzip | V8 32 B / 1 MiB | JSC 32 B / 1 MiB |
+| ----------------------- | -----------: | --------------: | ---------------: |
+| 2.4.0                   |  7483 / 3137 |     1.0x / 1.0x |      1.0x / 1.0x |
+| unrolled + one-shot     | 17354 / 4023 |     6.7x / 8.2x |    1.03x / 0.67x |
+| loop + one-shot (ships) |  8961 / 3714 |     5.8x / 6.6x |     2.4x / 1.72x |
+| loop, no one-shot       |  7703 / 3156 |     2.7x / 6.6x |    1.25x / 1.73x |
+
+Measured on Apple M5 Pro, Node 26.10.0 and system JavaScriptCore on a quiet machine, seven fresh
+processes per tree. The loop form is 13-20% slower than the unrolled code on V8 and 2.4-2.6x faster
+on JSC; keyed 32 B is 3.1x / 1.3x versus 2.4.0. An 11,127-check differential against
+`node:crypto` and 2.4.0 (lengths 0-2100 at three offsets, streaming, clone, 3,000 key / salt /
+personalization / `dkLen` combinations, `_compress` with 0-12 rounds) found no mismatch.
+
 ## Shipped wins
 
 | Change                                                      |                                 Result |
