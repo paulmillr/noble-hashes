@@ -398,7 +398,6 @@ export class Keccak implements Hash<Keccak>, HashXOF<Keccak> {
     this.enableXOF = enableXOF;
     this.canXOF = enableXOF;
     this.rounds = rounds;
-    // Can be passed from user as dkLen
     anumber(outputLen, 'outputLen');
     // Only keccak-f1600 is supported: 1600 bits (5x5 matrix of 64bit) === 200 bytes of state.
     if (!(0 < blockLen && blockLen < 200)) throw new Error('"blockLen" must be 1..199');
@@ -589,7 +588,6 @@ const genKeccak = (
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA3-224.
  * ```ts
  * sha3_224(new Uint8Array([97, 98, 99]));
  * ```
@@ -606,7 +604,6 @@ export const sha3_224: TRet<CHash> = /* @__PURE__ */ genKeccak(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA3-256.
  * ```ts
  * sha3_256(new Uint8Array([97, 98, 99]));
  * ```
@@ -623,7 +620,6 @@ export const sha3_256: TRet<CHash> = /* @__PURE__ */ genKeccak(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA3-384.
  * ```ts
  * sha3_384(new Uint8Array([97, 98, 99]));
  * ```
@@ -640,7 +636,6 @@ export const sha3_384: TRet<CHash> = /* @__PURE__ */ genKeccak(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA3-512.
  * ```ts
  * sha3_512(new Uint8Array([97, 98, 99]));
  * ```
@@ -658,7 +653,6 @@ export const sha3_512: TRet<CHash> = /* @__PURE__ */ genKeccak(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with Keccak-224.
  * ```ts
  * keccak_224(new Uint8Array([97, 98, 99]));
  * ```
@@ -670,7 +664,6 @@ export const keccak_224: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 144, 28);
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with Keccak-256.
  * ```ts
  * keccak_256(new Uint8Array([97, 98, 99]));
  * ```
@@ -682,7 +675,6 @@ export const keccak_256: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 136, 32);
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with Keccak-384.
  * ```ts
  * keccak_384(new Uint8Array([97, 98, 99]));
  * ```
@@ -694,7 +686,6 @@ export const keccak_384: TRet<CHash> = /* @__PURE__ */ genKeccak(0x01, 104, 48);
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with Keccak-512.
  * ```ts
  * keccak_512(new Uint8Array([97, 98, 99]));
  * ```
@@ -719,7 +710,6 @@ const genShake = (suffix: number, blockLen: number, outputLen: number, info: TAr
  * @param opts - Optional output-length override. See {@link ShakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHAKE128.
  * ```ts
  * shake128(new Uint8Array([97, 98, 99]), { dkLen: 32 });
  * ```
@@ -733,7 +723,6 @@ export const shake128: TRet<CHashXOF<Keccak, ShakeOpts>> =
  * @param opts - Optional output-length override. See {@link ShakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHAKE256.
  * ```ts
  * shake256(new Uint8Array([97, 98, 99]), { dkLen: 64 });
  * ```

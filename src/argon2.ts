@@ -302,7 +302,6 @@ function Hp(A: TArg<Uint32Array>, dkLen: number): TRet<Uint8Array> {
   const T8 = u8(T);
   // Argon2 H' prefixes dkLen as LE32; native Uint32Array writes would serialize as BE on s390x.
   T[0] = swap8IfBE(dkLen);
-  // Fast path
   if (dkLen <= 64) return blake2b.create({ dkLen }).update(T8).update(A8).digest();
   const out = new Uint8Array(dkLen);
   let V = blake2b.create({}).update(T8).update(A8).digest();
@@ -321,7 +320,6 @@ function Hp(A: TArg<Uint32Array>, dkLen: number): TRet<Uint8Array> {
   }
   Vh.destroy();
   init.destroy();
-  // Last block
   out.set(blake2b(V, { dkLen: dkLen - pos }), pos);
   clean(V, T);
   // H' is byte-oriented; returning `u32(out)` would silently drop dkLen % 4 tail bytes.
@@ -455,7 +453,6 @@ function argon2InitialHash(
     if (!Object.values(AT).includes(type)) throw new Error('"type" was invalid');
     let { p, dkLen, m, t, version, key, personalization, maxmem, onProgress, asyncTick } =
       argon2Opts(opts);
-    // Validation
     const keyInput = key;
     key = rememberOwned(keyInput, abytesOrZero(keyInput, 'key'));
     const personalizationInput = personalization;
@@ -506,7 +503,6 @@ function argon2Init(
   );
   // 256 u32 = 1024 (BLOCK_SIZE), fills A2_BUF on processing
   try {
-    // Params
     const lanes = p;
     // m' = 4 * p * floor (m / 4p)
     const mP = 4 * p * Math.floor(m / (ARGON2_SYNC_POINTS * p));
@@ -519,7 +515,6 @@ function argon2Init(
     if (memUsed > maxmem)
       throw new Error('"maxmem" limit was hit: memUsed(mP*1024)=' + memUsed + ', maxmem=' + maxmem);
     const B = new Uint32Array(memUsed / 4);
-    // Fill first blocks
     for (let l = 0; l < p; l++) {
       const i = 256 * laneLen * l;
       // B[i][0] = H'^(1024)(H_0 || LE32(0) || LE32(i))
@@ -535,7 +530,6 @@ function argon2Init(
       // The first segment of the first pass skips two preinitialized blocks per lane.
       const totalBlock = t * ARGON2_SYNC_POINTS * p * segmentLen - 2 * p;
       // Invoke callback if progress changes from 10.01 to 10.02
-      // Allows to draw smooth progress bar on up to 8K screen
       const callbackPer = Math.max(Math.floor(totalBlock / 10000), 1);
       let blockCnt = 0;
       perBlock = () => {
@@ -606,7 +600,6 @@ function* argon2Blocks(
             block(address, 3 * 256, 2 * 256, 0, false);
           }
         }
-        // current block position
         let offset = l * laneLen + s * segmentLen + startPos;
         for (let index = startPos; index < segmentLen; index++, offset++) {
           perBlock();
@@ -667,7 +660,6 @@ function argon2(
  * @returns Derived key bytes.
  * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
  * @example
- * Derive a key with Argon2d.
  * ```ts
  * argon2d('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
@@ -704,7 +696,6 @@ export const argon2d = (
  * @returns Derived key bytes.
  * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
  * @example
- * Derive a key with Argon2i.
  * ```ts
  * argon2i('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
@@ -722,7 +713,6 @@ export const argon2i = (
  * @returns Derived key bytes.
  * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
  * @example
- * Derive a key with Argon2id.
  * ```ts
  * argon2id('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
@@ -765,7 +755,6 @@ async function argon2Async(
  * @returns Promise resolving to derived key bytes.
  * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
  * @example
- * Derive a key with Argon2d asynchronously.
  * ```ts
  * await argon2dAsync('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
@@ -801,7 +790,6 @@ export const argon2dAsync = (
  * @returns Promise resolving to derived key bytes.
  * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
  * @example
- * Derive a key with Argon2i asynchronously.
  * ```ts
  * await argon2iAsync('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```
@@ -819,7 +807,6 @@ export const argon2iAsync = (
  * @returns Promise resolving to derived key bytes.
  * @throws If the Argon2 input or cost parameters are invalid. {@link Error}
  * @example
- * Derive a key with Argon2id asynchronously.
  * ```ts
  * await argon2idAsync('password', 'salt1234', { t: 1, m: 8, p: 1, dkLen: 32 });
  * ```

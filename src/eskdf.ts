@@ -119,7 +119,6 @@ type AccountID = number | string;
  * id kind per application.
  */
 function getSaltInfo(protocol: string, accountId: AccountID = 0) {
-  // Note that length here also repeats two lines below
   // We do an additional length check here to reduce the scope of DoS attacks
   if (!(strHasLength(protocol, 3, 15) && /^[a-z0-9]{3,15}$/.test(protocol))) {
     throw new Error('invalid protocol');
@@ -127,7 +126,7 @@ function getSaltInfo(protocol: string, accountId: AccountID = 0) {
 
   // Exact-match only: substring matches like `assh` / `mentor` must not widen the public whitelist.
   const allowsStr = /^(password\d{0,3}|ssh|tor|file)$/.test(protocol);
-  let salt: Uint8Array; // Assigned below: either 4-byte BE account bytes or UTF-8 account bytes.
+  let salt: Uint8Array;
   if (typeof accountId === 'string') {
     if (!allowsStr) throw new Error('accountId must be a number');
     if (!strHasLength(accountId, 1, 255))
@@ -181,19 +180,18 @@ function getKeyLength(options: KeyOpts): number {
  */
 function modReduceKey(key: TArg<Uint8Array>, modulus: bigint): TRet<Uint8Array> {
   const _1 = BigInt(1);
-  const num = BigInt('0x' + bytesToHex(key)); // check for ui8a, then bytesToNumber()
+  const num = BigInt('0x' + bytesToHex(key));
   const res = (num % (modulus - _1)) + _1; // Remove 0 from output
-  if (res < _1) throw new Error('expected positive number'); // Guard against bad values
+  if (res < _1) throw new Error('expected positive number');
   // Strip the extra 64-bit margin that `getKeyLength()` requested
   // for bias reduction.
   const len = key.length - 8;
-  const hex = res.toString(16).padStart(len * 2, '0'); // numberToHex()
+  const hex = res.toString(16).padStart(len * 2, '0');
   const bytes = hexToBytes(hex);
   if (bytes.length !== len) throw new Error('invalid length of result key');
   return bytes;
 }
 
-/** Not using classes because constructor cannot be async. */
 export interface ESKDF {
   /**
    * Derives a child key. Child key will not be associated with any

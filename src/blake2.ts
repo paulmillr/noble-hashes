@@ -195,7 +195,6 @@ export abstract class _BLAKE2<T extends _BLAKE2<T>> implements Hash<T> {
       throw new RangeError('"output" expected 4-byte aligned byteOffset, got ' + out.byteOffset);
     const { pos, buffer32 } = this;
     this.finished = true;
-    // Padding
     this.buffer.fill(0, pos);
     swap32IfBE(buffer32);
     this.compress(buffer32, 0, true);
@@ -292,7 +291,6 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
       this.v7h ^= swap8IfBE(pers[3]);
     }
     if (key !== undefined) {
-      // Pad to blockLen and update
       const tmp = new Uint8Array(this.blockLen);
       tmp.set(key);
       this.update(tmp);
@@ -347,7 +345,6 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
     const h = u64.fromNumH(this.length);
     BBUF[24] = B2B_IV[8] ^ l; // Low word of the offset.
     BBUF[25] = B2B_IV[9] ^ h; // High word.
-    // Invert all bits for last block
     if (isLast) {
       BBUF[28] = ~BBUF[28];
       BBUF[29] = ~BBUF[29];
@@ -496,7 +493,6 @@ export class _BLAKE2b extends _BLAKE2<_BLAKE2b> {
  *   must be 16 bytes each. See {@link Blake2Opts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with Blake2b.
  * ```ts
  * blake2b(new Uint8Array([97, 98, 99]));
  * ```
@@ -515,10 +511,6 @@ export const blake2b: TRet<CHash<_BLAKE2b, Blake2Opts>> = /* @__PURE__ */ create
   (opts) => new _BLAKE2b(opts)
 );
 
-// =================
-// Blake2S
-// =================
-
 /** Internal type, 16 numbers. */
 // prettier-ignore
 export type _Num16 = {
@@ -536,37 +528,7 @@ export type _Num16 = {
  * @param offset - starting word offset inside `msg`, not a byte offset
  * @param msg - message words
  * @param rounds - round count to execute
- * @param v0 - state word 0
- * @param v1 - state word 1
- * @param v2 - state word 2
- * @param v3 - state word 3
- * @param v4 - state word 4
- * @param v5 - state word 5
- * @param v6 - state word 6
- * @param v7 - state word 7
- * @param v8 - state word 8
- * @param v9 - state word 9
- * @param v10 - state word 10
- * @param v11 - state word 11
- * @param v12 - state word 12
- * @param v13 - state word 13
- * @param v14 - state word 14
- * @param v15 - state word 15
  * @returns Updated compression state words.
- * @example
- * Run the BLAKE2 compression core on zeroed state and message words.
- * ```ts
- * import { _compress } from '@noble/hashes/blake2.js';
- * const state = _compress(
- *   new Uint8Array(16),
- *   0,
- *   new Uint32Array(16),
- *   1,
- *   0, 0, 0, 0, 0, 0, 0, 0,
- *   0, 0, 0, 0, 0, 0, 0, 0
- * );
- * state.v0;
- * ```
  */
 // prettier-ignore
 export function _compress(
@@ -641,7 +603,6 @@ export class _BLAKE2s extends _BLAKE2<_BLAKE2s> {
       this.v7 ^= swap8IfBE(pers[1]);
     }
     if (key !== undefined) {
-      // Pad to blockLen and update
       const tmp = new Uint8Array(this.blockLen);
       tmp.set(key);
       this.update(tmp);
@@ -865,7 +826,6 @@ function blake2sWrap(
  *   must be 8 bytes each. See {@link Blake2Opts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with Blake2s.
  * ```ts
  * blake2s(new Uint8Array([97, 98, 99]));
  * ```

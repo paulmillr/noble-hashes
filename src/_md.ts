@@ -14,11 +14,6 @@ import { abytes, aexists, aoutput, createView, type Hash, type TArg, type TRet }
  * @param b - word chosen when selector bit is set
  * @param c - word chosen when selector bit is clear
  * @returns Mixed 32-bit word.
- * @example
- * Combine three words with the shared 32-bit choice primitive.
- * ```ts
- * Chi(0xffffffff, 0x12345678, 0x87654321);
- * ```
  */
 export function Chi(a: number, b: number, c: number): number {
   return (a & b) ^ (~a & c);
@@ -31,11 +26,6 @@ export function Chi(a: number, b: number, c: number): number {
  * @param b - second input word
  * @param c - third input word
  * @returns Mixed 32-bit word.
- * @example
- * Combine three words with the shared 32-bit majority primitive.
- * ```ts
- * Maj(0xffffffff, 0x12345678, 0x87654321);
- * ```
  */
 export function Maj(a: number, b: number, c: number): number {
   return (a & b) ^ (a & c) ^ (b & c);
@@ -132,9 +122,6 @@ export abstract class HashMD<T extends HashMD<T>> implements Hash<T> {
     aexists(this);
     aoutput(out, this);
     this.finished = true;
-    // Padding
-    // We can avoid allocation of buffer for padding completely if it
-    // was previously not allocated here. But it won't change performance.
     const { buffer, view, blockLen, isLE } = this;
     let { pos } = this;
     // append the bit '1' to the message, then zero-pad the rest of the block

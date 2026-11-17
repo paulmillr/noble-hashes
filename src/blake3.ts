@@ -303,7 +303,6 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   private IV: Uint32Array;
   private state: Uint32Array;
   private stack: Uint32Array[] = [];
-  // Output
   private posOut = 0;
   private bufferOut32 = new Uint32Array(16);
   private bufferOut: Uint8Array;
@@ -347,7 +346,6 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   }
   protected set(): void {}
   protected compress(buf: Uint32Array, bufPos: number = 0, isLast: boolean = false): void {
-    // Compress last block
     let flags = this.flags;
     if (!this.chunkPos) flags |= B3_Flags.CHUNK_START;
     if (this.chunkPos === 15 || isLast) flags |= B3_Flags.CHUNK_END;
@@ -437,7 +435,6 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   }
   // Root/XOF compression: rerun the same ROOT inputs with incrementing output
   // counter `t` and materialize all 16 output words.
-  // Same as b2Compress, but doesn't modify state and returns 16 u32 array (instead of 8)
   private b2CompressOut() {
     const { state: s, pos, flags, buffer32, bufferOut32: out32 } = this;
     const outCounter = this.chunkOut++;
@@ -452,9 +449,7 @@ export class _BLAKE3 extends _BLAKE2<_BLAKE3> implements HashXOF<_BLAKE3> {
   protected finish(): void {
     if (this.finished) return;
     this.finished = true;
-    // Padding
     this.buffer.fill(0, this.pos);
-    // Process last chunk
     let flags = this.flags | B3_Flags.ROOT;
     if (this.stack.length) {
       // Finalize the current chunk first, then rerun the last parent

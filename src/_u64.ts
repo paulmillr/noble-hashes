@@ -68,8 +68,6 @@ const rotrBL = (h: number, l: number, s: number): number => (h >>> (s - 32)) | (
 const rotr32H = (_h: number, l: number): number => l;
 // Low 32-bit half of a 64-bit right rotate for `s === 32`; this is just the swapped high half.
 const rotr32L = (h: number, _l: number): number => h;
-// 64-bit left rotates (rotl*) are not defined here: sha3.ts, their only consumer, keeps
-// local copies so V8 inlines them into keccakP.
 
 // Add two split 64-bit words and return the split `{ h, l }` sum.
 // JS uses 32-bit signed integers for bitwise operations, so we cannot simply shift the carry out
@@ -86,7 +84,6 @@ function add(
   const l = (Al >>> 0) + (Bl >>> 0);
   return { h: (Ah + Bh + ((l / 2 ** 32) | 0)) | 0, l: l | 0 };
 }
-// Addition with more than 2 elements
 // Unmasked low-word accumulator for 3-way addition; pass the raw result into `add3H(...)`.
 const add3L = (Al: number, Bl: number, Cl: number): number => (Al >>> 0) + (Bl >>> 0) + (Cl >>> 0);
 // High-word finalize step for 3-way addition; `low` must be the untruncated output of `add3L(...)`.

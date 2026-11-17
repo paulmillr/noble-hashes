@@ -36,7 +36,6 @@ const _8n = /* @__PURE__ */ BigInt(8);
 const _ffn = /* @__PURE__ */ BigInt(0xff);
 
 // It is safe to use bigints here, since they used only for length encoding (not actual data).
-// We use bigints in sha256 for lengths too.
 // Callers are still expected to supply SP 800-185-valid lengths
 // (`0 <= x < 2^2040`); this helper does not enforce that bound.
 // Minimal big-endian bytes of `n`, at least one byte long (SP 800-185 §2.3.1).
@@ -117,7 +116,6 @@ function bytepadUpdate(h: TArg<Keccak>, ...chunks: TArg<Uint8Array[]>): TRet<Kec
   return hash as TRet<Keccak>;
 }
 
-// Personalization
 function cshakePers(h: TArg<Keccak>, opts: TArg<cShakeOpts> = {}): TRet<Keccak> {
   const hash = h as TRet<Keccak>;
   opts = checkOpts({}, opts);
@@ -174,7 +172,6 @@ export type ITupleHash = {
  *   when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with cSHAKE128.
  * ```ts
  * cshake128(new Uint8Array([1, 2, 3]), { dkLen: 32 });
  * ```
@@ -202,7 +199,6 @@ export const cshake128: TRet<CHashXOF<Keccak, cShakeOpts>> = /* @__PURE__ */ gen
  *   when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with cSHAKE256.
  * ```ts
  * cshake256(new Uint8Array([1, 2, 3]), { dkLen: 64 });
  * ```
@@ -250,7 +246,6 @@ export class _KMAC extends Keccak implements HashXOF<_KMAC> {
   }
   protected finish(): void {
     // SP 800-185 uses right_encode(L) for fixed-length KMAC and right_encode(0) for KMACXOF.
-    // outputLen in bits
     if (!this.finished) this.update(rightEncode(this.enableXOF ? 0 : bitLen(this.outputLen)));
     super.finish();
   }
@@ -322,7 +317,6 @@ export type IKMAC = {
  *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
- * Authenticate a message with KMAC128.
  * ```ts
  * const key = new Uint8Array([1, 2, 3]);
  * const message = new Uint8Array([4, 5, 6]);
@@ -348,7 +342,6 @@ export const kmac128: TRet<IKMAC> = /* @__PURE__ */ genKmac(168, 16);
  *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
- * Authenticate a message with KMAC256.
  * ```ts
  * kmac256(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]));
  * ```
@@ -362,7 +355,6 @@ export const kmac256: TRet<IKMAC> = /* @__PURE__ */ genKmac(136, 32);
  *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
- * Authenticate a message with KMAC128 XOF output.
  * ```ts
  * kmac128xof(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]), { dkLen: 32 });
  * ```
@@ -376,7 +368,6 @@ export const kmac128xof: TRet<IKMAC> = /* @__PURE__ */ genKmac(168, 16, true);
  *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Authentication tag bytes.
  * @example
- * Authenticate a message with KMAC256 XOF output.
  * ```ts
  * kmac256xof(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]), { dkLen: 64 });
  * ```
@@ -409,9 +400,7 @@ export class _TupleHash extends Keccak implements HashXOF<_TupleHash> {
   protected finish(): void {
     // SP 800-185 uses right_encode(L) for fixed-length TupleHash
     // and right_encode(0) for TupleHashXOF.
-    if (!this.finished)
-      // outputLen in bits
-      super.update(rightEncode(this.enableXOF ? 0 : bitLen(this.outputLen)));
+    if (!this.finished) super.update(rightEncode(this.enableXOF ? 0 : bitLen(this.outputLen)));
     super.finish();
   }
   _cloneInto(to?: _TupleHash): _TupleHash {
@@ -450,7 +439,6 @@ function genTuple(blockLen: number, outputLen: number, xof = false): TRet<ITuple
  *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a tuple of byte arrays with TupleHash128.
  * ```ts
  * tuplehash128([new Uint8Array([1]), new Uint8Array([2])]);
  * ```
@@ -463,7 +451,6 @@ export const tuplehash128: TRet<ITupleHash> = /* @__PURE__ */ genTuple(168, 16);
  *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a tuple of byte arrays with TupleHash256.
  * ```ts
  * tuplehash256([new Uint8Array([1]), new Uint8Array([2])]);
  * ```
@@ -476,7 +463,6 @@ export const tuplehash256: TRet<ITupleHash> = /* @__PURE__ */ genTuple(136, 32);
  *   16 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a tuple of byte arrays with TupleHash128 XOF output.
  * ```ts
  * tuplehash128xof([new Uint8Array([1]), new Uint8Array([2])], { dkLen: 32 });
  * ```
@@ -489,7 +475,6 @@ export const tuplehash128xof: TRet<ITupleHash> = /* @__PURE__ */ genTuple(168, 1
  *   32 output bytes when `dkLen` is omitted. See {@link cShakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a tuple of byte arrays with TupleHash256 XOF output.
  * ```ts
  * tuplehash256xof([new Uint8Array([1]), new Uint8Array([2])], { dkLen: 64 });
  * ```
@@ -572,7 +557,6 @@ export class _ParallelHash extends Keccak implements HashXOF<_ParallelHash> {
     // z || right_encode(n) || right_encode(L); XOF mode replaces
     // right_encode(L) with right_encode(0).
     super.update(rightEncode(this.chunksDone));
-    // outputLen in bits
     super.update(rightEncode(this.enableXOF ? 0 : bitLen(this.outputLen)));
     super.finish();
   }
@@ -653,7 +637,6 @@ function genPrl(
  *   See {@link ParallelOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with ParallelHash128.
  * ```ts
  * parallelhash128(new Uint8Array([1, 2, 3]));
  * ```
@@ -680,7 +663,6 @@ export const parallelhash128: TRet<CHash<Keccak, ParallelOpts>> = /* @__PURE__ *
  *   See {@link ParallelOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with ParallelHash256.
  * ```ts
  * parallelhash256(new Uint8Array([1, 2, 3]));
  * ```
@@ -698,7 +680,6 @@ export const parallelhash256: TRet<CHash<Keccak, ParallelOpts>> = /* @__PURE__ *
  *   See {@link ParallelOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with ParallelHash128 XOF output.
  * ```ts
  * parallelhash128xof(new Uint8Array([1, 2, 3]), { dkLen: 32 });
  * ```
@@ -717,7 +698,6 @@ export const parallelhash128xof: TRet<CHashXOF<Keccak, ParallelOpts>> = /* @__PU
  *   See {@link ParallelOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with ParallelHash256 XOF output.
  * ```ts
  * parallelhash256xof(new Uint8Array([1, 2, 3]), { dkLen: 64 });
  * ```
@@ -755,15 +735,12 @@ const genTurbo = (blockLen: number, outputLen: number) =>
 
 /**
  * TurboSHAKE 128-bit: reduced 12-round keccak.
- * Should've been a simple "shake with 12 rounds", but we got a whole new
- * spec about Turbo SHAKE Pro MAX.
  * @param msg - message bytes to hash
  * @param opts - Optional output-length and domain-separation settings.
  *   RFC 9861 §2.1 defaults `D` to `0x1f`. Defaults to 32 output bytes when
  *   `dkLen` is omitted. See {@link TurboshakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with TurboSHAKE128.
  * ```ts
  * turboshake128(new Uint8Array([1, 2, 3]), { dkLen: 32 });
  * ```
@@ -785,7 +762,6 @@ export const turboshake128: TRet<CHashXOF<Keccak, TurboshakeOpts>> = /* @__PURE_
  *   `dkLen` is omitted. See {@link TurboshakeOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with TurboSHAKE256.
  * ```ts
  * turboshake256(new Uint8Array([1, 2, 3]), { dkLen: 64 });
  * ```
@@ -898,7 +874,6 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
     const { personalization } = this;
     // RFC 9861 §3.2 forms S = M || C || length_encode(|C|) before any tree hashing logic.
     this.update(personalization).update(rightEncodeK12(personalization.length));
-    // Leaf hash
     if (this.leafHash) {
       // Multi-chunk K12 appends
       // CV_1..CV_(n-1) || length_encode(n-1) || `FF FF`
@@ -979,7 +954,6 @@ export class _KangarooTwelve extends Keccak implements HashXOF<_KangarooTwelve> 
  *   32 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with KangarooTwelve-128.
  * ```ts
  * kt128(new Uint8Array([1, 2, 3]));
  * ```
@@ -1002,7 +976,6 @@ export const kt128: TRet<CHash<_KangarooTwelve, KangarooOpts>> = /* @__PURE__ */
  *   64 output bytes when `dkLen` is omitted. See {@link KangarooOpts}.
  * @returns Digest bytes.
  * @example
- * Hash a message with KangarooTwelve-256.
  * ```ts
  * kt256(new Uint8Array([1, 2, 3]));
  * ```
@@ -1045,7 +1018,6 @@ const genHopMAC = (hash: TArg<CHash<_KangarooTwelve, KangarooOpts>>): TRet<HopMA
  * @param dkLen - optional output length in bytes
  * @returns Authentication tag bytes.
  * @example
- * Authenticate a message with HopMAC128.
  * ```ts
  * HopMAC128(new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3]), 32);
  * ```
@@ -1063,7 +1035,6 @@ export const HopMAC128: TRet<HopMAC> = /* @__PURE__ */ genHopMAC(kt128);
  *   `dkLen`.
  * @returns Authentication tag bytes.
  * @example
- * Authenticate a message with HopMAC256.
  * ```ts
  * HopMAC256(new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3]), 64);
  * ```

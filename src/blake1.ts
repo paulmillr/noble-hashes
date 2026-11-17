@@ -3,8 +3,6 @@
  * Rarely used. Check out blake2 or blake3 instead.
  * {@link https://www.aumasson.jp/blake/blake.pdf}
  *
- * In the best case, there are 0 allocations.
- *
  * Differences from blake2:
  *
  * - BE instead of LE
@@ -94,7 +92,6 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     if (salt !== undefined) {
       let slt = salt;
       abytes(slt, 4 * saltLen, 'salt');
-      // if (slt.length !== 4 * saltLen) throw new Error('wrong salt length');
       const salt32 = (this.salt = new Uint32Array(saltLen));
       const sv = createView(slt);
       this.constants = constants.slice();
@@ -178,9 +175,8 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     aexists(this);
     aoutput(out, this);
     this.finished = true;
-    // Padding
     const { buffer, blockLen, counterLen, lengthFlag, view } = this;
-    buffer.fill(0, this.pos); // clean buf
+    buffer.fill(0, this.pos);
     const counterBits = (this.length + this.pos) * 8;
     const counterPos = blockLen - counterLen - 1;
     buffer[this.pos] |= 0b1000_0000; // End block flag
@@ -198,7 +194,6 @@ abstract class BLAKE1<T extends BLAKE1<T>> implements Hash<T> {
     // Blake1 omits the counter from the extra all-padding block; only the block that still carries
     // message bytes mixes in the final bit length.
     this.compress(view, 0, this.pos !== 0);
-    // Write output
     clean(buffer);
     // digest() passes our own `buffer` as `out`; reuse its cached view instead of allocating one.
     const v = out === buffer ? view : createView(out);
@@ -747,7 +742,6 @@ export class _BLAKE512 extends BLAKE1_64B {
  *   `opts.salt` must be exactly 16 bytes.
  * @returns Digest bytes.
  * @example
- * Hash a message with Blake1-224.
  * ```ts
  * blake224(new Uint8Array([97, 98, 99]));
  * ```
@@ -762,7 +756,6 @@ export const blake224: TRet<CHash<_BLAKE224, BlakeOpts>> = /* @__PURE__ */ creat
  *   `opts.salt` must be exactly 16 bytes.
  * @returns Digest bytes.
  * @example
- * Hash a message with Blake1-256.
  * ```ts
  * blake256(new Uint8Array([97, 98, 99]));
  * ```
@@ -782,7 +775,6 @@ export const blake256: TRet<CHash<_BLAKE256, BlakeOpts>> = /* @__PURE__ */ creat
  *   `opts.salt` must be exactly 32 bytes.
  * @returns Digest bytes.
  * @example
- * Hash a message with Blake1-384.
  * ```ts
  * blake384(new Uint8Array([97, 98, 99]));
  * ```
@@ -797,7 +789,6 @@ export const blake384: TRet<CHash<_BLAKE384, BlakeOpts>> = /* @__PURE__ */ creat
  *   `opts.salt` must be exactly 32 bytes.
  * @returns Digest bytes.
  * @example
- * Hash a message with Blake1-512.
  * ```ts
  * blake512(new Uint8Array([97, 98, 99]));
  * ```

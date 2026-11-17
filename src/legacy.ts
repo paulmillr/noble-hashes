@@ -216,12 +216,6 @@ export class _MD5 extends HashMD<_MD5> {
 
 /**
  * MD5 (RFC 1321) legacy hash function. It was cryptographically broken.
- * MD5 architecture is similar to SHA1, with some differences:
- * - Reduced output length: 16 bytes (128 bit) instead of 20
- * - 64 rounds, instead of 80
- * - Little-endian: could be faster, but will require more code
- * - Non-linear index selection: huge speed-up for unroll
- * - Per round constants: more memory accesses, additional speed-up for unroll
  * @param msg - message bytes to hash
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
@@ -251,7 +245,6 @@ const idxLR = /* @__PURE__ */ (() => {
 })();
 const idxL = /* @__PURE__ */ (() => idxLR[0])();
 const idxR = /* @__PURE__ */ (() => idxLR[1])();
-// const [idxL, idxR] = idxLR;
 
 // Base per-group shift table before the left/right message-order permutations are applied.
 const shifts160 = /* @__PURE__ */ [

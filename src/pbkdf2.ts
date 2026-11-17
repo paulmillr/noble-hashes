@@ -50,7 +50,6 @@ async function pbkdf2AsyncLoop(
     ts = Date.now();
   }
 }
-// Common validation and per-call state setup for sync/async functions.
 function pbkdf2Init(
   hash: TArg<CHash>,
   _password: TArg<KDFInput>,
@@ -74,7 +73,6 @@ function pbkdf2Init(
   try {
     const s = kdfInputToBytes(_salt, 'salt');
     try {
-      // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
       const DK = new Uint8Array(dkLen);
       const { iHash, oHash, outputLen } = hmac.create(hash, p);
       // Drive keyed hashes directly; the wrapper is only needed to initialize their HMAC midstates.
@@ -166,8 +164,6 @@ function pbkdf2Engine(
       oHash.destroy();
       salted.destroy();
       work.destroy();
-      // Shared sync/async cleanup point: wipe transient PRF state
-      // while preserving the derived key buffer.
       clean(u);
       return DK as TRet<Uint8Array>;
     },
@@ -185,7 +181,6 @@ function pbkdf2Engine(
  * @returns Derived key bytes.
  * @throws If the PBKDF2 iteration count or derived-key settings are invalid. {@link Error}
  * @example
- * PBKDF2-HMAC: RFC 2898 key derivation function.
  * ```ts
  * import { pbkdf2 } from '@noble/hashes/pbkdf2.js';
  * import { sha256 } from '@noble/hashes/sha2.js';
@@ -228,7 +223,6 @@ export function pbkdf2(
  * @returns Promise resolving to derived key bytes.
  * @throws If the PBKDF2 iteration count or derived-key settings are invalid. {@link Error}
  * @example
- * PBKDF2-HMAC: RFC 2898 key derivation function.
  * ```ts
  * import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
  * import { sha256 } from '@noble/hashes/sha2.js';

@@ -181,7 +181,6 @@ export type ScryptOpts = {
   onProgress?: (progress: number) => void;
 };
 
-// Common prologue and epilogue for sync/async functions
 function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: ScryptOpts) {
   const opts = checkOpts(
     {
@@ -237,7 +236,6 @@ function scryptInit(password: TArg<KDFInput>, salt: TArg<KDFInput>, _opts?: Scry
   if (onProgress) {
     const totalBlockMix = 2 * N * p;
     // Invoke callback if progress changes from 10.01 to 10.02
-    // Allows to draw smooth progress bar on up to 8K screen
     const callbackPer = Math.max(Math.floor(totalBlockMix / 10000), 1);
     let blockMixCnt = 0;
     blockMixCb = () => {
@@ -281,7 +279,6 @@ function scryptOutput(
  * @returns Derived key bytes.
  * @throws If the Scrypt cost, memory, or callback options are invalid. {@link Error}
  * @example
- * Derive a key with scrypt.
  * ```ts
  * scrypt('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  * ```
@@ -320,7 +317,7 @@ export function scrypt(
       BlockMix(V, pos, V, (pos += blockSize32), r); // V[i] = BlockMix(V[i-1]);
       blockMixCb();
     }
-    BlockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
+    BlockMix(V, (N - 1) * blockSize32, B32, Pi, r);
     blockMixCb();
     for (let i = 0; i < N; i++) {
       // First u32 of the last 64-byte block (u32 is LE)
@@ -362,7 +359,6 @@ export function scrypt(
  * @returns Promise resolving to derived key bytes.
  * @throws If the Scrypt cost, memory, or callback options are invalid. {@link Error}
  * @example
- * Derive a key with scrypt asynchronously.
  * ```ts
  * await scryptAsync('password', 'salt', { N: 2**18, r: 8, p: 1, dkLen: 32 });
  * ```
@@ -408,7 +404,7 @@ export async function scryptAsync(
       },
       abort
     );
-    BlockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
+    BlockMix(V, (N - 1) * blockSize32, B32, Pi, r);
     blockMixCb();
     await asyncLoop(
       N,

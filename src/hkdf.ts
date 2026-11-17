@@ -7,7 +7,7 @@ import { hmac, type _HMAC } from './hmac.ts';
 import { abytes, ahash, anumber, type CHash, clean, type TArg, type TRet } from './utils.ts';
 
 /**
- * HKDF-extract from spec. Less important part. `HKDF-Extract(IKM, salt) -> PRK`
+ * HKDF-extract from spec. `HKDF-Extract(IKM, salt) -> PRK`
  * Arguments position differs from spec (IKM is first one, since it is not optional)
  * Local validation only checks `hash`; `ikm` / `salt` byte validation is delegated to `hmac()`.
  * @param hash - hash function that would be used (e.g. sha256)
@@ -15,7 +15,6 @@ import { abytes, ahash, anumber, type CHash, clean, type TArg, type TRet } from 
  * @param salt - optional salt value (a non-secret random value)
  * @returns Pseudorandom key derived from input keying material.
  * @example
- * Run the HKDF extract step.
  * ```ts
  * import { extract } from '@noble/hashes/hkdf.js';
  * import { sha256 } from '@noble/hashes/sha2.js';
@@ -42,7 +41,7 @@ const HKDF_COUNTER = /* @__PURE__ */ Uint8Array.of(0);
 const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
 
 /**
- * HKDF-expand from the spec. The most important part. `HKDF-Expand(PRK, info, L) -> OKM`
+ * HKDF-expand from the spec. `HKDF-Expand(PRK, info, L) -> OKM`
  * @param hash - hash function that would be used (e.g. sha256)
  * @param prk - a pseudorandom key of at least HashLen octets
  *   (usually, the output from the extract step)
@@ -54,7 +53,6 @@ const EMPTY_BUFFER = /* @__PURE__ */ Uint8Array.of();
  * @throws If the requested output length exceeds the HKDF limit
  *   for the selected hash. {@link Error}
  * @example
- * Run the HKDF expand step.
  * ```ts
  * import { expand } from '@noble/hashes/hkdf.js';
  * import { sha256 } from '@noble/hashes/sha2.js';
@@ -83,7 +81,6 @@ export function expand(
     if (_recycled) clean(prk); // Full hkdf() owns this intermediate PRK.
     return new Uint8Array() as TRet<Uint8Array>;
   }
-  // first L(ength) octets of T
   // The private PRK can become both T and a one-block result after HMAC consumes the key.
   const okm = _recycled && blocks === 1 ? prk : new Uint8Array(blocks * olen);
   const { iHash, oHash } = hmac.create(hash, prk);
@@ -112,7 +109,6 @@ export function expand(
   worker?.destroy();
   if (T !== okm) clean(T); // Wipe private T/PRK; standalone preserves caller-owned PRK.
   clean(HKDF_COUNTER);
-  // Exact fit: return without the extra copy.
   if (length === okm.length) return okm as TRet<Uint8Array>;
   // Copy the requested prefix, then wipe the full buffer: its tail holds
   // up to HashLen-1 bytes of derived key material past `length`.
@@ -134,7 +130,6 @@ export function expand(
  * @throws If the requested output length exceeds the HKDF limit
  *   for the selected hash. {@link Error}
  * @example
- * HKDF (RFC 5869): derive keys from an initial input.
  * ```ts
  * import { hkdf } from '@noble/hashes/hkdf.js';
  * import { sha256 } from '@noble/hashes/sha2.js';

@@ -1,6 +1,5 @@
 /**
  * SHA2 hash function. A.k.a. sha256, sha384, sha512, sha512_224, sha512_256.
- * SHA256 is the fastest hash implementable in JS, even faster than Blake3.
  * Check out {@link https://www.rfc-editor.org/rfc/rfc4634 | RFC 4634} and
  * {@link https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf | FIPS 180-4}.
  * @module
@@ -270,8 +269,6 @@ export class _SHA224 extends SHA2_32B<_SHA224> {
 function pbkdf2Wipe(...arrays: TArg<(Uint32Array | Int32Array)[]>): void {
   for (const array of arrays) for (let i = 0; i < array.length; i++) array[i] = 0;
 }
-
-// SHA2-512 is slower than sha256 in js because u64 operations are slow.
 
 // SHA-384 / SHA-512 round constants (FIPS 180-4 §4.2.3): the first 64 fractional bits of the cube
 // roots of the first 80 primes, as interleaved u32 halves (`K[2 * t]` high, `K[2 * t + 1]` low).
@@ -665,17 +662,13 @@ export class _SHA512_256 extends SHA2_64B<_SHA512_256> {
 }
 
 /**
- * SHA2-256 hash function from RFC 4634. In JS it's the fastest: even faster than Blake3. Some info:
+ * SHA2-256 hash function from RFC 4634.
  *
  * - Trying 2^128 hashes would get 50% chance of collision, using birthday attack.
- * - BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per 2025.
- * - Each sha256 hash is executing 2^18 bit operations.
- * - Good 2024 ASICs can do 200Th/sec with 3500 watts of power, corresponding to 2^36 hashes/joule.
  * @param msg - message bytes to hash
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA2-256.
  * ```ts
  * sha256(new Uint8Array([97, 98, 99]));
  * ```
@@ -690,7 +683,6 @@ export const sha256: TRet<CHash<_SHA256>> = /* @__PURE__ */ sha256Wrap(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA2-224.
  * ```ts
  * sha224(new Uint8Array([97, 98, 99]));
  * ```
@@ -706,7 +698,6 @@ export const sha224: TRet<CHash<_SHA224>> = /* @__PURE__ */ sha256Wrap(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA2-512.
  * ```ts
  * sha512(new Uint8Array([97, 98, 99]));
  * ```
@@ -724,7 +715,6 @@ export const sha512: TRet<CHash<_SHA512>> = /* @__PURE__ */ pbkdf2Register(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA2-384.
  * ```ts
  * sha384(new Uint8Array([97, 98, 99]));
  * ```
@@ -741,7 +731,6 @@ export const sha384: TRet<CHash<_SHA384>> = /* @__PURE__ */ sha512Wrap(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA2-512/256.
  * ```ts
  * sha512_256(new Uint8Array([97, 98, 99]));
  * ```
@@ -757,7 +746,6 @@ export const sha512_256: TRet<CHash<_SHA512_256>> = /* @__PURE__ */ sha512Wrap(
  * @param opts - Reserved hash options.
  * @returns Digest bytes.
  * @example
- * Hash a message with SHA2-512/224.
  * ```ts
  * sha512_224(new Uint8Array([97, 98, 99]));
  * ```

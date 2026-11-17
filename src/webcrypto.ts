@@ -62,15 +62,11 @@ function ahashWeb(hash: TArg<WebHash>): string {
   return name;
 }
 
-/** WebCrypto SHA1 (RFC 3174) legacy hash function. It was cryptographically broken. */
-// export const sha1: WebHash = createHash('SHA-1', 64, 20);
-
 /**
  * WebCrypto SHA2-256 hash function from RFC 6234.
  * @param msg - message bytes to hash
  * @returns Promise resolving to digest bytes.
  * @example
- * Hash a message with WebCrypto SHA2-256.
  * ```ts
  * await sha256(new Uint8Array([97, 98, 99]));
  * ```
@@ -81,7 +77,6 @@ export const sha256: TRet<WebHash> = /* @__PURE__ */ createWebHash('SHA-256', 64
  * @param msg - message bytes to hash
  * @returns Promise resolving to digest bytes.
  * @example
- * Hash a message with WebCrypto SHA2-384.
  * ```ts
  * await sha384(new Uint8Array([97, 98, 99]));
  * ```
@@ -92,7 +87,6 @@ export const sha384: TRet<WebHash> = /* @__PURE__ */ createWebHash('SHA-384', 12
  * @param msg - message bytes to hash
  * @returns Promise resolving to digest bytes.
  * @example
- * Hash a message with WebCrypto SHA2-512.
  * ```ts
  * await sha512(new Uint8Array([97, 98, 99]));
  * ```
@@ -174,7 +168,6 @@ export const hmac: TRet<WebHmacFn> = /* @__PURE__ */ (() => {
  * The RFC `L <= 255 * HashLen` bound is enforced before calling WebCrypto.
  * @throws If the current runtime does not provide `crypto.subtle`. {@link Error}
  * @example
- * WebCrypto HKDF (RFC 5869): derive keys from an initial input.
  * ```ts
  * import { hkdf, sha256 } from '@noble/hashes/webcrypto.js';
  * import { randomBytes, utf8ToBytes } from '@noble/hashes/utils.js';
@@ -231,7 +224,6 @@ export async function hkdf(
  * library-side guard. Values above the signed 32-bit backend range are rejected locally.
  * @throws If the current runtime does not provide `crypto.subtle`. {@link Error}
  * @example
- * WebCrypto PBKDF2-HMAC: RFC 2898 key derivation function.
  * ```ts
  * import { pbkdf2, sha256 } from '@noble/hashes/webcrypto.js';
  * const key = await pbkdf2(sha256, 'password', 'salt', { dkLen: 32, c: Math.pow(2, 18) });

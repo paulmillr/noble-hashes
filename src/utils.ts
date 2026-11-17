@@ -112,11 +112,6 @@ export type TRet<T> = T extends unknown
  * Checks if something is Uint8Array. Be careful: nodejs Buffer will return true.
  * @param a - value to test
  * @returns `true` when the value is a Uint8Array-compatible view.
- * @example
- * Check whether a value is a Uint8Array-compatible view.
- * ```ts
- * isBytes(new Uint8Array([1, 2, 3]));
- * ```
  */
 export function isBytes(a: unknown): a is Uint8Array {
   // Plain `instanceof Uint8Array` is too strict for some Buffer / proxy / cross-realm cases.
@@ -143,11 +138,6 @@ const atitle = (title: string): string => (title ? `"${title}" ` : '');
  * @returns The validated number.
  * @throws On wrong argument types. {@link TypeError}
  * @throws On wrong argument ranges or values. {@link RangeError}
- * @example
- * Validate a non-negative integer option.
- * ```ts
- * anumber(32, 'length');
- * ```
  */
 export function anumber(n: number, title: string = ''): number {
   if (typeof n !== 'number')
@@ -163,11 +153,6 @@ export function anumber(n: number, title: string = ''): number {
  * @param title - label included in thrown errors
  * @returns The validated boolean.
  * @throws On wrong argument types. {@link TypeError}
- * @example
- * Validate a boolean option.
- * ```ts
- * abool(true, 'enableXOF');
- * ```
  */
 export function abool(value: boolean, title: string = ''): boolean {
   if (typeof value !== 'boolean')
@@ -183,11 +168,6 @@ export function abool(value: boolean, title: string = ''): boolean {
  * @returns The validated byte array.
  * @throws On wrong argument types. {@link TypeError}
  * @throws On wrong argument ranges or values. {@link RangeError}
- * @example
- * Validate that a value is a byte array.
- * ```ts
- * abytes(new Uint8Array([1, 2, 3]));
- * ```
  */
 export function abytes(
   value: TArg<Uint8Array>,
@@ -356,11 +336,6 @@ export function u32(arr: TArg<TypedArray>): TRet<Uint32Array> {
 /**
  * Zeroizes typed arrays in place. Warning: JS provides no guarantees.
  * @param arrays - arrays to overwrite with zeros
- * @example
- * Zeroize sensitive buffers in place.
- * ```ts
- * clean(new Uint8Array([1, 2, 3]));
- * ```
  */
 export function clean(...arrays: TArg<TypedArray[]>): void {
   for (let i = 0; i < arrays.length; i++) {
@@ -387,11 +362,6 @@ export function createView(arr: TArg<TypedArray>): DataView {
  * @param word - source word
  * @param shift - shift amount in bits
  * @returns Rotated word.
- * @example
- * Rotate a 32-bit word to the right.
- * ```ts
- * rotr(0x12345678, 8);
- * ```
  */
 export function rotr(word: number, shift: number): number {
   return (word << (32 - shift)) | (word >>> shift);
@@ -402,11 +372,6 @@ export function rotr(word: number, shift: number): number {
  * @param word - source word
  * @param shift - shift amount in bits
  * @returns Rotated word.
- * @example
- * Rotate a 32-bit word to the left.
- * ```ts
- * rotl(0x12345678, 8);
- * ```
  */
 export function rotl(word: number, shift: number): number {
   return (word << shift) | ((word >>> (32 - shift)) >>> 0);
@@ -420,11 +385,6 @@ export const isLE: boolean = /* @__PURE__ */ (() =>
  * Byte-swap operation for uint32 values.
  * @param word - source word
  * @returns Word with reversed byte order.
- * @example
- * Reverse the byte order of a 32-bit word.
- * ```ts
- * byteSwap(0x11223344);
- * ```
  */
 export function byteSwap(word: number): number {
   return (
@@ -507,7 +467,6 @@ export function bytesToHex(bytes: TArg<Uint8Array>): string {
   abytes(bytes);
   // @ts-ignore
   if (hasHexBuiltin) return bytes.toHex();
-  // pre-caching improves the speed 6x
   let hex = '';
   for (let i = 0; i < bytes.length; i++) {
     hex += hexes[bytes[i]];
@@ -519,9 +478,9 @@ export function bytesToHex(bytes: TArg<Uint8Array>): string {
 // ASCII codes: '0'..'9' = 48..57, 'A'..'F' = 65..70, 'a'..'f' = 97..102.
 // prettier-ignore
 function asciiToBase16(ch: number): number | undefined {
-  return ch >= 48 && ch <= 57 ? ch - 48 // '2' => 50-48
-  : ch >= 65 && ch <= 70 ? ch - (65 - 10) // 'B' => 66-(65-10)
-  : ch >= 97 && ch <= 102 ? ch - (97 - 10) // 'b' => 98-(97-10)
+  return ch >= 48 && ch <= 57 ? ch - 48
+  : ch >= 65 && ch <= 70 ? ch - (65 - 10)
+  : ch >= 97 && ch <= 102 ? ch - (97 - 10)
   : undefined;
 }
 
@@ -552,15 +511,15 @@ export function hexToBytes(hex: string): TRet<Uint8Array> {
   if (hl % 2) throw new RangeError('hex string expected, got unpadded hex of length ' + hl);
   const array = new Uint8Array(al);
   for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
-    const n1 = asciiToBase16(hex.charCodeAt(hi)); // parse first char, multiply it by 16
-    const n2 = asciiToBase16(hex.charCodeAt(hi + 1)); // parse second char
+    const n1 = asciiToBase16(hex.charCodeAt(hi));
+    const n2 = asciiToBase16(hex.charCodeAt(hi + 1));
     if (n1 === undefined || n2 === undefined) {
       const char = hex[hi] + hex[hi + 1];
       throw new RangeError(
         'hex string expected, got non-hex character "' + char + '" at index ' + hi
       );
     }
-    array[ai] = n1 * 16 + n2; // example: 'A9' => 10*16 + 9
+    array[ai] = n1 * 16 + n2;
   }
   return array;
 }
@@ -897,11 +856,6 @@ export type CHashXOF<T extends HashXOF<T> = HashXOF<any>, Opts = undefined> = CH
  * @param direct - Closed short-input implementation.
  * @param onlyDefaultOpts - Whether any supplied options object must use the stateful path.
  * @returns Frozen callable hash with the stateful wrapper's public metadata.
- * @example
- * Wrap a one-block implementation whose padding accepts at most 55 input bytes.
- * ```ts
- * const hash = _wrapShortHash(stateful, 55, direct);
- * ```
  */
 export function _wrapShortHash<T extends Hash<T>, Opts = undefined>(
   stateful: TArg<TRet<CHash<T, Opts>>>,
@@ -1002,8 +956,6 @@ export function randomBytes(bytesLength = 32): TRet<Uint8Array> {
     throw new Error('crypto.getRandomValues must be defined');
   // Web Cryptography API Level 2 §10.1.1:
   // if `byteLength > 65536`, throw `QuotaExceededError`.
-  // Keep the guard explicit so callers can see the quota in code
-  // instead of discovering it by reading the spec or host errors.
   // This wrapper surfaces the same quota as a stable library RangeError.
   if (bytesLength > 65536)
     throw new RangeError(`"bytesLength" expected <= 65536, got ${bytesLength}`);
