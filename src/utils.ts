@@ -264,7 +264,8 @@ const aopts = (value: Record<string, any>, label: string) => {
     throw new TypeError(`"${label}" expected plain object`);
   // Object.assign() treats an own "__proto__" source key as a write to the target's legacy
   // prototype setter. Reject it before merging so inherited option values cannot be injected.
-  if (Object.hasOwn(value, '__proto__')) throw new TypeError(`"${label}.__proto__" is not allowed`);
+  if (Object.prototype.hasOwnProperty.call(value, '__proto__'))
+    throw new TypeError(`"${label}.__proto__" is not allowed`);
 };
 
 /**
@@ -736,7 +737,7 @@ export const validateObject = (
     // Runtime objects such as Field instances intentionally satisfy required method slots
     // via their shared prototype.
     if (
-      !Object.hasOwn(object, fieldName) &&
+      !Object.prototype.hasOwnProperty.call(object, fieldName) &&
       (isOpt ? val !== undefined : expectedType !== 'function')
     ) {
       throw new TypeError(`${label} is invalid: expected own property`);

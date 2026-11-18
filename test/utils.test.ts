@@ -91,6 +91,26 @@ describe('utils', () => {
 });
 
 describe('utils etc', () => {
+  it('validates own properties without Object.hasOwn', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Object, 'hasOwn');
+    try {
+      Reflect.deleteProperty(Object, 'hasOwn');
+      eql(
+        u.checkOpts({}, Object.assign(Object.create(null), { dkLen: 32 })),
+        Object.assign(Object.create(null), { dkLen: 32 })
+      );
+      throws(() => u.checkOpts({}, JSON.parse('{"__proto__":{"dkLen":1}}')), /__proto__/);
+      u.validateObject(Object.assign(Object.create(null), { value: 1 }), { value: 'number' });
+      throws(
+        () => u.validateObject(Object.create({ value: 1 }), { value: 'number' }),
+        /own property/
+      );
+      eql(sha256.create().update(Uint8Array.of(1)).digest(), sha256(Uint8Array.of(1)));
+    } finally {
+      if (descriptor) Object.defineProperty(Object, 'hasOwn', descriptor);
+    }
+  });
+
   // Here goes test for tests...
   it('Test generator', () => {
     eql(
